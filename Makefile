@@ -10,11 +10,15 @@ OBJ_DIR         = codes/obj
 COMMON_DIR      = codes/srcs/common
 FPS_DIR         = codes/srcs/fps
 RSP_DIR         = codes/srcs/rsp
+PLATFORM_NATIVE_DIR = codes/srcs/platform/native
+PLATFORM_WEB_DIR = codes/srcs/platform/web
+WEB_BUILD_DIR   = web/build
+WEB_ASSET_DIR   = web/assets
 
 # ------------------------------------------------------------------------------
 # コンパイルフラグ（ヘッダは codes/includes に集約。rsp 系も codes/includes/rsp 配下）
 # ------------------------------------------------------------------------------
-CFLAGS          = -O2 -Wall -Wextra -Werror -pthread -I $(INC_DIR)
+CFLAGS          = -O2 -Wall -Wextra -Werror -pthread -I $(INC_DIR) -I $(MLX_DIR)
 CHECKS          = no-42-header,includes,style,pointer,signatures,separators,header-guard,static-leak,missing-static,layering,duplicates,unused,return-parens
 
 # ==============================================================================
@@ -54,9 +58,18 @@ RSP_SRCS        = core/rsp_mode.c core/rsp_setup.c core/rsp_assets.c \
                   enemy/rsp_enemy_ai.c \
                   render/rsp_weapon.c
 
+NATIVE_PLATFORM_SRCS = platform_native.c
+WEB_PLATFORM_SRCS = platform_web.c web_main.c
+WEB_COMMON_SRCS = $(filter-out main.c, $(COMMON_SRCS))
+WEB_SRCS        = $(addprefix $(COMMON_DIR)/, $(WEB_COMMON_SRCS)) \
+                  $(addprefix $(FPS_DIR)/, $(FPS_SRCS)) \
+                  $(addprefix $(RSP_DIR)/, $(RSP_SRCS)) \
+                  $(addprefix $(PLATFORM_WEB_DIR)/, $(WEB_PLATFORM_SRCS))
+
 OBJS            = $(addprefix $(OBJ_DIR)/common/, $(COMMON_SRCS:.c=.o)) \
                   $(addprefix $(OBJ_DIR)/fps/, $(FPS_SRCS:.c=.o)) \
-                  $(addprefix $(OBJ_DIR)/rsp/, $(RSP_SRCS:.c=.o))
+                  $(addprefix $(OBJ_DIR)/rsp/, $(RSP_SRCS:.c=.o)) \
+                  $(addprefix $(OBJ_DIR)/platform/native/, $(NATIVE_PLATFORM_SRCS:.c=.o))
 
 # ==============================================================================
 # Linux(X11) ライブラリ設定
@@ -64,6 +77,12 @@ OBJS            = $(addprefix $(OBJ_DIR)/common/, $(COMMON_SRCS:.c=.o)) \
 MLX_DIR         = codes/minilibx-linux
 LIBS            = -L$(MLX_DIR) -lmlx -L/usr/lib -lXext -lX11 -lm -lz
 MLX_TARGET      = $(MLX_DIR)/libmlx.a
+WEB_CFLAGS      = -O2 -Wall -Wextra -Werror -DWEB_BUILD -I $(INC_DIR)
+WEB_LDFLAGS     = -O2 -sALLOW_MEMORY_GROWTH=1 -sTEXTDECODER=1 -sFORCE_FILESYSTEM=1 \
+                  -sMODULARIZE=1 -sEXPORT_NAME=createCub3DModule -sENVIRONMENT=web,node \
+                  -sEXPORTED_RUNTIME_METHODS='["ccall","cwrap","HEAPU8"]' \
+                  -sEXPORTED_FUNCTIONS='["_web_init","_web_render","_web_framebuffer_ptr","_web_framebuffer_width","_web_framebuffer_height","_web_framebuffer_stride","_web_register_texture","_malloc","_free"]' \
+                  --preload-file maps/fps_map/1.cub@/maps/fps_map/1.cub
 
 # ==============================================================================
 # ビルドルール（root ごとに1つずつ）
@@ -85,6 +104,10 @@ $(OBJ_DIR)/rsp/%.o: $(RSP_DIR)/%.c
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c $< -o $@
 
+$(OBJ_DIR)/platform/native/%.o: $(PLATFORM_NATIVE_DIR)/%.c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -c $< -o $@
+
 $(MLX_TARGET):
 	@$(MAKE) -C $(MLX_DIR)
 
@@ -93,6 +116,15 @@ $(MLX_TARGET):
 # ==============================================================================
 debug:          CFLAGS += -O0 -g3 -fsanitize=address -static-libasan
 debug:          re
+
+web-assets:
+	python3 codes/PythonCodes/xpm_to_tex.py textures $(WEB_ASSET_DIR)
+
+web:            web-assets $(WEB_BUILD_DIR)/render.js
+
+$(WEB_BUILD_DIR)/render.js: $(WEB_SRCS)
+	@mkdir -p $(WEB_BUILD_DIR)
+	bash -lc "source ~/emsdk/emsdk_env.sh >/dev/null && emcc $(WEB_CFLAGS) $(WEB_SRCS) -o $@ $(WEB_LDFLAGS)"
 
 check:
 	@python3 codes/PythonCodes/lint.py --select $(CHECKS) --strict
@@ -109,4 +141,4 @@ fclean:         clean
 
 re:             fclean all
 
-.PHONY:         all clean fclean re check audit debug
+.PHONY:         all clean fclean re check audit debug web web-assets

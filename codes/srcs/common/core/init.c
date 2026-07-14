@@ -1,8 +1,7 @@
-#include <sys/time.h>          /* gettimeofday, struct timeval 用 */
 #include "engine/raycast/raycast.h"
 #include "core/core.h"
 #include "enemy/enemy.h"
-#include "../minilibx-linux/mlx.h"
+#include "platform/platform.h"
 #include "tuning.h"
 #include "engine/render/light.h"
 #include "core/respawn.h"
@@ -14,8 +13,6 @@ void
 	init_game(t_game* game);
 static int
 	init_window(t_window* window, t_config* config);
-static int
-	init_image(t_window* window, t_image* img);
 static int
 	find_sprites(t_game* game);
 static int
@@ -76,7 +73,6 @@ int
 void
 	init_game(t_game* game)
 {
-	struct timeval	tv;
 	int				i;
 
 	set_pos(&game->input.move, 0, 0);
@@ -101,8 +97,7 @@ void
 	game->assets.death_tex.path = NULL;
 	game->fps.goal_tex.tex = NULL;
 	game->fps.goal_tex.path = NULL;
-	gettimeofday(&tv, NULL);
-	game->rsp.seed = (unsigned int)(tv.tv_sec ^ tv.tv_usec);
+	game->rsp.seed = (unsigned int)pf_now_ms();
 	i = 0;
 	while (i < TEXTURES) {
 		game->assets.tex[i++].tex = NULL;
@@ -129,38 +124,24 @@ static int
 	}
 	window->ptr = NULL;
 	window->win = NULL;
+	window->image = NULL;
 	window->ratio = window->size.x / window->size.y;
-	window->screen.img = NULL;
+	window->screen.pixels = NULL;
+	window->screen.width = (int)window->size.x;
+	window->screen.height = (int)window->size.y;
+	window->screen.stride = 0;
 	if (window->ratio < BEST_RATIO) {
 		config->fov = config->fov / ((BEST_RATIO / config->fov) / FOV_SCALE);
 	} else if (window->ratio > BEST_RATIO) {
 		config->fov = config->fov * ((config->fov / BEST_RATIO) * FOV_SCALE);
 	}
-	window->ptr = mlx_init();
-	if (!window->ptr) {
-		return (0);
-	}
-	window->win = mlx_new_window(window->ptr, window->size.x, window->size.y, "cub3d");
-	if (!window->win) {
+	if (!pf_init(window, window->size.x, window->size.y, "cub3d")) {
 		return (0);
 	}
 	set_pos(&window->half, window->size.x / 2, window->size.y / 2);
-	if (!init_image(window, &window->screen)) {
+	if (!pf_create_framebuffer(window)) {
 		return (0);
 	}
-	return (1);
-}
-
-/* ************************************************************************** */
-// メモリ上に描画用のイメージ領域を確保し、データアドレスを取得する
-static int
-	init_image(t_window* window, t_image* img)
-{
-	img->img = mlx_new_image(window->ptr, window->size.x, window->size.y);
-	if (!img->img) {
-		return (0);
-	}
-	img->ptr = mlx_get_data_addr(img->img, &img->bpp, &img->size_line, &img->endian);
 	return (1);
 }
 

@@ -58,6 +58,7 @@ int
 	expose_hook(t_game* game)
 {
 	render_frame(game);
+	pf_present(&game->window);
 	return (0);
 }
 

@@ -10,3 +10,6 @@ bmp/
 # Python バイトコードキャッシュ
 __pycache__/
 *.pyc
+# Web/Emscripten generated outputs
+/web/assets/
+/web/build/

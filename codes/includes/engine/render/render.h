@@ -3,6 +3,7 @@
 
 # include "engine/raycast/raycast.h"
 # include "engine/texture/texture.h"
+# include "platform/platform.h"
 # include "utils/utils.h"
 
 /* ************************************************************************** */
@@ -12,22 +13,13 @@ struct	s_game;
 struct	s_world;
 
 /* ************************************************************************** */
-// 画像のデータと属性を管理する構造体
-typedef struct s_image
-{
-	void*	img;
-	void*	ptr;
-	int		bpp;
-	int		size_line;
-	int		endian;
-}	t_image;
-
 // ウィンドウの情報と画面描画用バッファを管理する構造体
 typedef struct s_window
 {
 	void*	ptr;
 	void*	win;
-	t_image	screen;
+	void*	image;
+	t_framebuffer	screen;
 	t_pos	size;
 	t_pos	half;
 	double	ratio;
@@ -88,8 +80,8 @@ static inline void
 	unsigned int*	dst;
 
 	if (pos->x >= 0 && pos->x < w->size.x && pos->y >= 0 && pos->y < w->size.y) {
-		dst = (unsigned int*)w->screen.ptr;
-		dst[(int)pos->y * (w->screen.size_line / 4) + (int)pos->x] = (unsigned int)color;
+		dst = (unsigned int*)w->screen.pixels;
+		dst[(int)pos->y * (w->screen.stride / 4) + (int)pos->x] = (unsigned int)color;
 	}
 }
 

@@ -75,12 +75,12 @@ static void
 	double			step;
 	double			tex_pos;
 
-	stride = rnd->w->screen.size_line / 4;
+	stride = rnd->w->screen.stride / 4;
 	start_y = (int)MAX(0, rnd->w->half.y - (ray->height / 2.));
 	step = 1.0 * tex->height / ray->height;
 	tex_pos = (start_y - rnd->w->size.y / 2.0 + ray->height / 2.0) * step;
-	dst = (unsigned int*)rnd->w->screen.ptr + (int)ray->column + start_y * stride;
-	end = (unsigned int*)rnd->w->screen.ptr + (int)ray->column + (int)rnd->w->size.y * stride;
+	dst = (unsigned int*)rnd->w->screen.pixels + (int)ray->column + start_y * stride;
+	end = (unsigned int*)rnd->w->screen.pixels + (int)ray->column + (int)rnd->w->size.y * stride;
 	i = 0;
 	while (i < ray->height && dst < end) {
 		p_tex->y = (int)tex_pos;

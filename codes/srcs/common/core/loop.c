@@ -1,36 +1,63 @@
 #include <stddef.h>
-#include <sys/time.h>
 #include "core/core.h"
 #include "core/respawn.h"
 #include "enemy/enemy.h"
 #include "tuning.h"
+#include "platform/platform.h"
 #include "utils/utils.h"// PROFILE マクロのため
 
 /* ************************************************************************** */
 int
 	main_loop(t_game* game);
+int
+	game_frame(t_game* game, double delta_time);
+void
+	game_step(t_game* game, double delta_time);
 double
 	calc_time_mult(double delta_time);
 static double
-	frame_delta(t_game* game, double* time_mult);
+	frame_delta(t_game* game);
 static int
 	apply_input(t_game* game, double time_mult);
 long long
 	get_current_time_ms(void);
 
 /* ************************************************************************** */
-// 毎フレーム実行。死亡中はタイマーのみ進め、生存中は入力・敵更新・接触判定を行う
+// native ループから呼ばれる駆動関数。時間計測だけを行い、1フレーム処理へ dt を渡す
 int
 	main_loop(t_game* game)
 {
 	double	delta_time;
+
+	delta_time = frame_delta(game);
+	if (delta_time < 0.0) {
+		return (0);
+	}
+	return (game_frame(game, delta_time));
+}
+
+/* ************************************************************************** */
+// 1フレーム分の更新・描画・転送を行う。外部駆動ターゲットは dt を直接渡せる
+int
+	game_frame(t_game* game, double delta_time)
+{
+	game_step(game, delta_time);
+	PROFILE_START(render_frame);
+	render_frame(game);
+	PROFILE_END(render_frame);
+	pf_present(&game->window);
+	return (1);
+}
+
+/* ************************************************************************** */
+// 入力・敵更新・接触判定だけを進める。描画、転送、sleep、時刻取得は含めない
+void
+	game_step(t_game* game, double delta_time)
+{
 	double	time_mult;
 	int		update;
 
-	delta_time = frame_delta(game, &time_mult);
-	if (delta_time < 0.0) {
-		return (0);// FPS上限未達：許可関数に sleep が無いため待機せず即戻る（ビジーウェイト）
-	}
+	time_mult = calc_time_mult(delta_time);
 	if (!game->cleared && is_player_dead(game)) {
 		update_death(game, delta_time);
 		update_enemies(game, delta_time);
@@ -48,10 +75,6 @@ int
 			game->mode_ops.combat(game);
 		}
 	}
-	PROFILE_START(render_frame);
-	render_frame(game);
-	PROFILE_END(render_frame);
-	return (1);
 }
 
 /* ************************************************************************** */
@@ -71,7 +94,7 @@ double
 /* ************************************************************************** */
 // 経過時間を算出してFPS制限を行い、時間倍率を計算する（制限内は負値を返す）
 static double
-	frame_delta(t_game* game, double* time_mult)
+	frame_delta(t_game* game)
 {
 	long long	now;
 	double		delta_time;
@@ -85,7 +108,6 @@ static double
 		return (-1.0);
 	}
 	game->timing.last_time = now;
-	*time_mult = calc_time_mult(delta_time);
 	return (delta_time);
 }
 
@@ -119,8 +141,5 @@ static int
 long long
 	get_current_time_ms(void)
 {
-	struct timeval	tv;
-
-	gettimeofday(&tv, NULL);
-	return ((long long)tv.tv_sec * 1000 + (long long)tv.tv_usec / 1000);
+	return ((long long)pf_now_ms());
 }

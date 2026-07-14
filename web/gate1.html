@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>cub3D Gate 1</title>
+	<link rel="icon" href="data:,">
+	<style>
+		:root {
+			color-scheme: dark;
+			font-family: system-ui, sans-serif;
+			background: #111318;
+			color: #f7f7f2;
+		}
+		body {
+			margin: 0;
+			min-height: 100vh;
+			display: grid;
+			grid-template-rows: 1fr auto;
+			place-items: center;
+			background: #111318;
+		}
+		canvas {
+			width: min(100vw, 1280px);
+			aspect-ratio: 16 / 9;
+			image-rendering: pixelated;
+			background: #000;
+		}
+		footer {
+			width: min(100vw, 1280px);
+			box-sizing: border-box;
+			padding: 10px 14px 14px;
+			display: flex;
+			justify-content: space-between;
+			font-size: 13px;
+			color: #cfd3dc;
+		}
+	</style>
+</head>
+<body>
+	<canvas id="screen" width="960" height="540"></canvas>
+	<footer><span id="status">loading</span><span id="fps">-- fps</span></footer>
+	<script>window.__cub3dTextDecoder = window.TextDecoder; window.TextDecoder = undefined;</script>
+	<script src="build/render.js?v=20260711c"></script>
+	<script src="gate1.js?v=20260711c"></script>
+</body>
+</html>

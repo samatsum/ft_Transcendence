@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <unistd.h>
-#include "../minilibx-linux/mlx.h"
+#include "platform/platform.h"
 #include "core/core.h"
 #include "engine/render/light.h"
 #include "gnl/get_next_line.h"
@@ -15,8 +15,6 @@ static void
 	free_tex(t_window* window, t_tex* tex);
 static void
 	clear_assets(t_game* game);
-static int
-	clear_window(t_window* window);
 
 /* ************************************************************************** */
 // エラーメッセージを出力し、ゲームを異常終了させる
@@ -41,17 +39,12 @@ int
 	get_next_line(-1, NULL);
 	if (game) {
 		clear_config(&game->config);
-		clear_window(&game->window);
 		clear_textures(&game->window, game->assets.tex);
 		clear_sprites(&game->world.sprites);
 		clear_enemies(&game->world.enemies);
 		clear_lights(&game->world);
 		clear_assets(game);
-		if (game->window.ptr) {
-			mlx_destroy_display(game->window.ptr);
-			free(game->window.ptr);
-			game->window.ptr = NULL;
-		}
+		pf_shutdown(&game->window);
 	}
 	exit(code);
 	return (code);
@@ -62,9 +55,8 @@ int
 static void
 	free_tex(t_window* window, t_tex* tex)
 {
-	if (tex->tex && window->ptr) {
-		mlx_destroy_image(window->ptr, tex->tex);
-		tex->tex = NULL;
+	if (tex->tex) {
+		pf_destroy_texture(window, tex);
 	}
 	if (tex->path) {
 		free(tex->path);
@@ -97,20 +89,4 @@ static void
 	free_tex(&game->window, &game->assets.death_tex);
 	free_tex(&game->window, &game->assets.door_tex);
 	free_tex(&game->window, &game->fps.goal_tex);
-}
-
-/* ************************************************************************** */
-// ウィンドウとイメージのリソースを解放する
-static int
-	clear_window(t_window* window)
-{
-	if (window->screen.img) {
-		mlx_destroy_image(window->ptr, window->screen.img);
-		window->screen.img = NULL;
-	}
-	if (window->ptr && window->win) {
-		mlx_destroy_window(window->ptr, window->win);
-		window->win = NULL;
-	}
-	return (0);
 }

@@ -5,7 +5,7 @@
 #include "ui/ui.h"                /* update_ui, display_crosshair, write_ui_text に必要 */
 #include "ui/font.h"              /* draw_text_scaled / FONT_* に必要 */
 #include "tuning.h"               /* LIGHT_CONE_DEG に必要 */
-#include "../minilibx-linux/mlx.h" /* mlx_put_image_to_window 用 */
+#include "platform/platform.h"        /* pf_present 境界のため */
 
 /* ************************************************************************** */
 void
@@ -33,12 +33,10 @@ void
 			game->result_screenshot_saved = 1;
 			save_result_screenshot(game);
 		}
-		mlx_put_image_to_window(game->window.ptr, game->window.win, game->window.screen.img, 0, 0);
 		return ;
 	}
 	if (is_player_dead(game)) {
 		draw_death_screen(game);
-		mlx_put_image_to_window(game->window.ptr, game->window.win, game->window.screen.img, 0, 0);
 		return ;
 	}
 	update_screen(game);
@@ -94,7 +92,6 @@ static void
 	if (game->options & FLAG_UI) {
 		write_ui_text(game);
 	}
-	mlx_put_image_to_window(game->window.ptr, game->window.win, game->window.screen.img, 0, 0);
 }
 
 /* ************************************************************************** */

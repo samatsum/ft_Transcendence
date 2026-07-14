@@ -223,7 +223,7 @@ static int
 	int	rgb;
 	int	color;
 
-	color = *(int*)(w->screen.ptr + (BYTES_PER_PIXEL * (int)w->size.x * ((int)w->size.y - 1 - y)) + (BYTES_PER_PIXEL * x));
+	color = *(int*)(w->screen.pixels + (w->screen.stride * ((int)w->size.y - 1 - y)) + (BYTES_PER_PIXEL * x));
 	rgb = color & 0xFFFFFF;
 	return (rgb);
 }

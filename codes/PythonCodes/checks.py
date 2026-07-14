@@ -67,6 +67,18 @@ def _warn(path, line, message, detail=None) -> Finding:
     return Finding(Severity.WARNING, path, line, message, detail)
 
 
+def _is_platform_target_path(path) -> bool:
+    parts = tuple(path.parts)
+    for i, part in enumerate(parts[:-1]):
+        if part == "srcs" and parts[i + 1] == "platform":
+            return True
+    return False
+
+
+def _is_allowed_platform_duplicate(func: str, paths) -> bool:
+    return func.startswith("pf_") and all(_is_platform_target_path(p) for p in paths)
+
+
 # --------------------------------------------------------------------------- #
 # CR001: 42 header は不要
 # --------------------------------------------------------------------------- #
@@ -290,6 +302,8 @@ def check_duplicates(ctx: Context) -> Iterable[Finding]:
             continue
         globals_ = [p for p, is_static in locs if not is_static]
         if len(globals_) > 1:
+            if _is_allowed_platform_duplicate(func, globals_):
+                continue
             detail = "\n        ".join(p.name for p in globals_)
             yield _err(
                 None,

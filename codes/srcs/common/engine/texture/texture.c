@@ -3,7 +3,7 @@
 #include "engine/render/render.h"
 #include "engine/texture/texture.h"
 #include "config/config.h"
-#include "../minilibx-linux/mlx.h"
+#include "platform/platform.h"
 
 /* ************************************************************************** */
 int
@@ -55,10 +55,8 @@ void
 	i = 0;
 	while (i < TEXTURES) {
 		if (tex[i].tex) {
-			mlx_destroy_image(window->ptr, tex[i].tex);
+			pf_destroy_texture(window, &tex[i]);
 		}
-		tex[i].tex = NULL;
-		tex[i].ptr = NULL;
 		i++;
 	}
 }
@@ -73,12 +71,7 @@ int
 	if (!tex->path) {
 		return (0);
 	}
-	tex->tex = mlx_xpm_file_to_image(window->ptr, tex->path, &tex->width, &tex->height);
-	if (!tex->tex) {
-		return (0);
-	}
-	tex->ptr = mlx_get_data_addr(tex->tex, &tex->bpp, &tex->size_line, &tex->endian);
-	return (1);
+	return (pf_load_texture(window, tex));
 }
 
 /* ************************************************************************** */

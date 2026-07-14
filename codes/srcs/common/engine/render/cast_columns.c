@@ -1,32 +1,37 @@
-#include <pthread.h>           /* pthread_create / pthread_join 用 */
-#include <unistd.h>            /* sysconf(_SC_NPROCESSORS_ONLN) 用 */
+#ifndef WEB_BUILD
+# include <pthread.h>           /* pthread_create / pthread_join 用 */
+# include <unistd.h>            /* sysconf(_SC_NPROCESSORS_ONLN) 用 */
+#endif
 #include <math.h>              /* fabs 用 */
 #include "engine/render/render.h"
 #include "engine/raycast/raycast.h"
 
 /* ************************************************************************** */
-// 同時に走らせるワーカースレッドの上限。実行時は min(オンラインCPUコア数,
-// この値, 画面幅) を採用し、1 のときはスレッドを使わず逐次実行に落とす
+// 同時に走らせるワーカースレッドの上限。web は単一スレッド固定でこの分岐を使わない
 #define RENDER_THREADS_MAX	16
 
 /* ************************************************************************** */
 void
 	cast_columns(t_render* rnd, double* camera_x);
+static void
+	cast_range(t_render* rnd, double* camera_x, int start, int end);
+#ifndef WEB_BUILD
 static int
 	worker_count(int columns);
 static void*
 	cast_worker(void* arg);
-static void
-	cast_range(t_render* rnd, double* camera_x, int start, int end);
+#endif
 
 /* ************************************************************************** */
-// 画面の全列を worker_count 個のワーカーへ均等分割し、並列にレイキャスト描画する司令塔。
-// 各ジョブに担当列範囲[start,end)を詰めてスレッドを起こし、生成できた分だけ created[] に印を
-// 付ける。n==1 や pthread_create 失敗時はその場で cast_range を呼んで逐次フォールバックする。
-// 列ごとに書き込み先が重ならないので、描画自体はミューテックスなしで安全。最後に join で待つ
+// 画面の全列を描画する。native は pthread、web は単一スレッドで処理する
 void
 	cast_columns(t_render* rnd, double* camera_x)
 {
+#ifdef WEB_BUILD
+	cast_range(rnd, camera_x, 0, (int)rnd->w->size.x);
+	return ;
+#endif
+#ifndef WEB_BUILD
 	pthread_t		tid[RENDER_THREADS_MAX];
 	t_render_job	jobs[RENDER_THREADS_MAX];
 	int				created[RENDER_THREADS_MAX];
@@ -57,11 +62,36 @@ void
 		}
 		i++;
 	}
+#endif
 }
 
 /* ************************************************************************** */
-// 起動するワーカー数を決める。オンラインCPUコア数を基準に、スレッド上限と列数で頭打ちし、
-// 必ず1以上に丸める（1コア＝逐次実行、列数より多くスレッドを作っても無駄なので列数で制限）
+// 列範囲[start,end)だけを描画する実体。列ごとに ray_cast で壁までの距離を求めて depth[] に
+// 記録し(後段のスプライト前後判定に使う)、距離から壁の画面上の高さを算出して壁を描く。
+// 壁が画面を埋め尽くさない(height < 画面高)ときだけ、残る上下に天井と床を描く
+static void
+	cast_range(t_render* rnd, double* camera_x, int start, int end)
+{
+	t_ray	ray;
+	int		i;
+
+	i = start;
+	while (i < end) {
+		ray.column = i;
+		ray_cast(rnd->camera, rnd->config, &ray, camera_x[i]);
+		rnd->depth[i] = ray.distance;
+		ray.height = fabs(rnd->w->size.y / ray.distance);
+		draw_wall(rnd, &ray);
+		if (ray.height < rnd->w->size.y) {
+			draw_sky_floor(rnd, &ray);
+		}
+		i++;
+	}
+}
+
+#ifndef WEB_BUILD
+/* ************************************************************************** */
+// 起動するワーカー数を決める。オンラインCPUコア数を基準に、スレッド上限と列数で頭打ちする
 static int
 	worker_count(int columns)
 {
@@ -86,8 +116,7 @@ static int
 }
 
 /* ************************************************************************** */
-// pthread から呼ばれる入口。void* 引数を t_render_job* へ戻し、担当列範囲を取り出して
-// 描画本体 cast_range へ委譲する。pthread の規約に合わせ戻り値は NULL
+// pthread から呼ばれる入口。担当列範囲を取り出して描画本体 cast_range へ委譲する
 static void*
 	cast_worker(void* arg)
 {
@@ -97,27 +126,4 @@ static void*
 	cast_range(job->rnd, job->camera_x, job->start, job->end);
 	return (NULL);
 }
-
-/* ************************************************************************** */
-// 列範囲[start,end)だけを描画する実体。列ごとに ray_cast で壁までの距離を求めて depth[] に
-// 記録し(後段のスプライト前後判定に使う)、距離から壁の画面上の高さを算出して壁を描く。
-// 壁が画面を埋め尽くさない(height < 画面高)ときだけ、残る上下に天井と床を描く
-static void
-	cast_range(t_render* rnd, double* camera_x, int start, int end)
-{
-	t_ray	ray;
-	int			i;
-
-	i = start;
-	while (i < end) {
-		ray.column = i;
-		ray_cast(rnd->camera, rnd->config, &ray, camera_x[i]);
-		rnd->depth[i] = ray.distance;
-		ray.height = fabs(rnd->w->size.y / ray.distance);
-		draw_wall(rnd, &ray);
-		if (ray.height < rnd->w->size.y) {
-			draw_sky_floor(rnd, &ray);
-		}
-		i++;
-	}
-}
+#endif

@@ -6,7 +6,7 @@
 #include "core/mode_ops.h"
 #include "engine/input/input.h"
 #include "engine/input/keymap.h"
-#include "../minilibx-linux/mlx.h"
+#include "platform/platform.h"
 
 #define CUB_ARG_MAP 1
 #define CUB_ARG_COUNT 2
@@ -28,8 +28,6 @@ static bool
 	path_contains(const char* path, const char* needle);
 static bool
 	setup_inits(t_game* game);
-static void
-	setup_hooks(t_game* game);
 
 /* ************************************************************************** */
 // メイン関数。プログラムのエントリポイントとして検証、初期化、メインループの実行を行う
@@ -44,8 +42,8 @@ int
 	if (!setup_inits(&game)) {
 		return (EXIT_FAILURE);
 	}
-	setup_hooks(&game);
-	mlx_loop(game.window.ptr);
+	pf_setup_hooks(&game);
+	pf_loop(&game.window);
 	return (EXIT_SUCCESS);
 }
 
@@ -165,16 +163,4 @@ static bool
 		return (false);
 	}
 	return (true);
-}
-
-/* ************************************************************************** */
-// イベントフックの設定を行う
-static void
-	setup_hooks(t_game* game)
-{
-	mlx_hook(game->window.win, EVENT_KEY_PRESS, MASK_KEY_PRESS, &key_press, game);
-	mlx_hook(game->window.win, EVENT_KEY_RELEASE, MASK_KEY_RELEASE, &key_release, game);
-	mlx_hook(game->window.win, EVENT_EXIT, MASK_CLOSE, &exit_hook, game);
-	mlx_hook(game->window.win, EVENT_EXPOSE, MASK_EXPOSE, &expose_hook, game);
-	mlx_loop_hook(game->window.ptr, &main_loop, game);
 }
