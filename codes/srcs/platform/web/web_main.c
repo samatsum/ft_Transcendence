@@ -4,17 +4,25 @@
 #include "core/core.h"
 #include "core/mode_ops.h"
 #include "engine/render/render.h"
+#include "types.h"
 
 /* ************************************************************************** */
 #define WEB_RENDER_WIDTH	960
 #define WEB_RENDER_HEIGHT	540
-#define WEB_MAP_PATH		"/maps/fps_map/1.cub"
+#define WEB_OPTION_UI		0
+#define WEB_OPTION_SHADOWS	1
+#define WEB_OPTION_CROSSHAIR	2
 
 /* ************************************************************************** */
 int
-	web_init(void);
+	web_init(const char* map_text);
 int
 	web_render(double delta_time);
+void
+	web_set_input(int forward, int backward, int strafe_left, int strafe_right,
+		int rotate_left, int rotate_right);
+void
+	web_toggle_option(int option);
 int
 	web_framebuffer_ptr(void);
 int
@@ -31,13 +39,13 @@ static int		g_ready;
 /* ************************************************************************** */
 // ゲート1用に fps_map/1.cub を読み込み、内部 960x540 の表示用ゲーム状態を初期化する
 int
-	web_init(void)
+	web_init(const char* map_text)
 {
 	g_game = (t_game){0};
 	g_game.mode = MODE_FPS;
 	g_game.mode_ops = fps_mode_ops();
 	init_config(&g_game.config);
-	if (!parse_config(&g_game.config, WEB_MAP_PATH)) {
+	if (!parse_config_text(&g_game.config, map_text)) {
 		return (0);
 	}
 	g_game.config.requested_width = WEB_RENDER_WIDTH;
@@ -61,6 +69,34 @@ int
 	game_step(&g_game, delta_time);
 	render_frame(&g_game);
 	return (1);
+}
+
+/* ************************************************************************** */
+// JS から渡された押下状態を既存の入力構造へ反映する
+void
+	web_set_input(int forward, int backward, int strafe_left, int strafe_right,
+		int rotate_left, int rotate_right)
+{
+	g_game.input.move.x = (double)(forward != 0);
+	g_game.input.move.y = (double)(backward != 0);
+	g_game.input.x_move.x = (double)(strafe_left != 0);
+	g_game.input.x_move.y = (double)(strafe_right != 0);
+	g_game.input.rotate.x = (double)(rotate_left != 0);
+	g_game.input.rotate.y = (double)(rotate_right != 0);
+}
+
+/* ************************************************************************** */
+// JS から渡されたオプション番号に対応する表示フラグを切り替える
+void
+	web_toggle_option(int option)
+{
+	if (option == WEB_OPTION_UI) {
+		g_game.options = g_game.options ^ FLAG_UI;
+	} else if (option == WEB_OPTION_SHADOWS) {
+		g_game.options = g_game.options ^ FLAG_SHADOWS;
+	} else if (option == WEB_OPTION_CROSSHAIR) {
+		g_game.options = g_game.options ^ FLAG_CROSSHAIR;
+	}
 }
 
 /* ************************************************************************** */

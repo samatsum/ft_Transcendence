@@ -1,8 +1,12 @@
-#include <fcntl.h>  /* open, O_RDONLY 用 */
-#include <unistd.h> /* close 用 */
+#include <fcntl.h>
+#include <stdlib.h>
+#include <unistd.h>
+
 #include "config/config.h"
-#include "gnl/get_next_line.h" /* get_next_line 用 */
 #include "config/defaults.h"
+
+/* ************************************************************************** */
+#define READ_CHUNK_SIZE 4096
 
 /* ************************************************************************** */
 // 行頭キー文字列と種別の対応表。新しいキーはここに1行追加するだけでよい
@@ -10,7 +14,14 @@ typedef struct s_key_def
 {
 	const char*	tag;
 	int			key;
-}				t_key_def;
+} 				t_key_def;
+
+// メモリ上の .cub テキストを1行ずつ読むための薄いリーダ
+typedef struct s_text_reader
+{
+	const char*	text;
+	int			offset;
+} 				t_text_reader;
 
 /* ************************************************************************** */
 // 行頭キー文字列と種別の対応表。.cub で記述できる設定キーの一覧でもある。
@@ -55,6 +66,16 @@ int
 	clear_config(t_config* config);
 int
 	parse_config(t_config* config, const char* conf_path);
+int
+	parse_config_text(t_config* config, const char* text);
+static int
+	read_file_text(const char* path, char** out);
+static int
+	append_chunk(char** text, int* used, const char* chunk, int size);
+static int
+	parse_config_reader(t_config* config, t_text_reader* reader);
+static int
+	read_text_line(t_text_reader* reader, char** line);
 static int
 	parse_line(t_config* config, const char* line, t_str** map_buffer, int* empty_map, int* cont_after);
 static int
@@ -90,6 +111,7 @@ void
 	config->map.flags = NULL;
 	config->map.rows = 0;
 	config->map.columns = 0;
+	config->spawn_count = 0;
 	config->rotate_speed = DEFAULT_ROTATE_SPEED;
 	config->move_speed = DEFAULT_MOVE_SPEED;
 	config->fov = DEFAULT_FOV;
@@ -131,16 +153,114 @@ int
 }
 
 /* ************************************************************************** */
-// 設定ファイル(.cub)を解析する本体。拡張子確認→オープン→get_next_line で1行ずつ
-// 読み、strip_comment 後 parse_line で振り分け→蓄積したマップ行 map_buffer を最後に
-// parse_map で確定、という流れ。r はここまでの解析が全て成功したかのフラグ、ret は
-// get_next_line の戻り値（>0 継続 / 0 EOF / <0 読み取りエラー）。empty_map/cont_after は
-// マップ後の空行を跨いで設定やマップ行が再出現する不正配置を検出するための状態。
-// どの失敗経路でも map_buffer を str_clear で必ず解放してから抜ける
+// 設定ファイル(.cub)を全読みし、以後はメモリ上テキストの共通パーサへ渡す
 int
 	parse_config(t_config* config, const char* conf_path)
 {
-	int		c_fd;
+	char*	text;
+	int		ok;
+
+	if (!ft_endswith(conf_path, ".cub")) {
+		return (0);
+	}
+	if (!read_file_text(conf_path, &text)) {
+		return (0);
+	}
+	ok = parse_config_text(config, text);
+	free(text);
+	return (ok);
+}
+
+/* ************************************************************************** */
+// メモリ上の .cub テキストを、行リーダ経由で既存の設定パーサへ流し込む
+int
+	parse_config_text(t_config* config, const char* text)
+{
+	t_text_reader	reader;
+
+	if (!text) {
+		return (0);
+	}
+	reader.text = text;
+	reader.offset = 0;
+	return (parse_config_reader(config, &reader));
+}
+
+/* ************************************************************************** */
+// ファイル全体をNUL終端文字列として読み込む。native も以後はメモリリーダへ統一する
+static int
+	read_file_text(const char* path, char** out)
+{
+	char	chunk[READ_CHUNK_SIZE];
+	char*	text;
+	int		fd;
+	int		used;
+	ssize_t	read_size;
+
+	*out = NULL;
+	fd = open(path, O_RDONLY);
+	if (fd < 0) {
+		return (0);
+	}
+	text = (char*)malloc(1);
+	if (!text) {
+		close(fd);
+		return (0);
+	}
+	text[0] = '\0';
+	used = 0;
+	read_size = read(fd, chunk, READ_CHUNK_SIZE);
+	while (read_size > 0) {
+		if (!append_chunk(&text, &used, chunk, (int)read_size)) {
+			free(text);
+			close(fd);
+			return (0);
+		}
+		read_size = read(fd, chunk, READ_CHUNK_SIZE);
+	}
+	close(fd);
+	if (read_size < 0) {
+		free(text);
+		return (0);
+	}
+	*out = text;
+	return (1);
+}
+
+/* ************************************************************************** */
+// 読み込んだチャンクを伸長済みテキストへ追記する
+static int
+	append_chunk(char** text, int* used, const char* chunk, int size)
+{
+	char*	next;
+	int		i;
+
+	next = (char*)malloc((size_t)(*used + size + 1));
+	if (!next) {
+		return (0);
+	}
+	i = 0;
+	while (i < *used) {
+		next[i] = (*text)[i];
+		i++;
+	}
+	i = 0;
+	while (i < size) {
+		next[*used + i] = chunk[i];
+		i++;
+	}
+	*used += size;
+	next[*used] = '\0';
+	free(*text);
+	*text = next;
+	return (1);
+}
+
+/* ************************************************************************** */
+// メモリリーダから1行ずつ取り出し、コメント除去後に既存の行パーサへ渡す
+static int
+	parse_config_reader(t_config* config, t_text_reader* reader)
+{
 	int		ret;
 	int		r;
 	int		empty_map;
@@ -148,27 +268,19 @@ int
 	char*	line;
 	t_str*	map_buffer;
 
-	if (!ft_endswith(conf_path, ".cub")) {
-		return (0);
-	}
-	c_fd = open(conf_path, O_RDONLY);
-	if (c_fd < 0) {
-		return (0);
-	}
 	map_buffer = NULL;
 	r = 1;
 	empty_map = 0;
 	cont_after = 0;
 	line = NULL;
-	ret = get_next_line(c_fd, &line);
+	ret = read_text_line(reader, &line);
 	while (ret > 0) {
 		strip_comment(line);
 		r = (r && parse_line(config, line, &map_buffer, &empty_map, &cont_after));
 		free(line);
 		line = NULL;
-		ret = get_next_line(c_fd, &line);
+		ret = read_text_line(reader, &line);
 	}
-	close(c_fd);
 	if (ret < 0) {
 		r = 0;
 	}
@@ -179,6 +291,40 @@ int
 		return (str_clear(&map_buffer));
 	}
 	str_clear(&map_buffer);
+	return (1);
+}
+
+/* ************************************************************************** */
+// NUL終端テキストから次の1行を複製する。返す行には改行を含めない
+static int
+	read_text_line(t_text_reader* reader, char** line)
+{
+	int	start;
+	int	length;
+	int	i;
+
+	*line = NULL;
+	if (!reader->text[reader->offset]) {
+		return (0);
+	}
+	start = reader->offset;
+	while (reader->text[reader->offset] && reader->text[reader->offset] != '\n') {
+		reader->offset++;
+	}
+	length = reader->offset - start;
+	*line = (char*)malloc((size_t)length + 1);
+	if (!*line) {
+		return (-1);
+	}
+	i = 0;
+	while (i < length) {
+		(*line)[i] = reader->text[start + i];
+		i++;
+	}
+	(*line)[length] = '\0';
+	if (reader->text[reader->offset] == '\n') {
+		reader->offset++;
+	}
 	return (1);
 }
 

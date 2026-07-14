@@ -38,10 +38,14 @@
 	</style>
 </head>
 <body>
-	<canvas id="screen" width="960" height="540"></canvas>
+	<canvas id="screen" width="960" height="540" tabindex="0"></canvas>
 	<footer><span id="status">loading</span><span id="fps">-- fps</span></footer>
+	<!-- 恒久ワークアラウンド: emscripten 6.0.2 の UTF8 デコードは Chrome の
+	     resizable ArrayBuffer 上のビューに TextDecoder.decode() を使うと例外になる。
+	     glue 読込前に TextDecoder を隠して JS フォールバックへ落とし、モジュール
+	     生成後に gate1.js が復元する。emsdk 更新時に要再評価（GATE1_REPORT 参照） -->
 	<script>window.__cub3dTextDecoder = window.TextDecoder; window.TextDecoder = undefined;</script>
-	<script src="build/render.js?v=20260711c"></script>
-	<script src="gate1.js?v=20260711c"></script>
+	<script src="build/render.js?v=20260712a"></script>
+	<script src="gate1.js?v=20260712a"></script>
 </body>
 </html>

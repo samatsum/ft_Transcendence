@@ -42,9 +42,14 @@ int
 	game_frame(t_game* game, double delta_time)
 {
 	game_step(game, delta_time);
+#ifdef WEB_BUILD
+	render_frame(game);// PROFILE を通さない: ブラウザでは printf が Console に流れ「警告・エラーゼロ」要件の観察を妨げるため
+#endif
+#ifndef WEB_BUILD
 	PROFILE_START(render_frame);
 	render_frame(game);
 	PROFILE_END(render_frame);
+#endif
 	pf_present(&game->window);
 	return (1);
 }

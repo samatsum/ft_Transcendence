@@ -48,9 +48,14 @@ void
 int
 	web_register_texture(const char* path, const unsigned char* rgba, int width, int height);
 int
-	web_init(void);
+	web_init(const char* map_text);
 int
 	web_render(double delta_time);
+void
+	web_set_input(int forward, int backward, int strafe_left, int strafe_right,
+		int rotate_left, int rotate_right);
+void
+	web_toggle_option(int option);
 int
 	web_framebuffer_ptr(void);
 int

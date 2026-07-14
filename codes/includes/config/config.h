@@ -197,6 +197,8 @@ int
 int
 	parse_config(t_config* config, const char* conf_path);
 int
+	parse_config_text(t_config* config, const char* text);
+int
 	check_top_bottom_borders(t_str* map_buffer);
 int
 	check_left_right_borders(t_str* map_buffer);
