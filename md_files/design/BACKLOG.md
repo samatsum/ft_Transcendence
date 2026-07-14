@@ -41,14 +41,16 @@
 
 ## 1. 完了済み（Done）
 
+> コミットIDは本リポジトリのもの（2026-07-14 に旧リポジトリから4コミットへ積み直して移行。対応: docs=3174497 / E-01〜07=e4b5c83 / E-08〜09=16a921f / G-01〜04=2f2dec5）。
+
 | Issue | 内容 | コミット |
 |---|---|---|
-| E-01〜E-07 | プラットフォーム層分離・`t_framebuffer` 化・ループ反転・`render.wasm`・アセットパイプライン・**ゲート1: Chrome Canvas 描画（go 判定）** | `643c17c` `3efd95b` `4c725de` `8c33a4d` |
-| （追補） | レビュー反映: `-Dpf_*` リネーム廃止・CR013 除外・GATE1_REPORT 更新 | `a4837a9` `14a172d` |
-| G-01 | 戦闘員統合の構造変更仕様（[ENGINE_PHASE2_REPORT.md](../reports/ENGINE_PHASE2_REPORT.md)） | `c15bf2c` |
-| E-09 | `.cub` メモリリーダ化（全13マップでパース結果一致を確認） | `5da928b` |
-| E-08 | web 入力・キャプチャ規約・PROFILE 無効化・テクスチャ必要分ロード（42/99）・TextDecoder 恒久方針 | `cc6c2a7` |
-| G-02〜G-04 | **戦闘員統合**: プレイヤーを enemies リストの EXTERNAL 入力源ノード化、移動・衝突の `combatant_walk_axis` 一本化（半径 per-combatant）、death/spawn の戦闘員化 | `407e4f1` |
+| E-01〜E-07 | プラットフォーム層分離・`t_framebuffer` 化・ループ反転・`render.wasm`・アセットパイプライン・**ゲート1: Chrome Canvas 描画（go 判定）** | `e4b5c83` |
+| （追補） | レビュー反映: `-Dpf_*` リネーム廃止・CR013 除外・GATE1_REPORT 更新 | `e4b5c83`（積み直しで統合） |
+| G-01 | 戦闘員統合の構造変更仕様（[ENGINE_PHASE2_REPORT.md](../reports/ENGINE_PHASE2_REPORT.md)） | `3174497`（設計書と同梱） |
+| E-09 | `.cub` メモリリーダ化（全13マップでパース結果一致を確認） | `16a921f` |
+| E-08 | web 入力・キャプチャ規約・PROFILE 無効化・テクスチャ必要分ロード（42/99）・TextDecoder 恒久方針 | `16a921f` |
+| G-02〜G-04 | **戦闘員統合**: プレイヤーを enemies リストの EXTERNAL 入力源ノード化、移動・衝突の `combatant_walk_axis` 一本化（半径 per-combatant）、death/spawn の戦闘員化 | `2f2dec5` |
 
 ## 2. エンジン系（壱）E-08〜E-14 — ①§6 の残りと受入条件の追補
 
