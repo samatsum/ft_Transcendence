@@ -13,5 +13,9 @@ int
 	key_press(int keycode, t_game* game);
 int
 	key_release(int keycode, t_game* game);
+void
+	select_weapon(t_game* game, int weapon);
+void
+	trigger_shot(t_game* game);
 
 #endif

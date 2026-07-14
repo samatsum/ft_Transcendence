@@ -34,6 +34,10 @@ int
 	key_press(int keycode, t_game* game);
 int
 	key_release(int keycode, t_game* game);
+void
+	select_weapon(t_game* game, int weapon);
+void
+	trigger_shot(t_game* game);
 static int
 	set_hold_axis(t_game* game, int keycode, double value);
 static void
@@ -122,24 +126,46 @@ static int
 }
 
 /* ************************************************************************** */
-// 押下時のFPS専用アクション（武器切り替え・射撃）を処理する
-static void
-	handle_action(int keycode, t_game* game)
+// 武器を切り替える。モード制約（can_shoot）の判定ごと公開し、native のキー入力と
+// web 入力（web_set_weapon）が同じ実体を通るようにする
+void
+	select_weapon(t_game* game, int weapon)
 {
 	if (!game->mode_ops.can_shoot) {
 		return ;
 	}
+	if (weapon == WEP_PISTOL || weapon == WEP_FLASHLIGHT || weapon == WEP_HANDS) {
+		game->input.current_weapon = weapon;
+	}
+}
+
+/* ************************************************************************** */
+// ピストル装備時にクールダウンを守って1発撃つ（native キー・web 入力の共通実体）
+void
+	trigger_shot(t_game* game)
+{
+	if (!game->mode_ops.can_shoot || game->input.current_weapon != WEP_PISTOL) {
+		return ;
+	}
+	if (game->input.is_shooting == 0) {
+		game->input.is_shooting = SHOOT_COOLDOWN;
+		shoot_target(game);
+	}
+}
+
+/* ************************************************************************** */
+// 押下時のFPS専用アクション（武器切り替え・射撃）をキーコードから振り分ける
+static void
+	handle_action(int keycode, t_game* game)
+{
 	if (keycode == KEY_NUM_1) {
-		game->input.current_weapon = WEP_PISTOL;
+		select_weapon(game, WEP_PISTOL);
 	} else if (keycode == KEY_NUM_2) {
-		game->input.current_weapon = WEP_FLASHLIGHT;
+		select_weapon(game, WEP_FLASHLIGHT);
 	} else if (keycode == KEY_NUM_3) {
-		game->input.current_weapon = WEP_HANDS;
-	} else if (keycode == KEY_SPACE && game->input.current_weapon == WEP_PISTOL) {
-		if (game->input.is_shooting == 0) {
-			game->input.is_shooting = SHOOT_COOLDOWN;
-			shoot_target(game);
-		}
+		select_weapon(game, WEP_HANDS);
+	} else if (keycode == KEY_SPACE) {
+		trigger_shot(game);
 	}
 }
 

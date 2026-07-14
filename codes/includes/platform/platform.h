@@ -56,6 +56,10 @@ void
 		int rotate_left, int rotate_right);
 void
 	web_toggle_option(int option);
+void
+	web_set_weapon(int weapon);
+void
+	web_shoot(void);
 int
 	web_framebuffer_ptr(void);
 int

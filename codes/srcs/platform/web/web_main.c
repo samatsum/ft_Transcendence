@@ -3,6 +3,7 @@
 #include "config/config.h"
 #include "core/core.h"
 #include "core/mode_ops.h"
+#include "engine/input/input.h"
 #include "engine/render/render.h"
 #include "types.h"
 
@@ -23,6 +24,10 @@ void
 		int rotate_left, int rotate_right);
 void
 	web_toggle_option(int option);
+void
+	web_set_weapon(int weapon);
+void
+	web_shoot(void);
 int
 	web_framebuffer_ptr(void);
 int
@@ -97,6 +102,22 @@ void
 	} else if (option == WEB_OPTION_CROSSHAIR) {
 		g_game.options = g_game.options ^ FLAG_CROSSHAIR;
 	}
+}
+
+/* ************************************************************************** */
+// JS の 1/2/3 キーから武器を切り替える（実体は native と共通の select_weapon）
+void
+	web_set_weapon(int weapon)
+{
+	select_weapon(&g_game, weapon);
+}
+
+/* ************************************************************************** */
+// JS の Space キーから射撃する（実体は native と共通の trigger_shot）
+void
+	web_shoot(void)
+{
+	trigger_shot(&g_game);
 }
 
 /* ************************************************************************** */

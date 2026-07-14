@@ -24,6 +24,8 @@
 	};
 	// I/L/O トグルは native と同じく keyup で発火（web_main.c の WEB_OPTION_* に対応）
 	const TOGGLE_KEYS = { KeyI: 0, KeyL: 1, KeyO: 2 };
+	// 1/2/3 は装備切替（値は WEP_PISTOL/WEP_FLASHLIGHT/WEP_HANDS の enum 値）
+	const WEAPON_KEYS = { Digit1: 0, Digit2: 1, Digit3: 2 };
 	const held = {
 		forward: 0, backward: 0, strafeLeft: 0,
 		strafeRight: 0, rotateLeft: 0, rotateRight: 0,
@@ -110,6 +112,14 @@
 			event.preventDefault();
 			held[HOLD_KEYS[event.code]] = 1;
 			sendInput();
+		} else if (event.code in WEAPON_KEYS) {
+			// native と同じく keydown で発火（key_press → select_weapon）
+			event.preventDefault();
+			moduleRef._web_set_weapon(WEAPON_KEYS[event.code]);
+		} else if (event.code === 'Space') {
+			// 連打・押しっぱなしのクールダウンは C 側（trigger_shot）が管理する
+			event.preventDefault();
+			moduleRef._web_shoot();
 		} else if (event.code in TOGGLE_KEYS || event.code === 'Escape') {
 			event.preventDefault();
 		}
@@ -126,6 +136,8 @@
 		} else if (event.code in TOGGLE_KEYS) {
 			event.preventDefault();
 			moduleRef._web_toggle_option(TOGGLE_KEYS[event.code]);
+		} else if (event.code in WEAPON_KEYS || event.code === 'Space') {
+			event.preventDefault();
 		} else if (event.code === 'Escape') {
 			event.preventDefault();
 			setCaptured(false);
