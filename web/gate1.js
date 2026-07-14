@@ -31,9 +31,14 @@
 		strafeRight: 0, rotateLeft: 0, rotateRight: 0,
 	};
 
+	// render.wasm は glue が素の URL で fetch するため、バージョンを付けないと
+	// ブラウザのヒューリスティックキャッシュで古い wasm が使い回される
+	// （glue とエクスポートが食い違い "not a function" になる）
+	const ASSET_VERSION = 'weapons-2';
+
 	function locateFile(path) {
 		if (path.endsWith('.wasm')) {
-			return `build/${path}`;
+			return `build/${path}?v=${ASSET_VERSION}`;
 		}
 		return path;
 	}
@@ -232,7 +237,7 @@
 		image = ctx.createImageData(width, height);
 		rgba = image.data;
 		// 末尾のタグは読み込まれた JS の版の目印（キャッシュ切り分け用）
-		resolutionLabel = `${width}x${height} [build: weapons-1]`;
+		resolutionLabel = `${width}x${height} [build: ${ASSET_VERSION}]`;
 		setupInput();
 		setCaptured(false);
 		requestAnimationFrame(tick);
