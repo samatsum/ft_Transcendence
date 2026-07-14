@@ -130,14 +130,16 @@ static int
 	}
 	update = 0;
 	if (game->input.move.x || game->input.move.y) {
-		update = move_camera(&game->camera, &game->config, &game->world, (game->input.move.x) ? 0 : 1, time_mult * speed_mult);
+		update = move_camera(game, (game->input.move.x) ? 0 : 1, time_mult * speed_mult);
 	}
 	if (game->input.x_move.x || game->input.x_move.y) {
-		update = move_perp_camera(&game->camera, &game->config, &game->world, (game->input.x_move.x) ? 0 : 1, time_mult * speed_mult);
+		update = move_perp_camera(game, (game->input.x_move.x) ? 0 : 1, time_mult * speed_mult);
 	}
 	if (game->input.rotate.x || game->input.rotate.y) {
 		update = rotate_camera(&game->camera, &game->config, (game->input.rotate.x) ? 0 : 1, time_mult);
 	}
+	game->player->input = game->input;
+	sync_player_from_camera(game);
 	return (update);
 }
 

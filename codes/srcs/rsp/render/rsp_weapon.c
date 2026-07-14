@@ -17,7 +17,7 @@ void
 	double	start_x;
 	double	start_y;
 
-	tex = &game->assets.hand_tex[HAND_SLOT(game->rsp.player.team, game->rsp.player.hand)];
+	tex = &game->assets.hand_tex[HAND_SLOT(game->player->rsp.team, game->player->rsp.hand)];
 	if (!tex->tex) {
 		return ;
 	}

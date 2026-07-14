@@ -12,7 +12,7 @@ struct s_sprite;
 /* ************************************************************************** */
 int
 	is_blocked_by_enemies(t_pos* cur, t_pos* next, struct s_world* world, struct s_sprite* ignore);
-int
-	is_blocked_by_entities(t_pos* cur, t_pos* next, struct s_game* game, struct s_sprite* ignore);
+void
+	combatant_walk_axis(struct s_game* game, struct s_sprite* self, t_pos* pos, t_pos mv);
 
 #endif

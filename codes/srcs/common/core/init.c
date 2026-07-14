@@ -50,6 +50,9 @@ int
 	}
 	collect_spawns(&game->config);
 	save_spawn(game);
+	if (!create_player_combatant(game)) {
+		return (exit_error(game, "Error:\nfailed to create player combatant.\n"));
+	}
 	if (!load_textures(&game->window, game->assets.tex, &game->config)) {
 		return (exit_error(game, "Error:\nfailed to load map texture(s). check the texture path printed above.\n"));
 	}
@@ -85,7 +88,7 @@ void
 	game->world.enemies = NULL;
 	game->world.lights = NULL;
 	game->world.light_count = 0;
-	game->death_timer = 0.0;
+	game->player = NULL;
 	game->rsp.score[TEAM_RED] = 0;
 	game->rsp.score[TEAM_BLUE] = 0;
 	game->rsp.winner = -1;

@@ -97,10 +97,13 @@ static void
 		}
 		i++;
 	}
-	// 2. 敵(NPC)を実座標に基づいて描画。RSPはチーム色、FPSは従来どおり赤
+	// 2. 敵(NPC)を実座標に基づいて描画。RSPはチーム色、FPSは従来どおり赤。
+	// プレイヤーも戦闘員リストに居るが、3. で専用色を重ねるためここでは飛ばす
 	e = rnd->world->enemies;
 	while (e) {
-		draw_entity_dot(rnd, &e->sprite->pos, npc_dot_color(rnd->mode, e), tile, margin);
+		if (!e->is_player) {
+			draw_entity_dot(rnd, &e->sprite->pos, npc_dot_color(rnd->mode, e), tile, margin);
+		}
 		e = e->next;
 	}
 	// 3. プレイヤーを実座標に基づいて描画（一番手前に表示するため最後に描画）

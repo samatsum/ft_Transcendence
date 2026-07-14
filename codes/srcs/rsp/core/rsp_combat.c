@@ -4,40 +4,16 @@
 
 /* ************************************************************************** */
 
-typedef enum e_rsp_actor
-{
-	RSP_ACTOR_PLAYER = 0,
-	RSP_ACTOR_NPC
-}   t_rsp_actor;
-
-typedef struct s_rsp_combatant
-{
-	t_rsp_actor		type;
-	t_rsp_state*	state;
-	t_pos*			pos;
-	t_enemy*		npc;
-}   t_rsp_combatant;
-
-/* ************************************************************************** */
-
 void
 	resolve_rsp_combat(t_game* game);
 static void
 	rsp_home_rehand(t_game* game);
 static void
-	resolve_player_contacts(t_game* game);
+	resolve_contact(t_game* game, t_enemy* a, t_enemy* b);
 static void
-	resolve_npc_contacts(t_game* game);
+	apply_rsp_outcome(t_game* game, t_enemy* winner, t_enemy* loser);
 static void
-	resolve_contact(t_game* game, t_rsp_combatant a, t_rsp_combatant b);
-static void
-	apply_rsp_outcome(t_game* game, t_rsp_combatant winner, t_rsp_combatant loser);
-static t_rsp_combatant
-	player_combatant(t_game* game);
-static t_rsp_combatant
-	npc_combatant(t_enemy* npc);
-static void
-	respawn_combatant(t_game* game, t_rsp_combatant combatant);
+	respawn_loser(t_game* game, t_enemy* loser);
 static void
 	respawn_npc(t_game* game, t_enemy* npc);
 static void
@@ -47,20 +23,31 @@ static int
 
 /* ************************************************************************** */
 
-// 毎フレーム、RSPの接触ペアを列挙し、各接触の勝敗処理を解決する。
-// ペア探索・勝敗判定・加点・リスポーンを分け、追加ルールの差し込み口を保つ
+// 毎フレーム、戦闘員リストの全ペアを列挙し、各接触の勝敗処理を解決する。
+// 戦闘員統合によりプレイヤーもリストの1ノードなので、プレイヤー用・NPC用の
+// 個別走査は不要になった（各ペアは1回だけ判定される）
 void
 	resolve_rsp_combat(t_game* game)
 {
+	t_enemy*	a;
+	t_enemy*	b;
+
 	if (game->cleared) {
 		return ;
 	}
 	rsp_home_rehand(game);
-	resolve_player_contacts(game);
-	if (game->cleared) {
-		return ;
+	a = game->world.enemies;
+	while (a) {
+		b = a->next;
+		while (b) {
+			resolve_contact(game, a, b);
+			if (game->cleared) {
+				return ;
+			}
+			b = b->next;
+		}
+		a = a->next;
 	}
-	resolve_npc_contacts(game);
 }
 
 /* ************************************************************************** */
@@ -74,70 +61,29 @@ static void
 	int	on_home;
 
 	c = MAP(game->camera.pos, game->config);
-	on_home = ((game->rsp.player.team == TEAM_RED && IS_RED_SPAWN(c))
-			|| (game->rsp.player.team == TEAM_BLUE && IS_BLUE_SPAWN(c)));
+	on_home = ((game->player->rsp.team == TEAM_RED && IS_RED_SPAWN(c))
+			|| (game->player->rsp.team == TEAM_BLUE && IS_BLUE_SPAWN(c)));
 	if (on_home && !game->rsp.on_home) {
-		game->rsp.player.hand = rsp_rehand(game->rsp.player.hand, &game->rsp.seed);
+		game->player->rsp.hand = rsp_rehand(game->player->rsp.hand, &game->rsp.seed);
 	}
 	game->rsp.on_home = on_home;
 }
 
 /* ************************************************************************** */
 
-// プレイヤーと全NPCの接触候補を列挙し、接触ごとの解決へ渡す
-static void
-	resolve_player_contacts(t_game* game)
-{
-	t_enemy*	npc;
-
-	npc = game->world.enemies;
-	while (npc) {
-		resolve_contact(game, player_combatant(game), npc_combatant(npc));
-		if (game->cleared) {
-			return ;
-		}
-		npc = npc->next;
-	}
-}
-
-/* ************************************************************************** */
-
-// NPC同士の全ペアを列挙し、接触ごとの解決へ渡す
-static void
-	resolve_npc_contacts(t_game* game)
-{
-	t_enemy*	a;
-	t_enemy*	b;
-
-	a = game->world.enemies;
-	while (a) {
-		b = a->next;
-		while (b) {
-			resolve_contact(game, npc_combatant(a), npc_combatant(b));
-			if (game->cleared) {
-				return ;
-			}
-			b = b->next;
-		}
-		a = a->next;
-	}
-}
-
-/* ************************************************************************** */
-
 // 1つの接触候補について、異チーム・接触中なら手の勝敗を判定する
 static void
-	resolve_contact(t_game* game, t_rsp_combatant a, t_rsp_combatant b)
+	resolve_contact(t_game* game, t_enemy* a, t_enemy* b)
 {
 	t_rsp_result	res;
 
-	if (a.state->team == b.state->team) {
+	if (a->rsp.team == b->rsp.team) {
 		return ;
 	}
-	if (!in_contact(a.pos, b.pos)) {
+	if (!in_contact(&a->sprite->pos, &b->sprite->pos)) {
 		return ;
 	}
-	res = rsp_outcome(a.state->hand, b.state->hand);
+	res = rsp_outcome(a->rsp.hand, b->rsp.hand);
 	if (res == RSP_WIN) {
 		apply_rsp_outcome(game, a, b);
 	} else if (res == RSP_LOSE) {
@@ -149,54 +95,24 @@ static void
 
 // 勝者に得点を入れ、ゲーム継続中なら敗者だけをリスポーンさせる
 static void
-	apply_rsp_outcome(t_game* game, t_rsp_combatant winner, t_rsp_combatant loser)
+	apply_rsp_outcome(t_game* game, t_enemy* winner, t_enemy* loser)
 {
-	award_rsp_point(game, winner.state->team);
+	award_rsp_point(game, winner->rsp.team);
 	if (!game->cleared) {
-		respawn_combatant(game, loser);
+		respawn_loser(game, loser);
 	}
 }
 
 /* ************************************************************************** */
 
-// プレイヤーを接触解決で扱うための軽量ビューにする
-static t_rsp_combatant
-	player_combatant(t_game* game)
-{
-	t_rsp_combatant	combatant;
-
-	combatant.type = RSP_ACTOR_PLAYER;
-	combatant.state = &game->rsp.player;
-	combatant.pos = &game->camera.pos;
-	combatant.npc = NULL;
-	return (combatant);
-}
-
-/* ************************************************************************** */
-
-// NPCを接触解決で扱うための軽量ビューにする
-static t_rsp_combatant
-	npc_combatant(t_enemy* npc)
-{
-	t_rsp_combatant	combatant;
-
-	combatant.type = RSP_ACTOR_NPC;
-	combatant.state = &npc->rsp;
-	combatant.pos = &npc->sprite->pos;
-	combatant.npc = npc;
-	return (combatant);
-}
-
-/* ************************************************************************** */
-
-// 敗者の種類に応じてプレイヤーまたはNPCのリスポーン処理を呼び分ける
+// 敗者の入力源に応じてプレイヤーまたはNPCのリスポーン処理を呼び分ける
 static void
-	respawn_combatant(t_game* game, t_rsp_combatant combatant)
+	respawn_loser(t_game* game, t_enemy* loser)
 {
-	if (combatant.type == RSP_ACTOR_PLAYER) {
+	if (loser->is_player) {
 		game->mode_ops.respawn(game);
 	} else {
-		respawn_npc(game, combatant.npc);
+		respawn_npc(game, loser);
 	}
 }
 

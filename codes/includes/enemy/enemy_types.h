@@ -1,6 +1,7 @@
 #ifndef ENEMY_TYPES_H
 # define ENEMY_TYPES_H
 
+# include "engine/input/input_state.h"
 # include "engine/render/render.h"
 # include "rsp/rsp.h"
 
@@ -27,13 +28,22 @@ typedef enum e_enemy_tex_id
 	ENEMY_TEX_COUNT = 8
 }				t_enemy_tex_id;
 
+// 戦闘員の入力源。AI はモード別 AI が操作を決め、EXTERNAL は外部入力
+// （native のキーボード、将来は WS 経由のリモート入力）が t_input を供給する
+typedef enum e_input_source
+{
+	INPUT_SRC_AI = 0,
+	INPUT_SRC_EXTERNAL
+}				t_input_source;
+
 /* ************************************************************************** */
-// 敵の実体と状態を管理する専用構造体（patrol_* は巡回モードの歩行状態、
-// path[] は追跡経路キャッシュ。path_idx が次に向かうマスの添字、path_goal は
-// 経路計算時のプレイヤーセル。プレイヤーがセルをまたぐまで再計算しない）。
-// rsp は RSPモード専用の状態（team/hand/spawn/alive）。案Xにより common の
-// 共有モデルへ直接埋め込んでいる。FPSモードでは未使用。将来 common を rsp 型に
-// 依存させない方針（案Y）へ移すなら、この1メンバを外部テーブルへ剥がす
+// 戦闘員（プレイヤー・NPC 共通）の実体と状態を管理する構造体。
+// input_source/input/is_player/radius/death_timer/spawn は戦闘員統合（G-02〜04）で
+// 追加: プレイヤーも world.enemies リストの1ノードになり、入力源だけが違う。
+// is_player のノードの sprite は描画リスト（world.sprites）へ繋がない（自分の
+// 身体は描かないため）。patrol_* は巡回モードの歩行状態、path[] は追跡経路
+// キャッシュ。rsp は RSPモード専用の状態（team/hand/spawn/alive）。案Xにより
+// common の共有モデルへ直接埋め込んでいる
 typedef struct s_enemy
 {
 	int				hp;
@@ -42,8 +52,14 @@ typedef struct s_enemy
 	int				path_valid;
 	int				path_len;
 	int				path_idx;
+	int				input_source;
+	int				is_player;
+	double			radius;
+	double			death_timer;
 	double			dir_angle;
 	double			track_timer;
+	t_input			input;
+	t_camera		spawn;
 	t_pos			patrol_from;
 	t_pos			patrol_target;
 	t_pos			path_goal;

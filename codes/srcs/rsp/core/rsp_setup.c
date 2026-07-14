@@ -1,4 +1,5 @@
 #include "core/core.h"              /* t_game 定義のため */
+#include "core/respawn.h"           /* sync_player_from_camera のため */
 #include "engine/raycast/raycast.h" /* pick_spawn_indices, apply_spawn のため */
 #include "enemy/enemy.h"            /* add_enemy, t_enemy のため */
 #include "rsp/rsp_game.h"           /* RSP_* 定数・自身のプロトタイプのため */
@@ -36,7 +37,7 @@ int
 
 /* ************************************************************************** */
 // 4地点を順に処理する。前半 RSP_TEAM_SPAWNS 個が赤、後半が青。各員の初期手は
-// ランダム。player 番だけプレイヤー（カメラ＋rsp.player）、他は NPC を生成する
+// ランダム。player 番だけプレイヤー（カメラ＋player 戦闘員ノード）、他は NPC を生成する
 static int
 	place_combatants(t_game* game, int* pts, int player)
 {
@@ -62,15 +63,18 @@ static int
 }
 
 /* ************************************************************************** */
-// プレイヤーを指定スポーンへ配置し、チーム・手・初期リスポーン地点・生存を記録する
+// プレイヤーを指定スポーンへ配置し、戦闘員ノードへチーム・手・初期リスポーン
+// 地点・生存を記録する。カメラを動かしたのでノードの位置・向きも同期する
 static void
 	set_rsp_player(t_game* game, t_spawn_point* sp, t_team team, int hand)
 {
 	apply_spawn(&game->config, &game->camera, sp);
-	game->rsp.player.team = team;
-	game->rsp.player.hand = (t_hand)hand;
-	copy_pos(&game->rsp.player.spawn, &sp->pos);
-	game->rsp.player.alive = 1;
+	game->player->rsp.team = team;
+	game->player->rsp.hand = (t_hand)hand;
+	copy_pos(&game->player->rsp.spawn, &sp->pos);
+	game->player->rsp.alive = 1;
+	game->player->spawn = game->camera;
+	sync_player_from_camera(game);
 }
 
 /* ************************************************************************** */

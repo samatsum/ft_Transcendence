@@ -3,6 +3,7 @@
 
 # include <sys/time.h>
 # include "config/config.h"
+# include "engine/input/input_state.h"
 # include "engine/raycast/raycast.h"
 # include "engine/render/render.h"
 # include "enemy/enemy_types.h"
@@ -62,16 +63,6 @@ typedef enum e_weapon_tex_id
 	WEAPON_TEX_COUNT
 }				t_weapon_tex_id;
 
-// 入力状態（押下中キーに応じた移動・回転フラグと武器の状態）
-typedef struct s_input
-{
-	t_pos			move;
-	t_pos			x_move;
-	t_pos			rotate;
-	int				current_weapon;
-	int				is_shooting;
-}				t_input;
-
 // ゲーム世界の動的エンティティと収集進行状況
 typedef struct s_world
 {
@@ -117,35 +108,35 @@ typedef struct s_fps_data
 	t_tex			goal_tex;
 }			t_fps_data;
 
-// RSPモード専用のプレイヤー状態、乱数、スコア、ホーム判定
+// RSPモード専用の乱数、スコア、ホーム判定（プレイヤーの t_rsp_state は
+// 戦闘員統合により game->player->rsp が正本になった）
 typedef struct s_rsp_data
 {
-	t_rsp_state		player;
 	unsigned int	seed;
 	int				score[TEAM_COUNT];
 	int				winner;
 	int				on_home;
 }			t_rsp_data;
 
-// 各サブシステムを集約するファサード構造体（spawn は初期スポーン状態のスナップショット、
-// death_timer は死亡演出の残り秒数で 0 超なら死亡中＝全画面の死亡画像を表示する。
+// 各サブシステムを集約するファサード構造体。player は world.enemies リスト内の
+// 自分の戦闘員（死亡演出タイマー・リスポーン地点はこのノードが持つ）。camera は
+// player の位置・向きと毎フレーム同期する描画・移動計算用ビュー。
 // fps / rsp はモード専用データを束ね、関係ないモードの状態へ触れる範囲を狭める。
-// mode は e_game_mode の値（MODE_FPS / MODE_RSP）で、argv[2] の値で決まる）
+// mode は e_game_mode の値（MODE_FPS / MODE_RSP）で、マップ配置ディレクトリで決まる
 typedef struct s_game
 {
 	t_config		config;
 	t_window		window;
 	t_camera		camera;
-	t_camera		spawn;
 	t_input			input;
 	t_world			world;
+	t_enemy*		player;
 	t_assets		assets;
 	t_render_cache	cache;
 	t_timing		timing;
 	t_fps_data		fps;
 	t_rsp_data		rsp;
 	long long		start_time_ms;
-	double			death_timer;
 	int				cleared;
 	int				result_screenshot_saved;
 	int				options;

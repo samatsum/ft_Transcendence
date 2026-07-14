@@ -1,11 +1,15 @@
+#include <math.h>
 #include <stdlib.h>
 
 #include "core/core.h"
 #include "enemy/enemy.h"
+#include "tuning.h"
 
 /* ************************************************************************** */
 t_enemy*
 	add_enemy(t_enemy** enemies, t_sprite* sprite, int hp);
+t_enemy*
+	create_player_combatant(t_game* game);
 static void
 	delete_enemy(t_enemy** enemies, t_sprite** sprites, t_sprite* target);
 void
@@ -32,8 +36,14 @@ t_enemy*
 	new_enemy->path_valid = 0;
 	new_enemy->path_len = 0;
 	new_enemy->path_idx = 0;
+	new_enemy->input_source = INPUT_SRC_AI;
+	new_enemy->is_player = 0;
+	new_enemy->radius = ENEMY_RADIUS;
+	new_enemy->death_timer = 0.0;
 	new_enemy->dir_angle = 0.0;
 	new_enemy->track_timer = 0.0;
+	new_enemy->input = (t_input){0};
+	new_enemy->spawn = (t_camera){0};
 	new_enemy->patrol_from.x = 0.0;
 	new_enemy->patrol_from.y = 0.0;
 	new_enemy->patrol_target.x = 0.0;
@@ -44,6 +54,39 @@ t_enemy*
 	new_enemy->next = *enemies;
 	*enemies = new_enemy;
 	return (new_enemy);
+}
+
+/* ************************************************************************** */
+// プレイヤーを戦闘員としてリストへ登録する。sprite は world.sprites へ繋がない
+// （自分の身体は描かない）ためこのノードが単独で所有し、解放も clear_enemies が担う。
+// 位置・向きは現在のカメラから写し、当たり半径はプレイヤー専用値にする
+t_enemy*
+	create_player_combatant(t_game* game)
+{
+	t_sprite*	sprite;
+	t_enemy*	node;
+
+	sprite = (t_sprite*)malloc(sizeof(*sprite));
+	if (!sprite) {
+		return (NULL);
+	}
+	copy_pos(&sprite->pos, &game->camera.pos);
+	sprite->distance = 0.0;
+	sprite->tex = NULL;
+	sprite->next = NULL;
+	sprite->sorted = NULL;
+	node = add_enemy(&game->world.enemies, sprite, 1);
+	if (!node) {
+		free(sprite);
+		return (NULL);
+	}
+	node->input_source = INPUT_SRC_EXTERNAL;
+	node->is_player = 1;
+	node->radius = PLAYER_RADIUS;
+	node->dir_angle = atan2(game->camera.dir.y, game->camera.dir.x);
+	node->spawn = game->camera;
+	game->player = node;
+	return (node);
 }
 
 /* ************************************************************************** */
@@ -95,7 +138,8 @@ static void
 }
 
 /* ************************************************************************** */
-// 敵リストの全メモリを解放する
+// 戦闘員リストの全メモリを解放する。プレイヤーノードの sprite は world.sprites に
+// 属さない単独所有（create_player_combatant 参照）のため、ここで一緒に解放する
 void
 	clear_enemies(t_enemy** enemies)
 {
@@ -103,6 +147,9 @@ void
 
 	while (*enemies) {
 		tmp = (*enemies)->next;
+		if ((*enemies)->is_player) {
+			free((*enemies)->sprite);
+		}
 		free(*enemies);
 		*enemies = tmp;
 	}
@@ -132,8 +179,9 @@ void
 }
 
 /* ************************************************************************** */
-// 毎フレーム全敵を更新する。mode で振り分け、RSPはじゃんけんAI(update_rsp_enemy)、
-// FPSは追跡AI(update_fps_enemy)を各敵に適用する。両モード共通のディスパッチャ
+// 毎フレーム全戦闘員を更新する。入力源が AI の席だけに mode 別 AI（RSP=じゃんけん、
+// FPS=追跡）を適用する。EXTERNAL の席（プレイヤー、将来はリモート入力）の移動は
+// apply_input 側で行われるため、ここでは触らない。両モード共通のディスパッチャ
 void
 	update_enemies(t_game* game, double delta_time)
 {
@@ -141,7 +189,9 @@ void
 
 	cur = game->world.enemies;
 	while (cur) {
-		game->mode_ops.update_enemy(cur, game, delta_time);
+		if (cur->input_source == INPUT_SRC_AI) {
+			game->mode_ops.update_enemy(cur, game, delta_time);
+		}
 		cur = cur->next;
 	}
 }

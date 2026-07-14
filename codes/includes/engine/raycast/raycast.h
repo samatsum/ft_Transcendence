@@ -34,6 +34,7 @@ typedef struct s_ray
 }				t_ray;
 
 struct s_config;
+struct s_game;
 struct s_world;
 
 /* ************************************************************************** */
@@ -46,9 +47,9 @@ int
 int
 	pick_spawn_indices(t_config* config, const char* allowed, unsigned int* seed, int* out, int want);
 int
-	move_camera(t_camera* cam, struct s_config* config, struct s_world* world, int direction, double time_mult);
+	move_camera(struct s_game* game, int direction, double time_mult);
 int
-	move_perp_camera(t_camera* cam, struct s_config* config, struct s_world* world, int direction, double time_mult);
+	move_perp_camera(struct s_game* game, int direction, double time_mult);
 int
 	rotate_camera(t_camera* cam, struct s_config* config, int dir, double time_mult);
 void

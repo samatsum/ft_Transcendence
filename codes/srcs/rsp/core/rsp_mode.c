@@ -25,12 +25,12 @@ t_mode_ops
 static void
 	rsp_respawn(t_game* game)
 {
-	if (game->rsp.player.team == TEAM_BLUE) {
+	if (game->player->rsp.team == TEAM_BLUE) {
 		respawn_at(game, RSP_BLUE_DIRS);
 	} else {
 		respawn_at(game, RSP_RED_DIRS);
 	}
-	game->rsp.player.hand = rsp_rehand(game->rsp.player.hand, &game->rsp.seed);
+	game->player->rsp.hand = rsp_rehand(game->player->rsp.hand, &game->rsp.seed);
 }
 
 
@@ -48,7 +48,7 @@ static void
 	rsp_build_result_text(t_game* game, char* title, int title_size, char* detail, int detail_size)
 {
 	rsp_clear_text_buffer(title, title_size);
-	if (game->rsp.winner == (int)game->rsp.player.team) {
+	if (game->rsp.winner == (int)game->player->rsp.team) {
 		ft_write_str_n(title, title_size, "VICTORY", 0);
 	} else {
 		ft_write_str_n(title, title_size, "DEFEAT", 0);

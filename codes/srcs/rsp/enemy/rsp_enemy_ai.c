@@ -44,8 +44,9 @@ void
 
 /* ************************************************************************** */
 
-// cur から見て最寄りの敵チーム戦闘員（プレイヤーと他NPC）を探し、その位置と手を
-// out_pos / out_hand に返す。見つかれば 1、敵が居なければ 0。味方は対象外
+// cur から見て最寄りの敵チーム戦闘員を探し、その位置と手を out_pos / out_hand に
+// 返す。見つかれば 1、敵が居なければ 0。味方は対象外。戦闘員統合によりプレイヤーも
+// リストの1ノードなので、プレイヤーの特別扱いは不要になった
 static int
 	nearest_opponent(t_enemy* cur, t_game* game, t_pos* out_pos, t_hand* out_hand)
 {
@@ -56,12 +57,6 @@ static int
 
 	found = 0;
 	best = 0.0;
-	if (game->rsp.player.team != cur->rsp.team) {
-		best = dist_pos(&game->camera.pos, &cur->sprite->pos);
-		copy_pos(out_pos, &game->camera.pos);
-		*out_hand = game->rsp.player.hand;
-		found = 1;
-	}
 	e = game->world.enemies;
 	while (e) {
 		d = dist_pos(&e->sprite->pos, &cur->sprite->pos);

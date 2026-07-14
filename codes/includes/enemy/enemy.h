@@ -11,6 +11,8 @@ struct s_game;
 /* ************************************************************************** */
 t_enemy*
 	add_enemy(t_enemy** enemies, t_sprite* sprite, int hp);
+t_enemy*
+	create_player_combatant(struct s_game* game);
 void
 	clear_enemies(t_enemy** enemies);
 void
