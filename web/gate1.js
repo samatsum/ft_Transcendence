@@ -231,7 +231,8 @@
 		canvas.height = height;
 		image = ctx.createImageData(width, height);
 		rgba = image.data;
-		resolutionLabel = `${width}x${height}`;
+		// 末尾のタグは読み込まれた JS の版の目印（キャッシュ切り分け用）
+		resolutionLabel = `${width}x${height} [build: weapons-1]`;
 		setupInput();
 		setCaptured(false);
 		requestAnimationFrame(tick);
