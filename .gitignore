@@ -1,0 +1,12 @@
+# ビルド成果物
+*.o
+*.ok
+codes/obj/
+/cub3D
+
+# 実行時生成物（スクリーンショット BMP の出力先）
+bmp/
+
+# Python バイトコードキャッシュ
+__pycache__/
+*.pyc

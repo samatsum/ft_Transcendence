@@ -1,0 +1,44 @@
+R 1920 1080
+NO ./textures/wall/Wall_1.xpm
+SO ./textures/wall/Wall_2.xpm
+WE ./textures/wall/Wall_3.xpm
+EA ./textures/wall/Wall_4.xpm
+ST ./textures/wall/Wall_mossy.xpm
+FT ./textures/wall/Wall_tile.xpm
+OI1 ./textures/object/Object_barrel.xpm
+OP1 ./textures/object/Object_Green_Light.xpm
+OP2 ./textures/object/Object_Blue_Light.xpm
+OP3 ./textures/object/Object_Red_Light.xpm
+OC1 ./textures/object/Object_star.xpm
+OC2 ./textures/object/Object_star.xpm
+OC3 ./textures/object/Object_star.xpm
+OC4 ./textures/object/Object_star.xpm
+OC5 ./textures/object/Object_star.xpm
+F 184,113,39
+C 51,198,227
+ES 0.05
+EH 3
+MS 0.05
+RS 0.05
+
+1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1
+1 0 M P P P P P P P P P P P P P P P P 0 1
+1 0 0 P 0 0 0 0 0 0 0 0 0 0 0 0 0 0 P 0 1
+1 0 0 P 0 P P P P P P 0 0 0 0 0 0 0 P 0 1
+1 0 0 P 0 P P P P P P P P P P P 0 0 P 0 1
+1 0 0 P 0 0 0 0 0 P P P P P P P 0 0 P 0 1
+1 0 0 P 0 0 0 0 0 P P 0 0 0 0 0 0 0 P 0 1
+1 0 0 P 0 0 0 0 0 P P 0 0 0 0 0 0 0 P 0 1
+1 0 0 P 0 0 0 0 0 P P 0 0 0 0 0 0 0 P 0 1
+1 0 0 P P P P P P P P P P P P P P P P M 1
+1 0 0 0 0 0 0 0 0 0 G 0 0 0 0 0 0 0 0 0 1
+1 0 0 1 1 1 1 1 1 1 D 1 1 1 1 1 1 1 1 0 1
+1 0 0 0 0 0 0 0 k l m n o 0 0 0 0 0 0 0 1
+1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1
+1 0 0 0 0 0 0 0 o n m l k 0 0 0 0 0 0 0 1
+1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1
+1 0 0 0 0 0 0 0 0 0 a 0 0 0 0 0 0 0 0 0 1
+1 N 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 N 1
+1 0 0 0 0 0 0 0 0 0 N 0 0 0 0 0 0 0 0 0 1
+1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
