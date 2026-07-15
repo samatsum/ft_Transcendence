@@ -16,7 +16,7 @@
 
 /* ************************************************************************** */
 int
-	web_init(const char* map_text);
+	web_init(const char* map_text, int is_rsp);
 int
 	web_render(double delta_time);
 void
@@ -42,13 +42,19 @@ static t_game	g_game;
 static int		g_ready;
 
 /* ************************************************************************** */
-// ゲート1用に fps_map/1.cub を読み込み、内部 960x540 の表示用ゲーム状態を初期化する
+// マップテキストから表示用ゲーム状態を初期化する（内部解像度 960x540）。
+// モードは JS がマップパス（maps/rsp_map/ 配下か）から判定して is_rsp で渡す。
+// native の validate_check と同じ「配置ディレクトリでモード決定」を web でも踏襲する
 int
-	web_init(const char* map_text)
+	web_init(const char* map_text, int is_rsp)
 {
 	g_game = (t_game){0};
 	g_game.mode = MODE_FPS;
 	g_game.mode_ops = fps_mode_ops();
+	if (is_rsp) {
+		g_game.mode = MODE_RSP;
+		g_game.mode_ops = rsp_mode_ops();
+	}
 	init_config(&g_game.config);
 	if (!parse_config_text(&g_game.config, map_text)) {
 		return (0);

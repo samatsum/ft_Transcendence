@@ -34,7 +34,15 @@
 	// render.wasm は glue が素の URL で fetch するため、バージョンを付けないと
 	// ブラウザのヒューリスティックキャッシュで古い wasm が使い回される
 	// （glue とエクスポートが食い違い "not a function" になる）
-	const ASSET_VERSION = 'weapons-2';
+	const ASSET_VERSION = 'maps-1';
+
+	// ?map=rsp_map/rsp.cub のように maps/ 配下のマップを URL で選べる（既定は fps_map/1.cub）。
+	// パスはホワイトリスト文字のみ許可し、上位ディレクトリ参照は既定へフォールバック
+	const mapParam = new URLSearchParams(location.search).get('map') || 'fps_map/1.cub';
+	const mapPath = (/^[A-Za-z0-9_\/.\-]+$/.test(mapParam) && !mapParam.includes('..'))
+		? mapParam : 'fps_map/1.cub';
+	// native と同じく配置ディレクトリでモードを判定する（maps/rsp_map/ = RSP）
+	const isRsp = mapPath.startsWith('rsp_map/') ? 1 : 0;
 
 	function locateFile(path) {
 		if (path.endsWith('.wasm')) {
@@ -202,15 +210,15 @@
 
 	function initGame(Module, mapText) {
 		const mapPtr = writeCString(Module, mapText);
-		const ok = Module._web_init(mapPtr);
+		const ok = Module._web_init(mapPtr, isRsp);
 		Module._free(mapPtr);
 		return ok;
 	}
 
 	async function main() {
-		const mapResponse = await fetch('../maps/fps_map/1.cub');
+		const mapResponse = await fetch(`../maps/${mapPath}`);
 		if (!mapResponse.ok) {
-			throw new Error('map fetch failed');
+			throw new Error(`map fetch failed: ${mapPath}`);
 		}
 		const mapText = await mapResponse.text();
 		const Module = await createCub3DModule({ locateFile });
@@ -237,7 +245,7 @@
 		image = ctx.createImageData(width, height);
 		rgba = image.data;
 		// 末尾のタグは読み込まれた JS の版の目印（キャッシュ切り分け用）
-		resolutionLabel = `${width}x${height} [build: ${ASSET_VERSION}]`;
+		resolutionLabel = `${width}x${height} ${mapPath} [build: ${ASSET_VERSION}]`;
 		setupInput();
 		setCaptured(false);
 		requestAnimationFrame(tick);

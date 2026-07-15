@@ -48,7 +48,7 @@ void
 int
 	web_register_texture(const char* path, const unsigned char* rgba, int width, int height);
 int
-	web_init(const char* map_text);
+	web_init(const char* map_text, int is_rsp);
 int
 	web_render(double delta_time);
 void
