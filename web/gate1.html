@@ -12,24 +12,33 @@
 			background: #111318;
 			color: #f7f7f2;
 		}
+		/* canvas は 16:9 を保ったまま「横にも縦にも」収まる幅にする。
+		   横幅だけで決めると横長ディスプレイで縦が溢れ、スクロールバーの分だけ
+		   100vw が広がって横も溢れる連鎖が起きる。1.7778 = 16/9 */
+		:root {
+			--footer-h: 44px;
+			--stage-w: min(100vw, calc((100vh - var(--footer-h)) * 1.7778), 1280px);
+		}
 		body {
 			margin: 0;
-			min-height: 100vh;
+			height: 100vh;
+			overflow: hidden;
 			display: grid;
 			grid-template-rows: 1fr auto;
 			place-items: center;
 			background: #111318;
 		}
 		canvas {
-			width: min(100vw, 1280px);
+			width: var(--stage-w);
 			aspect-ratio: 16 / 9;
 			image-rendering: pixelated;
 			background: #000;
 		}
 		footer {
-			width: min(100vw, 1280px);
+			width: var(--stage-w);
 			box-sizing: border-box;
-			padding: 10px 14px 14px;
+			height: var(--footer-h);
+			padding: 10px 14px;
 			display: flex;
 			justify-content: space-between;
 			font-size: 13px;
