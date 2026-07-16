@@ -13,6 +13,10 @@ const createSim = require(here('../build/sim.js'));
 const MAP = 'rsp_map/rsp.cub';
 const VIEW_ID = 0;
 const TARGET_SCORE = 3;
+// 乱数 seed を固定し、記録を毎回同一（決着まで含めて byte 単位で再現）にする。
+// 0 だと時刻由来になり、決着時刻が走行ごとに変わる（上限打ち切りで
+// finished に届かない記録ができる恐れがある）ため、デモでは必ず固定する
+const SEED = 42;
 const TICK_HZ = 30;
 const MAX_SECONDS = 90;
 const TAIL_SECONDS = 2; // 決着後も結果画面確認用に少し流す
@@ -33,7 +37,7 @@ function writeCString(text) {
 }
 
 const mapPtr = writeCString(mapText);
-const game = M._sim_create(mapPtr, 1, TARGET_SCORE);
+const game = M._sim_create(mapPtr, 1, TARGET_SCORE, SEED);
 M._free(mapPtr);
 if (!game) throw new Error('sim_create failed');
 // 席 0 = 外部入力（記録側が疑似入力を供給）、席 1..3 = AI
@@ -95,8 +99,12 @@ while (tick < MAX_SECONDS * TICK_HZ) {
 M._game_destroy(game);
 M._free(snapPtr);
 
+if (finishedAt < 0) {
+	// 固定 seed では起きない想定。起きたら seed か MAX_SECONDS の見直しが必要
+	throw new Error(`match did not finish within ${MAX_SECONDS}s (seed=${SEED})`);
+}
 const sizes = snapshots.map((s) => JSON.stringify(s).length);
-const out = { map: MAP, view_id: VIEW_ID, tick_hz: TICK_HZ, snapshots };
+const out = { map: MAP, view_id: VIEW_ID, tick_hz: TICK_HZ, seed: SEED, snapshots };
 writeFileSync(here('snapshots.json'), JSON.stringify(out));
 console.log(`snapshots: ${snapshots.length} (${(tick / TICK_HZ).toFixed(1)}s, finished_at_tick=${finishedAt})`);
 console.log(`payload bytes/snapshot: avg=${Math.round(sizes.reduce((a, b) => a + b, 0) / sizes.length)} max=${Math.max(...sizes)} (② §8 予算 < 1KB)`);

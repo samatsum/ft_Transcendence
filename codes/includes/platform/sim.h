@@ -25,10 +25,14 @@
 # define SIM_HAZARD_ID_BASE			8
 
 /* ************************************************************************** */
-// 試合ルール（② §4-B）。target_score は 0 で既定値（RSP_SCORE_LIMIT）
+// 試合ルール（② §4-B）。target_score は 0 で既定値（RSP_SCORE_LIMIT）。
+// seed は 0 で時刻由来（本番）。非 0 を渡すとスポーン抽選・AI・手変えの
+// 乱数系列が固定され、同じ入力列に対して試合全体が決定的に再現される
+// （デモの記録・W-10 の結合テスト用）
 typedef struct s_match_rules
 {
-	int	target_score;
+	int				target_score;
+	unsigned int	seed;
 }				t_match_rules;
 
 /* ************************************************************************** */
@@ -51,7 +55,8 @@ void
 // JS（Node）から呼ぶ薄いラッパ。② §6-B の「mv/yaw → t_input への写像は
 // platform/headless 層の責務」を担い、yaw は絶対角として席の向きへ直接反映する
 t_game*
-	sim_create(const char* cub_text, int is_rsp, int target_score);
+	sim_create(const char* cub_text, int is_rsp, int target_score,
+		unsigned int seed);
 int
 	sim_set_input(t_game* game, int combatant_id, int forward, int backward,
 		int strafe_left, int strafe_right, double yaw);

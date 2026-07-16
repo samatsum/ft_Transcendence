@@ -46,7 +46,8 @@ int
 void
 	game_destroy(t_game* game);
 t_game*
-	sim_create(const char* cub_text, int is_rsp, int target_score);
+	sim_create(const char* cub_text, int is_rsp, int target_score,
+		unsigned int seed);
 int
 	sim_set_input(t_game* game, int combatant_id, int forward, int backward,
 		int strafe_left, int strafe_right, double yaw);
@@ -85,21 +86,32 @@ t_game*
 		game->mode_ops = rsp_mode_ops();
 	}
 	init_config(&game->config);
-	if (!parse_config_text(&game->config, cub_text) || !sim_prepare_world(sim)) {
+	if (!parse_config_text(&game->config, cub_text)) {
 		game_destroy(game);
 		return (NULL);
+	}
+	init_game(game);
+	if (rules && rules->seed != 0) {
+		// 乱数系列の固定（再現テスト・デモ記録用）。スポーン抽選より前に
+		// 上書きしないと席の配置が時刻由来のままになるため、この位置で行う
+		game->rsp.seed = rules->seed;
 	}
 	if (rules && rules->target_score >= SIM_TARGET_SCORE_MIN
 		&& rules->target_score <= SIM_TARGET_SCORE_MAX) {
 		game->rsp.target_score = rules->target_score;
 	}
+	if (!sim_prepare_world(sim)) {
+		game_destroy(game);
+		return (NULL);
+	}
 	return (game);
 }
 
 /* ************************************************************************** */
-// パース済み config から席以外の世界（マップ由来スプライト・敵ハザード・収集
-// 物）を組み立てる。テクスチャ読込は headless の pf_load_texture が 1x1 ダミーで
-// 成功させるため、native と同じ資産初期化経路を分岐なしで通せる
+// パース済み・init_game 済みの状態から席以外の世界（マップ由来スプライト・
+// 敵ハザード・収集物）を組み立てる。テクスチャ読込は headless の
+// pf_load_texture が 1x1 ダミーで成功させるため、native と同じ資産初期化
+// 経路を分岐なしで通せる
 static int
 	sim_prepare_world(t_sim_game* sim)
 {
@@ -108,7 +120,6 @@ static int
 	int			hazard_id;
 
 	game = &sim->game;
-	init_game(game);
 	game->input.current_weapon = WEP_PISTOL;
 	game->input.is_shooting = 0;
 	load_player_assets(game);
@@ -317,13 +328,16 @@ void
 
 /* ************************************************************************** */
 // JS（Node）向けの生成ラッパ。モードはマップ配置ディレクトリ由来の is_rsp で
-// 受け、match_rules は target_score のみをスカラで受ける
+// 受け、match_rules は target_score と seed をスカラで受ける（seed=0 で
+// 時刻由来、非 0 で試合全体が決定的に再現される）
 t_game*
-	sim_create(const char* cub_text, int is_rsp, int target_score)
+	sim_create(const char* cub_text, int is_rsp, int target_score,
+		unsigned int seed)
 {
 	t_match_rules	rules;
 
 	rules.target_score = target_score;
+	rules.seed = seed;
 	return (game_create(cub_text, (is_rsp) ? MODE_RSP : MODE_FPS, &rules));
 }
 

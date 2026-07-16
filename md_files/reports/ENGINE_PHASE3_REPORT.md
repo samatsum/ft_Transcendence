@@ -72,11 +72,11 @@ python3 -m http.server 8000         # → http://localhost:8000/web/sim_demo/rep
 
 ## W-10（GameRoom + sim.wasm 統合）への申し送り
 
-1. **呼び出し順序の正**: `createCub3DSimModule()` → `sim_create(cub_text_ptr, is_rsp, target_score)` → `game_add_combatant(game, slot, is_ai)` × 定員（RSP=4 / FPS=2）→（join 時）`game_set_input_source(game, slot, EXTERNAL=1)` → 毎 tick `sim_set_input` → `game_step(game, 1/30)`（戻り値 1 で finished 遷移）→ 偶数 tick で `game_snapshot` → Node 側で JSON 化 + tick 付与 → 配信 → closed で `game_destroy`。
+1. **呼び出し順序の正**: `createCub3DSimModule()` → `sim_create(cub_text_ptr, is_rsp, target_score, seed)` → `game_add_combatant(game, slot, is_ai)` × 定員（RSP=4 / FPS=2）→（join 時）`game_set_input_source(game, slot, EXTERNAL=1)` → 毎 tick `sim_set_input` → `game_step(game, 1/30)`（戻り値 1 で finished 遷移）→ 偶数 tick で `game_snapshot` → Node 側で JSON 化 + tick 付与 → 配信 → closed で `game_destroy`。
 2. **フラット配列のレイアウトは `codes/includes/platform/sim.h` が正本**（header 5 + 戦闘員 9/体、全て f64）。`record.mjs` の `takeSnapshot()` がそのまま JSON 化の参照実装。
 3. **席とチームの対応は固定**: RSP slot 0,1=赤 / 2,3=青。マップは赤(N/W)・青(S/E)各 2 スポーン必須で、不足すると `sim_create` が NULL を返す（W-14 のマップホワイトリスト検証と整合させること）。
 4. **combatant_id は snapshot 内の並び順と無関係**（内部リストは生成の逆順）。クライアント・サーバとも必ず id で照合する。マップ由来の敵ハザードは id=8〜。
-5. `target_score` は 3–21 のみ受理（それ以外は既定 10）。W-11 のスキーマ検証（№6）でも同範囲で弾くこと。
+5. `target_score` は 3–21 のみ受理（それ以外は既定 10）。W-11 のスキーマ検証（№6）でも同範囲で弾くこと。`match_rules.seed` は **0=時刻由来（本番）/ 非 0=乱数系列固定**で、同じ入力列に対して試合全体が決定的に再現される（W-10 の結合テストで利用可。デモの record.mjs は seed=42 固定で、2 回実行の snapshots.json が byte 一致することを確認済み）。
 6. 決着後の `game_step` は状態を進めず 1 を返し続ける。finished 検知は戻り値で行い、以後 tick を止めてよい（② §6-A）。
 7. yaw はクライアント権威（② §5-C）として `sim_set_input` が席の向きを直接上書きする。サーバ側で yaw の範囲検証は不要（角度として無害）だが、NaN/Inf は JSON スキーマ側（W-11）で弾くこと。
 8. 1 モジュールインスタンスで複数ゲームを併走できることは確認済みだが、**設計どおり「1 ルーム = 1 インスタンス」を推奨**（メモリ成長とクラッシュ隔離のため）。
