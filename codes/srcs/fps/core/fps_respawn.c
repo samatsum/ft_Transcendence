@@ -11,12 +11,16 @@ static void
 /* ************************************************************************** */
 // 生存中の敵とプレイヤーが接触したかを調べ、接触時は死亡演出へ入る。
 // 戦闘員リストにはプレイヤー自身も居るため is_player はスキップする（自己接触で
-// 即死しないように）
+// 即死しないように）。ローカルプレイヤー席が無いサーバ実行では判定しない
+// （外部入力席の接触ペナルティ一般化は G-08 の敵ハザード化で行う）
 int
 	check_enemy_contact(t_game* game)
 {
 	t_enemy*	cur;
 
+	if (!game->player) {
+		return (0);
+	}
 	cur = game->world.enemies;
 	while (cur) {
 		if (!cur->is_player && cur->state != ENEMY_STATE_DEAD) {

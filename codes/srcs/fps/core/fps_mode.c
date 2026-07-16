@@ -136,7 +136,9 @@ t_mode_ops
 	ops.combat = fps_combat;
 	ops.respawn = fps_respawn;
 	ops.update_enemy = update_fps_enemy;
-	ops.draw_weapon = render_fps_weapon;
+#ifndef SIM_BUILD
+	ops.draw_weapon = render_fps_weapon;// sim ビルドは描画シンボル非リンク（E-11）のため NULL のまま
+#endif
 	ops.build_status_text = fps_build_status_text;
 	ops.build_result_text = fps_build_result_text;
 	ops.can_shoot = 1;

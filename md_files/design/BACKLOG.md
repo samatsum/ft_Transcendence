@@ -51,6 +51,9 @@
 | E-09 | `.cub` メモリリーダ化（全13マップでパース結果一致を確認） | `16a921f` |
 | E-08 | web 入力・キャプチャ規約・PROFILE 無効化・テクスチャ必要分ロード（42/99）・TextDecoder 恒久方針 | `16a921f` |
 | G-02〜G-04 | **戦闘員統合**: プレイヤーを enemies リストの EXTERNAL 入力源ノード化、移動・衝突の `combatant_walk_axis` 一本化（半径 per-combatant）、death/spawn の戦闘員化 | `2f2dec5` |
+| E-10 | **sim 公開 API**（`game_create`〜`game_destroy`、`game_set_input_source` 含む）。ASan/LSan で RSP 3ゲーム×1000ティックのリーク検査 OK。G-05 の中核（`target_score` の match_rules 化、②§4-B の 3–21）を先行実装（[ENGINE_PHASE3_REPORT.md](../reports/ENGINE_PHASE3_REPORT.md)） | `6ee85f5` |
+| E-11 | **`sim.wasm` ヘッドレスビルド**（`make sim`、描画ソース非リンク）。Node で 3 インスタンス × 2 ゲーム × 1000 ティック併走を確認 | `21bc5c2` |
+| E-12 | **`game_apply_snapshot` + 補間受け口**（`web_apply_snapshot` / `web_render_frame` / `web/snapshot_interp.js`）。sim.wasm→JSON→render.wasm の一方通行デモ成立（snapshot 実測 avg 513B < 1KB） | `55c5a82` |
 
 ## 2. エンジン系（壱）E-08〜E-14 — ①§6 の残りと受入条件の追補
 

@@ -26,6 +26,8 @@
 | ファイル | 内容 |
 |---|---|
 | [GATE1_REPORT.md](./reports/GATE1_REPORT.md) | ゲート1（Emscripten スパイク E-01〜E-07）の go/no-go 判定と申し送り。**判定: go**（2026-07-11） |
+| [ENGINE_PHASE2_REPORT.md](./reports/ENGINE_PHASE2_REPORT.md) | フェーズ2（E-08/E-09/G-01〜G-04 戦闘員統合）の受入条件チェックと E-10 以降への申し送り（2026-07-12） |
+| [ENGINE_PHASE3_REPORT.md](./reports/ENGINE_PHASE3_REPORT.md) | フェーズ3（E-10〜E-12 sim 公開 API・sim.wasm・snapshot 受け口）の受入条件チェックと W-10 への申し送り（2026-07-16） |
 
 ## cub3d/ — 既存 cub3D 実装の正本（エンジン部分の現行仕様）
 

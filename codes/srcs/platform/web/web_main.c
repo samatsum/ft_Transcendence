@@ -19,6 +19,10 @@ int
 	web_init(const char* map_text, int is_rsp);
 int
 	web_render(double delta_time);
+int
+	web_render_frame(void);
+t_game*
+	web_game(void);
 void
 	web_set_input(int forward, int backward, int strafe_left, int strafe_right,
 		int rotate_left, int rotate_right);
@@ -80,6 +84,27 @@ int
 	game_step(&g_game, delta_time);
 	render_frame(&g_game);
 	return (1);
+}
+
+/* ************************************************************************** */
+// 状態を進めず描画だけ行う。スナップショット駆動（E-12: サーバ正本の表示専用
+// モード）では、ローカルの game_step が権威状態と競合しないようこちらを使う
+int
+	web_render_frame(void)
+{
+	if (!g_ready) {
+		return (0);
+	}
+	render_frame(&g_game);
+	return (1);
+}
+
+/* ************************************************************************** */
+// 表示用ゲーム状態への参照を返す（web_snapshot.c の game_apply_snapshot 用）
+t_game*
+	web_game(void)
+{
+	return (&g_game);
 }
 
 /* ************************************************************************** */

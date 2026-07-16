@@ -11,10 +11,10 @@ int
 	exit_error(t_game* game, const char* str);
 int
 	exit_game(t_game* game, int code);
+void
+	clear_assets(t_game* game);
 static void
 	free_tex(t_window* window, t_tex* tex);
-static void
-	clear_assets(t_game* game);
 
 /* ************************************************************************** */
 // エラーメッセージを出力し、ゲームを異常終了させる
@@ -51,22 +51,9 @@ int
 }
 
 /* ************************************************************************** */
-// 1枚のテクスチャの mlx 画像とパス文字列を解放し、二重解放を防ぐため NULL に戻す
-static void
-	free_tex(t_window* window, t_tex* tex)
-{
-	if (tex->tex) {
-		pf_destroy_texture(window, tex);
-	}
-	if (tex->path) {
-		free(tex->path);
-		tex->path = NULL;
-	}
-}
-
-/* ************************************************************************** */
-// 武器(6種)・敵(8方向)・手(6種)・死亡画面・扉のテクスチャ画像とパス文字列をすべて解放する
-static void
+// 武器(6種)・敵(8方向)・手(6種)・死亡画面・扉のテクスチャ画像とパス文字列を
+// すべて解放する。プロセスを終了しない game_destroy（sim 公開 API）も使うため公開
+void
 	clear_assets(t_game* game)
 {
 	int	i;
@@ -89,4 +76,18 @@ static void
 	free_tex(&game->window, &game->assets.death_tex);
 	free_tex(&game->window, &game->assets.door_tex);
 	free_tex(&game->window, &game->fps.goal_tex);
+}
+
+/* ************************************************************************** */
+// 1枚のテクスチャの mlx 画像とパス文字列を解放し、二重解放を防ぐため NULL に戻す
+static void
+	free_tex(t_window* window, t_tex* tex)
+{
+	if (tex->tex) {
+		pf_destroy_texture(window, tex);
+	}
+	if (tex->path) {
+		free(tex->path);
+		tex->path = NULL;
+	}
 }

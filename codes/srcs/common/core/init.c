@@ -11,12 +11,12 @@ int
 	finish_init(t_game* game);
 void
 	init_game(t_game* game);
+int
+	scan_world_sprites(t_game* game);
 static int
 	init_window(t_window* window, t_config* config);
 static int
 	find_sprites(t_game* game);
-static int
-	scan_map_sprites(t_game* game);
 static int
 	add_map_sprite(t_game* game, t_pos* pos, char c);
 static int
@@ -92,6 +92,7 @@ void
 	game->rsp.score[TEAM_RED] = 0;
 	game->rsp.score[TEAM_BLUE] = 0;
 	game->rsp.winner = -1;
+	game->rsp.target_score = 0;
 	game->start_time_ms = 0;
 	game->fps.clear_time_ms = 0;
 	game->cleared = 0;
@@ -155,7 +156,7 @@ static int
 	find_sprites(t_game* game)
 {
 	game->world.sprites = NULL;
-	if (!scan_map_sprites(game)) {
+	if (!scan_world_sprites(game)) {
 		return (0);
 	}
 	if (!game->mode_ops.init_world(game)) {
@@ -165,9 +166,11 @@ static int
 }
 
 /* ************************************************************************** */
-// マップ全体を走査し、各セルの文字に応じたスプライト登録処理を呼び出す
-static int
-	scan_map_sprites(t_game* game)
+// マップ全体を走査し、各セルの文字に応じたスプライト登録処理を呼び出す。
+// sim 公開 API（game_create）は席の生成を game_add_combatant に分離するため、
+// mode_ops.init_world を含む find_sprites ではなくこの走査だけを直接使う
+int
+	scan_world_sprites(t_game* game)
 {
 	t_pos	pos;
 	int		i;

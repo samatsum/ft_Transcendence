@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>cub3D E-12 snapshot replay</title>
+	<link rel="icon" href="data:,">
+	<style>
+		:root {
+			color-scheme: dark;
+			font-family: system-ui, sans-serif;
+			background: #111318;
+			color: #f7f7f2;
+			--footer-h: 44px;
+			--stage-w: min(100vw, calc((100vh - var(--footer-h)) * 1.7778), 1280px);
+		}
+		body {
+			margin: 0;
+			height: 100vh;
+			overflow: hidden;
+			display: grid;
+			grid-template-rows: 1fr auto;
+			place-items: center;
+			background: #111318;
+		}
+		canvas {
+			width: var(--stage-w);
+			aspect-ratio: 16 / 9;
+			image-rendering: pixelated;
+			background: #000;
+		}
+		footer {
+			width: var(--stage-w);
+			box-sizing: border-box;
+			height: var(--footer-h);
+			padding: 10px 14px;
+			display: flex;
+			justify-content: space-between;
+			font-size: 13px;
+			color: #cfd3dc;
+		}
+	</style>
+</head>
+<body>
+	<canvas id="screen" width="960" height="540"></canvas>
+	<footer><span id="status">loading</span><span id="fps">-- fps</span></footer>
+	<!-- gate1.html と同じ恒久ワークアラウンド（TextDecoder shim。GATE1_REPORT 参照） -->
+	<script>window.__cub3dTextDecoder = window.TextDecoder; window.TextDecoder = undefined;</script>
+	<script src="../build/render.js?v=e12"></script>
+	<script src="../snapshot_interp.js?v=e12"></script>
+	<script src="replay.js?v=e12"></script>
+</body>
+</html>

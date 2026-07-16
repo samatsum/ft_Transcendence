@@ -108,14 +108,16 @@ typedef struct s_fps_data
 	t_tex			goal_tex;
 }			t_fps_data;
 
-// RSPモード専用の乱数、スコア、ホーム判定（プレイヤーの t_rsp_state は
-// 戦闘員統合により game->player->rsp が正本になった）
+// RSPモード専用の乱数、スコア、先取点（プレイヤーの t_rsp_state は
+// 戦闘員統合により game->player->rsp が正本になった。ホーム判定は E-10 で
+// 戦闘員ごとの rsp.on_home へ移動）。target_score は 0 のとき既定の
+// RSP_SCORE_LIMIT として扱い、公開 API（match_rules）経由でのみ上書きされる
 typedef struct s_rsp_data
 {
 	unsigned int	seed;
 	int				score[TEAM_COUNT];
 	int				winner;
-	int				on_home;
+	int				target_score;
 }			t_rsp_data;
 
 // 各サブシステムを集約するファサード構造体。player は world.enemies リスト内の

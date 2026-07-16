@@ -13,6 +13,7 @@ FPS_DIR         = codes/srcs/fps
 RSP_DIR         = codes/srcs/rsp
 PLATFORM_NATIVE_DIR = codes/srcs/platform/native
 PLATFORM_WEB_DIR = codes/srcs/platform/web
+PLATFORM_HEADLESS_DIR = codes/srcs/platform/headless
 WEB_BUILD_DIR   = web/build
 WEB_ASSET_DIR   = web/assets
 
@@ -44,6 +45,7 @@ COMMON_SRCS     = main.c \
                   engine/input/input.c \
                   core/collision.c core/bmp.c \
                   core/loop.c core/init.c core/exit.c core/respawn.c \
+                  core/combatant.c \
                   enemy/enemy.c \
                   enemy/enemy_path.c enemy/enemy_move.c enemy/enemy_patrol.c \
                   ui/font.c ui/ui.c ui/crosshair.c
@@ -60,17 +62,37 @@ RSP_SRCS        = core/rsp_mode.c core/rsp_setup.c core/rsp_assets.c \
                   render/rsp_weapon.c
 
 NATIVE_PLATFORM_SRCS = platform_native.c
-WEB_PLATFORM_SRCS = platform_web.c web_main.c
+WEB_PLATFORM_SRCS = platform_web.c web_main.c web_snapshot.c
 WEB_COMMON_SRCS = $(filter-out main.c, $(COMMON_SRCS))
 WEB_SRCS        = $(addprefix $(COMMON_DIR)/, $(WEB_COMMON_SRCS)) \
                   $(addprefix $(FPS_DIR)/, $(FPS_SRCS)) \
                   $(addprefix $(RSP_DIR)/, $(RSP_SRCS)) \
                   $(addprefix $(PLATFORM_WEB_DIR)/, $(WEB_PLATFORM_SRCS))
 
+# sim（E-11）: 描画パイプラインのソースを非リンクにするヘッドレス構成。
+# light.c / tables.c は finish_init から参照される純計算のため残す（描画はしない）
+SIM_PLATFORM_SRCS = platform_headless.c sim_api.c
+SIM_RENDER_EXCLUDES = main.c core/bmp.c \
+                  engine/render/draw.c engine/render/draw_wall.c \
+                  engine/render/draw_sky_floor.c engine/render/screen.c \
+                  engine/render/sprite.c engine/render/cast_columns.c \
+                  engine/render/draw_weapon.c engine/raycast/raycast.c \
+                  engine/input/input.c \
+                  ui/font.c ui/ui.c ui/crosshair.c
+SIM_COMMON_SRCS = $(filter-out $(SIM_RENDER_EXCLUDES), $(COMMON_SRCS))
+SIM_SRCS        = $(addprefix $(COMMON_DIR)/, $(SIM_COMMON_SRCS)) \
+                  $(addprefix $(FPS_DIR)/, $(filter-out render/fps_weapon.c, $(FPS_SRCS))) \
+                  $(addprefix $(RSP_DIR)/, $(filter-out render/rsp_weapon.c, $(RSP_SRCS))) \
+                  $(addprefix $(PLATFORM_HEADLESS_DIR)/, $(SIM_PLATFORM_SRCS))
+
 OBJS            = $(addprefix $(OBJ_DIR)/common/, $(COMMON_SRCS:.c=.o)) \
                   $(addprefix $(OBJ_DIR)/fps/, $(FPS_SRCS:.c=.o)) \
                   $(addprefix $(OBJ_DIR)/rsp/, $(RSP_SRCS:.c=.o)) \
                   $(addprefix $(OBJ_DIR)/platform/native/, $(NATIVE_PLATFORM_SRCS:.c=.o))
+# ヘッダ依存: native は gcc の -MMD が吐く .d を include し、単一コマンドで
+# ビルドする web/sim は全ヘッダ + Makefile を prerequisite に足す
+# （ヘッダ変更後の部分ビルドで構造体レイアウト不一致の .o が混在し
+# segfault した実害があったため。ENGINE_PHASE3_REPORT レビュー反映）
 DEPS            = $(OBJS:.o=.d)
 HEADERS         = $(shell find $(INC_DIR) -name '*.h')
 
@@ -85,8 +107,13 @@ WEB_CFLAGS      = -O2 -Wall -Wextra -Werror -DWEB_BUILD -I $(INC_DIR)
 # Chrome の resizable ArrayBuffer 問題は gate1.html の shim 側で回避する
 WEB_LDFLAGS     = -O2 -sALLOW_MEMORY_GROWTH=1 -sTEXTDECODER=1 \
                   -sMODULARIZE=1 -sEXPORT_NAME=createCub3DModule -sENVIRONMENT=web,node \
-                  -sEXPORTED_RUNTIME_METHODS='["ccall","cwrap","HEAPU8"]' \
-                  -sEXPORTED_FUNCTIONS='["_web_init","_web_render","_web_set_input","_web_toggle_option","_web_set_weapon","_web_shoot","_web_framebuffer_ptr","_web_framebuffer_width","_web_framebuffer_height","_web_framebuffer_stride","_web_register_texture","_malloc","_free"]'
+                  -sEXPORTED_RUNTIME_METHODS='["ccall","cwrap","HEAPU8","HEAPF64"]' \
+                  -sEXPORTED_FUNCTIONS='["_web_init","_web_render","_web_render_frame","_web_apply_snapshot","_web_set_input","_web_toggle_option","_web_set_weapon","_web_shoot","_web_framebuffer_ptr","_web_framebuffer_width","_web_framebuffer_height","_web_framebuffer_stride","_web_register_texture","_malloc","_free"]'
+SIM_CFLAGS      = -O2 -Wall -Wextra -Werror -DSIM_BUILD -I $(INC_DIR)
+SIM_LDFLAGS     = -O2 -sALLOW_MEMORY_GROWTH=1 -sTEXTDECODER=1 \
+                  -sMODULARIZE=1 -sEXPORT_NAME=createCub3DSimModule -sENVIRONMENT=node \
+                  -sEXPORTED_RUNTIME_METHODS='["ccall","cwrap","HEAPU8","HEAPF64"]' \
+                  -sEXPORTED_FUNCTIONS='["_sim_create","_sim_set_input","_game_add_combatant","_game_set_input_source","_game_step","_game_snapshot","_game_destroy","_malloc","_free"]'
 
 # ==============================================================================
 # ビルドルール（root ごとに1つずつ）
@@ -132,6 +159,12 @@ $(WEB_BUILD_DIR)/render.js: $(WEB_SRCS) $(HEADERS) Makefile
 	@mkdir -p $(WEB_BUILD_DIR)
 	$(EMCC) $(WEB_CFLAGS) $(WEB_SRCS) -o $@ $(WEB_LDFLAGS)
 
+sim:            $(WEB_BUILD_DIR)/sim.js
+
+$(WEB_BUILD_DIR)/sim.js: $(SIM_SRCS) $(HEADERS) Makefile
+	@mkdir -p $(WEB_BUILD_DIR)
+	$(EMCC) $(SIM_CFLAGS) $(SIM_SRCS) -o $@ $(SIM_LDFLAGS)
+
 check:
 	@python3 codes/PythonCodes/lint.py --select $(CHECKS) --strict
 
@@ -147,4 +180,4 @@ fclean:         clean
 
 re:             fclean all
 
-.PHONY:         all clean fclean re check audit debug web web-assets
+.PHONY:         all clean fclean re check audit debug web web-assets sim
