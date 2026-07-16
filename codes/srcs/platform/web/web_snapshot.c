@@ -7,6 +7,10 @@
 #include "rsp/rsp.h"
 
 /* ************************************************************************** */
+// snapshot に居なくなった表示ノードの退避先（マップ外の遠方。描画対象外になる）
+#define SNAPSHOT_PARK_POS	-1000.0
+
+/* ************************************************************************** */
 int
 	game_apply_snapshot(t_game* game, const double* snap, int len, int view_id);
 int
@@ -19,6 +23,14 @@ static void
 	apply_remote_combatant(t_game* game, t_enemy* node, const double* entry);
 static void
 	apply_combatants(t_game* game, const double* snap, int count, const double* view);
+static int
+	id_in_snapshot(const double* snap, int count, int id);
+static t_enemy*
+	find_display_node(t_game* game, int id);
+static t_enemy*
+	claim_display_node(t_game* game, const double* snap, int count);
+static void
+	park_stale_nodes(t_game* game, const double* snap, int count);
 
 /* ************************************************************************** */
 // 受信スナップショット（補間済みのフラット f64 配列。レイアウトは
@@ -31,6 +43,7 @@ int
 {
 	int				count;
 	const double*	view;
+	t_enemy*		stale;
 
 	if (!game || !snap || len < SIM_SNAP_HEADER_DOUBLES) {
 		return (0);
@@ -48,6 +61,12 @@ int
 		game->rsp.winner = (int)snap[1];
 	}
 	view = find_view_entry(snap, count, view_id);
+	stale = find_display_node(game, (int)view[0]);
+	if (stale) {
+		// 視点切替で「以前は他人席として表示していた席」が視点になった場合、
+		// そのノードを未割当へ戻す（残すと視点と同じ席のゴーストが表示される）
+		stale->combatant_id = -1;
+	}
 	apply_combatants(game, snap, count, view);
 	apply_view_combatant(game, view);
 	return (1);
@@ -82,8 +101,11 @@ static const double*
 }
 
 /* ************************************************************************** */
-// 視点席以外のスナップショット要素を、プレイヤー以外の表示ノードへリスト順に
-// 割り当てて反映する。表示ノード数を超えた要素は捨てる（RSP は 4=4 で一致）
+// 視点席以外のスナップショット要素を combatant_id で表示ノードへ対応づけて
+// 反映する。id 未知の要素は「snapshot に現れない id を持つノード」を1つ
+// 主張して割り当てる（初回はどのノードも id=-1 なので順に埋まり、以後は id が
+// 固定される）。表示ノードが足りない要素は捨て、snapshot から消えたノードは
+// マップ外へ退避する（FPS ハザード消滅・観戦・数の不一致に対して安全）
 static void
 	apply_combatants(t_game* game, const double* snap, int count, const double* view)
 {
@@ -91,21 +113,90 @@ static void
 	t_enemy*		node;
 	int				i;
 
-	node = game->world.enemies;
 	i = 0;
 	while (i < count) {
 		entry = snap + SIM_SNAP_HEADER_DOUBLES + i * SIM_SNAP_COMBATANT_DOUBLES;
 		if (entry != view) {
-			while (node && node->is_player) {
-				node = node->next;
-			}
+			node = find_display_node(game, (int)entry[0]);
 			if (!node) {
-				return ;
+				node = claim_display_node(game, snap, count);
 			}
-			apply_remote_combatant(game, node, entry);
-			node = node->next;
+			if (node) {
+				apply_remote_combatant(game, node, entry);
+			}
 		}
 		i++;
+	}
+	park_stale_nodes(game, snap, count);
+}
+
+/* ************************************************************************** */
+// id がスナップショットのいずれかの戦闘員要素に含まれるかを返す
+static int
+	id_in_snapshot(const double* snap, int count, int id)
+{
+	int	i;
+
+	i = 0;
+	while (i < count) {
+		if ((int)snap[SIM_SNAP_HEADER_DOUBLES + i * SIM_SNAP_COMBATANT_DOUBLES] == id) {
+			return (1);
+		}
+		i++;
+	}
+	return (0);
+}
+
+/* ************************************************************************** */
+// combatant_id が一致するプレイヤー以外の表示ノードを探す
+static t_enemy*
+	find_display_node(t_game* game, int id)
+{
+	t_enemy*	node;
+
+	node = game->world.enemies;
+	while (node) {
+		if (!node->is_player && node->combatant_id == id) {
+			return (node);
+		}
+		node = node->next;
+	}
+	return (NULL);
+}
+
+/* ************************************************************************** */
+// スナップショットに現れない id を持つ（＝どの要素にも対応していない）
+// プレイヤー以外のノードを1つ返す。呼び出し側が id を書き込んだ時点で
+// このノードは以後 claim 対象から外れる
+static t_enemy*
+	claim_display_node(t_game* game, const double* snap, int count)
+{
+	t_enemy*	node;
+
+	node = game->world.enemies;
+	while (node) {
+		if (!node->is_player && !id_in_snapshot(snap, count, node->combatant_id)) {
+			return (node);
+		}
+		node = node->next;
+	}
+	return (NULL);
+}
+
+/* ************************************************************************** */
+// スナップショットから消えた戦闘員の表示ノードをマップ外へ退避する
+// （sprite は描画リストに残るが、カメラから見えない遠方なので描かれない）
+static void
+	park_stale_nodes(t_game* game, const double* snap, int count)
+{
+	t_enemy*	node;
+
+	node = game->world.enemies;
+	while (node) {
+		if (!node->is_player && !id_in_snapshot(snap, count, node->combatant_id)) {
+			set_pos(&node->sprite->pos, SNAPSHOT_PARK_POS, SNAPSHOT_PARK_POS);
+		}
+		node = node->next;
 	}
 }
 

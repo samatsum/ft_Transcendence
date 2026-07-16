@@ -179,11 +179,12 @@ int
 	sp = &game->config.spawns[sim->seat_spawn[slot]];
 	sprite = add_front_sprite(&game->world.sprites, 0., &sp->pos,
 			&game->assets.enemy_tex[0]);
-	node = NULL;
-	if (sprite) {
-		node = add_enemy(&game->world.enemies, sprite, (int)game->config.enemy_hp);
+	if (!sprite) {
+		return (-1);
 	}
+	node = add_enemy(&game->world.enemies, sprite, (int)game->config.enemy_hp);
 	if (!node) {
+		delete_sprite_node(&game->world.sprites, sprite);
 		return (-1);
 	}
 	node->combatant_id = slot;
