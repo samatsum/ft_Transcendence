@@ -7,21 +7,26 @@
 #include "utils/utils.h"// PROFILE マクロのため
 
 /* ************************************************************************** */
+#ifndef SIM_BUILD
 int
 	main_loop(t_game* game);
 int
 	game_frame(t_game* game, double delta_time);
-void
+static double
+	frame_delta(t_game* game);
+#endif
+int
 	game_step(t_game* game, double delta_time);
 double
 	calc_time_mult(double delta_time);
-static double
-	frame_delta(t_game* game);
+static int
+	apply_local_player(t_game* game, double time_mult);
 static int
 	apply_input(t_game* game, double time_mult);
 long long
 	get_current_time_ms(void);
 
+#ifndef SIM_BUILD
 /* ************************************************************************** */
 // native ループから呼ばれる駆動関数。時間計測だけを行い、1フレーム処理へ dt を渡す
 int
@@ -37,7 +42,8 @@ int
 }
 
 /* ************************************************************************** */
-// 1フレーム分の更新・描画・転送を行う。外部駆動ターゲットは dt を直接渡せる
+// 1フレーム分の更新・描画・転送を行う。外部駆動ターゲットは dt を直接渡せる。
+// sim ビルドは描画シンボルを非リンクにするため、この駆動系ごと除外する（E-11）
 int
 	game_frame(t_game* game, double delta_time)
 {
@@ -53,10 +59,13 @@ int
 	pf_present(&game->window);
 	return (1);
 }
+#endif
 
 /* ************************************************************************** */
-// 入力・敵更新・接触判定だけを進める。描画、転送、sleep、時刻取得は含めない
-void
+// 入力・敵更新・接触判定だけを進める。描画、転送、sleep、時刻取得は含めない。
+// sim 公開 API（① §3-B）を兼ねるため、ローカルプレイヤー席（native/web）が
+// 無いサーバ実行でも動き、決着済みなら 1 を返す
+int
 	game_step(t_game* game, double delta_time)
 {
 	double	time_mult;
@@ -67,19 +76,36 @@ void
 		update_death(game, delta_time);
 		update_enemies(game, delta_time);
 	} else if (!game->cleared) {
-		update = apply_input(game, time_mult);
-		if (game->options != game->last_options) {
-			update = 1;
-			game->last_options = game->options;
-		}
+		update = apply_local_player(game, time_mult);
 		if (update) {
 			check_quest(game);
 		}
+		step_external_combatants(game, time_mult);
 		if (!game->cleared) {
 			update_enemies(game, delta_time);
 			game->mode_ops.combat(game);
 		}
 	}
+	return (game->cleared);
+}
+
+/* ************************************************************************** */
+// ローカルプレイヤー席の入力と表示オプション変化を反映する。サーバ実行
+// （game->player なし）では席ごとの入力適用（step_external_combatants）だけに任せる
+static int
+	apply_local_player(t_game* game, double time_mult)
+{
+	int	update;
+
+	if (!game->player) {
+		return (0);
+	}
+	update = apply_input(game, time_mult);
+	if (game->options != game->last_options) {
+		update = 1;
+		game->last_options = game->options;
+	}
+	return (update);
 }
 
 /* ************************************************************************** */
@@ -96,6 +122,7 @@ double
 	return (time_mult);
 }
 
+#ifndef SIM_BUILD
 /* ************************************************************************** */
 // 経過時間を算出してFPS制限を行い、時間倍率を計算する（制限内は負値を返す）
 static double
@@ -115,6 +142,7 @@ static double
 	game->timing.last_time = now;
 	return (delta_time);
 }
+#endif
 
 /* ************************************************************************** */
 // 入力状態をカメラへ反映する（素手装備＝走行モード時は PLAYER_RUN_BOOST 倍速に補正）

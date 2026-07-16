@@ -38,12 +38,14 @@ t_enemy*
 	new_enemy->path_idx = 0;
 	new_enemy->input_source = INPUT_SRC_AI;
 	new_enemy->is_player = 0;
+	new_enemy->combatant_id = -1;
 	new_enemy->radius = ENEMY_RADIUS;
 	new_enemy->death_timer = 0.0;
 	new_enemy->dir_angle = 0.0;
 	new_enemy->track_timer = 0.0;
 	new_enemy->input = (t_input){0};
 	new_enemy->spawn = (t_camera){0};
+	new_enemy->rsp = (t_rsp_state){0};
 	new_enemy->patrol_from.x = 0.0;
 	new_enemy->patrol_from.y = 0.0;
 	new_enemy->patrol_target.x = 0.0;

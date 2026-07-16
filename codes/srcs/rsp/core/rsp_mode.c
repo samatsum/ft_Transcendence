@@ -67,11 +67,11 @@ static void
 	i = ft_write_str_n(buf, size, "Red ", 0);
 	i = ft_write_int_n(buf, size, game->rsp.score[TEAM_RED], i);
 	i = ft_write_str_n(buf, size, "/", i);
-	i = ft_write_int_n(buf, size, RSP_SCORE_LIMIT, i);
+	i = ft_write_int_n(buf, size, rsp_target_score(game), i);
 	i = ft_write_str_n(buf, size, "  VS  Blue ", i);
 	i = ft_write_int_n(buf, size, game->rsp.score[TEAM_BLUE], i);
 	i = ft_write_str_n(buf, size, "/", i);
-	ft_write_int_n(buf, size, RSP_SCORE_LIMIT, i);
+	ft_write_int_n(buf, size, rsp_target_score(game), i);
 }
 
 /* ************************************************************************** */
@@ -99,7 +99,9 @@ t_mode_ops
 	ops.combat = resolve_rsp_combat;
 	ops.respawn = rsp_respawn;
 	ops.update_enemy = update_rsp_enemy;
-	ops.draw_weapon = render_rsp_hand;
+#ifndef SIM_BUILD
+	ops.draw_weapon = render_rsp_hand;// sim ビルドは描画シンボル非リンク（E-11）のため NULL のまま
+#endif
 	ops.build_status_text = rsp_build_status_text;
 	ops.build_result_text = rsp_build_result_text;
 	ops.can_shoot = 0;

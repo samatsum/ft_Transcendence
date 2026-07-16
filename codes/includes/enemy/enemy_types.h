@@ -40,6 +40,8 @@ typedef enum e_input_source
 // 戦闘員（プレイヤー・NPC 共通）の実体と状態を管理する構造体。
 // input_source/input/is_player/radius/death_timer/spawn は戦闘員統合（G-02〜04）で
 // 追加: プレイヤーも world.enemies リストの1ノードになり、入力源だけが違う。
+// combatant_id はスナップショット/公開 API（E-10/E-12）が席を特定する番号で、
+// ローカル起動（native/web 単体）の戦闘員は -1 のまま（API 経由でのみ付与）。
 // is_player のノードの sprite は描画リスト（world.sprites）へ繋がない（自分の
 // 身体は描かないため）。patrol_* は巡回モードの歩行状態、path[] は追跡経路
 // キャッシュ。rsp は RSPモード専用の状態（team/hand/spawn/alive）。案Xにより
@@ -54,6 +56,7 @@ typedef struct s_enemy
 	int				path_idx;
 	int				input_source;
 	int				is_player;
+	int				combatant_id;
 	double			radius;
 	double			death_timer;
 	double			dir_angle;

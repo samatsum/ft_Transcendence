@@ -12,6 +12,7 @@ FPS_DIR         = codes/srcs/fps
 RSP_DIR         = codes/srcs/rsp
 PLATFORM_NATIVE_DIR = codes/srcs/platform/native
 PLATFORM_WEB_DIR = codes/srcs/platform/web
+PLATFORM_HEADLESS_DIR = codes/srcs/platform/headless
 WEB_BUILD_DIR   = web/build
 WEB_ASSET_DIR   = web/assets
 
@@ -43,6 +44,7 @@ COMMON_SRCS     = main.c \
                   engine/input/input.c \
                   core/collision.c core/bmp.c \
                   core/loop.c core/init.c core/exit.c core/respawn.c \
+                  core/combatant.c \
                   enemy/enemy.c \
                   enemy/enemy_path.c enemy/enemy_move.c enemy/enemy_patrol.c \
                   ui/font.c ui/ui.c ui/crosshair.c

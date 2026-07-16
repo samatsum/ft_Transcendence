@@ -26,5 +26,7 @@ void
 	resolve_rsp_combat(struct s_game* game);
 int
 	setup_rsp_combatants(struct s_game* game);
+int
+	rsp_target_score(struct s_game* game);
 
 #endif
