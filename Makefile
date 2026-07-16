@@ -68,6 +68,22 @@ WEB_SRCS        = $(addprefix $(COMMON_DIR)/, $(WEB_COMMON_SRCS)) \
                   $(addprefix $(RSP_DIR)/, $(RSP_SRCS)) \
                   $(addprefix $(PLATFORM_WEB_DIR)/, $(WEB_PLATFORM_SRCS))
 
+# sim（E-11）: 描画パイプラインのソースを非リンクにするヘッドレス構成。
+# light.c / tables.c は finish_init から参照される純計算のため残す（描画はしない）
+SIM_PLATFORM_SRCS = platform_headless.c sim_api.c
+SIM_RENDER_EXCLUDES = main.c core/bmp.c \
+                  engine/render/draw.c engine/render/draw_wall.c \
+                  engine/render/draw_sky_floor.c engine/render/screen.c \
+                  engine/render/sprite.c engine/render/cast_columns.c \
+                  engine/render/draw_weapon.c engine/raycast/raycast.c \
+                  engine/input/input.c \
+                  ui/font.c ui/ui.c ui/crosshair.c
+SIM_COMMON_SRCS = $(filter-out $(SIM_RENDER_EXCLUDES), $(COMMON_SRCS))
+SIM_SRCS        = $(addprefix $(COMMON_DIR)/, $(SIM_COMMON_SRCS)) \
+                  $(addprefix $(FPS_DIR)/, $(filter-out render/fps_weapon.c, $(FPS_SRCS))) \
+                  $(addprefix $(RSP_DIR)/, $(filter-out render/rsp_weapon.c, $(RSP_SRCS))) \
+                  $(addprefix $(PLATFORM_HEADLESS_DIR)/, $(SIM_PLATFORM_SRCS))
+
 OBJS            = $(addprefix $(OBJ_DIR)/common/, $(COMMON_SRCS:.c=.o)) \
                   $(addprefix $(OBJ_DIR)/fps/, $(FPS_SRCS:.c=.o)) \
                   $(addprefix $(OBJ_DIR)/rsp/, $(RSP_SRCS:.c=.o)) \
@@ -86,6 +102,11 @@ WEB_LDFLAGS     = -O2 -sALLOW_MEMORY_GROWTH=1 -sTEXTDECODER=1 \
                   -sMODULARIZE=1 -sEXPORT_NAME=createCub3DModule -sENVIRONMENT=web,node \
                   -sEXPORTED_RUNTIME_METHODS='["ccall","cwrap","HEAPU8"]' \
                   -sEXPORTED_FUNCTIONS='["_web_init","_web_render","_web_set_input","_web_toggle_option","_web_set_weapon","_web_shoot","_web_framebuffer_ptr","_web_framebuffer_width","_web_framebuffer_height","_web_framebuffer_stride","_web_register_texture","_malloc","_free"]'
+SIM_CFLAGS      = -O2 -Wall -Wextra -Werror -DSIM_BUILD -I $(INC_DIR)
+SIM_LDFLAGS     = -O2 -sALLOW_MEMORY_GROWTH=1 -sTEXTDECODER=1 \
+                  -sMODULARIZE=1 -sEXPORT_NAME=createCub3DSimModule -sENVIRONMENT=node \
+                  -sEXPORTED_RUNTIME_METHODS='["ccall","cwrap","HEAPU8","HEAPF64"]' \
+                  -sEXPORTED_FUNCTIONS='["_sim_create","_sim_set_input","_game_add_combatant","_game_set_input_source","_game_step","_game_snapshot","_game_destroy","_malloc","_free"]'
 
 # ==============================================================================
 # ビルドルール（root ごとに1つずつ）
@@ -129,6 +150,12 @@ $(WEB_BUILD_DIR)/render.js: $(WEB_SRCS)
 	@mkdir -p $(WEB_BUILD_DIR)
 	bash -lc "source ~/emsdk/emsdk_env.sh >/dev/null && emcc $(WEB_CFLAGS) $(WEB_SRCS) -o $@ $(WEB_LDFLAGS)"
 
+sim:            $(WEB_BUILD_DIR)/sim.js
+
+$(WEB_BUILD_DIR)/sim.js: $(SIM_SRCS)
+	@mkdir -p $(WEB_BUILD_DIR)
+	bash -lc "source ~/emsdk/emsdk_env.sh >/dev/null && emcc $(SIM_CFLAGS) $(SIM_SRCS) -o $@ $(SIM_LDFLAGS)"
+
 check:
 	@python3 codes/PythonCodes/lint.py --select $(CHECKS) --strict
 
@@ -144,4 +171,4 @@ fclean:         clean
 
 re:             fclean all
 
-.PHONY:         all clean fclean re check audit debug web web-assets
+.PHONY:         all clean fclean re check audit debug web web-assets sim
