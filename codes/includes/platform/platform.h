@@ -69,4 +69,16 @@ int
 int
 	web_framebuffer_stride(void);
 
+/* ************************************************************************** */
+// スナップショット駆動の表示専用モード（E-12）。game_apply_snapshot は
+// ① §3-B のクライアント専用 API（補間済みフラット f64 配列 → 表示用 t_game）
+int
+	web_render_frame(void);
+struct s_game*
+	web_game(void);
+int
+	game_apply_snapshot(struct s_game* game, const double* snap, int len, int view_id);
+int
+	web_apply_snapshot(const double* snap, int len, int view_id);
+
 #endif

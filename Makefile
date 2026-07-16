@@ -61,7 +61,7 @@ RSP_SRCS        = core/rsp_mode.c core/rsp_setup.c core/rsp_assets.c \
                   render/rsp_weapon.c
 
 NATIVE_PLATFORM_SRCS = platform_native.c
-WEB_PLATFORM_SRCS = platform_web.c web_main.c
+WEB_PLATFORM_SRCS = platform_web.c web_main.c web_snapshot.c
 WEB_COMMON_SRCS = $(filter-out main.c, $(COMMON_SRCS))
 WEB_SRCS        = $(addprefix $(COMMON_DIR)/, $(WEB_COMMON_SRCS)) \
                   $(addprefix $(FPS_DIR)/, $(FPS_SRCS)) \
@@ -100,8 +100,8 @@ WEB_CFLAGS      = -O2 -Wall -Wextra -Werror -DWEB_BUILD -I $(INC_DIR)
 # Chrome の resizable ArrayBuffer 問題は gate1.html の shim 側で回避する
 WEB_LDFLAGS     = -O2 -sALLOW_MEMORY_GROWTH=1 -sTEXTDECODER=1 \
                   -sMODULARIZE=1 -sEXPORT_NAME=createCub3DModule -sENVIRONMENT=web,node \
-                  -sEXPORTED_RUNTIME_METHODS='["ccall","cwrap","HEAPU8"]' \
-                  -sEXPORTED_FUNCTIONS='["_web_init","_web_render","_web_set_input","_web_toggle_option","_web_set_weapon","_web_shoot","_web_framebuffer_ptr","_web_framebuffer_width","_web_framebuffer_height","_web_framebuffer_stride","_web_register_texture","_malloc","_free"]'
+                  -sEXPORTED_RUNTIME_METHODS='["ccall","cwrap","HEAPU8","HEAPF64"]' \
+                  -sEXPORTED_FUNCTIONS='["_web_init","_web_render","_web_render_frame","_web_apply_snapshot","_web_set_input","_web_toggle_option","_web_set_weapon","_web_shoot","_web_framebuffer_ptr","_web_framebuffer_width","_web_framebuffer_height","_web_framebuffer_stride","_web_register_texture","_malloc","_free"]'
 SIM_CFLAGS      = -O2 -Wall -Wextra -Werror -DSIM_BUILD -I $(INC_DIR)
 SIM_LDFLAGS     = -O2 -sALLOW_MEMORY_GROWTH=1 -sTEXTDECODER=1 \
                   -sMODULARIZE=1 -sEXPORT_NAME=createCub3DSimModule -sENVIRONMENT=node \

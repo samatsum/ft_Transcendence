@@ -13,3 +13,5 @@ __pycache__/
 # Web/Emscripten generated outputs
 /web/assets/
 /web/build/
+# E-12 デモの記録（record.mjs が生成）
+/web/sim_demo/snapshots.json
