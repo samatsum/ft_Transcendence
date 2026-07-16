@@ -307,6 +307,17 @@ make re        # fclean + all
 
 ビルドは 3 系統（`COMMON_SRCS` / `FPS_SRCS` / `RSP_SRCS`）をそれぞれ `codes/obj/{common,fps,rsp}/` へコンパイルしてリンクします。`$(MLX_TARGET)` ルールは `codes/minilibx-linux` をサブ make します。
 
+Web / WASM ビルドでは `make web` を使います。`Makefile` は `~/emsdk` などの固定パスを参照せず、`EMCC ?= emcc` を呼ぶだけにしているため、Emscripten をローカルに導入している場合も Docker 内でも同じターゲットを使えます。推奨手順は以下です。
+
+```
+docker compose build engine-build
+HOST_UID=$(id -u) HOST_GID=$(id -g) docker compose run --rm engine-build make web
+python3 -m http.server 8000
+# open http://localhost:8000/web/gate1.html
+```
+
+`HOST_UID` / `HOST_GID` は、Docker が生成した `web/build` や `web/assets` をホスト側ユーザーで扱いやすくするための指定です。不要な環境では省略できます。
+
 ### コーディング規約
 
 C コーディングルールの正本は [CODING_RULES.md](./CODING_RULES.md) です。`make check` の出力に表示される `CRxxx` は、この文書のルール ID に対応します。

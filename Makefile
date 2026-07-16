@@ -1,5 +1,6 @@
 NAME            = cub3D
 CC              = gcc
+EMCC            ?= emcc
 RM              = rm -rf
 
 # ==============================================================================
@@ -70,6 +71,8 @@ OBJS            = $(addprefix $(OBJ_DIR)/common/, $(COMMON_SRCS:.c=.o)) \
                   $(addprefix $(OBJ_DIR)/fps/, $(FPS_SRCS:.c=.o)) \
                   $(addprefix $(OBJ_DIR)/rsp/, $(RSP_SRCS:.c=.o)) \
                   $(addprefix $(OBJ_DIR)/platform/native/, $(NATIVE_PLATFORM_SRCS:.c=.o))
+DEPS            = $(OBJS:.o=.d)
+HEADERS         = $(shell find $(INC_DIR) -name '*.h')
 
 # ==============================================================================
 # Linux(X11) ライブラリ設定
@@ -95,22 +98,24 @@ $(NAME):        $(MLX_TARGET) $(OBJS)
 
 $(OBJ_DIR)/common/%.o: $(COMMON_DIR)/%.c
 	@mkdir -p $(@D)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
 
 $(OBJ_DIR)/fps/%.o: $(FPS_DIR)/%.c
 	@mkdir -p $(@D)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
 
 $(OBJ_DIR)/rsp/%.o: $(RSP_DIR)/%.c
 	@mkdir -p $(@D)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
 
 $(OBJ_DIR)/platform/native/%.o: $(PLATFORM_NATIVE_DIR)/%.c
 	@mkdir -p $(@D)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
 
 $(MLX_TARGET):
 	@$(MAKE) -C $(MLX_DIR)
+
+-include $(DEPS)
 
 # ==============================================================================
 # デバッグ / 品質担保 / クリーン
@@ -123,9 +128,9 @@ web-assets:
 
 web:            web-assets $(WEB_BUILD_DIR)/render.js
 
-$(WEB_BUILD_DIR)/render.js: $(WEB_SRCS)
+$(WEB_BUILD_DIR)/render.js: $(WEB_SRCS) $(HEADERS) Makefile
 	@mkdir -p $(WEB_BUILD_DIR)
-	bash -lc "source ~/emsdk/emsdk_env.sh >/dev/null && emcc $(WEB_CFLAGS) $(WEB_SRCS) -o $@ $(WEB_LDFLAGS)"
+	$(EMCC) $(WEB_CFLAGS) $(WEB_SRCS) -o $@ $(WEB_LDFLAGS)
 
 check:
 	@python3 codes/PythonCodes/lint.py --select $(CHECKS) --strict

@@ -1,0 +1,23 @@
+# Git / local metadata
+.git
+.claude
+
+# Native and Web build outputs
+codes/obj
+cub3D
+web/assets
+web/build
+
+# Runtime artifacts
+bmp
+screenshot/*_screen/*.bmp
+
+# C/Python generated files
+*.o
+*.d
+*.ok
+__pycache__
+*.pyc
+
+# Local environment overrides
+.env

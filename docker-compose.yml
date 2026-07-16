@@ -1,0 +1,19 @@
+services:
+  engine-build:
+    build:
+      context: .
+      dockerfile: docker/engine-build/Dockerfile
+      args:
+        EMSDK_IMAGE: ${EMSDK_IMAGE:-emscripten/emsdk:latest}
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+      - emscripten-cache:/tmp/emscripten-cache
+    environment:
+      EM_CACHE: /tmp/emscripten-cache
+      HOME: /tmp
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    command: make web
+
+volumes:
+  emscripten-cache:

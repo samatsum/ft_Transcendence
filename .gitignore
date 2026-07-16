@@ -1,5 +1,6 @@
 # ビルド成果物
 *.o
+*.d
 *.ok
 codes/obj/
 /cub3D
@@ -13,3 +14,6 @@ __pycache__/
 # Web/Emscripten generated outputs
 /web/assets/
 /web/build/
+
+# Local Docker/compose overrides
+.env

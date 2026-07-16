@@ -72,6 +72,18 @@ make
 
 ビルドは `-O2 -Wall -Wextra -Werror`（インクルードパスは `codes/includes`）で行われます。`make debug`（AddressSanitizer 付き）・`make check`（失敗すべき lint ゲート）・`make audit`（助言系を含む全 lint）・`make clean` / `make fclean` / `make re` も利用できます。
 
+### Web / WASM ビルド（Docker 推奨）
+
+ローカル PC に `emsdk` を置く場所は固定しません。Web 版をビルドする場合は、Docker 経由で同じ Emscripten 環境を使うのが推奨です。
+
+```
+docker compose build engine-build
+HOST_UID=$(id -u) HOST_GID=$(id -g) docker compose run --rm engine-build make web
+python3 -m http.server 8000
+```
+
+ブラウザで `http://localhost:8000/web/gate1.html` を開くと、生成された `web/build/render.js` と `web/assets/` を使って動作確認できます。ローカルに Emscripten を入れている場合は、`emsdk_env.sh` を source してから通常どおり `make web` してください。
+
 ## 操作 (Controls)
 
 | 入力 | 動作 |
