@@ -77,12 +77,10 @@ make
 ローカル PC に `emsdk` を置く場所は固定しません。Web 版をビルドする場合は、Docker 経由で同じ Emscripten 環境を使うのが推奨です。
 
 ```
-docker compose build engine-build
-HOST_UID=$(id -u) HOST_GID=$(id -g) docker compose run --rm engine-build make web
-python3 -m http.server 8000
+docker compose up --build
 ```
 
-ブラウザで `http://localhost:8000/web/gate1.html` を開くと、生成された `web/build/render.js` と `web/assets/` を使って動作確認できます。ローカルに Emscripten を入れている場合は、`emsdk_env.sh` を source してから通常どおり `make web` してください。
+ビルド完了後、ブラウザで `http://localhost:8000/web/gate1.html` を開くと、生成された `web/build/render.js` と `web/assets/` を使って動作確認できます。停止は `Ctrl-C` です。Linux/WSL で生成ファイルの所有者を自分に合わせたい場合だけ、`HOST_UID=$(id -u) HOST_GID=$(id -g) docker compose up --build` のように指定します。ローカルに Emscripten を入れている場合は、`emsdk_env.sh` を source してから通常どおり `make web` / `make sim` してください。
 
 ## 操作 (Controls)
 

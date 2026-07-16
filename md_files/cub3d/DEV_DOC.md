@@ -310,13 +310,11 @@ make re        # fclean + all
 Web / WASM ビルドでは `make web` を使います。`Makefile` は `~/emsdk` などの固定パスを参照せず、`EMCC ?= emcc` を呼ぶだけにしているため、Emscripten をローカルに導入している場合も Docker 内でも同じターゲットを使えます。推奨手順は以下です。
 
 ```
-docker compose build engine-build
-HOST_UID=$(id -u) HOST_GID=$(id -g) docker compose run --rm engine-build make web
-python3 -m http.server 8000
+docker compose up --build
 # open http://localhost:8000/web/gate1.html
 ```
 
-`HOST_UID` / `HOST_GID` は、Docker が生成した `web/build` や `web/assets` をホスト側ユーザーで扱いやすくするための指定です。不要な環境では省略できます。
+Compose の既定では、初回 clone 後の bind mount 権限エラーを避けるためコンテナを root で実行します。Linux/WSL で生成ファイルの所有者を自分に合わせたい場合だけ、`HOST_UID=$(id -u) HOST_GID=$(id -g) docker compose up --build` のように実 UID/GID を指定します。
 
 ### コーディング規約
 
