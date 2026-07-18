@@ -1,0 +1,64 @@
+# E-14: エンジン CI（① §6 / ⑤ §2）。毎 PR で「3 ターゲットビルド + make check +
+# sim 受入テスト + native 起動スモーク」を回し、native を壊す退行を即検知する。
+# W-16 が backend/frontend の lint・型検査ジョブをこのワークフローへ追加する予定。
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# 同一ブランチの古い実行は打ち切る（push 連打時の節約）
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # native ビルド + lint + sim 受入テスト + 起動スモーク
+  native:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: deps (X11 headers + Xvfb)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            gcc make python3 libx11-dev libxext-dev zlib1g-dev xvfb
+      - name: build native
+        run: make -j"$(nproc)"
+      - name: lint (make check)
+        run: make check
+      - name: sim acceptance tests (make test)
+        run: make test
+      - name: native smoke (xvfb, 5s x online whitelist maps)
+        # timeout 満了 (rc=124) = 5 秒間クラッシュせず走り続けた、が成功条件。
+        # それ以外の rc は起動失敗・segfault・即時終了なので落とす
+        run: |
+          set -u
+          for m in maps/fps_map/1.cub maps/fps_map/21x21_arena.cub \
+                   maps/fps_map/fps_duel.cub maps/rsp_map/rsp.cub \
+                   maps/rsp_map/rsp_pillars.cub; do
+            rc=0
+            xvfb-run -a timeout 5 ./cub3D "$m" >/dev/null 2>&1 || rc=$?
+            if [ "$rc" -ne 124 ]; then
+              echo "native smoke failed: $m (rc=$rc)"
+              exit 1
+            fi
+            echo "native smoke ok: $m"
+          done
+
+  # web (render.wasm) + sim (sim.wasm) ビルドと、Node 上での sim 通し実行
+  wasm:
+    runs-on: ubuntu-latest
+    # docker-compose.yml と同じ既定イメージ（EMSDK_IMAGE）に合わせる
+    container: emscripten/emsdk:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: deps (make + python3 はイメージに無いことがある)
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends make python3
+      - name: build web + sim
+        run: make web sim
+      - name: sim end-to-end on Node (record.mjs, seed 固定で決着まで)
+        run: node web/sim_demo/record.mjs
