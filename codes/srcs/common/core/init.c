@@ -83,7 +83,6 @@ void
 	set_pos(&game->input.rotate, 0, 0);
 	game->world.collected = 0;
 	game->options = FLAG_UI | FLAG_SHADOWS | FLAG_CROSSHAIR;
-	game->last_options = 0;
 	game->world.sprites = NULL;
 	game->world.enemies = NULL;
 	game->world.lights = NULL;
@@ -95,6 +94,7 @@ void
 	game->rsp.target_score = 0;
 	game->start_time_ms = 0;
 	game->fps.clear_time_ms = 0;
+	game->fps.winner = -1;
 	game->cleared = 0;
 	game->result_screenshot_saved = 0;
 	game->assets.death_tex.tex = NULL;
@@ -234,16 +234,19 @@ static int
 {
 	t_tex*		tex;
 	t_sprite*	new_sprite;
+	t_enemy*	hazard;
 
 	tex = &game->assets.enemy_tex[0];
 	new_sprite = add_front_sprite(&game->world.sprites, 0., pos, tex);
 	if (!new_sprite) {
 		return (0);
 	}
-	if (!add_enemy(&game->world.enemies, new_sprite, (int)game->config.enemy_hp)) {
+	hazard = add_enemy(&game->world.enemies, new_sprite, (int)game->config.enemy_hp);
+	if (!hazard) {
 		delete_sprite_node(&game->world.sprites, new_sprite);
 		return (0);
 	}
+	hazard->is_hazard = 1;
 	return (1);
 }
 

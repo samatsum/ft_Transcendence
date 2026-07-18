@@ -54,7 +54,8 @@
 | E-10 | **sim 公開 API**（`game_create`〜`game_destroy`、`game_set_input_source` 含む）。ASan/LSan で RSP 3ゲーム×1000ティックのリーク検査 OK。G-05 の中核（`target_score` の match_rules 化、②§4-B の 3–21）を先行実装（[ENGINE_PHASE3_REPORT.md](../reports/ENGINE_PHASE3_REPORT.md)） | `6ee85f5` |
 | E-11 | **`sim.wasm` ヘッドレスビルド**（`make sim`、描画ソース非リンク）。Node で 3 インスタンス × 2 ゲーム × 1000 ティック併走を確認 | `21bc5c2` |
 | E-12 | **`game_apply_snapshot` + 補間受け口**（`web_apply_snapshot` / `web_render_frame` / `web/snapshot_interp.js`）。sim.wasm→JSON→render.wasm の一方通行デモ成立（snapshot 実測 avg 513B < 1KB） | `55c5a82` |
-| G-05 | **先取点の `match_rules` 化の正式受入**。エンジンは N≥1 を受理し（範囲 3–21 は WS 層 W-11 №6 の責務へ一本化）、①§6 の「テスト用に N=2 でも動く」を満たす。`make test`（`codes/tests/sim_test.c`）で実効値・既定フォールバック・N ちょうどでの決着を検査 | （本コミット） |
+| G-05 | **先取点の `match_rules` 化の正式受入**。エンジンは N≥1 を受理し（範囲 3–21 は WS 層 W-11 №6 の責務へ一本化）、①§6 の「テスト用に N=2 でも動く」を満たす。`make test`（`codes/tests/sim_test.c`）で実効値・既定フォールバック・N ちょうどでの決着を検査 | `48a352c` |
+| G-06 | **FPS ゴールの 1vs1 化**。`check_quest` をカメラ1点から全戦闘員基準へ一般化し、先にゴールへ入った席の `combatant_id` を `fps.winner` に確定（②§5-C）。`t_enemy.is_hazard` を新設してマップ由来の敵を席と区別。マス一致で先頭を消す `delete_sprite` を撤去（席の身体を誤解放する経路だった） | （本コミット） |
 
 ## 2. エンジン系（壱）E-08〜E-14 — ①§6 の残りと受入条件の追補
 

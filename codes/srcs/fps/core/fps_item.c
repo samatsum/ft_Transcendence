@@ -7,31 +7,57 @@ void
 void
 	count_items(t_game* game);
 static void
-	open_doors(t_game* game);
+	check_combatant_quest(t_game* game, t_enemy* combatant);
 static void
-	clear_goal(t_game* game);
+	reach_goal(t_game* game, t_enemy* combatant);
+static void
+	collect_item(t_game* game, t_pos* pos);
+static void
+	delete_item_sprite(t_game* game, t_pos* pos);
+static int
+	is_combatant_sprite(t_game* game, t_sprite* sprite);
+static void
+	open_doors(t_game* game);
 
 /* ************************************************************************** */
-// プレイヤーの現在位置にあるアイテムを取得したか判定し、状態を更新する
+// 全戦闘員の足元セルを見て、ゴール到達と収集を処理する。1vs1 では「先にゴールへ
+// 入った戦闘員」が勝者になるため、カメラ1点ではなく席ごとに判定する（G-06）。
+// マップ由来の敵ハザードは席ではないので対象外。同一ティックに複数がゴールへ
+// 入った場合はリスト順で先の1体が勝者になる（サーバ権威なので再現性はある）
 void
 	check_quest(t_game* game)
 {
-	if (game->mode == MODE_FPS && IS_GOAL(MAP(game->camera.pos, game->config))) {
-		clear_goal(game);
-	} else if (IS_COLLECTIBLE(MAP(game->camera.pos, game->config))) {
-		MAP(game->camera.pos, game->config) = 'A';
-		game->world.collected++;
-		delete_sprite(&game->world.sprites, &game->camera.pos);
-		if (game->world.to_collect > 0 && game->world.collected >= game->world.to_collect) {
-			open_doors(game);
+	t_enemy*	cur;
+
+	cur = game->world.enemies;
+	while (cur) {
+		if (!cur->is_hazard) {
+			check_combatant_quest(game, cur);
 		}
+		cur = cur->next;
 	}
 }
 
 /* ************************************************************************** */
-// FPSモードでゴールに到達した瞬間の経過時間を固定し、以後はクリア画面を表示する
+// 戦闘員1体ぶんの足元判定。ゴールと収集はセルの文字が排他なので else if でよい
 static void
-	clear_goal(t_game* game)
+	check_combatant_quest(t_game* game, t_enemy* combatant)
+{
+	t_pos*	pos;
+
+	pos = &combatant->sprite->pos;
+	if (game->mode == MODE_FPS && IS_GOAL(MAP((*pos), game->config))) {
+		reach_goal(game, combatant);
+	} else if (IS_COLLECTIBLE(MAP((*pos), game->config))) {
+		collect_item(game, pos);
+	}
+}
+
+/* ************************************************************************** */
+// ゴール到達で試合を終了し、勝者をその戦闘員に確定する
+// （② §5-C: FPS の match.winner は combatant_id）。クリア時間は従来どおり記録する
+static void
+	reach_goal(t_game* game, t_enemy* combatant)
 {
 	if (game->cleared) {
 		return ;
@@ -40,7 +66,59 @@ static void
 	if (game->fps.clear_time_ms < 0) {
 		game->fps.clear_time_ms = 0;
 	}
+	game->fps.winner = combatant->combatant_id;
 	game->cleared = 1;
+}
+
+/* ************************************************************************** */
+// アイテムを1つ収集する。収集数はワールド共通のカウンタで、扉 D の開放も全戦闘員
+// の合計で判定する（① §4-C の「収集→扉開放は関門として現行仕様を維持」）
+static void
+	collect_item(t_game* game, t_pos* pos)
+{
+	MAP((*pos), game->config) = 'A';
+	game->world.collected++;
+	delete_item_sprite(game, pos);
+	if (game->world.to_collect > 0 && game->world.collected >= game->world.to_collect) {
+		open_doors(game);
+	}
+}
+
+/* ************************************************************************** */
+// 収集セル上のアイテムスプライトだけを消す。マス一致で最初の1つを消すと、
+// サーバ実行では同じマスに立つ戦闘員の身体（席の sprite も world.sprites に
+// 繋がり、しかもリスト先頭側に居る）を解放してノードのポインタが宙に浮く
+static void
+	delete_item_sprite(t_game* game, t_pos* pos)
+{
+	t_sprite*	cur;
+
+	cur = game->world.sprites;
+	while (cur) {
+		if ((int)cur->pos.x == (int)pos->x && (int)cur->pos.y == (int)pos->y
+			&& !is_combatant_sprite(game, cur)) {
+			delete_sprite_node(&game->world.sprites, cur);
+			return ;
+		}
+		cur = cur->next;
+	}
+}
+
+/* ************************************************************************** */
+// スプライトがいずれかの戦闘員に所有されているかを返す
+static int
+	is_combatant_sprite(t_game* game, t_sprite* sprite)
+{
+	t_enemy*	cur;
+
+	cur = game->world.enemies;
+	while (cur) {
+		if (cur->sprite == sprite) {
+			return (1);
+		}
+		cur = cur->next;
+	}
+	return (0);
 }
 
 /* ************************************************************************** */

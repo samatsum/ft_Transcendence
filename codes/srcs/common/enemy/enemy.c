@@ -38,6 +38,7 @@ t_enemy*
 	new_enemy->path_idx = 0;
 	new_enemy->input_source = INPUT_SRC_AI;
 	new_enemy->is_player = 0;
+	new_enemy->is_hazard = 0;
 	new_enemy->combatant_id = -1;
 	new_enemy->radius = ENEMY_RADIUS;
 	new_enemy->death_timer = 0.0;
@@ -84,6 +85,7 @@ t_enemy*
 	}
 	node->input_source = INPUT_SRC_EXTERNAL;
 	node->is_player = 1;
+	node->combatant_id = 0;
 	node->radius = PLAYER_RADIUS;
 	node->dir_angle = atan2(game->camera.dir.y, game->camera.dir.x);
 	node->spawn = game->camera;

@@ -8,8 +8,6 @@ static t_sprite*
 t_sprite*
 	add_front_sprite(t_sprite** sprites, double distance, t_pos* pos, t_tex* tex);
 void
-	delete_sprite(t_sprite** sprites, t_pos* pos);
-void
 	delete_sprite_node(t_sprite** sprites, t_sprite* target);
 void
 	clear_sprites(t_sprite** sprites);
@@ -86,38 +84,6 @@ t_sprite*
 	new->tex = tex;
 	*sprites = new;
 	return (new);
-}
-
-/* ************************************************************************** */
-// pos と同じマス(整数座標)にあるスプライトを next リストから1つ削除して解放する。アイテム収集
-// などで対象が消えたときに使う。先頭を退避し、削除後にリスト先頭を復元してから戻る
-void
-	delete_sprite(t_sprite** sprites, t_pos* pos)
-{
-	t_sprite*	tmp;
-	t_sprite*	previous;
-	t_sprite*	first;
-
-	first = *sprites;
-	previous = NULL;
-	while (*sprites) {
-		if ((int)(*sprites)->pos.x == (int)pos->x && (int)(*sprites)->pos.y == (int)pos->y) {
-			tmp = *sprites;
-			if (!previous) {
-				*sprites = tmp->next;
-			} else {
-				previous->next = tmp->next;
-			}
-			free(tmp);
-			if (previous) {
-				*sprites = first;
-			}
-			return ;
-		}
-		previous = *sprites;
-		*sprites = (*sprites)->next;
-	}
-	*sprites = first;
 }
 
 /* ************************************************************************** */

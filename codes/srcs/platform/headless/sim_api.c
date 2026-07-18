@@ -277,7 +277,7 @@ int
 		return (0);
 	}
 	buf[0] = (game->cleared) ? SIM_STATE_FINISHED : SIM_STATE_PLAYING;
-	buf[1] = (game->mode == MODE_RSP) ? game->rsp.winner : -1;
+	buf[1] = (game->mode == MODE_RSP) ? game->rsp.winner : game->fps.winner;
 	buf[2] = game->rsp.score[TEAM_RED];
 	buf[3] = game->rsp.score[TEAM_BLUE];
 	buf[4] = count;

@@ -101,10 +101,12 @@ typedef struct s_timing
 	long long		last_time;
 }			t_timing;
 
-// FPSモード専用の進行状態とアセット
+// FPSモード専用の進行状態とアセット。winner は先にゴールへ入った戦闘員の
+// combatant_id（未決着は -1）。② §5-C の「FPS の match.winner は combatant_id」
 typedef struct s_fps_data
 {
 	long long		clear_time_ms;
+	int				winner;
 	t_tex			goal_tex;
 }			t_fps_data;
 
@@ -142,7 +144,6 @@ typedef struct s_game
 	int				cleared;
 	int				result_screenshot_saved;
 	int				options;
-	int				last_options;
 	int				mode;
 	t_mode_ops		mode_ops;
 }				t_game;

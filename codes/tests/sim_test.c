@@ -4,6 +4,7 @@
 //
 // 対象:
 //   G-05  先取点の match_rules 化（可変・既定フォールバック・実際に N 点で決着）
+//   G-06  FPS ゴールの 1vs1 化（先に入った戦闘員が勝者・ハザードは勝者にならない）
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,9 +14,11 @@
 #include "rsp/rsp_game.h"
 
 #define RSP_MAP		"maps/rsp_map/rsp.cub"
+#define FPS_MAP		"maps/fps_map/21x21_arena.cub"
 #define TEST_SEED	4242u
 #define MAX_TICKS	200000
 #define TICK_DT		(1.0 / 30.0)
+#define SNAP_CAP	512
 
 static int	g_checks;
 static int	g_failures;
@@ -208,13 +211,232 @@ static void
 	game_destroy(game);
 }
 
+// 指定した文字のセル中心を1つ返す
+static int
+	find_char_cell(t_game* game, char want, t_pos* out)
+{
+	int	x;
+	int	y;
+
+	y = 0;
+	while (y < game->config.map.rows) {
+		x = 0;
+		while (x < game->config.map.columns) {
+			if ((char)MAP_XY(x, y, game->config) == want) {
+				set_pos(out, x + 0.5, y + 0.5);
+				return (1);
+			}
+			x++;
+		}
+		y++;
+	}
+	return (0);
+}
+
+// 収集アイテムのセル中心を1つ返す
+static int
+	find_collectible_cell(t_game* game, t_pos* out)
+{
+	int	x;
+	int	y;
+
+	y = 0;
+	while (y < game->config.map.rows) {
+		x = 0;
+		while (x < game->config.map.columns) {
+			if (IS_COLLECTIBLE(MAP_XY(x, y, game->config))) {
+				set_pos(out, x + 0.5, y + 0.5);
+				return (1);
+			}
+			x++;
+		}
+		y++;
+	}
+	return (0);
+}
+
+// world.sprites の要素数
+static int
+	count_sprites(t_game* game)
+{
+	t_sprite*	cur;
+	int			n;
+
+	n = 0;
+	cur = game->world.sprites;
+	while (cur) {
+		n++;
+		cur = cur->next;
+	}
+	return (n);
+}
+
+// 指定スプライトが描画リストに繋がっているか
+static int
+	sprite_in_list(t_game* game, t_sprite* sprite)
+{
+	t_sprite*	cur;
+
+	cur = game->world.sprites;
+	while (cur) {
+		if (cur == sprite) {
+			return (1);
+		}
+		cur = cur->next;
+	}
+	return (0);
+}
+
+// 全戦闘員の身体スプライトが描画リストに残っているか。サーバ実行では席の
+// sprite も world.sprites に繋がるので、誤削除はここで検出できる
+static int
+	combatant_sprites_intact(t_game* game)
+{
+	t_enemy*	cur;
+
+	cur = game->world.enemies;
+	while (cur) {
+		if (!cur->is_player && !sprite_in_list(game, cur->sprite)) {
+			return (0);
+		}
+		cur = cur->next;
+	}
+	return (1);
+}
+
+// マップ由来の敵ハザードを1体返す
+static t_enemy*
+	first_hazard(t_game* game)
+{
+	t_enemy*	cur;
+
+	cur = game->world.enemies;
+	while (cur) {
+		if (cur->is_hazard) {
+			return (cur);
+		}
+		cur = cur->next;
+	}
+	return (NULL);
+}
+
+// FPS 1vs1（席2つとも外部入力）を生成する
+static t_game*
+	create_fps_duel(const char* map_text)
+{
+	t_game*	game;
+
+	game = sim_create(map_text, 0, 0, TEST_SEED);
+	if (!game) {
+		return (NULL);
+	}
+	if (game_add_combatant(game, 0, 0) != 0
+		|| game_add_combatant(game, 1, 0) != 1) {
+		game_destroy(game);
+		return (NULL);
+	}
+	return (game);
+}
+
+// G-06: 先にゴールセルへ入った戦闘員が勝者になること。どちらの席でも同じ規則で
+// 帰属し、snapshot にも combatant_id として載る（② §5-C）
+static void
+	test_g06_goal_winner(const char* map_text, int winner_seat)
+{
+	t_game*	game;
+	double	snap[SNAP_CAP];
+	t_pos	goal;
+	char	label[64];
+	int		len;
+
+	game = create_fps_duel(map_text);
+	if (!game || !find_char_cell(game, GOAL_CHAR, &goal)) {
+		printf("  FAIL cannot stage FPS duel\n");
+		g_failures++;
+		g_checks++;
+		game_destroy(game);
+		return ;
+	}
+	copy_pos(&combatant_by_id(game, winner_seat)->sprite->pos, &goal);
+	game_step(game, TICK_DT);
+	snprintf(label, sizeof(label), "席%d のゴールで finished", winner_seat);
+	expect_int(label, game->cleared, 1);
+	snprintf(label, sizeof(label), "席%d が勝者", winner_seat);
+	expect_int(label, game->fps.winner, winner_seat);
+	len = game_snapshot(game, snap, SNAP_CAP);
+	snprintf(label, sizeof(label), "席%d が snapshot の winner", winner_seat);
+	expect_int(label, (len > 0) ? (int)snap[1] : -99, winner_seat);
+	game_destroy(game);
+}
+
+// G-06: マップ由来の敵ハザードは席ではないので、ゴールに乗っても試合は終わらない
+static void
+	test_g06_hazard_cannot_win(const char* map_text)
+{
+	t_game*		game;
+	t_enemy*	hazard;
+	t_pos		goal;
+
+	game = create_fps_duel(map_text);
+	if (!game || !find_char_cell(game, GOAL_CHAR, &goal)) {
+		printf("  FAIL cannot stage FPS duel\n");
+		g_failures++;
+		g_checks++;
+		game_destroy(game);
+		return ;
+	}
+	hazard = first_hazard(game);
+	expect_int("マップに敵ハザードが居る", hazard != NULL, 1);
+	if (hazard) {
+		copy_pos(&hazard->sprite->pos, &goal);
+		game_step(game, TICK_DT);
+		expect_int("ハザードのゴールでは決着しない", game->cleared, 0);
+		expect_int("勝者は未確定のまま", game->fps.winner, -1);
+	}
+	game_destroy(game);
+}
+
+// G-06: 収集は席なら誰でも共有カウンタへ加算され、同じマスに立つ戦闘員の身体を
+// 巻き添えにしない。サーバ実行はマップテクスチャを読まないためアイテムの
+// スプライト自体が存在せず（描画データはクライアントの持ち物）、削除は no-op に
+// なる。マス一致で先頭を消す旧実装だと、ここで席の身体が解放されていた
+static void
+	test_g06_collect_keeps_combatant_sprite(const char* map_text)
+{
+	t_game*		game;
+	t_enemy*	seat;
+	t_pos		item;
+	int			before;
+
+	game = create_fps_duel(map_text);
+	if (!game || !find_collectible_cell(game, &item)) {
+		printf("  FAIL cannot stage collectible\n");
+		g_failures++;
+		g_checks++;
+		game_destroy(game);
+		return ;
+	}
+	seat = combatant_by_id(game, 1);
+	copy_pos(&seat->sprite->pos, &item);
+	before = count_sprites(game);
+	game_step(game, TICK_DT);
+	expect_int("収集数が1増える", game->world.collected, 1);
+	expect_int("収集セルが 'A' になる", MAP(item, game->config), 'A');
+	expect_int("収集した席の身体が残る", sprite_in_list(game, seat->sprite), 1);
+	expect_int("戦闘員の身体を巻き添えにしない", combatant_sprites_intact(game), 1);
+	expect_int("消えたスプライトは最大1つ", before - count_sprites(game) <= 1, 1);
+	game_destroy(game);
+}
+
 int
 	main(void)
 {
 	char*	rsp_map;
+	char*	fps_map;
 
 	rsp_map = read_map(RSP_MAP);
-	if (!rsp_map) {
+	fps_map = read_map(FPS_MAP);
+	if (!rsp_map || !fps_map) {
 		printf("FAILED: マップが読めない（リポジトリのルートから実行すること）\n");
 		return (1);
 	}
@@ -222,7 +444,13 @@ int
 	test_g05_decides_at_target(rsp_map, 2);
 	test_g05_decides_at_target(rsp_map, 3);
 	test_g05_decides_at_target(rsp_map, RSP_SCORE_LIMIT);
+	printf("G-06 FPS ゴールの 1vs1 化\n");
+	test_g06_goal_winner(fps_map, 0);
+	test_g06_goal_winner(fps_map, 1);
+	test_g06_hazard_cannot_win(fps_map);
+	test_g06_collect_keeps_combatant_sprite(fps_map);
 	free(rsp_map);
+	free(fps_map);
 	printf("\n%d checks, %d failure(s)\n", g_checks, g_failures);
 	if (g_failures) {
 		printf("FAILED\n");
