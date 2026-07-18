@@ -7,6 +7,7 @@
 //   G-06  FPS ゴールの 1vs1 化（先に入った戦闘員が勝者・ハザードは勝者にならない）
 //   G-07  FPS 複数スポーン（別地点から同時開始・自スポーンへの復帰）
 //   G-08  敵ハザード化（接触は死亡ペナルティで試合は続行する）
+//   G-09  オンライン対戦マップの起動検証（席の成立・関門→ゴールの完走可能性）
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,7 +18,9 @@
 #include "rsp/rsp_game.h"
 
 #define RSP_MAP		"maps/rsp_map/rsp.cub"
+#define RSP_MAP_2	"maps/rsp_map/rsp_pillars.cub"
 #define FPS_MAP		"maps/fps_map/21x21_arena.cub"
+#define FPS_MAP_2	"maps/fps_map/fps_duel.cub"
 #define FPS_MAP_1SPAWN	"maps/fps_map/1.cub"
 #define TEST_SEED	4242u
 #define MAX_TICKS	200000
@@ -750,17 +753,130 @@ static void
 	game_destroy(game);
 }
 
+// ハザードを指定セルへ退避し、外部入力（無入力）へ切り替えて動かなくする。
+// マップの完走可能性だけを検査したいときに、ハザードとの偶発接触を排除する
+static void
+	park_hazards(t_game* game, t_pos* cell)
+{
+	t_enemy*	cur;
+
+	cur = game->world.enemies;
+	while (cur) {
+		if (cur->is_hazard) {
+			copy_pos(&cur->sprite->pos, cell);
+			game_set_input_source(game, cur->combatant_id, INPUT_SRC_EXTERNAL);
+		}
+		cur = cur->next;
+	}
+}
+
+// G-09: RSP 用オンラインマップの起動検証。4席（赤2青2）が成立して別々のマスに
+// 立ち、短い試合が決着まで完走できること
+static void
+	test_g09_rsp_map(const char* map_text, const char* label)
+{
+	t_game*		game;
+	t_enemy*	seats[4];
+	t_pos		cell;
+	char		buf[96];
+	int			i;
+	int			distinct;
+
+	printf("  [%s]\n", label);
+	game = sim_create(map_text, 1, 2, TEST_SEED);
+	snprintf(buf, sizeof(buf), "%s: 赤2+青2 の席が成立する", label);
+	expect_int(buf, game != NULL
+		&& game_add_combatant(game, 0, 0) == 0 && game_add_combatant(game, 1, 1) == 1
+		&& game_add_combatant(game, 2, 1) == 2 && game_add_combatant(game, 3, 1) == 3, 1);
+	if (!game) {
+		return ;
+	}
+	distinct = 1;
+	i = 0;
+	while (i < 4) {
+		seats[i] = combatant_by_id(game, i);
+		i++;
+	}
+	i = 0;
+	while (i < 4 && seats[i]) {
+		if (i > 0 && same_cell(&seats[i]->sprite->pos, &seats[i - 1]->sprite->pos)) {
+			distinct = 0;
+		}
+		i++;
+	}
+	snprintf(buf, sizeof(buf), "%s: 4席が別々のマスに立つ", label);
+	expect_int(buf, distinct, 1);
+	if (find_open_cell(game, &cell)) {
+		stage_red_win(game, &cell);
+		game_step(game, TICK_DT);
+		stage_red_win(game, &cell);
+		game_step(game, TICK_DT);
+	}
+	snprintf(buf, sizeof(buf), "%s: N=2 の試合が決着まで完走できる", label);
+	expect_int(buf, game->cleared && game->rsp.winner == TEAM_RED, 1);
+	game_destroy(game);
+}
+
+// G-09: FPS 用オンラインマップの起動検証。1vs1 の2席とハザードが成立し、
+// 「全収集 → 扉 D 開放 → ゴール到達で勝者確定」の関門経路が完走できること
+static void
+	test_g09_fps_map(const char* map_text, const char* label)
+{
+	t_game*		game;
+	t_pos		cell;
+	t_pos		goal;
+	char		buf[96];
+	int			guard;
+
+	printf("  [%s]\n", label);
+	game = create_fps_duel(map_text);
+	snprintf(buf, sizeof(buf), "%s: 1vs1 の2席が成立する", label);
+	expect_int(buf, game != NULL, 1);
+	if (!game) {
+		return ;
+	}
+	snprintf(buf, sizeof(buf), "%s: ハザードが居る", label);
+	expect_int(buf, first_hazard(game) != NULL, 1);
+	snprintf(buf, sizeof(buf), "%s: ゴールセルがある", label);
+	expect_int(buf, find_char_cell(game, GOAL_CHAR, &goal), 1);
+	snprintf(buf, sizeof(buf), "%s: 収集アイテムがある", label);
+	expect_int(buf, game->world.to_collect > 0, 1);
+	snprintf(buf, sizeof(buf), "%s: 扉 D で関門になっている", label);
+	expect_int(buf, find_char_cell(game, DOOR_CHAR, &cell), 1);
+	set_pos(&cell, goal.x, goal.y + 12);
+	park_hazards(game, &cell);
+	guard = 0;
+	while (find_collectible_cell(game, &cell) && guard < 64) {
+		copy_pos(&combatant_by_id(game, 0)->sprite->pos, &cell);
+		game_step(game, TICK_DT);
+		guard++;
+	}
+	snprintf(buf, sizeof(buf), "%s: 全アイテムを収集できる", label);
+	expect_int(buf, game->world.collected, game->world.to_collect);
+	snprintf(buf, sizeof(buf), "%s: 収集完了で扉が開く", label);
+	expect_int(buf, find_char_cell(game, DOOR_CHAR, &cell), 0);
+	copy_pos(&combatant_by_id(game, 0)->sprite->pos, &goal);
+	game_step(game, TICK_DT);
+	snprintf(buf, sizeof(buf), "%s: ゴールで席0が勝者になる", label);
+	expect_int(buf, game->cleared && game->fps.winner == 0, 1);
+	game_destroy(game);
+}
+
 int
 	main(void)
 {
 	char*	rsp_map;
+	char*	rsp_map_2;
 	char*	fps_map;
+	char*	fps_map_2;
 	char*	fps_map_1spawn;
 
 	rsp_map = read_map(RSP_MAP);
+	rsp_map_2 = read_map(RSP_MAP_2);
 	fps_map = read_map(FPS_MAP);
+	fps_map_2 = read_map(FPS_MAP_2);
 	fps_map_1spawn = read_map(FPS_MAP_1SPAWN);
-	if (!rsp_map || !fps_map || !fps_map_1spawn) {
+	if (!rsp_map || !rsp_map_2 || !fps_map || !fps_map_2 || !fps_map_1spawn) {
 		printf("FAILED: マップが読めない（リポジトリのルートから実行すること）\n");
 		return (1);
 	}
@@ -784,8 +900,15 @@ int
 	test_g08_dead_seat_cannot_goal(fps_map);
 	test_g08_snapshot_alive_tracks_death(fps_map);
 	test_g08_headless_soak(fps_map);
+	printf("G-09 オンライン対戦マップの起動検証\n");
+	test_g09_rsp_map(rsp_map, "rsp");
+	test_g09_rsp_map(rsp_map_2, "rsp_pillars");
+	test_g09_fps_map(fps_map, "21x21_arena");
+	test_g09_fps_map(fps_map_2, "fps_duel");
 	free(rsp_map);
+	free(rsp_map_2);
 	free(fps_map);
+	free(fps_map_2);
 	free(fps_map_1spawn);
 	printf("\n%d checks, %d failure(s)\n", g_checks, g_failures);
 	if (g_failures) {
