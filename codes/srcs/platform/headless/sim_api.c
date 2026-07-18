@@ -14,9 +14,11 @@
 #include "tuning.h"
 
 /* ************************************************************************** */
-// ② §4-B: target_score の許容範囲（既定は 0 = RSP_SCORE_LIMIT）
-#define SIM_TARGET_SCORE_MIN	3
-#define SIM_TARGET_SCORE_MAX	21
+// 先取点の下限。エンジンは機構として 1 点以上を受理し、② §4-B の製品仕様
+// レンジ（3–21）は WS 層のスキーマ検証（W-11 №6）で弾く。エンジン側へ
+// 製品ポリシーを二重化すると ① §6 G-05 の受入条件「テスト用に N=2 でも
+// 動く」を満たせなくなるため、範囲の責務はサーバ層に一本化する
+#define SIM_TARGET_SCORE_MIN	1
 // FPS の席数（1vs1。② §6-B の「RSP=4席 / FPS=2席」）
 #define SIM_FPS_SEATS			2
 
@@ -96,8 +98,7 @@ t_game*
 		// 上書きしないと席の配置が時刻由来のままになるため、この位置で行う
 		game->rsp.seed = rules->seed;
 	}
-	if (rules && rules->target_score >= SIM_TARGET_SCORE_MIN
-		&& rules->target_score <= SIM_TARGET_SCORE_MAX) {
+	if (rules && rules->target_score >= SIM_TARGET_SCORE_MIN) {
 		game->rsp.target_score = rules->target_score;
 	}
 	if (!sim_prepare_world(sim)) {

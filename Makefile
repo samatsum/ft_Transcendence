@@ -85,6 +85,10 @@ SIM_SRCS        = $(addprefix $(COMMON_DIR)/, $(SIM_COMMON_SRCS)) \
                   $(addprefix $(RSP_DIR)/, $(filter-out render/rsp_weapon.c, $(RSP_SRCS))) \
                   $(addprefix $(PLATFORM_HEADLESS_DIR)/, $(SIM_PLATFORM_SRCS))
 
+TEST_DIR        = codes/tests
+TEST_SRCS       = $(TEST_DIR)/sim_test.c
+TEST_BIN        = $(TEST_DIR)/sim_test
+
 OBJS            = $(addprefix $(OBJ_DIR)/common/, $(COMMON_SRCS:.c=.o)) \
                   $(addprefix $(OBJ_DIR)/fps/, $(FPS_SRCS:.c=.o)) \
                   $(addprefix $(OBJ_DIR)/rsp/, $(RSP_SRCS:.c=.o)) \
@@ -165,6 +169,14 @@ $(WEB_BUILD_DIR)/sim.js: $(SIM_SRCS) $(HEADERS) Makefile
 	@mkdir -p $(WEB_BUILD_DIR)
 	$(EMCC) $(SIM_CFLAGS) $(SIM_SRCS) -o $@ $(SIM_LDFLAGS)
 
+# sim 公開 API のゲームプレイ受入テスト（native ビルドなので emcc 不要）。
+# lint の対象は srcs/ と includes/ のみなので tests/ は CR 検査に掛からない
+test:           $(TEST_BIN)
+	@$(TEST_BIN)
+
+$(TEST_BIN):    $(SIM_SRCS) $(TEST_SRCS) $(HEADERS) Makefile
+	$(CC) $(SIM_CFLAGS) $(SIM_SRCS) $(TEST_SRCS) -o $@ -lm
+
 check:
 	@python3 codes/PythonCodes/lint.py --select $(CHECKS) --strict
 
@@ -176,8 +188,8 @@ clean:
 	$(RM) $(OBJ_DIR)
 
 fclean:         clean
-	$(RM) $(NAME)
+	$(RM) $(NAME) $(TEST_BIN)
 
 re:             fclean all
 
-.PHONY:         all clean fclean re check audit debug web web-assets sim
+.PHONY:         all clean fclean re check audit debug web web-assets sim test
