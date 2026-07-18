@@ -16,7 +16,8 @@ static void
 // ローカルプレイヤー以外の外部入力席（サーバの人間席）へ、保持中の t_input を
 // 1フレームぶん適用する。ローカルプレイヤーは従来どおりカメラ座標系の
 // apply_input（浮動小数まで統合前と一致させる経路）で動くため対象外。
-// native/web の単体起動ではこの条件に合う席が存在せず、完全な no-op になる
+// 死亡中（復帰待ち）の席は動かさない。native/web の単体起動ではこの条件に合う
+// 席が存在せず、完全な no-op になる
 void
 	step_external_combatants(t_game* game, double time_mult)
 {
@@ -24,7 +25,8 @@ void
 
 	cur = game->world.enemies;
 	while (cur) {
-		if (cur->input_source == INPUT_SRC_EXTERNAL && !cur->is_player) {
+		if (cur->input_source == INPUT_SRC_EXTERNAL && !cur->is_player
+			&& cur->death_timer <= 0.0) {
 			combatant_apply_input(game, cur, time_mult);
 		}
 		cur = cur->next;

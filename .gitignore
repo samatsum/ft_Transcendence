@@ -4,6 +4,7 @@
 *.ok
 codes/obj/
 /cub3D
+/codes/tests/sim_test
 
 # 実行時生成物（スクリーンショット BMP の出力先）
 bmp/

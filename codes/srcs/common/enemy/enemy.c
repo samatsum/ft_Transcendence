@@ -18,6 +18,8 @@ void
 	damage_enemy(t_game* game, t_sprite* hit_sprite);
 void
 	update_enemies(t_game* game, double delta_time);
+t_enemy*
+	nearest_seat(t_game* game, t_enemy* from);
 
 /* ************************************************************************** */
 // 新しい敵を生成し、指定HPで初期化してリストの先頭に追加する
@@ -38,6 +40,7 @@ t_enemy*
 	new_enemy->path_idx = 0;
 	new_enemy->input_source = INPUT_SRC_AI;
 	new_enemy->is_player = 0;
+	new_enemy->is_hazard = 0;
 	new_enemy->combatant_id = -1;
 	new_enemy->radius = ENEMY_RADIUS;
 	new_enemy->death_timer = 0.0;
@@ -84,6 +87,7 @@ t_enemy*
 	}
 	node->input_source = INPUT_SRC_EXTERNAL;
 	node->is_player = 1;
+	node->combatant_id = 0;
 	node->radius = PLAYER_RADIUS;
 	node->dir_angle = atan2(game->camera.dir.y, game->camera.dir.x);
 	node->spawn = game->camera;
@@ -183,7 +187,8 @@ void
 /* ************************************************************************** */
 // 毎フレーム全戦闘員を更新する。入力源が AI の席だけに mode 別 AI（RSP=じゃんけん、
 // FPS=追跡）を適用する。EXTERNAL の席（プレイヤー、将来はリモート入力）の移動は
-// apply_input 側で行われるため、ここでは触らない。両モード共通のディスパッチャ
+// apply_input 側で行われるため、ここでは触らない。死亡中（復帰待ち）の席は
+// 動かさない。両モード共通のディスパッチャ
 void
 	update_enemies(t_game* game, double delta_time)
 {
@@ -191,9 +196,35 @@ void
 
 	cur = game->world.enemies;
 	while (cur) {
-		if (cur->input_source == INPUT_SRC_AI) {
+		if (cur->input_source == INPUT_SRC_AI && cur->death_timer <= 0.0) {
 			game->mode_ops.update_enemy(cur, game, delta_time);
 		}
 		cur = cur->next;
 	}
+}
+
+/* ************************************************************************** */
+// from から最も近い「生存中の席」（マップ由来ハザードでなく復帰待ちでもない
+// 戦闘員）を返す。ハザードの狙う相手を決めるのに使う。席が居なければ NULL
+t_enemy*
+	nearest_seat(t_game* game, t_enemy* from)
+{
+	t_enemy*	cur;
+	t_enemy*	best;
+	double		best_dist;
+	double		dist;
+
+	best = NULL;
+	best_dist = 0.0;
+	cur = game->world.enemies;
+	while (cur) {
+		dist = dist_pos(&cur->sprite->pos, &from->sprite->pos);
+		if (cur != from && !cur->is_hazard && cur->death_timer <= 0.0
+			&& (!best || dist < best_dist)) {
+			best = cur;
+			best_dist = dist;
+		}
+		cur = cur->next;
+	}
+	return (best);
 }

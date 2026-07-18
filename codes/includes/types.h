@@ -43,7 +43,7 @@ typedef struct s_mode_ops
 	int		(*init_assets)(struct s_game* game);
 	int		(*init_world)(struct s_game* game);
 	void	(*combat)(struct s_game* game);
-	void	(*respawn)(struct s_game* game);
+	void	(*respawn)(struct s_game* game, t_enemy* combatant);
 	void	(*update_enemy)(t_enemy* enemy, struct s_game* game, double dt);
 	void	(*draw_weapon)(struct s_game* game);
 	void	(*build_status_text)(struct s_game* game, char* buf, int size);
@@ -101,10 +101,12 @@ typedef struct s_timing
 	long long		last_time;
 }			t_timing;
 
-// FPSモード専用の進行状態とアセット
+// FPSモード専用の進行状態とアセット。winner は先にゴールへ入った戦闘員の
+// combatant_id（未決着は -1）。② §5-C の「FPS の match.winner は combatant_id」
 typedef struct s_fps_data
 {
 	long long		clear_time_ms;
+	int				winner;
 	t_tex			goal_tex;
 }			t_fps_data;
 
@@ -142,7 +144,6 @@ typedef struct s_game
 	int				cleared;
 	int				result_screenshot_saved;
 	int				options;
-	int				last_options;
 	int				mode;
 	t_mode_ops		mode_ops;
 }				t_game;

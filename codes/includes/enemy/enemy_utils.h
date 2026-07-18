@@ -10,7 +10,7 @@
 
 /* ************************************************************************** */
 int
-	enemy_sees_player(t_enemy* cur, t_game* game, double target_angle);
+	enemy_sees_target(t_enemy* cur, t_game* game, t_pos* target, double target_angle);
 void
 	update_texture(t_enemy* cur, t_game* game, double target_angle);
 int

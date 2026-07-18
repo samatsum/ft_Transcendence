@@ -148,7 +148,7 @@ static void
 	respawn_loser(t_game* game, t_enemy* loser)
 {
 	if (loser->is_player) {
-		game->mode_ops.respawn(game);
+		game->mode_ops.respawn(game, loser);
 	} else {
 		respawn_npc(game, loser);
 	}

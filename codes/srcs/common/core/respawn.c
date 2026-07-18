@@ -7,6 +7,8 @@
 void
 	respawn_at(t_game* game, const char* allowed);
 void
+	respawn_combatant(t_game* game, t_enemy* combatant);
+void
 	save_spawn(t_game* game);
 void
 	sync_player_from_camera(t_game* game);
@@ -32,6 +34,26 @@ void
 		game->player->spawn = game->camera;
 	}
 	sync_player_from_camera(game);
+}
+
+/* ************************************************************************** */
+// 戦闘員を「自分の」開始地点へ戻す。spawn は生成時に確定した位置と向きで、
+// 以後上書きしない安定したアンカーなので、1vs1 では各自が自分の地点へ戻る
+// （① §4-C の「自スポーンへリスポーン」）。ローカル自席の場合は移動計算の
+// 作業領域であるカメラも同じ地点から作り直す。AI の追跡経路は捨てる
+void
+	respawn_combatant(t_game* game, t_enemy* combatant)
+{
+	if (!combatant) {
+		return ;
+	}
+	copy_pos(&combatant->sprite->pos, &combatant->spawn.pos);
+	combatant->dir_angle = atan2(combatant->spawn.dir.y, combatant->spawn.dir.x);
+	combatant->path_valid = 0;
+	combatant->state = ENEMY_STATE_IDLE;
+	if (combatant == game->player) {
+		game->camera = combatant->spawn;
+	}
 }
 
 /* ************************************************************************** */
@@ -65,16 +87,23 @@ int
 }
 
 /* ************************************************************************** */
-// プレイヤー戦闘員の死亡演出タイマーを進め、終了したら現在モードの復帰処理を呼ぶ
+// 死亡中の全戦闘員のタイマーを進め、切れた戦闘員から順に現在モードの復帰処理を
+// 呼ぶ。1vs1 では席ごとに死亡と復帰が独立するため、ローカル自席だけでなく
+// リストを走査する（G-08）。死亡は試合終了ではなく復帰までのペナルティ
 void
 	update_death(t_game* game, double delta_time)
 {
-	if (!game->player || game->player->death_timer <= 0.0) {
-		return ;
-	}
-	game->player->death_timer -= delta_time;
-	if (game->player->death_timer <= 0.0) {
-		game->player->death_timer = 0.0;
-		game->mode_ops.respawn(game);
+	t_enemy*	cur;
+
+	cur = game->world.enemies;
+	while (cur) {
+		if (cur->death_timer > 0.0) {
+			cur->death_timer -= delta_time;
+			if (cur->death_timer <= 0.0) {
+				cur->death_timer = 0.0;
+				game->mode_ops.respawn(game, cur);
+			}
+		}
+		cur = cur->next;
 	}
 }

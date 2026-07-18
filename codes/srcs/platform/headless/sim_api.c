@@ -14,9 +14,11 @@
 #include "tuning.h"
 
 /* ************************************************************************** */
-// ② §4-B: target_score の許容範囲（既定は 0 = RSP_SCORE_LIMIT）
-#define SIM_TARGET_SCORE_MIN	3
-#define SIM_TARGET_SCORE_MAX	21
+// 先取点の下限。エンジンは機構として 1 点以上を受理し、② §4-B の製品仕様
+// レンジ（3–21）は WS 層のスキーマ検証（W-11 №6）で弾く。エンジン側へ
+// 製品ポリシーを二重化すると ① §6 G-05 の受入条件「テスト用に N=2 でも
+// 動く」を満たせなくなるため、範囲の責務はサーバ層に一本化する
+#define SIM_TARGET_SCORE_MIN	1
 // FPS の席数（1vs1。② §6-B の「RSP=4席 / FPS=2席」）
 #define SIM_FPS_SEATS			2
 
@@ -96,8 +98,7 @@ t_game*
 		// 上書きしないと席の配置が時刻由来のままになるため、この位置で行う
 		game->rsp.seed = rules->seed;
 	}
-	if (rules && rules->target_score >= SIM_TARGET_SCORE_MIN
-		&& rules->target_score <= SIM_TARGET_SCORE_MAX) {
+	if (rules && rules->target_score >= SIM_TARGET_SCORE_MIN) {
 		game->rsp.target_score = rules->target_score;
 	}
 	if (!sim_prepare_world(sim)) {
@@ -276,7 +277,7 @@ int
 		return (0);
 	}
 	buf[0] = (game->cleared) ? SIM_STATE_FINISHED : SIM_STATE_PLAYING;
-	buf[1] = (game->mode == MODE_RSP) ? game->rsp.winner : -1;
+	buf[1] = (game->mode == MODE_RSP) ? game->rsp.winner : game->fps.winner;
 	buf[2] = game->rsp.score[TEAM_RED];
 	buf[3] = game->rsp.score[TEAM_BLUE];
 	buf[4] = count;
@@ -290,7 +291,11 @@ int
 }
 
 /* ************************************************************************** */
-// 戦闘員1体ぶんのスナップショット要素を書き込み、書いた要素数を返す
+// 戦闘員1体ぶんのスナップショット要素を書き込み、書いた要素数を返す。
+// FPS の alive は死亡ペナルティ（death_timer）も反映する: G-08 で「死亡中＝
+// 操作不能・世界へ干渉しない」が席の状態になったため、alive=true のまま
+// respawn_s>0 という矛盾した組をクライアント（W-11 の HUD・操作可否判断）へ
+// 出さない
 static int
 	snapshot_combatant(t_game* game, t_enemy* cur, double* buf)
 {
@@ -301,7 +306,8 @@ static int
 	buf[4] = cur->sprite->pos.y;
 	buf[5] = cur->dir_angle;
 	buf[6] = (game->mode == MODE_RSP)
-		? cur->rsp.alive : (cur->state != ENEMY_STATE_DEAD);
+		? cur->rsp.alive
+		: (cur->state != ENEMY_STATE_DEAD && cur->death_timer <= 0.0);
 	buf[7] = (cur->input_source == INPUT_SRC_AI);
 	buf[8] = cur->death_timer;
 	return (SIM_SNAP_COMBATANT_DOUBLES);

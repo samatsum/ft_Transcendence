@@ -54,6 +54,10 @@
 | E-10 | **sim 公開 API**（`game_create`〜`game_destroy`、`game_set_input_source` 含む）。ASan/LSan で RSP 3ゲーム×1000ティックのリーク検査 OK。G-05 の中核（`target_score` の match_rules 化、②§4-B の 3–21）を先行実装（[ENGINE_PHASE3_REPORT.md](../reports/ENGINE_PHASE3_REPORT.md)） | `6ee85f5` |
 | E-11 | **`sim.wasm` ヘッドレスビルド**（`make sim`、描画ソース非リンク）。Node で 3 インスタンス × 2 ゲーム × 1000 ティック併走を確認 | `21bc5c2` |
 | E-12 | **`game_apply_snapshot` + 補間受け口**（`web_apply_snapshot` / `web_render_frame` / `web/snapshot_interp.js`）。sim.wasm→JSON→render.wasm の一方通行デモ成立（snapshot 実測 avg 513B < 1KB） | `55c5a82` |
+| G-05 | **先取点の `match_rules` 化の正式受入**。エンジンは N≥1 を受理し（範囲 3–21 は WS 層 W-11 №6 の責務へ一本化）、①§6 の「テスト用に N=2 でも動く」を満たす。`make test`（`codes/tests/sim_test.c`）で実効値・既定フォールバック・N ちょうどでの決着を検査 | `48a352c` |
+| G-06 | **FPS ゴールの 1vs1 化**。`check_quest` をカメラ1点から全戦闘員基準へ一般化し、先にゴールへ入った席の `combatant_id` を `fps.winner` に確定（②§5-C）。`t_enemy.is_hazard` を新設してマップ由来の敵を席と区別。マス一致で先頭を消す `delete_sprite` を撤去（席の身体を誤解放する経路だった） | `346bbdd` |
+| G-07 | **FPS 複数スポーン（1vs1 同時開始）**。各戦闘員が生成時に確定した安定アンカー（`t_enemy.spawn`）を持ち、`respawn_combatant` で自スポーンへ復帰する（①§4-C）。FPS 復帰は全スポーン再抽選をやめたため相手の地点へ湧かない。スポーン1つのマップは FPS 1vs1 の生成を失敗させる | `463d78c` |
+| G-08 | **敵ハザード化**。接触判定・死亡タイマー・復帰を戦闘員単位へ一般化し、死亡は試合終了ではなく自スポーン復帰までのペナルティに（①§4-C）。ハザード AI はカメラ固定をやめ最寄りの生存席を狙う。**これで ENGINE_PHASE3_REPORT の P1（FPS ヘッドレスが決着不能）が解消** | （本コミット） |
 
 ## 2. エンジン系（壱）E-08〜E-14 — ①§6 の残りと受入条件の追補
 
@@ -74,7 +78,7 @@
 | Issue | 追補 | 依存 |
 |---|---|---|
 | G-02 入力源抽象 | **`game_set_input_source` の切替が受入条件に含まれる**（② §6-B / §7 の AI 代替⇔復帰の土台） | G-01 |
-| G-05 先取点の match_rules 化 | `target_score` の範囲は ② §4-B（3–21・既定10）に一致させる | G-02 |
+| G-05 先取点の match_rules 化 | `target_score` の範囲 ② §4-B（3–21・既定10）は **WS 層のスキーマ検証（W-11 №6）で担保**する。エンジンは機構として N≥1 を受理し、①§6 の受入条件「テスト用に N=2 でも動く」を満たす（2026-07-19 決定。範囲の二重化を避け責務をサーバ層へ一本化） | G-02 |
 | G-09 対戦マップ制作 | 完成マップは ③ §2-E のホワイトリスト表に登録して公開 | G-06 |
 | その他（G-01/03/04/06/07/08/10） | ①§6 のまま変更なし | — |
 

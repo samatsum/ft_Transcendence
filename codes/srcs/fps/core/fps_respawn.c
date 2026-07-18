@@ -5,39 +5,47 @@
 /* ************************************************************************** */
 int
 	check_enemy_contact(t_game* game);
-static void
-	kill_player(t_game* game);
+static int
+	touches_hazard(t_game* game, t_enemy* seat);
 
 /* ************************************************************************** */
-// 生存中の敵とプレイヤーが接触したかを調べ、接触時は死亡演出へ入る。
-// 戦闘員リストにはプレイヤー自身も居るため is_player はスキップする（自己接触で
-// 即死しないように）。ローカルプレイヤー席が無いサーバ実行では判定しない
-// （外部入力席の接触ペナルティ一般化は G-08 の敵ハザード化で行う）
+// マップ由来の敵（ハザード）に触れた席を死亡させ、死んだ席の数を返す。
+// 1vs1 では席が複数あるためカメラ1点ではなく席ごとに判定する。死亡は試合終了
+// ではなく、DEATH_DURATION 後に自スポーンへ戻るペナルティ（① §4-C。復帰は
+// update_death → mode_ops.respawn が行う）。死亡中の席とハザード同士は判定しない
 int
 	check_enemy_contact(t_game* game)
 {
+	t_enemy*	seat;
+	int			killed;
+
+	killed = 0;
+	seat = game->world.enemies;
+	while (seat) {
+		if (!seat->is_hazard && seat->death_timer <= 0.0
+			&& touches_hazard(game, seat)) {
+			seat->death_timer = DEATH_DURATION;
+			killed++;
+		}
+		seat = seat->next;
+	}
+	return (killed);
+}
+
+/* ************************************************************************** */
+// 席が生存中のハザードの接触距離内に居るかを返す
+static int
+	touches_hazard(t_game* game, t_enemy* seat)
+{
 	t_enemy*	cur;
 
-	if (!game->player) {
-		return (0);
-	}
 	cur = game->world.enemies;
 	while (cur) {
-		if (!cur->is_player && cur->state != ENEMY_STATE_DEAD) {
-			if (dist_pos(&game->camera.pos, &cur->sprite->pos) <= RESPAWN_CONTACT_DIST) {
-				kill_player(game);
-				return (1);
-			}
+		if (cur->is_hazard && cur->state != ENEMY_STATE_DEAD
+			&& dist_pos(&seat->sprite->pos, &cur->sprite->pos) <= RESPAWN_CONTACT_DIST) {
+			return (1);
 		}
 		cur = cur->next;
 	}
 	return (0);
-}
-
-/* ************************************************************************** */
-// プレイヤーを即時に死亡演出状態へ移す
-static void
-	kill_player(t_game* game)
-{
-	game->player->death_timer = DEATH_DURATION;
 }

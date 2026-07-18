@@ -656,15 +656,18 @@ def check_header_guard(ctx: Context) -> Iterable[Finding]:
 
 
 # --------------------------------------------------------------------------- #
-# 依存方向（レイヤリング）：common は fps 専用ヘッダを include してはいけない
+# 依存方向（レイヤリング）：common はモード専用ヘッダを include してはいけない
 # --------------------------------------------------------------------------- #
 
-#: fps 専用ヘッダ（common から include されたら違反）。B2 で fps/includes/ へ
-#: 移す対象でもある。enemy/enemy_types.h は common 側のデータモデルなので除外。
-_FPS_ONLY_HEADERS: frozenset[str] = frozenset(
+#: モード専用ヘッダ（common 側から include されたら違反）。旧リストの
+#: enemy/enemy.h・enemy/enemy_utils.h は戦闘員統合（G-02〜G-04）で実装ごと
+#: codes/srcs/common/enemy/ へ移り common のモジュールになったため対象から
+#: 外した。rsp/rsp_game.h は自身のヘッダコメントどおり fps/rsp 側（と platform）
+#: からのみ include できる。core/mode_ops.h はモード注入の公認の継ぎ目なので
+#: 違反にしない
+_MODE_ONLY_HEADERS: frozenset[str] = frozenset(
     {
-        "enemy/enemy.h",
-        "enemy/enemy_utils.h",
+        "rsp/rsp_game.h",
     }
 )
 
@@ -672,22 +675,34 @@ _FPS_ONLY_HEADERS: frozenset[str] = frozenset(
 _LOCAL_INCLUDE_RE = re.compile(r'^\s*#\s*include\s+"([^"]+)"')
 
 
+def _is_common_side(rel: str) -> bool:
+    """common 側（srcs/common/ と、モード専用 rsp/ を除く includes/）か。
+
+    旧実装は 'common/' 前置きを判定していたが、実際の rel は
+    'srcs/common/...' のため全ファイルが素通りし検査が無効化していた
+    （G-05〜G-08 レビュー P3 で修正）。
+    """
+    if rel.startswith("srcs/common/"):
+        return True
+    return rel.startswith("includes/") and not rel.startswith("includes/rsp/")
+
+
 @check("layering", "CR012: common はモード固有ヘッダに依存してはいけない")
 def check_layering(ctx: Context) -> Iterable[Finding]:
     for sf in ctx.select(("srcs", "includes"), (".c", ".h")):
-        # 検査対象は common 側のファイルのみ。fps 側は fps ヘッダを使ってよい
-        if not sf.rel.startswith("common/"):
+        # 検査対象は common 側のみ。fps/rsp/platform 側はモードヘッダを使ってよい
+        if not _is_common_side(sf.rel):
             continue
         for n, line in enumerate(sf.raw.splitlines(), 1):
             m = _LOCAL_INCLUDE_RE.match(line)
             if not m:
                 continue
             target = m.group(1)
-            if target in _FPS_ONLY_HEADERS:
+            if target in _MODE_ONLY_HEADERS:
                 yield _err(
                     sf.path,
                     n,
-                    "common→fps の禁止された依存",
-                    f'#include "{target}" は fps 専用。'
-                    f"common からは enemy/enemy_types.h を使う",
+                    "common→モード固有の禁止された依存",
+                    f'#include "{target}" はモード専用。'
+                    f"common へはモードに依存しない形で公開すること",
                 )

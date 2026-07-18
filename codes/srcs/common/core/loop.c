@@ -19,9 +19,7 @@ int
 	game_step(t_game* game, double delta_time);
 double
 	calc_time_mult(double delta_time);
-static int
-	apply_local_player(t_game* game, double time_mult);
-static int
+static void
 	apply_input(t_game* game, double time_mult);
 long long
 	get_current_time_ms(void);
@@ -69,43 +67,22 @@ int
 	game_step(t_game* game, double delta_time)
 {
 	double	time_mult;
-	int		update;
 
+	if (game->cleared) {
+		return (1);
+	}
 	time_mult = calc_time_mult(delta_time);
-	if (!game->cleared && is_player_dead(game)) {
-		update_death(game, delta_time);
-		update_enemies(game, delta_time);
-	} else if (!game->cleared) {
-		update = apply_local_player(game, time_mult);
-		if (update) {
-			check_quest(game);
-		}
-		step_external_combatants(game, time_mult);
-		if (!game->cleared) {
-			update_enemies(game, delta_time);
-			game->mode_ops.combat(game);
-		}
+	update_death(game, delta_time);
+	if (game->player && !is_player_dead(game)) {
+		apply_input(game, time_mult);
+	}
+	step_external_combatants(game, time_mult);
+	update_enemies(game, delta_time);
+	game->mode_ops.combat(game);
+	if (!game->cleared) {
+		check_quest(game);
 	}
 	return (game->cleared);
-}
-
-/* ************************************************************************** */
-// ローカルプレイヤー席の入力と表示オプション変化を反映する。サーバ実行
-// （game->player なし）では席ごとの入力適用（step_external_combatants）だけに任せる
-static int
-	apply_local_player(t_game* game, double time_mult)
-{
-	int	update;
-
-	if (!game->player) {
-		return (0);
-	}
-	update = apply_input(game, time_mult);
-	if (game->options != game->last_options) {
-		update = 1;
-		game->last_options = game->options;
-	}
-	return (update);
 }
 
 /* ************************************************************************** */
@@ -146,29 +123,26 @@ static double
 
 /* ************************************************************************** */
 // 入力状態をカメラへ反映する（素手装備＝走行モード時は PLAYER_RUN_BOOST 倍速に補正）
-static int
+static void
 	apply_input(t_game* game, double time_mult)
 {
 	double	speed_mult;
-	int		update;
 
 	speed_mult = PLAYER_WALK_SPEED_MULT;
 	if (game->input.current_weapon == WEP_HANDS) {
 		speed_mult = PLAYER_RUN_SPEED_MULT;
 	}
-	update = 0;
 	if (game->input.move.x || game->input.move.y) {
-		update = move_camera(game, (game->input.move.x) ? 0 : 1, time_mult * speed_mult);
+		move_camera(game, (game->input.move.x) ? 0 : 1, time_mult * speed_mult);
 	}
 	if (game->input.x_move.x || game->input.x_move.y) {
-		update = move_perp_camera(game, (game->input.x_move.x) ? 0 : 1, time_mult * speed_mult);
+		move_perp_camera(game, (game->input.x_move.x) ? 0 : 1, time_mult * speed_mult);
 	}
 	if (game->input.rotate.x || game->input.rotate.y) {
-		update = rotate_camera(&game->camera, &game->config, (game->input.rotate.x) ? 0 : 1, time_mult);
+		rotate_camera(&game->camera, &game->config, (game->input.rotate.x) ? 0 : 1, time_mult);
 	}
 	game->player->input = game->input;
 	sync_player_from_camera(game);
-	return (update);
 }
 
 /* ************************************************************************** */

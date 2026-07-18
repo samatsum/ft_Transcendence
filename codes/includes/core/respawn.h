@@ -10,6 +10,8 @@
 void
 	respawn_at(t_game* game, const char* allowed);
 void
+	respawn_combatant(t_game* game, t_enemy* combatant);
+void
 	save_spawn(t_game* game);
 void
 	sync_player_from_camera(t_game* game);
