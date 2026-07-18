@@ -5,16 +5,19 @@
 // 対象:
 //   G-05  先取点の match_rules 化（可変・既定フォールバック・実際に N 点で決着）
 //   G-06  FPS ゴールの 1vs1 化（先に入った戦闘員が勝者・ハザードは勝者にならない）
+//   G-07  FPS 複数スポーン（別地点から同時開始・自スポーンへの復帰）
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "core/core.h"
+#include "core/respawn.h"
 #include "platform/sim.h"
 #include "rsp/rsp_game.h"
 
 #define RSP_MAP		"maps/rsp_map/rsp.cub"
 #define FPS_MAP		"maps/fps_map/21x21_arena.cub"
+#define FPS_MAP_1SPAWN	"maps/fps_map/1.cub"
 #define TEST_SEED	4242u
 #define MAX_TICKS	200000
 #define TICK_DT		(1.0 / 30.0)
@@ -428,15 +431,97 @@ static void
 	game_destroy(game);
 }
 
+// 2点が同じマスかどうか
+static int
+	same_cell(t_pos* a, t_pos* b)
+{
+	return ((int)a->x == (int)b->x && (int)a->y == (int)b->y);
+}
+
+// G-07: FPS 1vs1 の2席が別々の地点から同時に開始し、各席が自分の開始地点を
+// 安定したアンカー（spawn）として持つこと
+static void
+	test_g07_distinct_spawns(const char* map_text)
+{
+	t_game*		game;
+	t_enemy*	a;
+	t_enemy*	b;
+
+	game = create_fps_duel(map_text);
+	if (!game) {
+		printf("  FAIL cannot stage FPS duel\n");
+		g_failures++;
+		g_checks++;
+		return ;
+	}
+	a = combatant_by_id(game, 0);
+	b = combatant_by_id(game, 1);
+	expect_int("2席とも生成される", a != NULL && b != NULL, 1);
+	if (a && b) {
+		expect_int("2席が別のマスから開始する", same_cell(&a->sprite->pos, &b->sprite->pos), 0);
+		expect_int("席0 のアンカーが開始位置と一致", same_cell(&a->spawn.pos, &a->sprite->pos), 1);
+		expect_int("席1 のアンカーが開始位置と一致", same_cell(&b->spawn.pos, &b->sprite->pos), 1);
+		expect_int("席0 がスポーンの向きを向く",
+			fabs(a->dir_angle - atan2(a->spawn.dir.y, a->spawn.dir.x)) < 1e-9, 1);
+	}
+	game_destroy(game);
+}
+
+// G-07: 死亡復帰は自分の開始地点へ戻る。相手の地点や再抽選された別地点へ
+// 湧かないこと（① §4-C の「自スポーンへリスポーン」）
+static void
+	test_g07_respawn_to_own_spawn(const char* map_text)
+{
+	t_game*		game;
+	t_enemy*	a;
+	t_enemy*	b;
+	t_pos		anchor_a;
+	t_pos		away;
+
+	game = create_fps_duel(map_text);
+	if (!game) {
+		printf("  FAIL cannot stage FPS duel\n");
+		g_failures++;
+		g_checks++;
+		return ;
+	}
+	a = combatant_by_id(game, 0);
+	b = combatant_by_id(game, 1);
+	copy_pos(&anchor_a, &a->spawn.pos);
+	set_pos(&away, anchor_a.x, anchor_a.y);
+	if (find_char_cell(game, GOAL_CHAR, &away)) {
+		copy_pos(&a->sprite->pos, &away);
+	}
+	respawn_combatant(game, a);
+	expect_int("自分の開始地点へ戻る", same_cell(&a->sprite->pos, &anchor_a), 1);
+	expect_int("相手の地点へは湧かない", same_cell(&a->sprite->pos, &b->spawn.pos), 0);
+	expect_int("復帰してもアンカーは変わらない", same_cell(&a->spawn.pos, &anchor_a), 1);
+	game_destroy(game);
+}
+
+// G-07: スポーンが1つしかないマップでは FPS の 1vs1 を成立させない
+// （席の重複配置を黙って許すより、ルーム生成を失敗させる方が安全）
+static void
+	test_g07_single_spawn_map_rejected(const char* map_text)
+{
+	t_game*	game;
+
+	game = sim_create(map_text, 0, 0, TEST_SEED);
+	expect_int("スポーン1つの FPS マップは生成失敗", game == NULL, 1);
+	game_destroy(game);
+}
+
 int
 	main(void)
 {
 	char*	rsp_map;
 	char*	fps_map;
+	char*	fps_map_1spawn;
 
 	rsp_map = read_map(RSP_MAP);
 	fps_map = read_map(FPS_MAP);
-	if (!rsp_map || !fps_map) {
+	fps_map_1spawn = read_map(FPS_MAP_1SPAWN);
+	if (!rsp_map || !fps_map || !fps_map_1spawn) {
 		printf("FAILED: マップが読めない（リポジトリのルートから実行すること）\n");
 		return (1);
 	}
@@ -449,8 +534,13 @@ int
 	test_g06_goal_winner(fps_map, 1);
 	test_g06_hazard_cannot_win(fps_map);
 	test_g06_collect_keeps_combatant_sprite(fps_map);
+	printf("G-07 FPS 複数スポーン（1vs1 同時開始）\n");
+	test_g07_distinct_spawns(fps_map);
+	test_g07_respawn_to_own_spawn(fps_map);
+	test_g07_single_spawn_map_rejected(fps_map_1spawn);
 	free(rsp_map);
 	free(fps_map);
+	free(fps_map_1spawn);
 	printf("\n%d checks, %d failure(s)\n", g_checks, g_failures);
 	if (g_failures) {
 		printf("FAILED\n");
