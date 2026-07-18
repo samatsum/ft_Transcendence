@@ -29,10 +29,14 @@ void
 {
 	if (game->cleared) {
 		draw_clear_screen(game);
+#ifndef WEB_BUILD
+		// 結果 BMP の保存は native 限定（G-10）。web/サーバの結果は DB が正本で、
+		// wasm の MEMFS へ書いても揮発するだけのため
 		if (!game->result_screenshot_saved) {
 			game->result_screenshot_saved = 1;
 			save_result_screenshot(game);
 		}
+#endif
 		return ;
 	}
 	if (is_player_dead(game)) {
