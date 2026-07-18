@@ -627,6 +627,34 @@ static void
 	game_destroy(game);
 }
 
+// G-08 レビュー P1: 接触死と同じティックにゴールセルへ居ても、死亡が優先され
+// 試合は終わらないこと（死んだ席はゴールも収集もできない）。ハザードがゴール
+// セルに立っている状況がまさにこれで、放置すると「死にながら勝つ」が起きる
+static void
+	test_g08_dead_seat_cannot_goal(const char* map_text)
+{
+	t_game*		game;
+	t_enemy*	victim;
+	t_pos		goal;
+
+	game = create_fps_duel(map_text);
+	if (!game || !find_char_cell(game, GOAL_CHAR, &goal)) {
+		printf("  FAIL cannot stage FPS duel\n");
+		g_failures++;
+		g_checks++;
+		game_destroy(game);
+		return ;
+	}
+	victim = combatant_by_id(game, 0);
+	copy_pos(&first_hazard(game)->sprite->pos, &goal);
+	copy_pos(&victim->sprite->pos, &goal);
+	game_step(game, TICK_DT);
+	expect_int("ゴール上でも接触死する", victim->death_timer > 0.0, 1);
+	expect_int("死亡した席はゴールできない", game->cleared, 0);
+	expect_int("勝者は確定しない", game->fps.winner, -1);
+	game_destroy(game);
+}
+
 // G-08: ハザードが席を狙う FPS 1vs1 を連続実行しても破綻しないこと。ハザードの
 // 追跡は経路探索を伴い、以前はカメラ（サーバ実行では原点）を狙っていたので、
 // 席を狙う経路が長時間まわることをここで担保する
@@ -693,6 +721,7 @@ int
 	test_g08_hazard_contact_is_penalty(fps_map);
 	test_g08_hazards_do_not_kill_each_other(fps_map);
 	test_g08_world_keeps_running_while_dead(fps_map);
+	test_g08_dead_seat_cannot_goal(fps_map);
 	test_g08_headless_soak(fps_map);
 	free(rsp_map);
 	free(fps_map);
