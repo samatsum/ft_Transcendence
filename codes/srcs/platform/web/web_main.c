@@ -16,7 +16,7 @@
 
 /* ************************************************************************** */
 int
-	web_init(const char* map_text, int is_rsp);
+	web_init(const char* map_text, int is_rsp, int width, int height);
 int
 	web_render(double delta_time);
 int
@@ -46,11 +46,14 @@ static t_game	g_game;
 static int		g_ready;
 
 /* ************************************************************************** */
-// マップテキストから表示用ゲーム状態を初期化する（内部解像度 960x540）。
+// マップテキストから表示用ゲーム状態を初期化する。内部解像度は width/height で
+// 指定でき（0 以下で既定の 960x540）、描画コストは解像度にほぼ比例するため
+// 低性能環境の段階縮小の口になる（E-13。実際の範囲は init_window が
+// MIN_WIDTH/MIN_HEIGHT〜MAX_WIDTH/MAX_HEIGHT へクランプする）。
 // モードは JS がマップパス（maps/rsp_map/ 配下か）から判定して is_rsp で渡す。
 // native の validate_check と同じ「配置ディレクトリでモード決定」を web でも踏襲する
 int
-	web_init(const char* map_text, int is_rsp)
+	web_init(const char* map_text, int is_rsp, int width, int height)
 {
 	g_game = (t_game){0};
 	g_game.mode = MODE_FPS;
@@ -63,8 +66,8 @@ int
 	if (!parse_config_text(&g_game.config, map_text)) {
 		return (0);
 	}
-	g_game.config.requested_width = WEB_RENDER_WIDTH;
-	g_game.config.requested_height = WEB_RENDER_HEIGHT;
+	g_game.config.requested_width = (width > 0) ? (unsigned int)width : WEB_RENDER_WIDTH;
+	g_game.config.requested_height = (height > 0) ? (unsigned int)height : WEB_RENDER_HEIGHT;
 	init_game(&g_game);
 	if (!finish_init(&g_game)) {
 		return (0);

@@ -100,7 +100,8 @@
 		statusEl.textContent = `loading ${required.length}/${manifest.length} textures`;
 		await Promise.all(required.map((entry) => loadTexture(Module, entry)));
 		const mapPtr = writeCString(Module, mapText);
-		if (!Module._web_init(mapPtr, feed.map.startsWith('rsp_map/') ? 1 : 0)) {
+		// 内部解像度は既定（960x540）。0 は「指定なし」（E-13 の web_init 引数）
+		if (!Module._web_init(mapPtr, feed.map.startsWith('rsp_map/') ? 1 : 0, 0, 0)) {
 			throw new Error('web_init failed');
 		}
 		Module._free(mapPtr);

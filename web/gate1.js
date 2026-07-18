@@ -43,6 +43,12 @@
 		? mapParam : 'fps_map/1.cub';
 	// native と同じく配置ディレクトリでモードを判定する（maps/rsp_map/ = RSP）
 	const isRsp = mapPath.startsWith('rsp_map/') ? 1 : 0;
+	// ?res=1280x720 のように内部解像度を選べる（E-13 の段階縮小の口。既定 960x540。
+	// 実際の範囲は C 側が MIN(848x480)〜MAX(1920x1080) へクランプする）
+	const resMatch = /^(\d{3,4})x(\d{3,4})$/.exec(
+		new URLSearchParams(location.search).get('res') || '');
+	const resW = resMatch ? Number(resMatch[1]) : 0;
+	const resH = resMatch ? Number(resMatch[2]) : 0;
 
 	function locateFile(path) {
 		if (path.endsWith('.wasm')) {
@@ -210,7 +216,7 @@
 
 	function initGame(Module, mapText) {
 		const mapPtr = writeCString(Module, mapText);
-		const ok = Module._web_init(mapPtr, isRsp);
+		const ok = Module._web_init(mapPtr, isRsp, resW, resH);
 		Module._free(mapPtr);
 		return ok;
 	}
