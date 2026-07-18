@@ -21,5 +21,7 @@ int
 	init_enemy_textures(struct s_game* game);
 void
 	update_enemies(struct s_game* game, double delta_time);
+t_enemy*
+	nearest_seat(struct s_game* game, t_enemy* from);
 
 #endif

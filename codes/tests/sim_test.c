@@ -6,6 +6,7 @@
 //   G-05  先取点の match_rules 化（可変・既定フォールバック・実際に N 点で決着）
 //   G-06  FPS ゴールの 1vs1 化（先に入った戦闘員が勝者・ハザードは勝者にならない）
 //   G-07  FPS 複数スポーン（別地点から同時開始・自スポーンへの復帰）
+//   G-08  敵ハザード化（接触は死亡ペナルティで試合は続行する）
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -511,6 +512,156 @@ static void
 	game_destroy(game);
 }
 
+// G-08: ハザードに触れた席は死亡ペナルティを受けるが、試合は終わらない。
+// 復帰は自スポーンで、相方の席は巻き添えにならず動き続ける
+static void
+	test_g08_hazard_contact_is_penalty(const char* map_text)
+{
+	t_game*		game;
+	t_enemy*	victim;
+	t_enemy*	other;
+	t_enemy*	hazard;
+	t_pos		anchor;
+	int			guard;
+
+	game = create_fps_duel(map_text);
+	if (!game) {
+		printf("  FAIL cannot stage FPS duel\n");
+		g_failures++;
+		g_checks++;
+		return ;
+	}
+	victim = combatant_by_id(game, 0);
+	other = combatant_by_id(game, 1);
+	hazard = first_hazard(game);
+	copy_pos(&anchor, &victim->spawn.pos);
+	copy_pos(&victim->sprite->pos, &hazard->sprite->pos);
+	game_step(game, TICK_DT);
+	expect_int("ハザード接触で死亡する", victim->death_timer > 0.0, 1);
+	expect_int("接触では試合が終わらない", game->cleared, 0);
+	expect_int("勝者は確定しない", game->fps.winner, -1);
+	expect_int("相方は死なない", other->death_timer <= 0.0, 1);
+	guard = 0;
+	while (victim->death_timer > 0.0 && guard < MAX_TICKS) {
+		game_step(game, TICK_DT);
+		guard++;
+	}
+	expect_int("死亡演出は有限時間で終わる", guard < MAX_TICKS, 1);
+	expect_int("復帰しても試合は続いている", game->cleared, 0);
+	expect_int("自スポーンへ復帰する", same_cell(&victim->sprite->pos, &anchor), 1);
+	game_destroy(game);
+}
+
+// G-08: ハザード同士は接触しても死なない（席だけがペナルティ対象）
+static void
+	test_g08_hazards_do_not_kill_each_other(const char* map_text)
+{
+	t_game*		game;
+	t_enemy*	hazard;
+	t_enemy*	cur;
+	int			dead_hazards;
+
+	game = create_fps_duel(map_text);
+	if (!game) {
+		printf("  FAIL cannot stage FPS duel\n");
+		g_failures++;
+		g_checks++;
+		return ;
+	}
+	hazard = first_hazard(game);
+	cur = game->world.enemies;
+	while (cur) {
+		if (cur->is_hazard && cur != hazard) {
+			copy_pos(&cur->sprite->pos, &hazard->sprite->pos);
+		}
+		cur = cur->next;
+	}
+	game_step(game, TICK_DT);
+	dead_hazards = 0;
+	cur = game->world.enemies;
+	while (cur) {
+		if (cur->is_hazard && cur->death_timer > 0.0) {
+			dead_hazards++;
+		}
+		cur = cur->next;
+	}
+	expect_int("ハザード同士は死なない", dead_hazards, 0);
+	game_destroy(game);
+}
+
+// G-08: 死亡中の席は動かないが、世界（相方・ハザード）は止まらない
+static void
+	test_g08_world_keeps_running_while_dead(const char* map_text)
+{
+	t_game*		game;
+	t_enemy*	victim;
+	t_enemy*	other;
+	t_pos		frozen;
+	t_pos		moved;
+	int			i;
+
+	game = create_fps_duel(map_text);
+	if (!game) {
+		printf("  FAIL cannot stage FPS duel\n");
+		g_failures++;
+		g_checks++;
+		return ;
+	}
+	victim = combatant_by_id(game, 0);
+	other = combatant_by_id(game, 1);
+	copy_pos(&victim->sprite->pos, &first_hazard(game)->sprite->pos);
+	game_step(game, TICK_DT);
+	copy_pos(&frozen, &victim->sprite->pos);
+	copy_pos(&moved, &other->sprite->pos);
+	i = 0;
+	while (i < 30) {
+		sim_set_input(game, 0, 1, 0, 0, 0, 0.0);
+		sim_set_input(game, 1, 1, 0, 0, 0, 0.0);
+		game_step(game, TICK_DT);
+		i++;
+	}
+	expect_int("死亡中の席は入力で動かない",
+		same_cell(&victim->sprite->pos, &frozen), 1);
+	expect_int("生存中の相方は動ける",
+		other->sprite->pos.x != moved.x || other->sprite->pos.y != moved.y, 1);
+	game_destroy(game);
+}
+
+// G-08: ハザードが席を狙う FPS 1vs1 を連続実行しても破綻しないこと。ハザードの
+// 追跡は経路探索を伴い、以前はカメラ（サーバ実行では原点）を狙っていたので、
+// 席を狙う経路が長時間まわることをここで担保する
+static void
+	test_g08_headless_soak(const char* map_text)
+{
+	t_game*	game;
+	int		tick;
+	int		deaths;
+
+	game = create_fps_duel(map_text);
+	if (!game) {
+		printf("  FAIL cannot stage FPS duel\n");
+		g_failures++;
+		g_checks++;
+		return ;
+	}
+	deaths = 0;
+	tick = 0;
+	while (tick < 3000 && !game->cleared) {
+		sim_set_input(game, 0, 1, 0, 0, 0, (double)tick / 53.0);
+		sim_set_input(game, 1, 1, 0, 0, 0, -(double)tick / 71.0);
+		game_step(game, TICK_DT);
+		if (combatant_by_id(game, 0)->death_timer > 0.0
+			|| combatant_by_id(game, 1)->death_timer > 0.0) {
+			deaths++;
+		}
+		tick++;
+	}
+	expect_int("3000 ティック連続実行できる", tick, 3000);
+	expect_int("接触だけでは試合が終わらない", game->cleared, 0);
+	printf("  info: 死亡中だったティック数 %d/3000\n", deaths);
+	game_destroy(game);
+}
+
 int
 	main(void)
 {
@@ -538,6 +689,11 @@ int
 	test_g07_distinct_spawns(fps_map);
 	test_g07_respawn_to_own_spawn(fps_map);
 	test_g07_single_spawn_map_rejected(fps_map_1spawn);
+	printf("G-08 敵ハザード化（接触＝ペナルティ）\n");
+	test_g08_hazard_contact_is_penalty(fps_map);
+	test_g08_hazards_do_not_kill_each_other(fps_map);
+	test_g08_world_keeps_running_while_dead(fps_map);
+	test_g08_headless_soak(fps_map);
 	free(rsp_map);
 	free(fps_map);
 	free(fps_map_1spawn);

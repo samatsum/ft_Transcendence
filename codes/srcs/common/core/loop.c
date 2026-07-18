@@ -68,19 +68,18 @@ int
 {
 	double	time_mult;
 
+	if (game->cleared) {
+		return (1);
+	}
 	time_mult = calc_time_mult(delta_time);
-	if (!game->cleared && is_player_dead(game)) {
-		update_death(game, delta_time);
-		update_enemies(game, delta_time);
-	} else if (!game->cleared) {
-		if (game->player) {
-			apply_input(game, time_mult);
-		}
-		step_external_combatants(game, time_mult);
-		if (!game->cleared) {
-			update_enemies(game, delta_time);
-			game->mode_ops.combat(game);
-		}
+	update_death(game, delta_time);
+	if (game->player && !is_player_dead(game)) {
+		apply_input(game, time_mult);
+	}
+	step_external_combatants(game, time_mult);
+	update_enemies(game, delta_time);
+	game->mode_ops.combat(game);
+	if (!game->cleared) {
 		check_quest(game);
 	}
 	return (game->cleared);

@@ -8,7 +8,7 @@
 
 /* ************************************************************************** */
 static void
-	rsp_respawn(t_game* game);
+	rsp_respawn(t_game* game, t_enemy* combatant);
 static void
 	rsp_build_status_text(t_game* game, char* buf, int size);
 static void
@@ -21,16 +21,19 @@ t_mode_ops
 	rsp_mode_ops(void);
 
 /* ************************************************************************** */
-// RSPでは所属チームに対応するスポーン地点へ復帰し、手も更新する
+// RSPでは所属チームに対応するスポーン地点へ復帰し、手も更新する。復帰地点を
+// チームのプールから選び直すのが RSP のルールなので、自スポーン固定の FPS
+// （respawn_combatant）とは別扱いにする。RSP は死亡タイマーを使わず勝敗解決の
+// 場で即時復帰するため、ここへ来るのはローカル自席だけ（非自席は respawn_npc）
 static void
-	rsp_respawn(t_game* game)
+	rsp_respawn(t_game* game, t_enemy* combatant)
 {
-	if (game->player->rsp.team == TEAM_BLUE) {
+	if (combatant->rsp.team == TEAM_BLUE) {
 		respawn_at(game, RSP_BLUE_DIRS);
 	} else {
 		respawn_at(game, RSP_RED_DIRS);
 	}
-	game->player->rsp.hand = rsp_rehand(game->player->rsp.hand, &game->rsp.seed);
+	combatant->rsp.hand = rsp_rehand(combatant->rsp.hand, &game->rsp.seed);
 }
 
 

@@ -11,7 +11,7 @@ static int
 static void
 	fps_combat(t_game* game);
 static void
-	fps_respawn(t_game* game);
+	fps_respawn(t_game* game, t_enemy* combatant);
 static void
 	fps_build_status_text(t_game* game, char* buf, int size);
 static void
@@ -45,9 +45,9 @@ static void
 // 違うため、全スポーンからの再抽選だと相手の地点へ湧く可能性があった。
 // スポーンが1つだけの従来マップでは抽選結果と一致するので挙動は変わらない
 static void
-	fps_respawn(t_game* game)
+	fps_respawn(t_game* game, t_enemy* combatant)
 {
-	respawn_combatant(game, game->player);
+	respawn_combatant(game, combatant);
 }
 
 

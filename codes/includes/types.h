@@ -43,7 +43,7 @@ typedef struct s_mode_ops
 	int		(*init_assets)(struct s_game* game);
 	int		(*init_world)(struct s_game* game);
 	void	(*combat)(struct s_game* game);
-	void	(*respawn)(struct s_game* game);
+	void	(*respawn)(struct s_game* game, t_enemy* combatant);
 	void	(*update_enemy)(t_enemy* enemy, struct s_game* game, double dt);
 	void	(*draw_weapon)(struct s_game* game);
 	void	(*build_status_text)(struct s_game* game, char* buf, int size);

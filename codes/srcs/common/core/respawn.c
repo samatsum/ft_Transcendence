@@ -87,16 +87,23 @@ int
 }
 
 /* ************************************************************************** */
-// プレイヤー戦闘員の死亡演出タイマーを進め、終了したら現在モードの復帰処理を呼ぶ
+// 死亡中の全戦闘員のタイマーを進め、切れた戦闘員から順に現在モードの復帰処理を
+// 呼ぶ。1vs1 では席ごとに死亡と復帰が独立するため、ローカル自席だけでなく
+// リストを走査する（G-08）。死亡は試合終了ではなく復帰までのペナルティ
 void
 	update_death(t_game* game, double delta_time)
 {
-	if (!game->player || game->player->death_timer <= 0.0) {
-		return ;
-	}
-	game->player->death_timer -= delta_time;
-	if (game->player->death_timer <= 0.0) {
-		game->player->death_timer = 0.0;
-		game->mode_ops.respawn(game);
+	t_enemy*	cur;
+
+	cur = game->world.enemies;
+	while (cur) {
+		if (cur->death_timer > 0.0) {
+			cur->death_timer -= delta_time;
+			if (cur->death_timer <= 0.0) {
+				cur->death_timer = 0.0;
+				game->mode_ops.respawn(game, cur);
+			}
+		}
+		cur = cur->next;
 	}
 }

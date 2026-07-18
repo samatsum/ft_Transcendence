@@ -19,18 +19,19 @@
 
 /* ************************************************************************** */
 int
-	enemy_sees_player(t_enemy* cur, t_game* game, double target_angle);
+	enemy_sees_target(t_enemy* cur, t_game* game, t_pos* target, double target_angle);
 static int
 	has_line_of_sight(t_pos* from, t_pos* to, t_config* config);
 
 /* ************************************************************************** */
-// 距離・正面視野(FOV)・視線(LOS)の3条件でプレイヤーを検知できるか判定する
+// 距離・正面視野(FOV)・視線(LOS)の3条件で対象を検知できるか判定する。1vs1 では
+// 狙う相手が席ごとに変わるため、カメラ固定ではなく対象の座標を受け取る（G-08）
 int
-	enemy_sees_player(t_enemy* cur, t_game* game, double target_angle)
+	enemy_sees_target(t_enemy* cur, t_game* game, t_pos* target, double target_angle)
 {
 	double	diff;
 
-	if (dist_pos(&game->camera.pos, &cur->sprite->pos) > ENEMY_SIGHT_RANGE) {
+	if (dist_pos(target, &cur->sprite->pos) > ENEMY_SIGHT_RANGE) {
 		return (0);
 	}
 	// 追跡中（track_timer > 0）でない場合のみ、厳密な視野角チェックを行う
@@ -40,7 +41,7 @@ int
 			return (0);
 		}
 	}
-	return (has_line_of_sight(&cur->sprite->pos, &game->camera.pos, &game->config));
+	return (has_line_of_sight(&cur->sprite->pos, target, &game->config));
 }
 
 /* ************************************************************************** */
