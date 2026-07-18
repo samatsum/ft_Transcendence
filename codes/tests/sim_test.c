@@ -627,6 +627,66 @@ static void
 	game_destroy(game);
 }
 
+// snapshot から combatant_id の要素を探す。無ければ NULL
+static const double*
+	snapshot_entry(const double* snap, int len, int id)
+{
+	int	i;
+
+	if (len < SIM_SNAP_HEADER_DOUBLES) {
+		return (NULL);
+	}
+	i = 0;
+	while (i < (int)snap[4]) {
+		if ((int)snap[SIM_SNAP_HEADER_DOUBLES + i * SIM_SNAP_COMBATANT_DOUBLES] == id) {
+			return (snap + SIM_SNAP_HEADER_DOUBLES + i * SIM_SNAP_COMBATANT_DOUBLES);
+		}
+		i++;
+	}
+	return (NULL);
+}
+
+// G-08 レビュー P2: FPS の snapshot は死亡ペナルティ中を alive=false で報告し、
+// 復帰後は alive=true に戻ること（alive=true かつ respawn_s>0 の矛盾した組を
+// クライアントへ出さない）
+static void
+	test_g08_snapshot_alive_tracks_death(const char* map_text)
+{
+	t_game*			game;
+	t_enemy*		victim;
+	double			snap[SNAP_CAP];
+	const double*	entry;
+	int				guard;
+
+	game = create_fps_duel(map_text);
+	if (!game) {
+		printf("  FAIL cannot stage FPS duel\n");
+		g_failures++;
+		g_checks++;
+		return ;
+	}
+	victim = combatant_by_id(game, 0);
+	copy_pos(&victim->sprite->pos, &first_hazard(game)->sprite->pos);
+	game_step(game, TICK_DT);
+	entry = snapshot_entry(snap, game_snapshot(game, snap, SNAP_CAP), 0);
+	expect_int("死亡中の席の snapshot が取れる", entry != NULL, 1);
+	if (entry) {
+		expect_int("死亡中は alive=false", (int)entry[6], 0);
+		expect_int("死亡中は respawn_s>0", entry[8] > 0.0, 1);
+	}
+	guard = 0;
+	while (victim->death_timer > 0.0 && guard < MAX_TICKS) {
+		game_step(game, TICK_DT);
+		guard++;
+	}
+	entry = snapshot_entry(snap, game_snapshot(game, snap, SNAP_CAP), 0);
+	if (entry) {
+		expect_int("復帰後は alive=true", (int)entry[6], 1);
+		expect_int("復帰後は respawn_s=0", entry[8] <= 0.0, 1);
+	}
+	game_destroy(game);
+}
+
 // G-08 レビュー P1: 接触死と同じティックにゴールセルへ居ても、死亡が優先され
 // 試合は終わらないこと（死んだ席はゴールも収集もできない）。ハザードがゴール
 // セルに立っている状況がまさにこれで、放置すると「死にながら勝つ」が起きる
@@ -722,6 +782,7 @@ int
 	test_g08_hazards_do_not_kill_each_other(fps_map);
 	test_g08_world_keeps_running_while_dead(fps_map);
 	test_g08_dead_seat_cannot_goal(fps_map);
+	test_g08_snapshot_alive_tracks_death(fps_map);
 	test_g08_headless_soak(fps_map);
 	free(rsp_map);
 	free(fps_map);

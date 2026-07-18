@@ -291,7 +291,11 @@ int
 }
 
 /* ************************************************************************** */
-// 戦闘員1体ぶんのスナップショット要素を書き込み、書いた要素数を返す
+// 戦闘員1体ぶんのスナップショット要素を書き込み、書いた要素数を返す。
+// FPS の alive は死亡ペナルティ（death_timer）も反映する: G-08 で「死亡中＝
+// 操作不能・世界へ干渉しない」が席の状態になったため、alive=true のまま
+// respawn_s>0 という矛盾した組をクライアント（W-11 の HUD・操作可否判断）へ
+// 出さない
 static int
 	snapshot_combatant(t_game* game, t_enemy* cur, double* buf)
 {
@@ -302,7 +306,8 @@ static int
 	buf[4] = cur->sprite->pos.y;
 	buf[5] = cur->dir_angle;
 	buf[6] = (game->mode == MODE_RSP)
-		? cur->rsp.alive : (cur->state != ENEMY_STATE_DEAD);
+		? cur->rsp.alive
+		: (cur->state != ENEMY_STATE_DEAD && cur->death_timer <= 0.0);
 	buf[7] = (cur->input_source == INPUT_SRC_AI);
 	buf[8] = cur->death_timer;
 	return (SIM_SNAP_COMBATANT_DOUBLES);
