@@ -70,11 +70,21 @@ jobs:
           echo "EMSDK_NODE: ${EMSDK_NODE:-未設定}"
           ls -la web/build/
       - name: sim end-to-end on Node (record.mjs, seed 固定で決着まで)
-        # コンテナの PATH に node が無い場合は emsdk 同梱の node を使う
+        # コンテナの PATH に node が無い場合は emsdk 同梱の node を使う。
+        # 失敗時は原因行を ::error:: で出す: ジョブログは API 経由で読めない
+        # （403）が annotation なら取得でき、環境差の切り分けができる
         run: |
           NODE_BIN="$(command -v node || echo "${EMSDK_NODE}")"
-          echo "using: $NODE_BIN"
-          "$NODE_BIN" web/sim_demo/record.mjs
+          echo "using: $NODE_BIN ($("$NODE_BIN" --version))"
+          set +e
+          OUT="$("$NODE_BIN" web/sim_demo/record.mjs 2>&1)"
+          RC=$?
+          set -e
+          echo "$OUT"
+          if [ "$RC" -ne 0 ]; then
+            echo "::error::record.mjs rc=$RC :: $(printf '%s' "$OUT" | tail -6 | tr '\n' ' | ')"
+            exit "$RC"
+          fi
 
   # W-01 で追加した TS モノレポ（backend / frontend / shared）の型検査とビルド。
   # W-16 が lint（ESLint 等）をここへ足す
