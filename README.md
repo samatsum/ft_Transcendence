@@ -82,6 +82,25 @@ docker compose up --build
 
 ビルド完了後、ブラウザで `http://localhost:8000/web/gate1.html` を開くと、生成された `web/build/render.js` と `web/assets/` を使って動作確認できます。停止は `Ctrl-C` です。Linux/WSL で生成ファイルの所有者を自分に合わせたい場合だけ、`HOST_UID=$(id -u) HOST_GID=$(id -g) docker compose up --build` のように指定します。ローカルに Emscripten を入れている場合は、`emsdk_env.sh` を source してから通常どおり `make web` / `make sim` してください。
 
+### Web アプリ（backend / frontend）
+
+オンライン対戦の Web アプリは npm workspaces のモノレポです（`backend/` `frontend/` `shared/`）。Node.js 20 以上が必要です。
+
+```
+npm install                # 3 ワークスペースをまとめて導入（初回のみ）
+npm run dev:backend        # Fastify を :3000 で起動
+npm run dev:frontend       # Vite を :5173 で起動（/api は :3000 へプロキシ）
+```
+
+ブラウザで `http://localhost:5173` を開くと `/api/health` の疎通結果が表示されます。`npm run typecheck` で 3 ワークスペースの型検査、`npm run build` で本番ビルドを行います。ポートは `.env.example` の `BACKEND_PORT` / `FRONTEND_PORT` で変更できます。
+
+| ディレクトリ | 内容 |
+|---|---|
+| `backend/` | Fastify + TypeScript。REST API・WS ゲートウェイ・GameRoom（`sim.wasm`）の置き場 |
+| `frontend/` | React + Vite + TypeScript + Tailwind の SPA |
+| `shared/` | FE/BE 共有の zod スキーマ（型の単一情報源） |
+| `infra/` | nginx 設定・TLS 証明書（実体は今後追加） |
+
 ## 操作 (Controls)
 
 | 入力 | 動作 |

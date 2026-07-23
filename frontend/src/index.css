@@ -1,0 +1,4 @@
+/* Tailwind v4 は設定ファイルではなく CSS の @import で読み込む
+   （@tailwindcss/vite プラグインが処理する）。テーマ拡張が要るときは
+   ここに @theme ブロックを足す。デザイン方針は ④ フロントエンド設計 に従う */
+@import 'tailwindcss';

@@ -1,0 +1,25 @@
+{
+  "name": "ft-transcendence",
+  "private": true,
+  "type": "module",
+  "description": "ft_transcendence — cub3D エンジン（C/wasm）を核にしたオンライン対戦。W-01 リポジトリ骨格",
+  "engines": {
+    "node": ">=20"
+  },
+  "workspaces": [
+    "shared",
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace backend & npm run dev --workspace frontend",
+    "dev:backend": "npm run dev --workspace backend",
+    "dev:frontend": "npm run dev --workspace frontend",
+    "build": "npm run build --workspace shared && npm run build --workspace backend && npm run build --workspace frontend",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "clean": "rm -rf node_modules */node_modules */dist"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
