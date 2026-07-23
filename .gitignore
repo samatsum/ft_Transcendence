@@ -25,3 +25,6 @@ __pycache__/
 
 # Local Docker/compose overrides
 .env
+
+# 作業中に手元で出力したログダンプ（git log > log 等）。誤コミット防止
+/log
