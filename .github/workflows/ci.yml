@@ -62,3 +62,28 @@ jobs:
         run: make web sim
       - name: sim end-to-end on Node (record.mjs, seed 固定で決着まで)
         run: node web/sim_demo/record.mjs
+
+  # W-01 で追加した TS モノレポ（backend / frontend / shared）の型検査とビルド。
+  # W-16 が lint（ESLint 等）をここへ足す
+  web-app:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: install (workspaces)
+        run: npm ci
+      - name: typecheck (shared / backend / frontend)
+        run: npm run typecheck
+      - name: build
+        run: npm run build
+      - name: backend が起動して /api/health を返すか
+        run: |
+          npm run start --workspace backend &
+          for i in $(seq 1 40); do
+            curl -sf http://localhost:3000/api/health >/dev/null 2>&1 && break
+            sleep 0.5
+          done
+          curl -sf http://localhost:3000/api/health | grep -q '"status":"ok"'

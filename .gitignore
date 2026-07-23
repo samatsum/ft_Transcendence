@@ -28,3 +28,17 @@ __pycache__/
 
 # 作業中に手元で出力したログダンプ（git log > log 等）。誤コミット防止
 /log
+
+# Node / TypeScript（W-01 で追加した backend / frontend / shared）
+node_modules/
+dist/
+*.tsbuildinfo
+.vite/
+
+# W-03 以降: SQLite の実データ（スキーマ・マイグレーションは追跡する）
+backend/data/
+*.db
+*.db-journal
+
+# W-15: 自己署名証明書（初回 compose 起動時に生成）
+infra/certs/
