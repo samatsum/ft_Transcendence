@@ -1,0 +1,6 @@
+{
+  "name": "@ft/web-legacy-scope",
+  "private": true,
+  "type": "commonjs",
+  "description": "このディレクトリを CommonJS スコープに固定するためだけの package.json。ルートの package.json が \"type\": \"module\" のため、emcc が生成する web/build/*.js（__filename と module.exports を使う CommonJS の glue）が ESM と誤認され、require() の戻り値が関数でなくなる（TypeError: createSim is not a function）。npm workspaces には含めない。"
+}
