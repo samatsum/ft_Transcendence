@@ -82,9 +82,34 @@ docker compose up --build
 
 ビルド完了後、ブラウザで `http://localhost:8000/web/gate1.html` を開くと、生成された `web/build/render.js` と `web/assets/` を使って動作確認できます。停止は `Ctrl-C` です。Linux/WSL で生成ファイルの所有者を自分に合わせたい場合だけ、`HOST_UID=$(id -u) HOST_GID=$(id -g) docker compose up --build` のように指定します。ローカルに Emscripten を入れている場合は、`emsdk_env.sh` を source してから通常どおり `make web` / `make sim` してください。
 
+#### ブラウザで遊ぶ（`gate1.html`）
+
+`gate1.html` は **ブラウザ上でエンジンを 1 人で動かす動作確認ページ**です（オンライン 2vs2 対戦は W-10 以降の実装で、まだ動きません）。Emscripten をローカルに入れている場合は、Docker を使わず次の 2 手順でも起動できます。
+
+```
+make web                                    # web/build/render.js と web/assets/ を生成
+python3 -m http.server 8000                 # リポジトリのルートで配信（file:// では動かない）
+```
+
+そのうえでブラウザで `http://localhost:8000/web/gate1.html` を開きます。
+
+**マップと解像度は URL クエリで選べます**（`maps/` 配下のパスを指定）。
+
+```
+http://localhost:8000/web/gate1.html                                   # 既定（FPS: maps/fps_map/1.cub）
+http://localhost:8000/web/gate1.html?map=rsp_map/rsp.cub               # RSP モード
+http://localhost:8000/web/gate1.html?map=fps_map/fps_duel.cub          # FPS 対戦マップ
+http://localhost:8000/web/gate1.html?res=1280x720                      # 内部解像度を指定（既定 960x540）
+http://localhost:8000/web/gate1.html?map=rsp_map/rsp.cub&res=848x480   # 併用
+```
+
+- `?map=` は `maps/` からの相対パス。`rsp_map/` 配下を指定すると RSP モード、`fps_map/` 配下は FPS モードになります（配置ディレクトリでモードが決まる）。
+- `?res=` は内部描画解像度。重い環境は `848x480` に下げると軽くなります（表示サイズは CSS で拡大され不変）。範囲は C 側で `848x480`〜`1920x1080` にクランプされます。
+- 操作は下の [操作 (Controls)](#操作-controls) と同じです。加えて、**Canvas をクリックすると視点操作が有効化**され、`Esc` で解除されます。フッターに実解像度と fps が表示されます。
+
 ### Web アプリ（backend / frontend）
 
-オンライン対戦の Web アプリは npm workspaces のモノレポです（`backend/` `frontend/` `shared/`）。Node.js 20 以上が必要です。
+オンライン対戦の Web アプリは npm workspaces のモノレポで、`app/` 配下にまとまっています（`app/backend/` `app/frontend/` `app/shared/`）。Node.js 20 以上が必要です。
 
 ```
 npm install                # 3 ワークスペースをまとめて導入（初回のみ）
@@ -96,10 +121,10 @@ npm run dev:frontend       # Vite を :5173 で起動（/api は :3000 へプロ
 
 | ディレクトリ | 内容 |
 |---|---|
-| `backend/` | Fastify + TypeScript。REST API・WS ゲートウェイ・GameRoom（`sim.wasm`）の置き場 |
-| `frontend/` | React + Vite + TypeScript + Tailwind の SPA |
-| `shared/` | FE/BE 共有の zod スキーマ（型の単一情報源） |
-| `infra/` | nginx 設定・TLS 証明書（実体は今後追加） |
+| `app/backend/` | Fastify + TypeScript。REST API・WS ゲートウェイ・GameRoom（`sim.wasm`）の置き場 |
+| `app/frontend/` | React + Vite + TypeScript + Tailwind の SPA |
+| `app/shared/` | FE/BE 共有の zod スキーマ（型の単一情報源） |
+| `infra/` | nginx 設定・TLS 証明書・`docker/`（Dockerfile。実体は今後追加） |
 
 ## 操作 (Controls)
 
