@@ -20,10 +20,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: deps (X11 headers + Xvfb)
+        # libbsd-dev は必須: minilibx のビルドは test/mlx-test も作り、その
+        # リンクが Linux で -lbsd を要求する（codes/minilibx-linux/test/Makefile.mk）。
+        # 一式は README「必要なパッケージ」と同じ（xorg のメタパッケージは
+        # 巨大なので、実際に要る dev パッケージだけを列挙する）
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            gcc make python3 libx11-dev libxext-dev zlib1g-dev xvfb
+            gcc make python3 libx11-dev libxext-dev libbsd-dev zlib1g-dev xvfb
       - name: build native
         run: make -j"$(nproc)"
       - name: lint (make check)
@@ -60,8 +64,17 @@ jobs:
           apt-get install -y --no-install-recommends make python3
       - name: build web + sim
         run: make web sim
+      - name: 環境の確認（record.mjs 失敗時の切り分け用）
+        run: |
+          echo "node: $(command -v node || echo '見つからない') $(node --version 2>&1 || true)"
+          echo "EMSDK_NODE: ${EMSDK_NODE:-未設定}"
+          ls -la web/build/
       - name: sim end-to-end on Node (record.mjs, seed 固定で決着まで)
-        run: node web/sim_demo/record.mjs
+        # コンテナの PATH に node が無い場合は emsdk 同梱の node を使う
+        run: |
+          NODE_BIN="$(command -v node || echo "${EMSDK_NODE}")"
+          echo "using: $NODE_BIN"
+          "$NODE_BIN" web/sim_demo/record.mjs
 
   # W-01 で追加した TS モノレポ（backend / frontend / shared）の型検査とビルド。
   # W-16 が lint（ESLint 等）をここへ足す
