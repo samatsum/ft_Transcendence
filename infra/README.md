@@ -6,6 +6,7 @@
 
 | パス | 内容 |
 |---|---|
+| `docker/` | Dockerfile 置き場。現状は `docker/engine-build/`（Emscripten ビルド用）。ルート直下から移設（②の整理） |
 | `nginx/nginx.conf` | HTTPS 終端（自己署名）・静的配信（frontend の build）・`/api` と `/ws` のリバースプロキシ |
 | `certs/` | 自己署名証明書（**生成物。git 管理外**）。初回 `docker compose up` で生成する |
 | `scripts/` | 証明書生成・Prisma マイグレーション・`make web sim` 相当のアセット変換を起動時に流す入口 |

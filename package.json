@@ -7,17 +7,17 @@
     "node": ">=20"
   },
   "workspaces": [
-    "shared",
-    "backend",
-    "frontend"
+    "app/shared",
+    "app/backend",
+    "app/frontend"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace backend & npm run dev --workspace frontend",
-    "dev:backend": "npm run dev --workspace backend",
-    "dev:frontend": "npm run dev --workspace frontend",
-    "build": "npm run build --workspace shared && npm run build --workspace backend && npm run build --workspace frontend",
+    "dev": "npm run dev --workspace @ft/backend & npm run dev --workspace @ft/frontend",
+    "dev:backend": "npm run dev --workspace @ft/backend",
+    "dev:frontend": "npm run dev --workspace @ft/frontend",
+    "build": "npm run build --workspace @ft/shared && npm run build --workspace @ft/backend && npm run build --workspace @ft/frontend",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "clean": "rm -rf node_modules */node_modules */dist"
+    "clean": "rm -rf node_modules app/*/node_modules app/*/dist"
   },
   "devDependencies": {
     "typescript": "^5.9.3"

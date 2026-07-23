@@ -2,7 +2,7 @@ services:
   engine-build:
     build:
       context: .
-      dockerfile: docker/engine-build/Dockerfile
+      dockerfile: infra/docker/engine-build/Dockerfile
       args:
         EMSDK_IMAGE: ${EMSDK_IMAGE:-emscripten/emsdk:latest}
     working_dir: /workspace

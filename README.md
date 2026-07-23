@@ -2,7 +2,7 @@
 
 *本プロジェクトは、42 カリキュラムの一環として samatsum によって作成されました。*
 
-<img align="center" src="screenshot.png" alt="Screenshot of the game" />
+<img align="center" src="md_files/screenshot.png" alt="Screenshot of the game" />
 
 ## 概要 (Description)
 
