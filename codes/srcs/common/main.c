@@ -132,7 +132,7 @@ static bool
 }
 
 /* ************************************************************************** */
-// path の中に needle が含まれるかを調べる小さな文字列検索
+// path の中に needle(特定の文字列のことね。needleっていう文字列ちゃうよ) が含まれるかを調べる小さな文字列検索
 static bool
 	path_contains(const char* path, const char* needle)
 {
