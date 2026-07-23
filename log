@@ -1,0 +1,760 @@
+commit 1934e7565857a71b830ba9d394a8c7fb3df01510
+Merge: e2b6f4d 4ef1c77
+Author: samatsum <zunandkun@gmail.com>
+Date:   Thu Jul 23 10:00:47 2026 +0900
+
+    merge: TEAM_PLAN に4人の担当割当（氏名）を反映
+
+commit 4ef1c7732d6465dc07455f9dd8490560cc9b1be3
+Author: samatsum <zunandkun@gmail.com>
+Date:   Thu Jul 23 10:00:47 2026 +0900
+
+    docs: TEAM_PLAN に4人の担当割当（氏名）を確定
+    
+    なぜ:
+    - チームは samatsum / torinoue / mamiyaza / hminemur の4人。
+      samatsum が4レーンのうち最も既存作業の知識を要する
+      担当2（sim.wasm を Node で駆動する W-10 / snapshot
+      配信形 ②§5-C の設計元）を samatsum に確定した。
+    - 担当4（フロントゲーム）は render.wasm・補間の受信側で担当2 と密結合する
+      ため、samatsum がペアレビューで支援する旨を明記。担当1・3・4 への
+      torinoue / mamiyaza / hminemur の割当は既存 C 知識を前提としないため
+      暫定（入れ替え自由）とした。
+    - 担当割当表・各役の見出し・クリティカルパス図・人間確認タスクに氏名を
+      反映した。
+
+commit e2b6f4d757483f789a4c19860fc063bc47aa4d3f
+Merge: cd40b55 77be4d7
+Author: samatsum <zunandkun@gmail.com>
+Date:   Thu Jul 23 09:44:47 2026 +0900
+
+    merge: 4人体制の作業分担 TEAM_PLAN を追加
+    
+    完了済み（壱・肆）と残作業（弐・参）を一望し、残る2レーンを各2人＝4人へ
+    割る地図を md_files/design/TEAM_PLAN.md として追加。INDEX から参照。
+
+commit 77be4d7183c02ef0d7223eb5a03dea20b507956c
+Author: samatsum <zunandkun@gmail.com>
+Date:   Thu Jul 23 09:44:34 2026 +0900
+
+    docs: 4人体制の作業分担 TEAM_PLAN を追加
+    
+    なぜ:
+    - これまで全工程を1人で進めてきたが4人体制へ移行する。完了済み（C の
+      壱・肆）と残作業（TS の 弐・参）を一望し、残る2レーンを各2人に割って
+      並行で進められる地図を正本として置く。
+    - 元設計の4レーン=4人想定のうち2レーン（Engine/Gameplay）が完了済みの
+      ため、残る Backend/Frontend を「基盤/ゲームサーバー」「フロント基盤/
+      フロントゲーム」の4役へ再分割した。C エンジンを作った本人が sim.wasm を
+      駆動する担当2（W-10）の適任者である点、W-10 が E-11 完了済みで Day 1
+      着手できる点（最大の並行余地）、担当2⇄担当4 の snapshot 契約が合流点で
+      ある点を明記。
+    - 引き継ぎ資産（sim API / snapshot 受け口 / render.wasm / 補間 / デモ /
+      対戦マップ / make test・CI）を「残作業が配線するだけの部品」として整理し、
+      1人→4人で必要になるブランチ/PR/CI/契約変更の運用ルールを足した。
+
+commit cd40b55f65607e2f2ef5f323b4bb0716af88c42d
+Merge: ec3368c 4697852
+Author: samatsum <zunandkun@gmail.com>
+Date:   Sun Jul 19 08:40:45 2026 +0900
+
+    merge: E-13（描画ハードニング）と E-14（CI）を main へ統合
+    
+    壱（Engine）レーンの E-01〜E-14 が全て Done になった。CI は毎 PR で
+    native/web/sim ビルド + make check + make test(85 checks) + xvfb 起動
+    スモークを実行し、内部解像度は web_init の引数（既定 960×540 = 実測
+    112fps、60fps 要件に約 1.8 倍の余裕）で段階縮小できる。
+
+commit 4697852b4300ece0a8a114daec7e5bb43c62f5ae
+Author: samatsum <zunandkun@gmail.com>
+Date:   Sun Jul 19 08:40:32 2026 +0900
+
+    docs: E-13/E-14 レポート追加、BACKLOG Done 表と INDEX を更新
+    
+    なぜ:
+    - E-13 の受入条件「段階縮小の根拠データを提示」は文書が成果物のため、
+      解像度別 fps 表（fps/rsp 両マップ）と F-06 への申し送り（web_init の
+      解像度引数・?res=・クランプ範囲・動的切替は再 init）を正本として残す。
+    - E-14 は CI 構成と W-16 への申し送り（FE 検査ジョブの追加先・emsdk
+      イメージ固定時は compose と同時更新）を記録。BACKLOG §1 で壱レーンの
+      全 Issue（E-01〜E-14）が Done になったことを追跡可能にした。
+
+commit 52d4f3c0c8c6c19d8d16655302536625d4cbe939
+Author: samatsum <zunandkun@gmail.com>
+Date:   Sun Jul 19 08:40:18 2026 +0900
+
+    E-13: 内部解像度のパラメータ化と解像度別スループット計測
+    
+    なぜ:
+    - web はシングルスレッド描画（① §4-D で pthread 無効）のため、評価機の
+      性能次第では内部解像度を下げるのが唯一実効的な逃げ道になる。その口を
+      いつでも引ける状態にし（パラメータ化）、どこまで下げると何 fps 出るかの
+      根拠データを再実行可能な形で残す（① §6 E-13）。
+    - web_init に width/height を追加（0=既定 960×540。実際の値は init_window が
+      native と共有の MIN 848×480〜MAX 1920×1080 へクランプ）。既存呼び出しは
+      引数省略が wasm ABI 上 0 になり既定へ落ちるため後方互換。gate1.html は
+      ?res=1280x720 で手動切替でき、F-06 の GameView が同じ口を使う。
+    - 計測は web/bench_render.mjs としてコミット（Node ヘッドレス 300 フレーム、
+      前進+回転入力込み）。評価機でも同じ表を再取得できる。
+    
+    検証（開発機実測）:
+    - 960×540 = 112fps / 1280×720 = 63fps / 1920×1080 = 28fps（fps_map/1.cub）。
+      RSP マップも 960×540 = 107fps。既定解像度は 60fps 要件に約 1.8 倍の余裕
+    - make check 0 error / make test 85 checks / web 再ビルド後に既存回帰
+      （ローカルプレイ 600 フレーム×3マップ・replay 全量再生）通過
+
+commit c068aa818252be09c1a5b4dadb6fe861d30b8cb6
+Author: samatsum <zunandkun@gmail.com>
+Date:   Sun Jul 19 08:35:21 2026 +0900
+
+    E-14: GitHub Actions CI（3ターゲット + check/test + xvfb smoke）を追加
+    
+    なぜ:
+    - ここから弐レーン（W-01 の TS 骨格 → W-10 GameRoom）で変更量が増えるため、
+      その前に「毎 PR で native / web / sim の 3 ターゲットが壊れていないこと」
+      を機械で守る（① §6 E-14。⑤の決定どおり W-16 が FE lint/型検査ジョブを
+      本ワークフローへ後から追加する）。
+    - 原案の受入条件に無い make test（sim 受入 85 checks）も CI に含めた。
+      G-05〜G-09 で常設化したテストは gcc だけで走り、native の X も emcc も
+      不要なので native ジョブに同居できる。
+    - native スモークはヘッドレスランナーでは X が無いため xvfb-run で仮想
+      ディスプレイを立て、「timeout 5 秒の満了（rc=124）＝クラッシュせず走り
+      続けた」を成功条件にする（ローカル検証と同じ判定）。対象はオンライン
+      ホワイトリスト4枚 + 従来の 1.cub。
+    - wasm ジョブは docker-compose.yml と同じ emscripten/emsdk イメージ上で
+      make web sim を行い、仕上げに record.mjs（seed 固定で決着まで）を Node で
+      通す。先日の「emcc 不在で古い wasm のまま検証していた」事故も、CI が
+      ビルドの exit code を直接見ることで構造的に再発しない。
+    
+    検証:
+    - YAML の構文検証と、CI が実行するコマンド列（make -j / check / test /
+      smoke 判定 / make web sim / record.mjs）のローカル通過は確認済み。
+      「毎 PR で自動実行される」の実機確認は main への push 後に Actions で行う
+
+commit ec3368cd9bd4be0c03aa5f02fc6307d0c85bb1d9
+Merge: 1870249 a4a74d4
+Author: samatsum <zunandkun@gmail.com>
+Date:   Sun Jul 19 07:53:03 2026 +0900
+
+    merge: G-09（対戦マップ各2枚）と G-10（BMP 無効化）を main へ統合
+    
+    既存の rsp / 21x21_arena を採用しつつ rsp_pillars / fps_duel を追加制作し、
+    ③ §2-E のホワイトリスト表に4枚を登録した。起動検証は make test の G-09
+    検査（関門経路の完走可能性を含む）として常設。web の結果 BMP 保存を
+    無効化し、G-10 の3ターゲット（native 保存/web 無効/sim 構造的ゼロ）が
+    閉じた。肆レーンの残はチーム内テストプレイでの承認のみ。
+
+commit a4a74d44bafa1e9d0f5ec811278a414ef13f6173
+Author: samatsum <zunandkun@gmail.com>
+Date:   Sun Jul 19 07:52:39 2026 +0900
+
+    G-09/G-10: マップホワイトリスト（③ §2-E）登録と BACKLOG Done 表更新
+    
+    なぜ:
+    - G-09 の公開手順は「③ §2-E のホワイトリスト表への登録」（⑤ 追補）。
+      採用4枚の {id, name, mode, path} を正本として表に起こした。id は
+      ファイル stem（③ の規約）で、W-01 以降のサーバ実装はこの表を転記する。
+      チーム内テストプレイでの承認が残っている旨も表に明記した。
+    - BACKLOG §1 に G-08（レビュー反映込み）・G-09・G-10 の完了を記録し、
+      肆レーンの残が「G-09 のテストプレイ承認のみ」であることを追跡可能にした。
+
+commit 3955439f36045ac82737ec2a9934c67d7efeb9fc
+Author: samatsum <zunandkun@gmail.com>
+Date:   Sun Jul 19 07:52:39 2026 +0900
+
+    G-09: オンライン対戦マップ4枚の起動検証を make test に常設化
+    
+    なぜ:
+    - G-09 の受入「起動検証」を、native の目視起動だけでなく回帰として残す。
+      RSP は「赤2+青2 の席が別マスで成立し、N=2 の試合が決着まで完走できる」、
+      FPS は「1vs1 の2席+ハザードが成立し、全収集→扉 D 開放→ゴール到達で
+      勝者確定の関門経路が完走できる」ことを、採用4枚（rsp / rsp_pillars /
+      21x21_arena / fps_duel）すべてに対して検査する。マップを後から改変して
+      関門が完走不能になる事故（扉の閉じ込め・スポーン不足）をここで検知する。
+    - 完走可能性だけを検査したいので、検査中のハザードは退避+外部入力化で
+      静止させ、偶発接触によるフレークを排除した。
+    
+    検証:
+    - make test: 85 checks 0 failure（G-09 は 22 checks）。ASan/LSan 報告ゼロ
+
+commit f985cfc32a59c93a02f7168eeffe19219d7d1ca6
+Author: samatsum <zunandkun@gmail.com>
+Date:   Sun Jul 19 07:52:17 2026 +0900
+
+    G-09: FPS 用オンライン対戦マップ2枚目 fps_duel を追加
+    
+    なぜ:
+    - オンライン FPS（1vs1 レース）の要件（複数スポーン・G ゴール・収集→扉 D
+      の関門・敵ハザード）を満たす既存マップは 21x21_arena の1枚だけだった。
+      同じ構成要素で 19x17 の左右対称レイアウトを追加する: 両席が下辺の対角
+      （N×2）から同時開始し、中央のハザード巡回リング（P ループ+M×2）の内外に
+      散らばる星5個を集めると、上辺中央の扉 D が開いてゴール G に到達できる。
+      中央の1個だけリング内に置き、リスクを取るか外周から安全に集めるかの
+      選択がレースの駆け引きになる。
+
+commit dfc1cba8080d8b9ccb0e4e0a27e5589d22c33bfd
+Author: samatsum <zunandkun@gmail.com>
+Date:   Sun Jul 19 07:52:17 2026 +0900
+
+    G-09: RSP 用オンライン対戦マップ2枚目 rsp_pillars を追加
+    
+    なぜ:
+    - G-09 は RSP/FPS 各2枚が受入条件で、RSP は rsp.cub の1枚しかなかった。
+      既存 rsp.cub のテクスチャ構成・チーム別スポーン規約（赤=N/W、青=S/E を
+      各3箇所）を踏襲しつつ、開けた原っぱだった初代と差をつけるため、中央に
+      遮蔽（内壁ピラー4本と樽）を置いた 17x17 の点対称レイアウトにした。
+      遮蔽で追跡・逃走の読み合いが増え、ホーム踏み（手の再抽選）へ戻る動線も
+      上下対称で公平になる。
+
+commit 3086a8c32f6fe963381d9d7b558d3a24b45ec14f
+Author: samatsum <zunandkun@gmail.com>
+Date:   Sun Jul 19 07:47:53 2026 +0900
+
+    G-10: web ビルドで結果 BMP の保存を無効化する
+    
+    なぜ:
+    - 結果スクリーンショットは native のプレイ記念品で、web では wasm の
+      MEMFS へ書くだけの揮発 I/O だった（① §4-C「web/サーバでは BMP 保存を
+      無効化。結果は DB に保存されるため不要」）。オンラインの試合結果は
+      W-13 で DB（Match/MatchPlayer）が正本になる。
+    - headless（sim）側は E-11 の時点で bmp.c / screen.c を非リンクにして
+      おり構造的にファイル I/O ゼロ。今回の web 無効化で G-10 の対象
+      3 ターゲットすべてが閉じた。native は従来どおり保存する。
+    
+    検証:
+    - native / web / sim の 3 ターゲットビルド + make check 0 error +
+      make test 63 checks
+    - web は render.js から save_result_screenshot への参照が消え、サイズが
+      60.4KB → 57.3KB に縮小（BMP 系コードの除去を確認）。web ローカル
+      プレイ回帰 600 フレームも通過
+
+commit 18702495110623a87aa7381bd43d53c75f0cd348
+Merge: ba586ff 7f53991
+Author: samatsum <zunandkun@gmail.com>
+Date:   Sun Jul 19 03:16:08 2026 +0900
+
+    merge: ゲームプレイ G-05〜G-08 を main へ統合
+    
+    肆レーンの残（先取点の正式受入・FPS 1vs1 のゴール/スポーン/ハザード）を
+    戦闘員基準へ一般化し、ENGINE_PHASE3_REPORT の P1（FPS ヘッドレスが決着
+    不能）を解消した。レビュー反映3件（死亡席の同ティックゴール禁止・
+    snapshot alive の整合・layering lint 復旧）を含む。
+    受入テストは make test（codes/tests/sim_test.c、63 checks）として常設。
+
+commit 7f5399127a3da3bec3557e7f39bbf1e1d0da7916
+Author: samatsum <zunandkun@gmail.com>
+Date:   Sun Jul 19 03:12:43 2026 +0900
+
+    lint: 無効化していた layering 検査（CR012）を復旧する
+    
+    なぜ（レビュー P3）:
+    - check_layering は rel の前置き "common/" を見ていたが、実際の rel は
+      "srcs/common/..." のため全ファイルが素通りし、検査が一度も機能して
+      いなかった。make check の green を依存関係保護の根拠にできない状態。
+    - あわせて禁止ヘッダのリストを現行アーキテクチャへ更新した。旧リストの
+      enemy/enemy.h・enemy/enemy_utils.h は戦闘員統合（G-02〜G-04）で実装ごと
+      srcs/common/enemy/ へ移り common のモジュールになっており、素通りバグが
+      この陳腐化を隠していた（正しく検査すると common 7 ファイルが誤検知に
+      なる）。現在の正当な禁止対象は、自身のヘッダコメントで「fps/rsp 側から
+      のみ include する」と定める rsp/rsp_game.h。core/mode_ops.h はモード注入の
+      公認の継ぎ目なので違反にしない。
+    - 検査対象は srcs/common/ に加え、モード専用の includes/rsp/ を除く
+      includes/ も含めた（common 側ヘッダ経由の依存混入も塞ぐ）。
+    
+    検証:
+    - make check 13 検査 0 error（全 lint 現状維持）
+    - 負のコントロール: common の .c へ rsp/rsp_game.h の include を一時追加
+      すると layering が ERROR を出すことを確認（修正前は検知不能だった）
+
+commit a25fe07f73e02961a3df7225c2290d0ff8d180e6
+Author: samatsum <zunandkun@gmail.com>
+Date:   Sun Jul 19 03:11:04 2026 +0900
+
+    G-08追補: FPS snapshot の alive に死亡ペナルティを反映する
+    
+    なぜ（レビュー P2）:
+    - FPS の席の死亡は death_timer で表現するが、snapshot の alive は
+      state != ENEMY_STATE_DEAD しか見ておらず、死亡中でも alive=true かつ
+      respawn_s>0 という矛盾した組を配信していた。W-11 側は alive を見て
+      HUD・復帰待ち表示・操作可否を判断する想定（② §5-C）なので、サーバの
+      内部表現の都合をクライアント契約に漏らさない。FPS の alive は
+      「state != DEAD かつ death_timer <= 0」に揃える。RSP は即時復帰で
+      rsp.alive が正本のため従来どおり。
+    
+    検証:
+    - 追加テスト: 死亡中は alive=false / respawn_s>0、復帰後は alive=true /
+      respawn_s=0。修正を外すと「死亡中は alive=false」が FAIL する（負の
+      コントロール確認済み）。63 checks 0 failure / make check 0 error
+
+commit 70332cf37905ab30cc235ca4c0a4289a9c6d20a1
+Author: samatsum <zunandkun@gmail.com>
+Date:   Sun Jul 19 03:08:49 2026 +0900
+
+    G-08追補: 死亡した席は同ティックにゴール・収集できないようにする
+    
+    なぜ（レビュー P1）:
+    - game_step は combat（接触死）→ check_quest の順で走るため、ゴールセルに
+      立つハザードへ触れた席が「死にながら同ティックでゴールして勝つ」状態
+      だった（実プローブで cleared=1 winner=0 death=5.0 を確認）。死亡は
+      ペナルティであり、死亡中の席は世界へ干渉できないのが G-08 の意図。
+      check_quest の対象から death_timer > 0 の席を外す。
+    
+    検証:
+    - 追加テスト「ゴール上でも接触死する／死亡した席はゴールできない／勝者は
+      確定しない」が修正前は 2 件 FAIL（バグ再現）、修正後は 58 checks 0 failure
+    - make check 13 検査 0 error / native ビルド + 21x21_arena smoke
+
+commit 4618860d217068f0f3063f516e24cceb124c64f4
+Author: samatsum <zunandkun@gmail.com>
+Date:   Sun Jul 19 02:30:50 2026 +0900
+
+    G-08: 敵ハザード化（接触は死亡ペナルティで試合は続行する）
+    
+    なぜ:
+    - 接触死がローカル自席（カメラ1点）専用で、game->player が居ないサーバ実行
+      では check_enemy_contact が常に 0 を返し、ハザードが誰も脅かさなかった。
+      死亡・復帰も自席1体ぶんしか進まないため、1vs1 では片方が死ぬと世界ごと
+      止まってしまう。① §4-C の「接触＝死亡→数秒後に自スポーンへリスポーン
+      （試合続行）」を戦闘員単位で成立させる。
+    
+    主な判断:
+    - 接触判定を「ハザード × 席」の総当たりへ一般化した。席とハザードの区別は
+      G-06 で入れた is_hazard を使い、ハザード同士・死亡中の席は判定しない。
+    - 死亡タイマーと復帰を戦闘員単位にし（update_death がリストを走査）、
+      mode_ops.respawn を (game, combatant) 署名へ変更した。RSP は復帰地点を
+      チームのプールから選び直すルールなので従来の実装のまま残し、非自席は
+      従来どおり respawn_npc が担当する。
+    - game_step から「自席死亡中は世界を止める」分岐を外した。止めるべきなのは
+      死んだ席だけなので、死亡中の席の入力適用と AI 更新をスキップする形へ
+      置き換えている。死亡演出の全画面表示（render_frame の is_player_dead）は
+      従来どおりで、native の見た目は変わらない。
+    - ハザード AI の狙う相手をカメラ固定から「最寄りの生存席」へ変更した
+      （nearest_seat）。サーバ実行ではカメラが原点のままで、ハザードが誰も
+      追わない置物になっていたため。スプライトの向きだけは見る側との角度で
+      決まるので、従来どおりカメラ基準で選ぶ。native は席が1つなので同一挙動。
+    
+    検証:
+    - make test: 55 checks 0 failure（接触で死ぬが試合は終わらない・勝者は
+      確定しない・相方は巻き添えにならない・死亡演出は有限時間で終わり自
+      スポーンへ復帰・ハザード同士は死なない・死亡中の席は入力で動かないが
+      世界は動く・FPS 1vs1 の 3000 ティック連続実行）
+    - ソークでは 3000 ティック中 466 ティックが死亡中で、ハザードが実際に席を
+      捕まえている（従来はサーバ側で完全に無害だった）
+    - ASan/LSan で全テストを実行し報告ゼロ
+    - make check 13 検査 0 error / native ビルド + 4 マップ smoke
+    - web・sim 再ビルド後: record.mjs が変更前と一致（RSP 無影響）、replay 全量
+      再生と web ローカルプレイ 600 フレーム×3マップも通過
+
+commit 463d78c03a45467ee0bed5786c1b51585f6d3881
+Author: samatsum <zunandkun@gmail.com>
+Date:   Sun Jul 19 02:22:12 2026 +0900
+
+    G-07: FPS の 1vs1 同時スポーンと自スポーンへの復帰
+    
+    なぜ:
+    - スポーン抽選自体は複数 N/S/E/W を既に許しており、sim は FPS 2 席へ別々の
+      地点を配れていたが、復帰が「全スポーンからの再抽選」だったため、1vs1 では
+      相手の開始地点へ湧きうる状態だった。① §4-C は「自スポーンへリスポーン」を
+      指定しており、各戦闘員が自分の開始地点を安定して持つ必要がある。
+    
+    主な判断:
+    - t_enemy.spawn を「生成時に確定し以後上書きしないアンカー」として扱い、
+      respawn_combatant(game, combatant) で位置・向き・AI 経路をそこへ戻す。
+      ローカル自席のときは移動計算の作業領域であるカメラも同じ地点から作り直す。
+    - FPS の mode_ops.respawn を respawn_at(DIRECTIONS) から respawn_combatant へ
+      差し替えた。スポーンが1つだけの従来マップ（同梱 FPS マップは 21x21_arena
+      以外すべて1つ）では抽選結果と一致するため、native の挙動は変わらない。
+    - RSP の復帰は「自チームのスポーンプールから選び直す」のがルールなので
+      従来のまま残した（アンカーを再設定する側の仕様）。record.mjs の出力が
+      変更前と一致することで無影響を確認している。
+    - スポーンが1つしかないマップは FPS 1vs1 の生成を失敗させる方針を維持し、
+      テストで固定した（席を重ねて黙って成立させるより安全なため）。
+    
+    検証:
+    - make test: 43 checks 0 failure（2席が別マスから開始・各席のアンカーが
+      開始位置と一致・スポーン向きを向く・復帰で自地点へ戻りアンカーが不変・
+      相手地点へ湧かない・1スポーンマップは生成失敗）
+    - ASan/LSan で同テストを実行し報告ゼロ
+    - make check 13 検査 0 error / native ビルド + 3 マップ smoke
+    - web・sim 再ビルド後: record.mjs が変更前と一致（RSP 無影響）、
+      web ローカルプレイ 600 フレーム×3マップ通過
+
+commit 346bbdd0082a345df5c42d9723cb1e312a144e1e
+Author: samatsum <zunandkun@gmail.com>
+Date:   Sun Jul 19 02:17:10 2026 +0900
+
+    G-06: FPS ゴールを戦闘員基準にして 1vs1 の勝者帰属を実装
+    
+    なぜ:
+    - ゴール判定・収集がカメラ1点（ローカルプレイヤー）前提だったため、席が
+      複数ある 1vs1 では「どちらが先にゴールへ入ったか」を決められず、
+      game->player が居ないサーバ実行では check_quest が一度も走らなかった
+      （ENGINE_PHASE3_REPORT の P1／乖離 #3 の中核）。
+    
+    主な判断:
+    - check_quest を全戦闘員のループへ一般化し、勝者は combatant_id で持つ
+      （②§5-C「FPS の match.winner は combatant_id」）。t_fps_data.winner を
+      新設し、snapshot は RSP=チーム / FPS=combatant_id を返すようにした。
+    - 席とマップ由来の敵を区別する t_enemy.is_hazard を導入。ハザードは
+      アイテムを拾わず、ゴールに乗っても試合を終わらせない。G-08 の
+      「接触＝ペナルティ」でも同じ区別を使う。
+    - delete_sprite（マス一致でリスト先頭を消す）を撤去した。サーバ実行では
+      席の sprite も world.sprites に繋がり、しかも先頭側に居るため、収集時に
+      戦闘員の身体を解放してノードのポインタが宙に浮く経路だった。収集は
+      「戦闘員が所有しないスプライト」だけを消す実装へ置き換えた。
+    - check_quest の呼び出しをローカル入力の update ゲートから外し、全席の
+      移動が終わったティック末尾で毎回実行する。これに伴い用途が消えた
+      t_game.last_options を削除した。native は毎ティック sync_player_from_camera
+      で sprite と camera が一致しているため、判定セルも発火タイミングも不変。
+    - ローカル自席の combatant_id を 0 にした（従来 -1）。native/web 単体でも
+      fps.winner が意味を持つようにするため。
+    
+    検証:
+    - make test: 34 checks 0 failure（G-06 は席0/席1 それぞれのゴール勝者と
+      snapshot の winner、ハザードがゴールに乗っても未決着、収集時に戦闘員の
+      身体が巻き添えにならないこと）
+    - ASan/LSan で同テストを実行し報告ゼロ（誤解放の回帰検知）
+    - make check 13 検査 0 error / native ビルド + 1.cub・21x21_arena.cub・
+      rsp.cub の 3 マップ smoke
+    - web・sim 再ビルド後: record.mjs が変更前と完全一致（809 snapshot・
+      同一決着）＝RSP 無影響。replay 全量再生と web ローカルプレイ 600
+      フレーム×3マップも通過
+
+commit 48a352cb4bed0b575cfc20b6edd7ea05ff2c1f07
+Author: samatsum <zunandkun@gmail.com>
+Date:   Sun Jul 19 02:05:44 2026 +0900
+
+    G-05: 先取点の match_rules 化の正式受入を閉じる
+    
+    なぜ:
+    - 中核（target_score の可変化）は E-10 の API 契約が要求して先行実装済み
+      だったが、受入条件の検証が一時ファイルのままで、回帰を検知できる形に
+      なっていなかった。肆の Issue として正式に閉じる。
+    
+    主な判断（設計書間の矛盾の解消。ユーザー判断で確定）:
+    - ①§6 G-05 の「テスト用に N=2 でも動く」と ②§4-B の「3–21」が矛盾して
+      いた。エンジンは機構として N≥1 を受理し、製品仕様レンジ 3–21 の検証は
+      WS 層（W-11 №6）の責務へ一本化する。範囲をエンジンにも二重化すると、
+      短い試合を回せず ① の受入条件を満たせなくなるため。0 以下は従来どおり
+      既定の RSP_SCORE_LIMIT へ落ちるので native 単体起動の挙動は不変。
+    - 受入テストを `make test`（codes/tests/sim_test.c）として常設化した。
+      lint 対象は srcs/ と includes/ のみなので tests/ は CR 検査に掛からず、
+      emcc も不要（SIM_SRCS を gcc で直接リンク）なので E-14/W-16 の CI から
+      そのまま呼べる。
+    - 決着の検査は AI 任せにせず接触を仕込む形にした。RSP の AI は追跡も逃走も
+      同じ速度倍率で自然な接触が起きにくく、あいこだと resolve_contact が何も
+      解決しないまま膠着するため、先取点というルールだけを決定的に切り出す。
+    
+    検証:
+    - make test: 20 checks 0 failure（実効値 1/2/3/10/21/100、0 と -1 の既定
+      フォールバック、N=2/3/10 が「到達前は未決着・到達で finished・勝者
+      スコアがちょうど N」）
+    - 負のコントロール: 下限を 3 に戻すと 4 件が落ちることを確認（回帰検知力）
+    - make check 13 検査 0 error / native ビルド + fps・rsp 両マップ smoke
+
+commit ba586ff7a83a505c9f6b6adfb807fded7b6998cc
+Author: samatsum <zunandkun@gmail.com>
+Date:   Thu Jul 16 21:15:55 2026 +0900
+
+    build: docker composeの権限と配信手順を修正
+
+commit bf96e16ec38f69a156ee4b823ac31b1ec755c726
+Merge: 64b6c65 a51bae6
+Author: samatsum <zunandkun@gmail.com>
+Date:   Thu Jul 16 20:57:56 2026 +0900
+
+    merge: フェーズ3をmainへ統合
+    
+    # Conflicts:
+    #       .gitignore
+
+commit 64b6c65868d88199f3f846af99fa590169d1a7d0
+Author: samatsum <zunandkun@gmail.com>
+Date:   Thu Jul 16 20:53:08 2026 +0900
+
+    build: DockerでWebビルド環境を追加
+
+commit a51bae6cd7d019c04901265d969ea50b32d45941
+Author: samatsum <zunandkun@gmail.com>
+Date:   Thu Jul 16 19:58:30 2026 +0900
+
+    record.mjs の決着を再現可能にする（match_rules に seed を追加）
+    
+    なぜ:
+    - sim の乱数 seed が時刻由来のみで、record.mjs の決着時刻が走行ごとに
+      変わり、90 秒上限に届かず finished 無しの記録ができる恐れがあった
+      （merge 前レビューの指摘）。デモとテストの記録は決定的であるべき。
+    
+    主な判断:
+    - t_match_rules に seed を追加（0=時刻由来の本番既定 / 非 0=固定）。
+      スポーン抽選が game_create 内で走るため、seed の上書きは init_game
+      直後・sim_prepare_world 前に行う（後から set する API では席配置が
+      固定できない）。sim_create は第4引数で受ける。
+    - record.mjs は seed=42 固定 + 上限内に決着しなければ throw で失敗させる
+      （黙って未決着の記録を書かない）。
+    
+    検証:
+    - seed=42 で 54.0 秒に決着（winner=1, score=[0,3]）。record.mjs を
+      2 回実行し snapshots.json が byte 一致（cmp）
+    - 再検証一式: make check 0 error / native rsp smoke / ASan 3×1000 ティック
+      リークゼロ / Node 3 インスタンス×2 ゲーム×1000 ティック /
+      replay 全量再生、すべて通過
+
+commit dcd6501c2f6943b9611c172d04647f52f1d17c38
+Author: samatsum <zunandkun@gmail.com>
+Date:   Thu Jul 16 12:49:27 2026 +0900
+
+    フェーズ3レビュー反映: snapshot 適用の id 照合化・ヘッダ依存・sprite 掃除
+    
+    なぜ（レビュー指摘 P2×2 + P3 の解消。W-10/W-11 結合前に土台を固める）:
+    - game_apply_snapshot はリスト順割当だったため、FPS ハザード・観戦・
+      ノード数不一致・entry 順序変更で表示が崩れる。combatant_id 照合 +
+      未知 id の主張割当 + 消滅 id のマップ外退避 + 視点切替時の旧ノード
+      解放（ゴースト防止）へ変更した。表示の対応づけがサーバの並び順に
+      依存しなくなる。
+    - Makefile にヘッダ依存が無く、構造体ヘッダ変更後の部分ビルドで
+      レイアウト不一致の .o が混在し native が segfault する実害があった。
+      native は -MMD -MP + .d include、単一コマンドの web/sim は全ヘッダと
+      Makefile を prerequisite に足して再発を塞いだ。
+    - game_add_combatant で add_enemy 失敗時に生成済み sprite が
+      world.sprites に残った。spawn_rsp_npc と同じ delete_sprite_node の
+      失敗時パターンに統一した。
+    - P1（FPS headless が決着不能）は G-06〜G-08 の対応範囲として、
+      レポート乖離 #3 に「FPS で W-10 ルームを立てない」を明記した。
+    
+    検証:
+    - id 照合の狙い撃ちテスト（順序シャッフル / 余剰ハザード id=8 /
+      entry 消滅→退避 / 視点切替）を Node で通過
+    - types.h touch → 依存 38 ファイルが再コンパイルされることを確認
+    - 再検証一式: make check 0 error / native 両マップ smoke / ASan 3×1000
+      ティック リークゼロ / record→replay 全量再生 / web ローカル回帰
+
+commit e7edb40cc446867d5a6b60b21e174d0348bf4984
+Author: samatsum <zunandkun@gmail.com>
+Date:   Thu Jul 16 12:30:01 2026 +0900
+
+    docs: フェーズ3レポート追加、BACKLOG Done 表と INDEX を更新
+    
+    なぜ:
+    - E-10〜E-12 の受入条件チェック・設計との乖離（snapshot の tick 扱い・
+      world_delta 後送り・FPS ヘッドレスの制約・G-05 先行実装ほか 7 件）・
+      W-10 への申し送り 9 項目を、W-10 着手前に正本として残すため。
+    - BACKLOG §1 に E-10/E-11/E-12 のコミット対応を記録し、ゲート2 の残作業
+      （弐: W-01→W-10→W-11→W-12 がクリティカルパス）を整理した。
+
+commit 55c5a8291ed50dc61892638041e5d944721b160e
+Author: samatsum <zunandkun@gmail.com>
+Date:   Thu Jul 16 12:25:32 2026 +0900
+
+    E-12: game_apply_snapshot と補間受け口、sim→JSON→render の一方通行デモ
+    
+    なぜ:
+    - クライアントは「スナップショット2つの補間結果を書いた表示用 t_game を
+      render_frame が読むだけ」の設計（① §3-D・② §5-C）。その受け口が無いと
+      W-11/F-06 の結合ができない。
+    
+    主な判断:
+    - game_apply_snapshot は platform/web に置くクライアント専用 API（① §3-B）。
+      視点席はカメラを戦闘員から完全導出（Phase 2 申し送りの「カメラ導出の反転」
+      はこのスナップショット駆動モードで実施。ローカル操作の native/web は従来
+      経路のまま）。他席は位置・向き・チーム×手のテクスチャを毎フレーム上書き
+      するため、表示側の初期ランダム配置に正しさが依存しない。
+    - 補間計算は web/snapshot_interp.js に分離（④ §4 の分担で壱の担当分。
+      位置=線形・向き=最短弧・離散値は古い側。F-06 が流用する前提）。
+    - 描画だけ行う web_render_frame を追加。スナップショット駆動中にローカルの
+      game_step が権威状態と競合しないようにするため。
+    - デモは record.mjs（Node の sim.wasm → ② §5-C 形式 JSON。偶数 tick 配信）と
+      replay.html/js（100ms 遅延 2 点補間 → web_apply_snapshot → web_render_frame）。
+      W-10/W-11 では JSON ファイルが WS 配信に置き換わる。
+    
+    検証:
+    - record.mjs: RSP target_score=3 が 67 秒で決着（winner=0）。snapshot は
+      1005 個、ペイロード実測 avg 513B / max 524B（② §8 の < 1KB 予算内）
+    - Node ヘッドレスで snapshots.json 全量を render.wasm へ再生: 例外ゼロ、
+      975/1004 フレームでフレームバッファ変化、最終 finished で結果画面経路も通過
+    - make check 13 検査 0 error / native 全ビルド + fps/rsp 両マップ smoke /
+      web・sim の 3 ターゲットビルド
+
+commit 21bc5c2cfe9f6b6bbe8927caa8093f3f2dab24ff
+Author: samatsum <zunandkun@gmail.com>
+Date:   Thu Jul 16 12:17:00 2026 +0900
+
+    E-11: sim.wasm ヘッドレスビルド（make sim）を追加
+    
+    なぜ:
+    - GameRoom（W-10）は 1 試合 = 1 sim.wasm インスタンスを Node 上で複数併走
+      させる（② §6）。描画パイプラインを含まない最小の wasm が必要。
+    
+    主な判断:
+    - 描画側ソース（draw/wall/sky/screen/sprite/cast_columns/draw_weapon・
+      raycast.c・ui・input.c・bmp.c・両モードの weapon 描画）を非リンク。
+      sprite_utils.c はスプライトのリスト管理（位置の正本）なので sim 側に残し、
+      light.c / tables.c は finish_init から参照される純計算のため残した。
+    - -sENVIRONMENT=node・MODULARIZE で複数インスタンス生成に対応。公開関数は
+      ① §3-B の API + JS 向けラッパ（sim_create / sim_set_input）のみ。
+    - 出力は web/build/sim.js(+wasm)。バックエンド（W-01 以降）の配置が決まる
+      までは render.wasm と同じ場所に置く。
+    
+    検証:
+    - make sim 成功（sim.wasm 39KB。render.js 60KB との差が描画非リンクの傍証）
+    - Node で 3 モジュールインスタンス × 各 2 ゲーム × 1000 ティックを実行し、
+      4 席の snapshot（id/team/位置/AI フラグ）と外部入力席の移動を確認
+    - native / web / sim の 3 ターゲット並立ビルドを確認
+
+commit 6ee85f51dac225633aefbfac883c1d4fdc14d217
+Author: samatsum <zunandkun@gmail.com>
+Date:   Thu Jul 16 12:16:31 2026 +0900
+
+    E-10: sim 公開 API（game_create〜game_destroy）を実装
+    
+    なぜ:
+    - GameRoom（W-10）が Node 上で試合を権威実行するには、描画・ウィンドウ・
+      ファイル I/O・exit() を伴わない試合ライフサイクル API が必要（① §3-B）。
+    - 席の生成をマップ走査から分離し（game_add_combatant）、人間未接続席を
+      先に AI で作って join 時に入力源だけ付け替える運用（② §6-B 追補）を
+      可能にするため、game_set_input_source を公開 API に含めた。
+    
+    主な判断:
+    - game_step は native/web と同一実体を公開 API に昇格（戻り値 int で決着を
+      返す）。ローカルプレイヤー席が無いサーバ実行では apply_input を通らず、
+      外部入力席ごとの適用（step_external_combatants）だけが走る。native では
+      この経路は no-op で、プレイヤーは従来のカメラ座標系経路のまま
+      （浮動小数まで挙動不変を維持。① §3-C）。
+    - 自陣踏み込みの手変え（rsp_home_rehand）はカメラ基準から EXTERNAL 席の
+      リスト走査へ一般化。on_home は t_game 集約から戦闘員ごと（t_rsp_state）へ
+      移した。native は外部入力席が player 1 席のみ＋ノード位置はカメラと毎
+      フレーム同期のため同一結果。
+    - 先取点は match_rules（target_score、② §4-B の 3-21）を受けて可変化し、
+      未指定 0 は従来の RSP_SCORE_LIMIT に落ちる（G-05 の中核を E-10 の API
+      契約が要求するため先行実装。native の挙動は不変）。
+    - snapshot は f64 フラット配列（レイアウトは platform/sim.h）。JSON 化と
+      tick 付与は Node 側の責務（② §6-B「wasm 内で文字列化しない」）。
+    - headless の pf_load_texture は 1x1 ダミーを返し、native と同じ資産初期化
+      経路を分岐なしで通す（テクスチャ有無で挙動が割れない）。
+    
+    検証:
+    - make check 13 検査 0 error / native 全ビルド + fps/rsp 両マップ 5 秒 smoke
+    - ASan+LSan の native ハーネスで RSP 3 ゲーム × 1000 ティック（入力源切替
+      往復・重複席拒否を含む）リーク報告ゼロ。20000 ティックで target_score=5
+      決着（state=finished, winner 確定）も確認
+
+commit 50d5c024d4fb04e617b6521fa9d2a0ca5b1eccd7
+Author: samatsum <zunandkun@gmail.com>
+Date:   Wed Jul 15 16:31:48 2026 +0900
+
+    web: canvas を縦横両方に収まるサイズにしてスクロールバーを解消
+    
+    Why: 幅だけを基準にしていたため、横長ディスプレイで canvas+フッターの高さが
+    ビューポートを超えて縦スクロールバーが出現し、その分 100vw が実表示幅より広がって
+    横スクロールバーも連鎖していた（ユーザー報告）。高さからも上限を計算する
+    --stage-w に一本化し、body を overflow:hidden にして連鎖を断つ。
+
+commit c7b47ff6c49d3bb0adbac82a02ed9f57c116a686
+Author: samatsum <zunandkun@gmail.com>
+Date:   Wed Jul 15 16:21:48 2026 +0900
+
+    web: URL クエリでマップ選択、RSP モード対応
+    
+    Why: gate1 のマップが 1.cub 直書きで、他マップの動作確認に毎回コード編集が
+    必要だった。?map= クエリで maps/ 配下を指定できるようにし、native と同じ
+    「配置ディレクトリでモード決定」を web でも踏襲して rsp_map/ 配下なら RSP として
+    起動する（web_init に is_rsp を追加）。マップ名はステータス行に表示し、
+    パスはホワイトリスト文字 + .. 拒否でフォールバックする。
+
+commit a1b7c3dbd7d67900b61cc341a2c31f837c28d473
+Author: samatsum <zunandkun@gmail.com>
+Date:   Wed Jul 15 03:46:43 2026 +0900
+
+    web: render.wasm の URL にもバージョンを付与
+    
+    Why: wasm は glue が素の URL で fetch するため、ブラウザのヒューリスティック
+    キャッシュ（Cache-Control なし + Last-Modified 由来）で古い wasm が再検証なしに
+    使い回され、新 glue と食い違って _web_set_weapon is not a function になっていた。
+    JS と wasm を同じ ASSET_VERSION で束ね、ステータス行のビルドタグも同じ定数から出す。
+
+commit ccf91a279903762a5161202bd843ef972617f6c4
+Author: samatsum <zunandkun@gmail.com>
+Date:   Wed Jul 15 03:42:42 2026 +0900
+
+    web: 読込中の JS 版をステータス行に表示
+    
+    Why: ブラウザキャッシュで古い gate1.js が実行され「実装したのに動かない」切り分けに時間を要した。ステータス行のビルドタグで、どの版が動いているかを一目で判別できるようにする。
+
+commit e8724aa318a3ad5264599e15b2b3eb64ac2c3cb9
+Author: samatsum <zunandkun@gmail.com>
+Date:   Wed Jul 15 03:34:42 2026 +0900
+
+    E-08: webで武器切替と射撃入力を接続
+    
+    Why: E-08 の web 入力対応に移動・回転・UI トグルだけでなく、
+    native と同等の武器切替と射撃入力も含めるため。
+    
+    native のキー処理から select_weapon / trigger_shot を共通関数として切り出し、
+    web_set_weapon / web_shoot から同じ処理を呼ぶ構成にした。
+    射撃クールダウンと RSP の武器無効化は C 側で一元管理する。
+
+commit 10d4f6a2257141617102b51e4224ca6bb7b25c7e
+Author: samatsum <zunandkun@gmail.com>
+Date:   Tue Jul 14 22:56:15 2026 +0900
+
+    docs: BACKLOG の完了コミットIDを本リポジトリのものへ更新
+    
+    Why: 旧リポジトリからの積み直し移行でコミットIDが変わったため、Done 表の追跡先を新IDへ差し替え、移行日と対応表を注記した。
+
+commit 2f2dec5d08e956bbc611a801e4d9a8e0e9a3c497
+Author: samatsum <zunandkun@gmail.com>
+Date:   Tue Jul 14 22:56:15 2026 +0900
+
+    cub3D + G-01〜G-04: 戦闘員統合
+    
+    Why: マルチプレイヤーの器を作る。プレイヤーを world.enemies リストの1ノード
+    （EXTERNAL 入力源の戦闘員）にすることで、切断席の AI 代替⇔復帰が入力源の
+    付け替えだけで済む構造になる（設計書② §6-B / §7 の前提。E-10 の
+    game_set_input_source はこのフィールドを切り替えるだけになる）。
+    - 移動・衝突を combatant_walk_axis へ一本化。当たり半径は per-combatant
+      （プレイヤー 0.5 / NPC 0.8）で統合前の非対称判定を厳密に保存
+    - death_timer・リスポーン地点を戦闘員ノードへ移動し、二重状態
+      （t_rsp_data.player / t_game.death_timer / t_game.spawn）を削除
+    - t_input は循環 include 回避のため input_state.h へ移設
+    - 検証: make check 0/0、ASan 25秒×2マップ、Node 1800フレーム、ブラウザ実操作
+      （詳細は md_files/reports/ENGINE_PHASE2_REPORT.md）
+
+commit 16a921f7048a20d0aa42b506194e421fad710e6b
+Author: samatsum <zunandkun@gmail.com>
+Date:   Tue Jul 14 22:56:15 2026 +0900
+
+    cub3D + E-08〜E-09: web入力接続と .cub メモリリーダ
+    
+    Why: ブラウザで「遊べる」入力面と、サーバ/ブラウザがファイルシステム非依存でマップを
+    読める経路（将来の welcome.map_text と同一）を作る（設計書① §4-B、② §5-B）。
+    - キーボード入力（WASD/←→/I/L/O）+ キャプチャ規約（クリック開始・Esc解除・タブ非表示で全解放）
+    - テクスチャはマップ必要分のみロード（1.cub で 42/99 枚。D-16 のパス契約で照合）
+    - parse_config をメモリテキスト経由に統一（全13マップでパース結果の一致を確認済み）
+    - web ビルドの PROFILE 無効化、TextDecoder は shim を恒久ワークアラウンドとして文書化
+      （TEXTDECODER=0 は emcc 6.x で廃止済みのため）
+
+commit e4b5c8384046d6de4291ce4c8b4cb007c6c1dcc5
+Author: samatsum <zunandkun@gmail.com>
+Date:   Tue Jul 14 22:56:15 2026 +0900
+
+    cub3D + E-01〜E-07: MLX分離と render.wasm（ゲート1 go）
+    
+    Why: C資産をブラウザへ持ち込めるかという最大リスクの go/no-go を最初に潰す（設計書① §5）。
+    - MLX 呼び出しを pf_* プラットフォーム境界（platform/native・platform/web）の背後へ隔離
+    - t_framebuffer 化・ループ反転（1フレーム関数化）・usleep 除去
+    - XPM→RGBA 変換パイプライン（xpm_to_tex.py）と make web ターゲット
+    - Chrome Canvas で静的マップ描画・コンソールエラーゼロを確認（判定: go）
+    - 判定と申し送りは md_files/reports/GATE1_REPORT.md
+
+commit 317449742fb6ec5db6e177a6bea60abca97c63e5
+Author: samatsum <zunandkun@gmail.com>
+Date:   Tue Jul 14 22:56:15 2026 +0900
+
+    cub3D + docs: ft_transcendence 上流設計書一式
+    
+    Why: 実装より先に設計を置く。「設計書を改訂してから実装」の運用の起点。
+    - ベースは完成状態の cub3D（レイキャスティングFPS + RSPモード、C/MiniLibX）
+    - md_files/design/: ARCHITECTURE + 詳細設計①〜⑤（エンジン分離/WS/REST/画面/バックログ）
+    - 決定記録 D-1〜D-18（技術選定・プロトコル・リポジトリ構成の比較検討つき）
+    - md_files/cub3d/: 既存 cub3D の正本ドキュメント（DEV/USER/CODING_RULES + CR021）
+    - md_files/reports/: ゲート1・フェーズ2の実施レポート（実装は後続コミット）
