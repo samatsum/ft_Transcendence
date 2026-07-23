@@ -8,6 +8,10 @@ codes/obj/
 
 # 実行時生成物（スクリーンショット BMP の出力先）
 bmp/
+screenshot/**/*.bmp
+
+# Claude Code のワークツリー/ローカルメタ（誤コミット厳禁）
+.claude/
 
 # Python バイトコードキャッシュ
 __pycache__/

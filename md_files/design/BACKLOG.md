@@ -59,7 +59,7 @@
 | G-07 | **FPS 複数スポーン（1vs1 同時開始）**。各戦闘員が生成時に確定した安定アンカー（`t_enemy.spawn`）を持ち、`respawn_combatant` で自スポーンへ復帰する（①§4-C）。FPS 復帰は全スポーン再抽選をやめたため相手の地点へ湧かない。スポーン1つのマップは FPS 1vs1 の生成を失敗させる | `463d78c` |
 | G-08 | **敵ハザード化**。接触判定・死亡タイマー・復帰を戦闘員単位へ一般化し、死亡は試合終了ではなく自スポーン復帰までのペナルティに（①§4-C）。ハザード AI はカメラ固定をやめ最寄りの生存席を狙う。**これで ENGINE_PHASE3_REPORT の P1（FPS ヘッドレスが決着不能）が解消**（レビュー反映3件込み: 死亡席の同ティックゴール禁止・snapshot alive の整合・layering lint 復旧） | `4618860`..`7f53991` |
 | G-10 | **BMP 保存の無効化**。web は `render_frame` から保存経路を除外（render.js 60.4KB→57.3KB）、sim は E-11 時点で bmp.c/screen.c 非リンク＝構造的にファイル I/O ゼロ。native は従来どおり保存 | `3086a8c` |
-| G-09 | **オンライン対戦マップ 各2枚**: 既存 `rsp` / `21x21_arena` を採用し、`rsp_pillars`（RSP2枚目）/ `fps_duel`（FPS2枚目）を追加制作。③§2-E のホワイトリスト表へ登録。起動検証は `make test` の G-09 検査で常設化（**チーム内テストプレイ承認は残**） | `dfc1cba`..`a4a74d4` |
+| G-09 | **オンライン対戦マップ 各2枚**: 既存 `rsp` / `21x21_arena` を採用し、`rsp_pillars`（RSP2枚目）/ `fps_duel`（FPS2枚目）を追加制作。③§2-E のホワイトリスト表へ登録。起動検証は `make test` の G-09 検査で常設化。**チーム内テストプレイ承認 済**（プレイ感が不合格だったため samatsum がマップを改訂して再承認。改訂版の反映は samatsum が行う） | `dfc1cba`..`a4a74d4` |
 | E-14 | **CI**（`.github/workflows/ci.yml`）: 毎 PR で native build + `make check` + `make test`(85 checks) + xvfb 起動スモーク5マップ + emsdk コンテナで `make web sim` + record.mjs 通し。W-16 が FE 検査ジョブを追加予定（[ENGINE_E13_E14_REPORT.md](../reports/ENGINE_E13_E14_REPORT.md)） | （本コミット） |
 | E-13 | **描画ハードニング**: `web_init` に内部解像度引数（既定 960×540、C 側で 848×480〜1920×1080 にクランプ）、gate1 の `?res=`、`web/bench_render.mjs`。実測 960×540=112fps / 1280×720=63fps（Node・開発機）で 60fps 要件に約 1.8 倍の余裕、段階縮小の根拠データ取得済み | （本コミット） |
 

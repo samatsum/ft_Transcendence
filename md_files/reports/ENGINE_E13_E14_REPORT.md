@@ -7,7 +7,7 @@
 | Issue | 受入条件 | 結果 | 確認内容 |
 |---|---|---|---|
 | E-13 | 内部解像度パラメータ化・計測。960×540 で 60fps（開発機基準）。未達なら段階縮小の根拠データを提示 | **OK** | `web_init(map_text, is_rsp, width, height)` で内部解像度を可変化（0=既定 960×540）。gate1.html は `?res=1280x720` で切替可。実測は下表のとおり **960×540 で 112fps**（Node ヘッドレス・開発機）で、ブラウザ実測の既存記録（GATE1 90.78fps / Phase 2 120fps）とも整合。段階縮小の根拠データ（解像度別 fps 表）を取得済み |
-| E-14 | CI に 3 ターゲットビルド + native 起動スモークを追加。毎 PR で自動実行される | **OK**（初回実行の green 確認は push 後） | `.github/workflows/ci.yml`。native ジョブ（build + `make check` + `make test` + xvfb スモーク5マップ）と wasm ジョブ（emsdk コンテナで `make web sim` + Node で record.mjs 通し）を pull_request / main push で実行 |
+| E-14 | CI に 3 ターゲットビルド + native 起動スモークを追加。毎 PR で自動実行される | **OK**（GitHub billing 解除後、初回 green を確認済み） | `.github/workflows/ci.yml`。native ジョブ（build + `make check` + `make test` + xvfb スモーク5マップ）と wasm ジョブ（emsdk コンテナで `make web sim` + Node で record.mjs 通し）を pull_request / main push で実行 |
 
 ## E-13: 解像度別スループット（開発機・Node ヘッドレス、300 フレーム）
 
