@@ -1,3 +1,8 @@
+// gate1.js ― ブラウザでエンジンを 1 人で動かす動作確認ページの制御。
+// render.wasm を読み込み、毎フレーム web_render（game_step + 描画）→ Canvas 転送を回す。
+// URL の ?map= でマップ、?res= で内部解像度を切替。KeyboardEvent を論理入力へ写す。
+// 「gate1」は GATE1（ブラウザ描画を初めて通した最初の関門）マイルストーン由来の名前。
+// 各ファイルの役割一覧は web/README.md を参照。
 (() => {
 	const canvas = document.getElementById('screen');
 	const statusEl = document.getElementById('status');
