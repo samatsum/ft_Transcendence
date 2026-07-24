@@ -3,15 +3,18 @@
 // （② §5-C の補間契約。クライアントに勝敗判定コードは無い）。
 // W-11/F-06 では snapshots.json の代わりに WS 受信バッファが同じ経路に入る
 (() => {
-	const canvas = document.getElementById('screen');
-	const statusEl = document.getElementById('status');
-	const fpsEl = document.getElementById('fps');
-	const ctx = canvas.getContext('2d', { alpha: false });
+	const canvas = document.getElementById('screen');    // 描画先の <canvas>
+	const statusEl = document.getElementById('status');  // 状態表示
+	const fpsEl = document.getElementById('fps');        // fps 表示
+	const ctx = canvas.getContext('2d', { alpha: false }); // Canvas 2D 描画コンテキスト
+	// 「今から 100ms 過去」を描く遅延。この分だけ手元に前後2枚の snapshot が
+	// 溜まるので、常に2点補間できる（② §5-C の補間契約）。値を上げるほど遅延は
+	// 増えるが補間は安定、下げると滑らかさが崩れやすい
 	const INTERP_DELAY_MS = 100;
-	let image = null;
-	let rgba = null;
-	let fpsFrames = 0;
-	let fpsStart = performance.now();
+	let image = null;          // Canvas へ書き込む ImageData
+	let rgba = null;           // image.data。C の BGRA を RGBA に詰め替える先
+	let fpsFrames = 0;         // 直近1秒のフレーム数（fps 表示用）
+	let fpsStart = performance.now();  // fps 集計の起点時刻
 
 	function locateFile(path) {
 		if (path.endsWith('.wasm')) {

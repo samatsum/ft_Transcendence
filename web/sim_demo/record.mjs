@@ -17,13 +17,15 @@ const TARGET_SCORE = 3;
 // 0 だと時刻由来になり、決着時刻が走行ごとに変わる（上限打ち切りで
 // finished に届かない記録ができる恐れがある）ため、デモでは必ず固定する
 const SEED = 42;
-const TICK_HZ = 30;
-const MAX_SECONDS = 90;
+const TICK_HZ = 30;     // シムの更新頻度（1秒に game_step を呼ぶ回数）。本番サーバも同じ 30Hz
+const MAX_SECONDS = 90; // 記録の上限。この秒数までに決着しなければ打ち切り（下の throw）
 const TAIL_SECONDS = 2; // 決着後も結果画面確認用に少し流す
 
+// フラット f64 snapshot のレイアウト定数（C 側 sim.h と一致）。
+// HEADER=ヘッダ5個 [state,winner,score_red,score_blue,N] / PER=戦闘員1人9個
 const HEADER = 5;
 const PER = 9;
-const STATE_NAME = { 1: 'playing', 2: 'finished' };
+const STATE_NAME = { 1: 'playing', 2: 'finished' }; // sim.h の数値 → ② §5-C の文字列
 
 const mapText = readFileSync(here(`../../maps/${MAP}`), 'utf8');
 const M = await createSim();
