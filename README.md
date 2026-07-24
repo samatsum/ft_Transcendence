@@ -80,27 +80,27 @@ make
 docker compose up --build
 ```
 
-ビルド完了後、ブラウザで `http://localhost:8000/web/gate1.html` を開くと、生成された `web/build/render.js` と `web/assets/` を使って動作確認できます。停止は `Ctrl-C` です。Linux/WSL で生成ファイルの所有者を自分に合わせたい場合だけ、`HOST_UID=$(id -u) HOST_GID=$(id -g) docker compose up --build` のように指定します。ローカルに Emscripten を入れている場合は、`emsdk_env.sh` を source してから通常どおり `make web` / `make sim` してください。
+ビルド完了後、ブラウザで `http://localhost:8000/web/engine_demo.html` を開くと、生成された `web/build/render.js` と `web/assets/` を使って動作確認できます。停止は `Ctrl-C` です。Linux/WSL で生成ファイルの所有者を自分に合わせたい場合だけ、`HOST_UID=$(id -u) HOST_GID=$(id -g) docker compose up --build` のように指定します。ローカルに Emscripten を入れている場合は、`emsdk_env.sh` を source してから通常どおり `make web` / `make sim` してください。
 
-#### ブラウザで遊ぶ（`gate1.html`）
+#### ブラウザで遊ぶ（`engine_demo.html`）
 
-`gate1.html` は **ブラウザ上でエンジンを 1 人で動かす動作確認ページ**です（オンライン 2vs2 対戦は W-10 以降の実装で、まだ動きません）。Emscripten をローカルに入れている場合は、Docker を使わず次の 2 手順でも起動できます。
+`engine_demo.html` は **ブラウザ上でエンジンを 1 人で動かす動作確認ページ**です（オンライン 2vs2 対戦は W-10 以降の実装で、まだ動きません）。Emscripten をローカルに入れている場合は、Docker を使わず次の 2 手順でも起動できます。
 
 ```
 make web                                    # web/build/render.js と web/assets/ を生成
 python3 -m http.server 8000                 # リポジトリのルートで配信（file:// では動かない）
 ```
 
-そのうえでブラウザで `http://localhost:8000/web/gate1.html` を開きます。
+そのうえでブラウザで `http://localhost:8000/web/engine_demo.html` を開きます。
 
 **マップと解像度は URL クエリで選べます**（`maps/` 配下のパスを指定）。
 
 ```
-http://localhost:8000/web/gate1.html                                   # 既定（FPS: maps/fps_map/1.cub）
-http://localhost:8000/web/gate1.html?map=rsp_map/rsp.cub               # RSP モード
-http://localhost:8000/web/gate1.html?map=fps_map/fps_duel.cub          # FPS 対戦マップ
-http://localhost:8000/web/gate1.html?res=1280x720                      # 内部解像度を指定（既定 960x540）
-http://localhost:8000/web/gate1.html?map=rsp_map/rsp.cub&res=848x480   # 併用
+http://localhost:8000/web/engine_demo.html                                   # 既定（FPS: maps/fps_map/1.cub）
+http://localhost:8000/web/engine_demo.html?map=rsp_map/rsp.cub               # RSP モード
+http://localhost:8000/web/engine_demo.html?map=fps_map/fps_duel.cub          # FPS 対戦マップ
+http://localhost:8000/web/engine_demo.html?res=1280x720                      # 内部解像度を指定（既定 960x540）
+http://localhost:8000/web/engine_demo.html?map=rsp_map/rsp.cub&res=848x480   # 併用
 ```
 
 - `?map=` は `maps/` からの相対パス。`rsp_map/` 配下を指定すると RSP モード、`fps_map/` 配下は FPS モードになります（配置ディレクトリでモードが決まる）。

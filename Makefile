@@ -108,7 +108,7 @@ LIBS            = -L$(MLX_DIR) -lmlx -L/usr/lib -lXext -lX11 -lm -lz
 MLX_TARGET      = $(MLX_DIR)/libmlx.a
 WEB_CFLAGS      = -O2 -Wall -Wextra -Werror -DWEB_BUILD -I $(INC_DIR)
 # TEXTDECODER は 0(無効化) が emcc 6.x で廃止済みのため既定の 1 を明示し、
-# Chrome の resizable ArrayBuffer 問題は gate1.html の shim 側で回避する
+# Chrome の resizable ArrayBuffer 問題は engine_demo.html の shim 側で回避する
 WEB_LDFLAGS     = -O2 -sALLOW_MEMORY_GROWTH=1 -sTEXTDECODER=1 \
                   -sMODULARIZE=1 -sEXPORT_NAME=createCub3DModule -sENVIRONMENT=web,node \
                   -sEXPORTED_RUNTIME_METHODS='["ccall","cwrap","HEAPU8","HEAPF64"]' \
