@@ -28,7 +28,7 @@
 		return ptr;
 	}
 
-	// gate1.js と同じ必要分ロード（wall/object はマップ参照分のみ。D-16 のパス契約）
+	// engine_demo.js と同じ必要分ロード（wall/object はマップ参照分のみ。D-16 のパス契約）
 	function isRequired(entry, mapText) {
 		if (entry.path.startsWith('textures/wall/') || entry.path.startsWith('textures/object/')) {
 			return mapText.includes(entry.path);
