@@ -12,8 +12,8 @@ const here = (p) => fileURLToPath(new URL(p, import.meta.url));
 const createRender = require(here('./build/render.js'));
 
 const MAP = process.argv[2] || 'fps_map/1.cub';
-const FRAMES = 300;
-const WARMUP = 30;
+const FRAMES = 300;  // 計測に使うフレーム数（この平均から fps を出す）
+const WARMUP = 30;   // 計測前に空回しするフレーム数（JIT 最適化を効かせて初回の遅さを除く）
 // MIN(848x480)〜MAX(1920x1080) の段階縮小候補。値は C 側でクランプされる
 const RESOLUTIONS = [[1920, 1080], [1600, 900], [1280, 720], [960, 540], [848, 480]];
 

@@ -4,19 +4,19 @@
 // 旧名 gate1.js（GATE1＝ブラウザ描画を初めて通した最初の関門マイルストーンで作ったため）。
 // 各ファイルの役割一覧は web/README.md を参照。
 (() => {
-	const canvas = document.getElementById('screen');
-	const statusEl = document.getElementById('status');
-	const fpsEl = document.getElementById('fps');
-	const ctx = canvas.getContext('2d', { alpha: false });
-	const textEncoder = new TextEncoder();
-	let moduleRef = null;
-	let image = null;
-	let rgba = null;
-	let last = performance.now();
-	let fpsFrames = 0;
-	let fpsStart = last;
-	let captured = false;
-	let resolutionLabel = '';
+	const canvas = document.getElementById('screen');    // 描画先の <canvas>
+	const statusEl = document.getElementById('status');  // 画面下の状態表示
+	const fpsEl = document.getElementById('fps');        // 画面下の fps 表示
+	const ctx = canvas.getContext('2d', { alpha: false }); // Canvas 2D 描画コンテキスト
+	const textEncoder = new TextEncoder();               // 文字列→UTF-8 バイト列（C へ渡す用）
+	let moduleRef = null;      // 初期化後の WASM モジュール（M._関数 で C を呼ぶ）
+	let image = null;          // Canvas へ書き込む ImageData（RGBA バッファのラッパ）
+	let rgba = null;           // image.data。C が描いた BGRA を RGBA に詰め替える先
+	let last = performance.now();  // 前フレームの時刻（dt 計算用）
+	let fpsFrames = 0;         // 直近1秒間に描いたフレーム数（fps 表示用）
+	let fpsStart = last;       // fps 集計の起点時刻
+	let captured = false;      // ポインタ操作（視点）が有効か。Canvas クリックで on
+	let resolutionLabel = '';  // フッターに出す実解像度の文字列
 
 	// KeyboardEvent.code → 論理軸/アクション。native の g_hold_keys（input.c）と同じ対応
 	const HOLD_KEYS = {
