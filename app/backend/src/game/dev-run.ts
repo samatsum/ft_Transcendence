@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 
 import { SimGame, INPUT_SRC_EXTERNAL, type SeatInput } from './sim.js';
 import { decodeSnapshot, type SnapshotMessage } from './snapshot.js';
-import { type RoomEvent, type RoomLogger } from './room.js';
+import { seatCount, type RoomEvent, type RoomLogger } from './room.js';
 import { closeAllRooms, createRoom, roomCount, roomStates } from './rooms.js';
 
 const MAP = 'rsp_map/rsp.cub';
@@ -188,6 +188,9 @@ async function checkMultipleRoomsRunConcurrently(): Promise<boolean> {
 			// 入力ドライバとルームの tick は独立した setInterval なので、
 			// どの tick にどの入力が乗るかが実時間で揺れる。決定性は検査2 の責務
 			seed: SEED,
+			// ② §6-A 追補: 人間は席0 のみで残り3席は AI。これを渡さないと
+			// 「定員4人ぶんの人間」を待つことになり、10 秒経過するまで開始しない
+			humanSlots: [0],
 			log,
 			onBroadcast: (message: SnapshotMessage | RoomEvent, serialized: string) => {
 				// ② §5-B: 配信は1回だけ直列化した同一文字列
@@ -208,9 +211,20 @@ async function checkMultipleRoomsRunConcurrently(): Promise<boolean> {
 			},
 		});
 
-		// 席0に人間が座った体にして、10 秒の join 待ちを飛ばす
+		// 席0に人間が座る。humanSlots=[0] なので予定していた人間席がこれで全部
+		// 埋まり、② §4-C どおり 10 秒を待たずカウントダウンへ進むはず。
+		// startNow() は呼ばない（呼ぶと早期開始の判定を検査できない）
 		room.join(0);
-		room.startNow();
+		if (room.getState() !== 'countdown') {
+			bad.push(`${roomId}: join 後に countdown へ進んでいない（state=${room.getState()}）`);
+		}
+		// 定員外の slot は弾かれること（② §2-B close 4003 相当）
+		try {
+			room.join(seatCount('rsp'));
+			bad.push(`${roomId}: 定員外の slot が受理された`);
+		} catch {
+			/* 期待どおり */
+		}
 
 		// W-11 でクライアントから 30Hz で届く input を模擬する。
 		// 入力を送らないと席が動かず、接触＝得点がほとんど起きない

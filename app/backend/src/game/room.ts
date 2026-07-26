@@ -71,6 +71,17 @@ export interface RoomOptions {
 	targetScore: number;
 	seed: number;
 	/**
+	 * 人間が座る予定の席（② §6-A の追補）。マッチメイキング（W-09）が渡す。
+	 *
+	 * ルームは全席を AI で生成するため、**どの席が人間の席かを自力では知り得ない**。
+	 * ② §4-C の「全人間席の join 完了 or 10秒経過」を判定するのに必要で、
+	 * **これが無いと人間2人 + AI2席の試合が毎回 10 秒待たされる**
+	 * （早期開始の条件が「定員ぶんの人間が揃う」になり永久に成立しないため）。
+	 *
+	 * 省略時は全席が人間（クイックマッチで定員ちょうど埋まった場合と同じ）。
+	 */
+	humanSlots?: number[];
+	/**
 	 * 全参加者へ配信する。W-11 が WS へ差し替える。
 	 *
 	 * `serialized` は **ルーム内で1回だけ `JSON.stringify` した文字列**。
@@ -113,6 +124,8 @@ export class GameRoom {
 	private readonly inputs = new Map<number, SeatInput>();
 	/** 人間が座っている席。空なら実質 AI 同士の試合 */
 	private readonly humanSeats = new Set<number>();
+	/** 人間が座る予定の席（② §6-A 追補）。early start の判定に使う */
+	private readonly expectedHumanSlots: Set<number>;
 
 	private lastOverrunLogAt = 0;
 	/** 直前に配信した snapshot。差分から point_scored / hand_changed / goal を起こす */
@@ -124,6 +137,10 @@ export class GameRoom {
 		this.mode = options.mode;
 		this.opts = { ...options, now: options.now ?? Date.now, log: options.log ?? consoleLogger };
 		this.stateEnteredAt = this.opts.now();
+		// 省略時は全席が人間（定員ちょうど埋まったクイックマッチと同じ扱い）
+		this.expectedHumanSlots = new Set(
+			options.humanSlots ?? Array.from({ length: seatCount(options.mode) }, (_, i) => i),
+		);
 	}
 
 	/** W-11 が welcome（② §5-B）を組み立てるための情報 */
@@ -170,18 +187,36 @@ export class GameRoom {
 
 	/**
 	 * 人間が席に着く。W-11 の join、W-12 の再接続から呼ぶ。
-	 * created の間に全席が埋まればカウントダウンへ進む。
+	 *
+	 * ② §4-C: created の間に**予定していた人間席が全部埋まれば**、10 秒を待たず
+	 * カウントダウンへ進む。判定に使うのは `humanSlots`（② §6-A 追補）で、
+	 * 「定員ぶんの人間」ではない。
+	 *
+	 * 一覧外の slot からの join も受理する（AI 席を人間が取る / W-12 の再接続）。
+	 * ただし**定員外の slot は拒否**する（② §2-B の close 4003 に対応）。
 	 */
 	join(slot: number): void {
 		if (this.state !== 'created' && this.state !== 'countdown' && this.state !== 'playing') {
 			throw new Error(`join は ${this.state} では受け付けない`);
 		}
+		if (!Number.isInteger(slot) || slot < 0 || slot >= seatCount(this.mode)) {
+			// W-11 は外部メッセージから slot を決めるので、ここで必ず弾く
+			throw new Error(`slot ${slot} は ${this.mode} の定員 ${seatCount(this.mode)} の外`);
+		}
 		this.requireSim().setInputSource(slot, INPUT_SRC_EXTERNAL);
 		this.humanSeats.add(slot);
 		this.inputs.set(slot, { ...NEUTRAL_INPUT });
-		if (this.state === 'created' && this.humanSeats.size >= seatCount(this.mode)) {
+		if (this.state === 'created' && this.allExpectedHumansJoined()) {
 			this.enterCountdown();
 		}
+	}
+
+	/** 予定していた人間席が全部 join 済みか（② §4-C の早期開始条件） */
+	private allExpectedHumansJoined(): boolean {
+		for (const slot of this.expectedHumanSlots) {
+			if (!this.humanSeats.has(slot)) return false;
+		}
+		return true;
 	}
 
 	/**
