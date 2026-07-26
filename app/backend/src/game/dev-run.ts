@@ -156,6 +156,7 @@ async function checkMultipleRoomsRunConcurrently(): Promise<boolean> {
 	const cubText = loadMap();
 	const stats = new Map<string, RoomStat>();
 	const inputDrivers: NodeJS.Timeout[] = [];
+	const bad: string[] = [];
 	let overrunWarnings = 0;
 
 	const log: RoomLogger = {
@@ -188,7 +189,11 @@ async function checkMultipleRoomsRunConcurrently(): Promise<boolean> {
 			// どの tick にどの入力が乗るかが実時間で揺れる。決定性は検査2 の責務
 			seed: SEED,
 			log,
-			onBroadcast: (message: SnapshotMessage | RoomEvent) => {
+			onBroadcast: (message: SnapshotMessage | RoomEvent, serialized: string) => {
+				// ② §5-B: 配信は1回だけ直列化した同一文字列
+				if (serialized !== JSON.stringify(message)) {
+					bad.push(`${roomId}: serialized がメッセージと一致しない`);
+				}
 				if (message.t === 'snapshot') {
 					stat.snapshots++;
 					if (stat.seenTicks.has(message.d.tick)) stat.duplicateTicks.push(message.d.tick);
@@ -228,14 +233,16 @@ async function checkMultipleRoomsRunConcurrently(): Promise<boolean> {
 	}
 	const elapsedMs = Date.now() - startedAt;
 
-	const bad: string[] = [];
 	for (const [roomId, stat] of stats) {
+		const kinds = [...new Set(stat.events)];
 		console.log(
-			`  ${roomId}: snapshots=${stat.snapshots} finished_at_tick=${stat.finishedTick} events=[${stat.events.join(',')}]`,
+			`  ${roomId}: snapshots=${stat.snapshots} finished_at_tick=${stat.finishedTick} events=[${kinds.join(',')}]`,
 		);
 		if (!stat.finished) bad.push(`${roomId} が決着に到達していない`);
 		if (!stat.events.includes('match_start')) bad.push(`${roomId} に match_start が無い`);
 		if (!stat.events.includes('match_end')) bad.push(`${roomId} に match_end が無い`);
+		// ② §5-D: RSP なら得点時に point_scored が出る
+		if (!stat.events.includes('point_scored')) bad.push(`${roomId} に point_scored が無い`);
 		if (stat.duplicateTicks.length > 0) {
 			bad.push(`${roomId} が同じ tick の snapshot を二重配信 (${stat.duplicateTicks.join(',')})`);
 		}

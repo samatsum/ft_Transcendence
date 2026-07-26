@@ -6,19 +6,53 @@
 //
 // 本ファイルは **WS を知らない**。配信は onBroadcast コールバック経由で、
 // W-11 がそこへ WebSocket.send を差し込む。
+import { diffEvents } from './events.js';
 import { SimGame, INPUT_SRC_AI, INPUT_SRC_EXTERNAL, NEUTRAL_INPUT, type SeatInput } from './sim.js';
-import { decodeSnapshot, type SnapshotMessage } from './snapshot.js';
+import { decodeSnapshot, type SnapshotMessage, type SnapshotPayload } from './snapshot.js';
 
 export type RoomState = 'created' | 'countdown' | 'playing' | 'finished' | 'closed';
 
-/** ルーム層のイベント（② §5-D）。W-11 が WS メッセージとして流す */
+/** ② §5-D の match_end.reason */
+export type MatchEndReason = 'score' | 'goal' | 'forfeit' | 'abandon';
+
+/**
+ * ルーム層のイベント（② §5-D）。W-11 が WS メッセージとして流す。
+ *
+ * **イベントは演出・通知のトリガであり、状態の正本は常に snapshot**（② §5-D）。
+ * 取りこぼしても snapshot で追いつく設計なので、再送はしない。
+ *
+ * `player_disconnected` / `player_reconnected` / `ai_takeover` は接続の生存を
+ * 見る必要があるため W-12 で追加する（型だけ先に置く）。
+ */
 export type RoomEvent =
 	| { t: 'event'; d: { kind: 'countdown'; seconds: number } }
 	| { t: 'event'; d: { kind: 'match_start' } }
-	| { t: 'event'; d: { kind: 'match_end'; winner: number | null; score: [number, number] } };
+	| { t: 'event'; d: { kind: 'point_scored'; team: number; score: [number, number]; by_id: number | null } }
+	| { t: 'event'; d: { kind: 'hand_changed'; id: number; hand: number } }
+	| { t: 'event'; d: { kind: 'goal'; id: number } }
+	| { t: 'event'; d: { kind: 'match_end'; winner: number | null; reason: MatchEndReason; match_id: string | null } }
+	| { t: 'event'; d: { kind: 'player_disconnected'; slot: number; grace_ms: number } }
+	| { t: 'event'; d: { kind: 'player_reconnected'; slot: number } }
+	| { t: 'event'; d: { kind: 'ai_takeover'; slot: number } };
+
+/** ② §5-B の welcome を W-11 が組み立てるために必要な、ルームが持つ情報 */
+export interface RoomDescription {
+	mode: 'rsp' | 'fps';
+	/** welcome.map_text。サーバがロードした .cub をそのまま配る（② §5-B の単一情報源） */
+	mapText: string;
+	rules: { target_score: number };
+	tick_rate: number;
+	snap_rate: number;
+	interp_ms: number;
+	state: RoomState;
+}
 
 export const TICK_HZ = 30;
 const TICK_MS = 1000 / TICK_HZ;
+/** 偶数 tick 配信 = 実効 15Hz（② §5-C「なぜ配信は 15Hz なのか」） */
+export const SNAP_HZ = TICK_HZ / 2;
+/** クライアントが描画を遅らせる量。welcome で通知する（② §5-C 補間契約） */
+export const INTERP_MS = 100;
 /** created で人間を待つ上限（② §6-A） */
 const JOIN_GRACE_MS = 10_000;
 const COUNTDOWN_MS = 3_000;
@@ -36,8 +70,15 @@ export interface RoomOptions {
 	mode: 'rsp' | 'fps';
 	targetScore: number;
 	seed: number;
-	/** 全参加者へ配信する。W-11 が WS へ差し替える */
-	onBroadcast?: (message: SnapshotMessage | RoomEvent) => void;
+	/**
+	 * 全参加者へ配信する。W-11 が WS へ差し替える。
+	 *
+	 * `serialized` は **ルーム内で1回だけ `JSON.stringify` した文字列**。
+	 * ② §5-B が「全参加者+観戦者に同一シリアライズ済み文字列を配信
+	 * （クライアント別加工なし）」と定めているので、接続ごとに stringify しない。
+	 * オブジェクト側はテストと将来の分岐用。
+	 */
+	onBroadcast?: (message: SnapshotMessage | RoomEvent, serialized: string) => void;
 	/** 差し替え可能にしておくとテストで時間を進められる */
 	now?: () => number;
 	log?: RoomLogger;
@@ -74,6 +115,8 @@ export class GameRoom {
 	private readonly humanSeats = new Set<number>();
 
 	private lastOverrunLogAt = 0;
+	/** 直前に配信した snapshot。差分から point_scored / hand_changed / goal を起こす */
+	private previous: SnapshotPayload | null = null;
 	private readonly opts: Required<Pick<RoomOptions, 'now' | 'log'>> & RoomOptions;
 
 	private constructor(options: RoomOptions) {
@@ -81,6 +124,19 @@ export class GameRoom {
 		this.mode = options.mode;
 		this.opts = { ...options, now: options.now ?? Date.now, log: options.log ?? consoleLogger };
 		this.stateEnteredAt = this.opts.now();
+	}
+
+	/** W-11 が welcome（② §5-B）を組み立てるための情報 */
+	describe(): RoomDescription {
+		return {
+			mode: this.mode,
+			mapText: this.opts.cubText,
+			rules: { target_score: this.opts.targetScore },
+			tick_rate: TICK_HZ,
+			snap_rate: SNAP_HZ,
+			interp_ms: INTERP_MS,
+			state: this.state,
+		};
 	}
 
 	static async create(options: RoomOptions): Promise<GameRoom> {
@@ -210,7 +266,13 @@ export class GameRoom {
 		// ② §6-A: 偶数 tick のみ配信（実効 15Hz）
 		const broadcastedThisTick = this.tick % 2 === 0;
 		if (broadcastedThisTick) {
-			this.broadcast(decodeSnapshot(sim.readSnapshot(), this.tick));
+			const message = decodeSnapshot(sim.readSnapshot(), this.tick);
+			this.broadcast(message);
+			// snapshot を配ってからイベントを出す（値の正本が先に届く。② §5-D）
+			for (const event of diffEvents(this.previous, message.d, this.mode)) {
+				this.broadcast(event);
+			}
+			this.previous = message.d;
 		}
 		if (finished) {
 			// 偶数 tick で決着した場合、直上で最終 snapshot を配信済み。
@@ -245,17 +307,29 @@ export class GameRoom {
 	 * ここで state=finished の snapshot を作ると ② §5-C の「match.state は sim の
 	 * enum そのまま」に反する。クライアントは match_end イベントで終了を知る。
 	 */
-	private finish(reason: 'decided' | 'abandon', alreadyBroadcasted = false): void {
+	private finish(outcome: 'decided' | 'abandon', alreadyBroadcasted = false): void {
 		this.stopTimer();
 		const sim = this.requireSim();
 		// 決着後の game_step は状態を進めず 1 を返し続ける（申し送り 6）。
 		// 最終 snapshot を1回だけ配信してから finished に落とす（② §6-C の 1.）
 		const last = decodeSnapshot(sim.readSnapshot(), this.tick);
-		if (reason === 'decided' && !alreadyBroadcasted) {
+		if (outcome === 'decided' && !alreadyBroadcasted) {
 			this.broadcast(last);
+			for (const event of diffEvents(this.previous, last.d, this.mode)) {
+				this.broadcast(event);
+			}
+			this.previous = last.d;
 		}
-		const winner = reason === 'abandon' ? null : last.d.match.winner;
-		this.broadcast({ t: 'event', d: { kind: 'match_end', winner, score: last.d.match.score } });
+		const winner = outcome === 'abandon' ? null : last.d.match.winner;
+		// ② §5-D: reason は score|goal|forfeit|abandon。forfeit は W-12（leave / 猶予満了）で使う
+		const reason: MatchEndReason =
+			outcome === 'abandon' ? 'abandon' : this.mode === 'fps' ? 'goal' : 'score';
+		this.broadcast({
+			t: 'event',
+			// match_id は W-13 の永続化が採番する。W-11 時点では null で、
+			// 結果画面は snapshot の score/winner で描ける（② §5-D の「正本は snapshot」）
+			d: { kind: 'match_end', winner, reason, match_id: null },
+		});
 		this.setState('finished');
 		this.opts.log.info(
 			{ room: this.roomId, tick: this.tick, reason, winner, score: last.d.match.score },
@@ -277,7 +351,9 @@ export class GameRoom {
 	}
 
 	private broadcast(message: SnapshotMessage | RoomEvent): void {
-		this.opts.onBroadcast?.(message);
+		if (!this.opts.onBroadcast) return;
+		// ② §5-B: 1回だけ直列化して同じ文字列を全員へ
+		this.opts.onBroadcast(message, JSON.stringify(message));
 	}
 
 	private requireSim(): SimGame {
