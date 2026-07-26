@@ -11,6 +11,7 @@
     "build": "tsc --noEmit"
   },
   "dependencies": {
+    "@fastify/websocket": "^11.3.0",
     "@ft/shared": "*",
     "fastify": "^5.10.0",
     "zod": "^4.4.3"
