@@ -1,7 +1,7 @@
 # IRC と ft_transcendence — torinoue の立ち位置比較（自分専用）
 
 > **目的**: 成功例（IRC）での自分の型を、当プロジェクトでの役割に翻訳する  
-> **IRC 参照根**: `/Users/toruinoue/IRC/IRC_torinoue`（アカウント tototec1234 = 同一人物）  
+> **IRC 参照根**: 過去課題リポジトリ（IRC）の設計・運用ドキュメント  
 > **作成**: 2026-07-26（AI 草案 → 本人レビュー前提）
 
 関連: [弱点分析](./torinoue_チーム弱点分析.md) / [読む順_実装](./torinoue_読む順_実装.md) / [読む順_PM](./torinoue_読む順_PM.md)

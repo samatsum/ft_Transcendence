@@ -1,6 +1,6 @@
 # ft_transcendence チーム弱点分析（自分専用）
 
-> **比較基準**: IRC（`/Users/toruinoue/IRC/IRC_torinoue`）で効いていた仕組み  
+> **比較基準**: 過去課題（IRC）で効いていた仕組み  
 > **トーン**: 自分用の厳しい洗い出し。共有するなら表現を落とす  
 > **作成**: 2026-07-26（AI 草案 → 本人レビュー前提。git 履歴・設計書・骨格コード・`gh` を参照）  
 > **AI 緩和**: 本分析では弱点・強みの一因として **明示**する
@@ -153,6 +153,6 @@ IRC 全セットの再構築はしない。
 - 直近コミット: 説明用・④図・TL Q&A 等の docs が中心  
 - 実装: `app/backend` は health + 404 エンベロープのみ。Prisma/認証未着手  
 - `infra/`: W-15 向け README。compose は engine-build 中心  
-- GitHub: Issue ほぼ空、ログインユーザ `tototec1234`  
+- GitHub: Issue ほぼ空  
 - IRC: `interface.md` / diagrams / reading_guide / AI 方針 draft / `workflow.md` を参照  
-- 追記根拠: [IRC成功パターン精査](58af7c11-4314-4c59-8aac-2a7e3f454feb) / [Transcendence現状精査](3abbb3da-a9a9-4e33-aab6-1b5be66a2adc)
+- 追記根拠: IRC成功パターン精査 / Transcendence現状精査（ローカル調査メモ）
