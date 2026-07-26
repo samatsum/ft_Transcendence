@@ -313,17 +313,36 @@ created ──全人間join or 10s──► countdown(3s) ──► playing ─�
 
 | 状態 | tick 駆動 | input 受理 | 摘要 |
 |---|---|---|---|
-| created | しない | しない | `game_create` + 全席 `game_add_combatant` 済み。接続待ち |
+| created | しない | しない | `game_create` + 全席 `game_add_combatant` 済み。接続待ち。**生成時に「人間席の slot 一覧」を受け取る**（下記） |
 | countdown | しない | しない | `event(countdown)` → 3秒後 `event(match_start)` |
 | playing | **30Hz `setInterval`** で `game_step(game, 1/30)`、偶数 tick で `game_snapshot` → JSON → 一斉配信 | する | 唯一の正 |
 | finished | しない（最終 snapshot は配信済み） | しない | 永続化（§6-C）→ 結果画面用に 60 秒接続維持 → close 1000 |
 | closed | — | — | `game_destroy`、Map から除去 |
 
+> **追補（2026-07-27）— ルームは「人間席の slot 一覧」を生成時に受け取る**
+>
+> §4-C は countdown への遷移条件を「**全人間席の join 完了** or 10秒経過」と定めているが、
+> ルームは全席を AI で生成する（§6-B）ため、**どの slot が人間の席なのかを自力では知り得ない**。
+> 割り振りを知っているのはマッチメイキング側（§4-A のスロット割当・不足席の AI 埋め）なので、
+> **GameRoom 生成時に人間席の slot 一覧を渡す**ことを仕様とする。
+>
+> | | |
+> |---|---|
+> | 渡す側 | マッチメイキング（W-09）。クイックマッチはキュー先頭から、カスタムルームは `seats[]` から導出 |
+> | 受け取る側 | GameRoom（W-10）。`humanSlots: number[]` として保持 |
+> | 用途 | countdown への早期遷移判定（**この一覧の全 slot が join したら10秒を待たずに進む**） |
+> | 省略時 | 全席が人間（クイックマッチで定員ちょうど埋まった場合と同じ） |
+>
+> **これが無いと、人間2人 + AI2席の試合が毎回10秒待たされる**（早期開始の条件が
+> 「定員ぶんの人間が揃う」になってしまい、永久に成立しないため）。
+> `join` 自体は一覧外の slot からも受理してよい（AI 席を人間が取る・W-12 の再接続）。
+> ただし**定員外の slot は close `4003`（参加権なし）で弾く**。
+
 ### 6-B. sim API（§3-B）との対応表
 
 | ルームのイベント | 呼び出す sim API | 備考 |
 |---|---|---|
-| ルーム生成 | `game_create(cub_text, mode, match_rules)` | `match_rules` = §4-B の rules（サーバがマップIDから cub_text を解決） |
+| ルーム生成 | `game_create(cub_text, mode, match_rules)` | `match_rules` = §4-B の rules（サーバがマップIDから cub_text を解決）。**あわせて「人間席の slot 一覧」をルームへ渡す**（下記） |
 | 席の確定 | `game_add_combatant(game, slot, is_ai)` × 定員 | 人間未接続席も**先に AI で生成**し、join 時に入力源を EXTERNAL へ切替（下記追補） |
 | `input` 受信 | 席バッファに保持 → 毎 tick `game_set_input(game, combatant_id, t_input)` | `mv`/`yaw`/`act` → `t_input` への写像は platform/headless 層の責務（`hand` は D-17 で `input` から削除済み。手はサーバ側エンジンが決める）。実装済みのラッパは `sim_set_input(game, id, forward, backward, strafe_left, strafe_right, yaw)` |
 | tick | `game_step(game, dt=1/30)` | 戻り値（進行中/決着）で finished 遷移を判定 |
