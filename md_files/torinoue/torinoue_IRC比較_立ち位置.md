@@ -37,10 +37,10 @@ flowchart LR
   end
 
   subgraph FT["ft_transcendence"]
-    T1[担当1: REST/Auth/DB<br/>torinoue + PM]
-    T2[担当2: WS/GameRoom<br/>samatsum = TL]
-    T3[担当3: FE 基盤]
-    T4[担当4: GameView]
+    T1[torinoue: REST/Auth/DB<br/>torinoue + PM]
+    T2[samatsum: WS/GameRoom<br/>samatsum = TL]
+    T3[mamiyaza: FE 基盤]
+    T4[hminemur: GameView]
     T1 -->|Cookie/Origin| T2
     T1 -->|JSON 契約| T3
     T2 -->|snapshot| T4
@@ -99,7 +99,7 @@ IRC ではあなたが「下支えして並行を可能にする人」だった�
 | コード | 無批判コミットを避ける文化が強い | 緩和。それでも **評価で説明できるコード**が必要 |
 | MD | AI 主体を開示 | 本ディレクトリも AI 草案。**コントリビュータ名義に AI を残さない**運用を本人が管理 |
 | チームルール | Co-Authored-By 抑制に加え、手順書で **AI の git 操作禁止** | ⑥: **Co-Authored-By を付けない**。git は本人実行を推奨 |
-| 役割の時間変化 | 初期は設計リード兼 A(+B) → 最終は A 専任 | 公式 PM + 担当1。技術最終決定は最初から TL=samatsum |
+| 役割の時間変化 | 初期は設計リード兼 A(+B) → 最終は A 専任 | 公式 PM + torinoue。技術最終決定は最初から TL=samatsum |
 
 緩和は速度の味方。弱点は「理解していない生成物が境界を侵す」こと。  
 所有者（あなた=REST、TL=WS）が **設計書先行**を守れれば、IRC より速く同じ安全を得られる。

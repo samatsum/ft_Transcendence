@@ -14,7 +14,7 @@
 ```mermaid
 flowchart TB
   subgraph Clients["ブラウザ ×2（ゲート2）"]
-    FE["app/frontend<br/>React SPA<br/>担当3・4"]
+    FE["app/frontend<br/>React SPA<br/>mamiyaza・hminemur"]
     RW["render.wasm<br/>描画のみ"]
   end
 
@@ -23,14 +23,14 @@ flowchart TB
   end
 
   subgraph Node["app/backend（Node）"]
-    REST["REST<br/>担当1 torinoue"]
-    LOBBY["ロビー WS<br/>担当2"]
-    GAME["GameRoom + ゲーム WS<br/>担当2"]
+    REST["REST<br/>torinoue"]
+    LOBBY["ロビー WS<br/>samatsum"]
+    GAME["GameRoom + ゲーム WS<br/>samatsum"]
     SIM["sim.wasm<br/>判定の権威"]
   end
 
   subgraph Data["永続化"]
-    DB[(SQLite<br/>Prisma・担当1)]
+    DB[(SQLite<br/>Prisma・torinoue)]
   end
 
   FE -->|HTTPS Cookie| NGX
@@ -39,12 +39,12 @@ flowchart TB
   NGX --> LOBBY
   NGX --> GAME
   REST --> DB
-  LOBBY -.->|Cookie 検証は担当1の仕組みを共有| REST
+  LOBBY -.->|Cookie 検証は torinoue の仕組みを共有| REST
   GAME --> SIM
   GAME -->|match_end 等| REST
 ```
 
-**読み方（担当1）**: 太い責任は `REST` と `DB`。WS の中身は担当2だが、**Cookie と Origin で入口を閉じる**のはあなた。
+**読み方（torinoue）**: 太い責任は `REST` と `DB`。WS の中身は samatsum だが、**Cookie と Origin で入口を閉じる**のはあなた。
 
 ---
 
@@ -54,7 +54,7 @@ flowchart TB
 sequenceDiagram
   participant B as ブラウザ FE
   participant N as nginx
-  participant R as REST 担当1
+  participant R as REST torinoue
   participant D as SQLite
 
   B->>N: POST /api/auth/login<br/>{email,password}
@@ -109,11 +109,11 @@ sequenceDiagram
 
 | 境界 | 渡すもの | 所有者 |
 |---|---|---|
-| FE ↔ REST | JSON（snake_case）+ Cookie | 担当1（③ + shared） |
-| FE ↔ ロビー/ゲーム WS | WS メッセージ | 担当2（②） |
-| WS 入口 | Cookie 検証結果・Origin | 担当1 の仕組みを担当2が呼ぶ |
-| GameRoom ↔ sim.wasm | C API（既存） | 担当2 |
-| GameRoom ↔ DB | 試合結果行 | 担当1（W-13） |
+| FE ↔ REST | JSON（snake_case）+ Cookie | torinoue（③ + shared） |
+| FE ↔ ロビー/ゲーム WS | WS メッセージ | samatsum（②） |
+| WS 入口 | Cookie 検証結果・Origin | torinoue の仕組みを samatsum が呼ぶ |
+| GameRoom ↔ sim.wasm | C API（既存） | samatsum |
+| GameRoom ↔ DB | 試合結果行 | torinoue（W-13） |
 
 ---
 
@@ -139,22 +139,22 @@ W-01 で「同じ zod を FE/BE が import する」型だけ示してある（`
 
 ```mermaid
 flowchart TB
-  subgraph T1["担当1 torinoue"]
+  subgraph T1["torinoue"]
     A1[User / Session / Match 行]
     A2[REST 全エンドポイント]
     A3[Origin / Cookie 共通化]
     A4[docker compose 起動]
   end
-  subgraph T2["担当2 samatsum"]
+  subgraph T2["samatsum"]
     B1[ロビー状態]
     B2[GameRoom 状態機械]
     B3[snapshot 配信]
   end
-  subgraph T3["担当3 mamiyaza"]
+  subgraph T3["mamiyaza"]
     C1[認証 UI]
     C2[ロビー UI]
   end
-  subgraph T4["担当4 hminemur"]
+  subgraph T4["hminemur"]
     D1[補間 + Canvas]
     D2[入力送信]
   end
