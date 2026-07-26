@@ -128,15 +128,19 @@ export class GameRoom {
 		}
 	}
 
-	/** 席を AI に戻す。猶予つきの切断処理（W-12）は上位が持ち、ここは即時の付け替えだけ */
+	/**
+	 * 席を AI に戻す。猶予つきの切断処理（W-12）は上位が持ち、ここは即時の付け替えだけ。
+	 * closed 後にも呼ばれうる（WS の close が遅れて届く）ので、その場合は何もしない。
+	 */
 	leave(slot: number): void {
 		if (!this.humanSeats.delete(slot)) return;
-		this.requireSim().setInputSource(slot, INPUT_SRC_AI);
+		if (!this.sim) return;
+		this.sim.setInputSource(slot, INPUT_SRC_AI);
 		this.inputs.set(slot, { ...NEUTRAL_INPUT });
 		// 全人間が抜けたら試合を続ける意味がない（② §6-A の abandon）
 		if (this.state === 'playing' && this.humanSeats.size === 0) {
 			this.opts.log.info({ room: this.roomId }, 'GameRoom: 人間が0人になったので abandon');
-			this.finish();
+			this.finish('abandon');
 		}
 	}
 
@@ -204,11 +208,14 @@ export class GameRoom {
 		this.tick++;
 
 		// ② §6-A: 偶数 tick のみ配信（実効 15Hz）
-		if (this.tick % 2 === 0) {
+		const broadcastedThisTick = this.tick % 2 === 0;
+		if (broadcastedThisTick) {
 			this.broadcast(decodeSnapshot(sim.readSnapshot(), this.tick));
 		}
 		if (finished) {
-			this.finish();
+			// 偶数 tick で決着した場合、直上で最終 snapshot を配信済み。
+			// finish() 側で二重に送らないよう伝える
+			this.finish('decided', broadcastedThisTick);
 			return;
 		}
 		this.warnIfOverrun(startedAt);
@@ -230,21 +237,29 @@ export class GameRoom {
 		);
 	}
 
-	private finish(): void {
+	/**
+	 * @param reason decided = sim が決着を報告 / abandon = 人間が全員抜けた（② §6-A）
+	 * @param alreadyBroadcasted 同じ tick で最終 snapshot を配信済みか
+	 *
+	 * abandon では **snapshot を追加配信しない**。sim はまだ playing なので、
+	 * ここで state=finished の snapshot を作ると ② §5-C の「match.state は sim の
+	 * enum そのまま」に反する。クライアントは match_end イベントで終了を知る。
+	 */
+	private finish(reason: 'decided' | 'abandon', alreadyBroadcasted = false): void {
 		this.stopTimer();
 		const sim = this.requireSim();
 		// 決着後の game_step は状態を進めず 1 を返し続ける（申し送り 6）。
 		// 最終 snapshot を1回だけ配信してから finished に落とす（② §6-C の 1.）
 		const last = decodeSnapshot(sim.readSnapshot(), this.tick);
-		this.broadcast(last);
-		this.broadcast({
-			t: 'event',
-			d: { kind: 'match_end', winner: last.d.match.winner, score: last.d.match.score },
-		});
+		if (reason === 'decided' && !alreadyBroadcasted) {
+			this.broadcast(last);
+		}
+		const winner = reason === 'abandon' ? null : last.d.match.winner;
+		this.broadcast({ t: 'event', d: { kind: 'match_end', winner, score: last.d.match.score } });
 		this.setState('finished');
 		this.opts.log.info(
-			{ room: this.roomId, tick: this.tick, winner: last.d.match.winner, score: last.d.match.score },
-			'GameRoom: 決着',
+			{ room: this.roomId, tick: this.tick, reason, winner, score: last.d.match.score },
+			'GameRoom: 試合終了',
 		);
 		// W-13 連携: ここで torinoue 側の永続化へ渡す（② §6-C の 2.）
 	}

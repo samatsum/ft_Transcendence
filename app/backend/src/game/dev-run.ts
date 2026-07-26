@@ -89,7 +89,53 @@ async function checkPortMatchesRecordMjs(): Promise<boolean> {
 	return true;
 }
 
-/* ── 検査2: 複数ルーム同時進行 ────────────────────────────────────── */
+/* ── 検査2: インスタンスの独立性（同期ループ・決定的） ───────────────── */
+
+/**
+ * ② §6 の「1試合 = 1ルーム = 1つの sim.wasm インスタンス」が本当に独立しているか。
+ *
+ * 同じ seed・同じ入力列を **同期ループで lockstep に** 与え、3 インスタンスの
+ * snapshot が全 tick で一致することを見る。実時間を挟まないので決定的。
+ * ずれたらインスタンス間で状態が漏れている（申し送り 8 の前提が崩れている）。
+ */
+async function checkInstancesAreIndependent(): Promise<boolean> {
+	const cubText = loadMap();
+	const games = await Promise.all(
+		Array.from({ length: 3 }, () =>
+			SimGame.create({ cubText, mode: 'rsp', targetScore: 3, seed: SEED }),
+		),
+	);
+	for (const game of games) {
+		for (let slot = 0; slot < 4; slot++) game.addCombatant(slot, true);
+		game.setInputSource(VIEW_ID, INPUT_SRC_EXTERNAL);
+	}
+
+	let yaw = 0;
+	let mismatchTick = -1;
+	const TICKS = 600;
+	for (let tick = 0; tick < TICKS && mismatchTick < 0; tick++) {
+		const driven = pseudoInput(tick, yaw);
+		yaw = driven.yaw;
+		// 3 インスタンスへ同じ入力を与え、同じ dt で1 tick ずつ進める
+		const json = games.map((game) => {
+			game.setInput(VIEW_ID, driven.input);
+			game.step(1 / TICK_HZ);
+			return JSON.stringify(decodeSnapshot(game.readSnapshot(), tick + 1));
+		});
+		if (json.some((s) => s !== json[0])) mismatchTick = tick + 1;
+	}
+	for (const game of games) game.destroy();
+
+	if (mismatchTick >= 0) {
+		console.error(`  NG: tick ${mismatchTick} で 3 インスタンスの snapshot が食い違った`);
+		return false;
+	}
+	console.log(`  ${games.length} インスタンス × ${TICKS} tick で snapshot が完全一致`);
+	console.log('  OK: インスタンスは独立している（状態の漏れなし）');
+	return true;
+}
+
+/* ── 検査3: 複数ルーム同時進行（実時間 30Hz） ──────────────────────── */
 
 const ROOM_COUNT = 3;
 /** 実時間 30Hz で回すので短い試合にする。エンジンは N>=1 を受理する（申し送り 5） */
@@ -101,6 +147,9 @@ interface RoomStat {
 	events: string[];
 	finished: boolean;
 	finishedTick: number;
+	/** 同じ tick の snapshot が2回流れていないか（決着 tick での二重配信の検出） */
+	seenTicks: Set<number>;
+	duplicateTicks: number[];
 }
 
 async function checkMultipleRoomsRunConcurrently(): Promise<boolean> {
@@ -119,7 +168,14 @@ async function checkMultipleRoomsRunConcurrently(): Promise<boolean> {
 
 	for (let i = 0; i < ROOM_COUNT; i++) {
 		const roomId = `dev-${i}`;
-		const stat: RoomStat = { snapshots: 0, events: [], finished: false, finishedTick: -1 };
+		const stat: RoomStat = {
+			snapshots: 0,
+			events: [],
+			finished: false,
+			finishedTick: -1,
+			seenTicks: new Set(),
+			duplicateTicks: [],
+		};
 		stats.set(roomId, stat);
 
 		const room = await createRoom({
@@ -127,14 +183,16 @@ async function checkMultipleRoomsRunConcurrently(): Promise<boolean> {
 			cubText,
 			mode: 'rsp',
 			targetScore: MULTI_ROOM_TARGET_SCORE,
-			// 全ルーム同じ seed + 同じ入力列。t_game が本当に独立していれば
-			// **3 ルームは同じ tick で決着するはず**（申し送り 5 の決定性）。
-			// ずれたらインスタンス間で状態が混ざっている＝申し送り 8 の前提が崩れている
+			// 短時間で決着する seed。**決着 tick の一致は要求しない** —
+			// 入力ドライバとルームの tick は独立した setInterval なので、
+			// どの tick にどの入力が乗るかが実時間で揺れる。決定性は検査2 の責務
 			seed: SEED,
 			log,
 			onBroadcast: (message: SnapshotMessage | RoomEvent) => {
 				if (message.t === 'snapshot') {
 					stat.snapshots++;
+					if (stat.seenTicks.has(message.d.tick)) stat.duplicateTicks.push(message.d.tick);
+					stat.seenTicks.add(message.d.tick);
 					if (message.d.match.state === 'finished' && !stat.finished) {
 						stat.finished = true;
 						stat.finishedTick = message.d.tick;
@@ -171,7 +229,6 @@ async function checkMultipleRoomsRunConcurrently(): Promise<boolean> {
 	const elapsedMs = Date.now() - startedAt;
 
 	const bad: string[] = [];
-	const finishedTicks = new Set<number>();
 	for (const [roomId, stat] of stats) {
 		console.log(
 			`  ${roomId}: snapshots=${stat.snapshots} finished_at_tick=${stat.finishedTick} events=[${stat.events.join(',')}]`,
@@ -179,11 +236,14 @@ async function checkMultipleRoomsRunConcurrently(): Promise<boolean> {
 		if (!stat.finished) bad.push(`${roomId} が決着に到達していない`);
 		if (!stat.events.includes('match_start')) bad.push(`${roomId} に match_start が無い`);
 		if (!stat.events.includes('match_end')) bad.push(`${roomId} に match_end が無い`);
-		finishedTicks.add(stat.finishedTick);
-	}
-	// 同じ seed・同じ入力列なので、独立していれば決着 tick は一致する
-	if (finishedTicks.size > 1) {
-		bad.push(`決着 tick がルーム間でばらついている (${[...finishedTicks].join(', ')}) = 状態が混ざっている疑い`);
+		if (stat.duplicateTicks.length > 0) {
+			bad.push(`${roomId} が同じ tick の snapshot を二重配信 (${stat.duplicateTicks.join(',')})`);
+		}
+		// 配信は偶数 tick のみ = 実効 15Hz（② §6-A）
+		const expectedSnapshots = Math.floor(stat.finishedTick / 2);
+		if (Math.abs(stat.snapshots - expectedSnapshots) > 1) {
+			bad.push(`${roomId} の配信数 ${stat.snapshots} が 15Hz 換算 ${expectedSnapshots} と合わない`);
+		}
 	}
 	console.log(`  状態: ${JSON.stringify(roomStates())}（${(elapsedMs / 1000).toFixed(1)}s）`);
 	console.log(`  tick 過負荷警告: ${overrunWarnings} 件`);
@@ -209,10 +269,13 @@ async function main(): Promise<void> {
 	console.log('検査1: record.mjs との一致');
 	const portOk = await checkPortMatchesRecordMjs();
 
-	console.log('\n検査2: 複数ルーム同時進行（⑤ W-10 受入条件）');
+	console.log('\n検査2: sim インスタンスの独立性（② §6「1ルーム = 1インスタンス」）');
+	const independentOk = await checkInstancesAreIndependent();
+
+	console.log('\n検査3: 複数ルーム同時進行（⑤ W-10 受入条件）');
 	const roomsOk = await checkMultipleRoomsRunConcurrently();
 
-	if (!portOk || !roomsOk) {
+	if (!portOk || !independentOk || !roomsOk) {
 		console.error('\nW-10: 失敗');
 		process.exit(1);
 	}

@@ -63,20 +63,22 @@ interface SimModule {
 
 type SimModuleFactory = () => Promise<SimModule>;
 
-let modulePromise: Promise<SimModule> | null = null;
+let factory: SimModuleFactory | null = null;
 
 /**
- * sim.wasm を読み込む。プロセス内で1回だけ初期化して使い回す。
+ * sim.wasm のインスタンスを**新規に**作る。
  *
- * 「1ルーム = 1インスタンス」推奨（申し送り 8）はモジュールではなく **t_game** の話で、
- * 1つのモジュールから複数の game を作れることは E-11 で確認済み。
+ * ② §6 の「1試合 = 1ルーム = 1つの `sim.wasm` インスタンス」に従い、
+ * ルームごとに別インスタンスを持つ。1モジュールで複数 game を併走させることも
+ * 技術的には可能（E-11 で確認済み）だが、**メモリ成長とクラッシュ隔離**のため
+ * 設計どおり分ける（申し送り 8）。1ルームの暴走が他ルームを道連れにしない。
+ *
+ * require 自体は Node が結果をキャッシュするので、2回目以降は wasm の
+ * インスタンス化コストだけになる。
  */
-export async function loadSim(): Promise<SimModule> {
-	if (!modulePromise) {
-		const factory = require(SIM_JS_PATH) as SimModuleFactory;
-		modulePromise = factory();
-	}
-	return modulePromise;
+export async function createSimModule(): Promise<SimModule> {
+	factory ??= require(SIM_JS_PATH) as SimModuleFactory;
+	return factory();
 }
 
 export interface SimGameOptions {
@@ -106,7 +108,7 @@ export class SimGame {
 	}
 
 	static async create(options: SimGameOptions): Promise<SimGame> {
-		const module = await loadSim();
+		const module = await createSimModule();
 		const textPtr = writeCString(module, options.cubText);
 		let game: number;
 		try {
