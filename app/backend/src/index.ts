@@ -4,7 +4,11 @@
 import Fastify from 'fastify';
 import { healthSchema, makeError } from '@ft/shared';
 
-const PORT = Number(process.env.PORT ?? 3000);
+// BACKEND_PORT が正（`.env.example` の名前・Vite のプロキシ先と同じ）。
+// PORT は docker/PaaS の慣習で注入されることがあるためフォールバックに残す。
+// ※ここを `PORT` だけにすると、`.env` で BACKEND_PORT を変えたときに
+//   Vite は新ポートへプロキシするのに backend は 3000 で待ち、開発サーバが壊れる
+const PORT = Number(process.env.BACKEND_PORT ?? process.env.PORT ?? 3000);
 // 0.0.0.0 で待つ: Docker のコンテナ外（nginx / ホスト）から到達させるため
 const HOST = process.env.HOST ?? '0.0.0.0';
 
