@@ -1,11 +1,16 @@
 // W-10: フラット f64 の snapshot を ② §5-C の JSON へ変換する。
 //
-// **ここが hminemur（F-06）との契約の実体**。配信形を変えるときは
-// 2-WSプロトコル設計「5-C. snapshot ペイロード」を先に改訂すること（⑥ §7-3）。
-// レイアウトの正本は codes/includes/platform/sim.h。
+// **型と契約は `@ft/shared` の ws/game.ts が正本**（Issue #10 で配置を合意）。
+// hminemur の F-06 は同じ定義を import するので、ここで形を変えると両方が壊れる
+// ＝ 変えるときは ② の「5-C. snapshot ペイロード」を先に改訂すること（⑥ §7-3）。
 //
+// フラット配列のレイアウトの正本は codes/includes/platform/sim.h。
 // 参照実装は web/sim_demo/record.mjs の takeSnapshot()。この関数は wasm に
 // 触らない純関数なので、Float64Array を作れば単体テストできる。
+import type { CombatantView, MatchState, SnapshotMessage } from '@ft/shared';
+
+export type { CombatantView, MatchState, SnapshotMessage } from '@ft/shared';
+export type { SnapshotPayload } from '@ft/shared';
 
 /** sim.h の SIM_SNAP_HEADER_DOUBLES */
 const HEADER_DOUBLES = 5;
@@ -17,38 +22,6 @@ const STATE_NAME: Record<number, MatchState> = {
 	1: 'playing',
 	2: 'finished',
 };
-
-export type MatchState = 'waiting' | 'playing' | 'finished';
-
-export interface CombatantView {
-	/** 席 id。**配列の並び順とは無関係**なので必ずこれで照合する（申し送り 4） */
-	id: number;
-	team: number;
-	/** じゃんけんの手 0/1/2。サーバが決める値（D-17 で input からは削除済み） */
-	hand: number;
-	pos: [number, number];
-	dir: number;
-	alive: boolean;
-	is_ai: boolean;
-	respawn_ms: number;
-}
-
-export interface SnapshotPayload {
-	tick: number;
-	match: {
-		state: MatchState;
-		/** RSP = チーム番号 / FPS = combatant_id / 未決着 = null */
-		winner: number | null;
-		score: [number, number];
-	};
-	combatants: CombatantView[];
-}
-
-/** WS の共通エンベロープ（② §2-A）。この形のまま send() する */
-export interface SnapshotMessage {
-	t: 'snapshot';
-	d: SnapshotPayload;
-}
 
 /** 座標・角度の丸め桁。これで 1 件 ≒ 520B に収まり ② §8 の 1KB 予算に入る */
 const ROUND_DIGITS = 4;

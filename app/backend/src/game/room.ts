@@ -8,32 +8,18 @@
 // W-11 がそこへ WebSocket.send を差し込む。
 import { diffEvents } from './events.js';
 import { SimGame, INPUT_SRC_AI, INPUT_SRC_EXTERNAL, NEUTRAL_INPUT, type SeatInput } from './sim.js';
+import type { GameEvent, MatchEndReason } from '@ft/shared';
 import { decodeSnapshot, type SnapshotMessage, type SnapshotPayload } from './snapshot.js';
 
 export type RoomState = 'created' | 'countdown' | 'playing' | 'finished' | 'closed';
 
-/** ② §5-D の match_end.reason */
-export type MatchEndReason = 'score' | 'goal' | 'forfeit' | 'abandon';
+// ② §5-D のイベントと match_end.reason は `@ft/shared` の ws/game.ts が正本
+// （Issue #10 で配置を合意）。F-06/F-07 が同じ定義を import するので、
+// ここで再定義せず re-export する。
+export type { MatchEndReason } from '@ft/shared';
 
-/**
- * ルーム層のイベント（② §5-D）。W-11 が WS メッセージとして流す。
- *
- * **イベントは演出・通知のトリガであり、状態の正本は常に snapshot**（② §5-D）。
- * 取りこぼしても snapshot で追いつく設計なので、再送はしない。
- *
- * `player_disconnected` / `player_reconnected` / `ai_takeover` は接続の生存を
- * 見る必要があるため W-12 で追加する（型だけ先に置く）。
- */
-export type RoomEvent =
-	| { t: 'event'; d: { kind: 'countdown'; seconds: number } }
-	| { t: 'event'; d: { kind: 'match_start' } }
-	| { t: 'event'; d: { kind: 'point_scored'; team: number; score: [number, number]; by_id: number | null } }
-	| { t: 'event'; d: { kind: 'hand_changed'; id: number; hand: number } }
-	| { t: 'event'; d: { kind: 'goal'; id: number } }
-	| { t: 'event'; d: { kind: 'match_end'; winner: number | null; reason: MatchEndReason; match_id: string | null } }
-	| { t: 'event'; d: { kind: 'player_disconnected'; slot: number; grace_ms: number } }
-	| { t: 'event'; d: { kind: 'player_reconnected'; slot: number } }
-	| { t: 'event'; d: { kind: 'ai_takeover'; slot: number } };
+/** ルーム層が配信するイベント（② §5-D）。W-11 が WS メッセージとして流す */
+export type RoomEvent = GameEvent;
 
 /** ② §5-B の welcome を W-11 が組み立てるために必要な、ルームが持つ情報 */
 export interface RoomDescription {
