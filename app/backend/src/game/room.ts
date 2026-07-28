@@ -42,10 +42,15 @@ export const INTERP_MS = 100;
 /** created で人間を待つ上限（② §6-A） */
 const JOIN_GRACE_MS = 10_000;
 const COUNTDOWN_MS = 3_000;
-/** finished で結果画面のため接続を維持する時間（② §6-A） */
-const FINISHED_HOLD_MS = 60_000;
-/** 1 tick の処理がこれを超えたら過負荷とみなして警告（⑤ W-10 受入条件） */
-const TICK_OVERRUN_MS = TICK_MS;
+/** finished で結果画面のため接続を維持する時間（② §6-A）。満了で close 1000 */
+export const FINISHED_HOLD_MS = 60_000;
+/**
+ * 1 tick の処理がこれを超えたら過負荷とみなして警告（⑤ W-10 受入条件）。
+ *
+ * ② §8 は「`game_step` 所要が**周期の 50%**」と定めている。周期いっぱい（100%）で
+ * 警告していては、気づいた時にはもう配信が遅れている。半分で予兆を拾う。
+ */
+const TICK_OVERRUN_MS = TICK_MS * 0.5;
 /** 同じ警告でログを溢れさせないための間引き */
 const OVERRUN_LOG_INTERVAL_MS = 1_000;
 

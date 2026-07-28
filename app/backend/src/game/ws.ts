@@ -22,7 +22,7 @@ import {
 
 import { authenticateRequest, isAllowedOrigin } from '../auth/session.js';
 import { getRoom } from './rooms.js';
-import type { GameRoom } from './room.js';
+import { FINISHED_HOLD_MS, type GameRoom } from './room.js';
 
 /** ws の WebSocket は型が環境依存なので、使う分だけを構造的に要求する */
 interface Socket {
@@ -31,8 +31,22 @@ interface Socket {
 	on(event: 'message', cb: (data: unknown) => void): void;
 	on(event: 'close', cb: () => void): void;
 	readyState: number;
+	/** 未送信のバイト数。② §8 のバックプレッシャ判定に使う */
+	bufferedAmount: number;
 }
 const OPEN = 1;
+
+// ② §8 バックプレッシャ。回線が詰まった接続を切らずに守るための2段構え
+/** これを超えたら **その接続にだけ** snapshot を送るのをやめる（event は落とさない） */
+const BACKPRESSURE_SKIP_SNAPSHOT_BYTES = 64 * 1024;
+/** これを超えたら回線が死んだと判断して close 4005 */
+const BACKPRESSURE_CLOSE_BYTES = 1024 * 1024;
+
+/** ② §5-A: yaw を [-π, π) に正規化する。有限値チェックは zod 側（申し送り 7） */
+function normalizeYaw(yaw: number): number {
+	const wrapped = ((yaw + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+	return wrapped - Math.PI;
+}
 
 /** 1接続ぶんの状態。**seq とレート制限は接続ごと**なので zod では持てない */
 interface Connection {
@@ -107,12 +121,18 @@ async function handleConnection(
 		}
 	}
 	peers.add(conn);
+	// ② §8: 接続/切断/join を構造化ログに残す（**input はログしない**。量とプライバシー）
+	app.log.info({ room: roomId, user: conn.userId, peers: peers.size }, 'W-11: WS 接続');
 
 	socket.on('message', (raw: unknown) => {
 		handleMessage(conn, room, raw, app);
 	});
 	socket.on('close', () => {
 		peers.delete(conn);
+		app.log.info(
+			{ room: roomId, user: conn.userId, slot: conn.slot, peers: peers.size },
+			'W-11: WS 切断',
+		);
 		// 席を AI へ戻す。猶予つきの切断処理は W-12 が上に載せる
 		if (conn.slot !== null) room.leave(conn.slot);
 		if (peers.size === 0) releaseRoomConnections(roomId);
@@ -125,10 +145,33 @@ function ensureRoomConnections(roomId: string, room: GameRoom): Set<Connection> 
 	if (peers) return peers;
 	peers = new Set<Connection>();
 	connectionsByRoom.set(roomId, peers);
-	const unsubscribe = room.subscribe((_message, serialized) => {
-		// ② §5-B: 全参加者へ**同一の**シリアライズ済み文字列を送る
+	const unsubscribe = room.subscribe((message, serialized) => {
+		const isSnapshot = message.t === 'snapshot';
 		for (const c of peers) {
-			if (c.joined && c.socket.readyState === OPEN) c.socket.send(serialized);
+			if (!c.joined || c.socket.readyState !== OPEN) continue;
+
+			// ② §8 バックプレッシャ: 回線が詰まっている接続を切らずに守る。
+			// **snapshot は落としてよい**（次が全量なので自己回復する）が、
+			// event は落とすと二度と届かないので必ず送る
+			const buffered = c.socket.bufferedAmount;
+			if (buffered > BACKPRESSURE_CLOSE_BYTES) {
+				c.socket.close(WS_CLOSE.rateLimited, 'send buffer overflow');
+				continue;
+			}
+			if (isSnapshot && buffered > BACKPRESSURE_SKIP_SNAPSHOT_BYTES) continue;
+
+			c.socket.send(serialized);
+		}
+
+		// ② §6-A: finished は結果画面のため 60 秒だけ接続を維持し、満了で close 1000。
+		// ルーム側の pump も同じタイミングで closed へ遷移する
+		if (message.t === 'event' && message.d.kind === 'match_end') {
+			const timer = setTimeout(() => {
+				for (const c of peers) {
+					if (c.socket.readyState === OPEN) c.socket.close(WS_CLOSE.normal, 'match finished');
+				}
+			}, FINISHED_HOLD_MS);
+			timer.unref();
 		}
 	});
 	unsubscribeByRoom.set(roomId, unsubscribe);
@@ -224,6 +267,7 @@ function handleJoin(conn: Connection, room: GameRoom, app: FastifyInstance): voi
 	}
 	conn.slot = slot;
 	conn.joined = true;
+	app.log.info({ room: room.roomId, user: conn.userId, slot, resume }, 'W-11: join');
 
 	// ② §5-B: welcome は**接続ごとに内容が違う**ので一斉配信できない
 	const d = room.describe();
@@ -275,8 +319,10 @@ function handleInput(
 		backward: (input.mv & 0b0010) !== 0,
 		strafeLeft: (input.mv & 0b0100) !== 0,
 		strafeRight: (input.mv & 0b1000) !== 0,
-		// yaw は絶対角。クライアント権威なのでそのまま渡す（NaN/Inf は zod が弾き済み）
-		yaw: input.yaw,
+		// ② §5-A: yaw は絶対角でクライアント権威。サーバ側の検証は
+		// 「有限値チェック（zod）+ [-π,π) 正規化」のみ。回転チートは許容リスク。
+		// 正規化しないと 1e30 のような巨大値が三角関数で精度を失う
+		yaw: normalizeYaw(input.yaw),
 	});
 }
 

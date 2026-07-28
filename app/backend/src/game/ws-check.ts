@@ -235,6 +235,34 @@ async function checkInvalidMessages(): Promise<string[]> {
 	if (c5.closedWith !== null) bad.push(`(g) seq 逆行で切断された (code=${c5.closedWith})`);
 	console.log(`  (g) seq 逆行（100→50→100）→ error=0件 / 切断なし ✓`);
 
+	// (h) 巨大な yaw が [-π,π) に正規化される（② §5-A）
+	//     playing でないと snapshot が流れず「0件を検査して合格」になるので、
+	//     専用ルームを作って必ず playing まで進めてから測る
+	await createRoom({
+		roomId: 'ws-yaw',
+		cubText: loadMap(),
+		mode: 'rsp',
+		targetScore: 21, // 検査中に決着しないよう長く
+		seed: 42,
+		participants: [{ userId: 301, slot: 0 }],
+		log: { info: () => {}, warn: () => {} },
+	});
+	const c6 = new TestClient('ws-yaw', 301);
+	await c6.open();
+	c6.send({ t: 'join' }); // 予定していた人間席が埋まるので countdown(3s) → playing
+	await sleep(3600);
+	c6.send({ t: 'input', d: { seq: 1, yaw: 1e30, mv: 0b0001 } });
+	await sleep(500);
+	const dirs = c6.received
+		.filter((m): m is Extract<GameServerMessage, { t: 'snapshot' }> => m.t === 'snapshot')
+		.flatMap((m) => m.d.combatants.map((x) => x.dir));
+	const outOfRange = dirs.filter((d) => !Number.isFinite(d) || Math.abs(d) > Math.PI + 1e-6);
+	if (dirs.length === 0) bad.push('(h) snapshot が届かず検査になっていない（playing まで進んでいない）');
+	if (c6.errors.length !== 0) bad.push('(h) 有限な巨大 yaw が error になった');
+	if (outOfRange.length > 0) bad.push(`(h) dir が [-π,π) の外に出た (${outOfRange.slice(0, 3).join(', ')})`);
+	console.log(`  (h) yaw=1e30 → dir は全て [-π,π) 内（${dirs.length}件検査）✓`);
+	c6.close();
+
 	c5.close();
 	return bad;
 }
