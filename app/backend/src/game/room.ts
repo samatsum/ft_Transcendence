@@ -68,6 +68,16 @@ export interface RoomOptions {
 	 */
 	humanSlots?: number[];
 	/**
+	 * 席に着く予定の人間の一覧（② §4-C の participant 登録）。W-09 が渡す。
+	 *
+	 * ゲーム WS の `join` は**ペイロードを持たない**（② §5-A）。Cookie から得た
+	 * userId をこの表で slot に引き当てて本人特定する。表に無い userId は
+	 * participant ではないので close `4003`。
+	 *
+	 * 省略時は `humanSlots` を、それも無ければ全席を人間とみなす。
+	 */
+	participants?: ReadonlyArray<{ userId: number; slot: number }>;
+	/**
 	 * 全参加者へ配信する。W-11 が WS へ差し替える。
 	 *
 	 * `serialized` は **ルーム内で1回だけ `JSON.stringify` した文字列**。
@@ -80,6 +90,9 @@ export interface RoomOptions {
 	now?: () => number;
 	log?: RoomLogger;
 }
+
+/** 配信の購読者。`serialized` は ② §5-B の「同一シリアライズ済み文字列」 */
+export type BroadcastListener = (message: SnapshotMessage | RoomEvent, serialized: string) => void;
 
 export interface RoomLogger {
 	info(obj: Record<string, unknown>, msg: string): void;
@@ -112,6 +125,10 @@ export class GameRoom {
 	private readonly humanSeats = new Set<number>();
 	/** 人間が座る予定の席（② §6-A 追補）。early start の判定に使う */
 	private readonly expectedHumanSlots: Set<number>;
+	/** userId → slot（② §4-C の participant 登録）。join の本人特定に使う */
+	private readonly participantSlots = new Map<number, number>();
+	/** 配信の購読者。W-11 の WS 層がここに1つ登録して接続へファンアウトする */
+	private readonly listeners = new Set<BroadcastListener>();
 
 	private lastOverrunLogAt = 0;
 	/** 直前に配信した snapshot。差分から point_scored / hand_changed / goal を起こす */
@@ -123,10 +140,36 @@ export class GameRoom {
 		this.mode = options.mode;
 		this.opts = { ...options, now: options.now ?? Date.now, log: options.log ?? consoleLogger };
 		this.stateEnteredAt = this.opts.now();
-		// 省略時は全席が人間（定員ちょうど埋まったクイックマッチと同じ扱い）
+		for (const p of options.participants ?? []) this.participantSlots.set(p.userId, p.slot);
+		// 優先順: humanSlots → participants から導出 → 全席が人間
+		// （定員ちょうど埋まったクイックマッチは最後の扱いで正しい）
 		this.expectedHumanSlots = new Set(
-			options.humanSlots ?? Array.from({ length: seatCount(options.mode) }, (_, i) => i),
+			options.humanSlots ??
+				(options.participants
+					? options.participants.map((p) => p.slot)
+					: Array.from({ length: seatCount(options.mode) }, (_, i) => i)),
 		);
+		if (options.onBroadcast) this.listeners.add(options.onBroadcast);
+	}
+
+	/**
+	 * ② §5-A の `join` 用。Cookie から得た userId に対応する slot を返す。
+	 * participant でなければ `undefined`（呼び出し側は close 4003）。
+	 */
+	getSlotForUser(userId: number): number | undefined {
+		return this.participantSlots.get(userId);
+	}
+
+	/**
+	 * 配信を購読する。戻り値を呼ぶと解除。
+	 *
+	 * W-11 は**ルームにつき1回**購読し、そこから接続集合へファンアウトする。
+	 * 接続ごとに購読すると ② §5-B の「同一シリアライズ済み文字列を配信」が
+	 * 崩れる（接続数ぶん stringify してしまう）。
+	 */
+	subscribe(listener: BroadcastListener): () => void {
+		this.listeners.add(listener);
+		return () => this.listeners.delete(listener);
 	}
 
 	/** W-11 が welcome（② §5-B）を組み立てるための情報 */
@@ -372,9 +415,10 @@ export class GameRoom {
 	}
 
 	private broadcast(message: SnapshotMessage | RoomEvent): void {
-		if (!this.opts.onBroadcast) return;
+		if (this.listeners.size === 0) return;
 		// ② §5-B: 1回だけ直列化して同じ文字列を全員へ
-		this.opts.onBroadcast(message, JSON.stringify(message));
+		const serialized = JSON.stringify(message);
+		for (const listener of this.listeners) listener(message, serialized);
 	}
 
 	private requireSim(): SimGame {

@@ -31,9 +31,16 @@ export interface AuthedUser {
  *
  * @returns 認証できたユーザー、または `null`
  */
-export async function authenticateRequest(_req: FastifyRequest): Promise<AuthedUser | null> {
-	// TODO(W-04): 上記1〜4を実装する。torinoue がこの関数の中身を置き換える
-	return { userId: 1, sessionId: 1 };
+export async function authenticateRequest(req: FastifyRequest): Promise<AuthedUser | null> {
+	// TODO(W-04): 上記1〜4を実装する。torinoue がこの関数の中身を置き換える。
+	//
+	// それまでの繋ぎとして `x-dev-user` ヘッダで userId を指定できるようにしてある。
+	// **W-11 の複数クライアント検証に必要**（スタブが常に同じ userId を返すと
+	// 2人目が「同一ユーザーの多重接続」扱いで弾かれてしまう）。
+	// 本実装では Cookie だけを見るので、この分岐ごと消えてよい。
+	const devUser = Number(req.headers['x-dev-user']);
+	const userId = Number.isInteger(devUser) && devUser > 0 ? devUser : 1;
+	return { userId, sessionId: userId };
 }
 
 /**
