@@ -319,6 +319,18 @@ created ──全人間join or 10s──► countdown(3s) ──► playing ─�
 | finished | しない（最終 snapshot は配信済み） | しない | 永続化（§6-C）→ 結果画面用に 60 秒接続維持 → close 1000 |
 | closed | — | — | `game_destroy`、Map から除去 |
 
+> **追補（2026-07-27）— 席の状態はルーム状態と「直交する別の次元」である**
+>
+> 上の表が持つのは**ルーム全体の状態**（created / countdown / playing / finished / closed）だけ。
+> 一方 §5-B の `player_status` は席ごとに `connected` / `ai` / `grace` の3値を持ち、
+> §7-A は「切断 → grace 30秒 → ai_takeover」という**席ごとの遷移**を定めている。
+>
+> **この2つは別の次元であり、ルームの状態機械に grace を足すのではない。**
+> ルームが `playing` のまま、席1が `grace`・席2が `ai`・席3が `connected` という状態が正常にありうる。
+> §6-A の「playing ──(全人間席が grace 満了/abandon)──► finished」という矢印は、
+> **席の次元の集計結果がルームの遷移を引き起こす**ことを表している。
+> W-12 は席の状態表を新設する形で実装すること（ルーム状態機械の拡張ではない）。
+
 > **追補（2026-07-27）— ルームは「人間席の slot 一覧」を生成時に受け取る**
 >
 > §4-C は countdown への遷移条件を「**全人間席の join 完了** or 10秒経過」と定めているが、
