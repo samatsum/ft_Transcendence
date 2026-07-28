@@ -3,6 +3,7 @@
 //
 // W-09（マッチメイキング）と W-11（ゲーム WS）は、GameRoom の内部を知らずに
 // ここの createRoom / getRoom / closeRoom だけを使う。
+import { defaultMapId, loadMapText, type GameMode } from './maps.js';
 import { GameRoom, type RoomOptions, type RoomState } from './room.js';
 
 /** created / countdown / finished の時間経過を進める間隔。tick ループとは別 */
@@ -22,6 +23,42 @@ export async function createRoom(options: CreateRoomOptions): Promise<GameRoom> 
 	rooms.set(roomId, room);
 	ensurePump();
 	return room;
+}
+
+/**
+ * ② §4-B の `rules` からルームを作る（W-09 が使う入口）。
+ *
+ * **マップ ID → `.cub` テキストの解決はここで行う**（③ §2-E / ② §5-B）。
+ * GameRoom 自体はテキストしか知らないので、W-14 の変更が room.ts に波及しない。
+ */
+export async function createRoomFromRules(options: {
+	roomId?: string;
+	mode: GameMode;
+	rules?: { map?: string; target_score?: number };
+	seed?: number;
+	participants?: RoomOptions['participants'];
+	humanSlots?: number[];
+	onBroadcast?: RoomOptions['onBroadcast'];
+	log?: RoomOptions['log'];
+}): Promise<GameRoom> {
+	const mapId = options.rules?.map ?? defaultMapId(options.mode);
+	const { entry, text } = loadMapText(mapId);
+	if (entry.mode !== options.mode) {
+		throw new Error(`map ${mapId} は ${entry.mode} 用で、${options.mode} には使えない`);
+	}
+	return createRoom({
+		roomId: options.roomId,
+		cubText: text,
+		mode: options.mode,
+		// 範囲 3–21 の検証は W-11 のスキーマ側の責務（G-05 の決定）。
+		// ここは 0 を渡せばエンジンが既定値へ落とす
+		targetScore: options.rules?.target_score ?? 0,
+		seed: options.seed ?? 0,
+		participants: options.participants,
+		humanSlots: options.humanSlots,
+		onBroadcast: options.onBroadcast,
+		log: options.log,
+	});
 }
 
 export function getRoom(roomId: string): GameRoom | undefined {

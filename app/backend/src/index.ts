@@ -7,6 +7,7 @@ import Fastify from 'fastify';
 import fastifyWebsocket from '@fastify/websocket';
 import { healthSchema, makeError } from '@ft/shared';
 
+import { listMaps, type GameMode } from './game/maps.js';
 import { registerGameWs } from './game/ws.js';
 
 // BACKEND_PORT が正（`.env.example` の名前・Vite のプロキシ先と同じ）。
@@ -29,6 +30,16 @@ export async function buildServer() {
 			service: 'ft-transcendence-backend',
 			time: new Date().toISOString(),
 		});
+	});
+
+	// W-14: ③ §2-E のマップ一覧。**本文（.cub）は返さない** — マップ本文は
+	// welcome.map_text で配るので（② §5-B）、ここは選択 UI 用のメタデータだけ
+	app.get('/api/maps', async (request, reply) => {
+		const mode = (request.query as { mode?: string }).mode;
+		if (mode !== undefined && mode !== 'rsp' && mode !== 'fps') {
+			return reply.code(400).send(makeError('validation_failed', `unknown mode: ${mode}`));
+		}
+		return listMaps(mode as GameMode | undefined);
 	});
 
 	// W-11: ゲーム WS（② §5）。ロビー WS（W-08）も同じプラグインに載る

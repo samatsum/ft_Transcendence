@@ -10,7 +10,8 @@ import WebSocket from 'ws';
 import { WS_CLOSE, type GameServerMessage } from '@ft/shared';
 
 import { buildServer } from '../index.js';
-import { closeAllRooms, createRoom } from './rooms.js';
+import { listMaps, loadMapText } from './maps.js';
+import { closeAllRooms, createRoom, createRoomFromRules } from './rooms.js';
 
 const PORT = 3999;
 const MAP = 'rsp_map/rsp.cub';
@@ -267,6 +268,59 @@ async function checkInvalidMessages(): Promise<string[]> {
 	return bad;
 }
 
+/* ── 検査3: W-14 マップ API とテキスト配布の一致 ─────────────────── */
+
+async function checkMaps(baseUrl: string): Promise<string[]> {
+	const bad: string[] = [];
+
+	// ③ §2-E: GET /api/maps は一覧（メタデータ）を返す。**本文は含まない**
+	const all = (await (await fetch(`${baseUrl}/api/maps`)).json()) as unknown[];
+	const rsp = (await (await fetch(`${baseUrl}/api/maps?mode=rsp`)).json()) as { id: string; mode: string }[];
+	const badMode = await fetch(`${baseUrl}/api/maps?mode=nope`);
+	console.log(`  GET /api/maps → ${all.length}件 / ?mode=rsp → ${rsp.length}件 / ?mode=nope → ${badMode.status}`);
+
+	if (all.length !== 4) bad.push(`ホワイトリストが4件でない (${all.length})`);
+	if (rsp.length !== 2 || rsp.some((m) => m.mode !== 'rsp')) bad.push('mode フィルタが効いていない');
+	if (badMode.status !== 400) bad.push(`不正な mode が 400 にならない (${badMode.status})`);
+	if (all.some((m) => 'path' in (m as object))) bad.push('API がサーバ内部の path を漏らしている');
+
+	// **W-14 の受入条件**: サーバのロード内容と配布テキストが常に一致する。
+	// ルームを ID から作り、welcome.map_text が同じ .cub であることを確かめる
+	for (const meta of listMaps()) {
+		const room = await createRoomFromRules({
+			roomId: `map-${meta.id}`,
+			mode: meta.mode,
+			rules: { map: meta.id },
+			seed: 42,
+			participants: [{ userId: 400, slot: 0 }],
+			log: { info: () => {}, warn: () => {} },
+		});
+		const expected = loadMapText(meta.id).text;
+		if (room.describe().mapText !== expected) {
+			bad.push(`${meta.id}: welcome.map_text がロード内容と一致しない`);
+		}
+	}
+	console.log(`  4マップとも welcome.map_text = サーバがロードした .cub と一致 ✓`);
+
+	// ホワイトリストに無い ID は解決しない（任意パス読み出しの防止）
+	try {
+		await createRoomFromRules({ roomId: 'map-evil', mode: 'rsp', rules: { map: '../../etc/passwd' } });
+		bad.push('ホワイトリスト外の ID が通ってしまった');
+	} catch {
+		console.log('  ホワイトリスト外の ID は拒否される ✓');
+	}
+
+	// モード違いのマップは弾く（FPS 用マップで RSP ルームは作れない）
+	try {
+		await createRoomFromRules({ roomId: 'map-mismatch', mode: 'rsp', rules: { map: 'fps_duel' } });
+		bad.push('モード違いのマップが通ってしまった');
+	} catch {
+		console.log('  モード違いのマップは拒否される ✓');
+	}
+
+	return bad;
+}
+
 /* ── 実行 ─────────────────────────────────────────────────────── */
 
 async function main(): Promise<void> {
@@ -280,16 +334,21 @@ async function main(): Promise<void> {
 
 	console.log('\n検査2: 受入条件 №6（不正メッセージ）');
 	const bad2 = await checkInvalidMessages();
-	console.log(bad2.length ? `  NG:\n    ${bad2.join('\n    ')}` : '  OK: 7項目すべて仕様どおり');
+	console.log(bad2.length ? `  NG:\n    ${bad2.join('\n    ')}` : '  OK: 8項目すべて仕様どおり');
+
+	console.log('\n検査3: W-14 マップ API とテキスト配布の一致');
+	const bad3 = await checkMaps(`http://127.0.0.1:${PORT}`);
+	console.log(bad3.length ? `  NG:\n    ${bad3.join('\n    ')}` : '  OK');
 
 	closeAllRooms();
 	await app.close();
 
-	if (bad1.length || bad2.length) {
+	if (bad1.length || bad2.length || bad3.length) {
 		console.error('\nW-11: 失敗');
 		process.exit(1);
 	}
 	console.log('\nW-11: 受入条件 №5 / №6 を満たしています');
+	console.log('W-14: マップ一覧とテキスト配布の一致を確認しました');
 }
 
 main().catch((err: unknown) => {
