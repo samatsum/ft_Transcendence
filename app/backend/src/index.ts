@@ -4,7 +4,24 @@
 import Fastify from 'fastify';
 import { healthSchema, makeError } from '@ft/shared';
 
-const PORT = Number(process.env.PORT ?? 3000);
+// BACKEND_PORT が正（`.env.example` の名前・Vite のプロキシ先と同じ）。
+// PORT は docker/PaaS の慣習で注入されることがあるためフォールバックに残す。
+// ※ここを `PORT` だけにすると、`.env` で BACKEND_PORT を変えたときに
+//   Vite は新ポートへプロキシするのに backend は 3000 で待ち、開発サーバが壊れる
+function requirePort(raw: string | undefined, name: string, fallback: number): number {
+	if (raw === undefined) return fallback;
+	const n = Number(raw);
+	if (!Number.isInteger(n) || n < 1 || n > 65535) {
+		throw new Error(`${name}="${raw}" は不正なポート番号（1〜65535 の整数が必要）`);
+	}
+	return n;
+}
+
+const PORT = requirePort(
+	process.env.BACKEND_PORT ?? process.env.PORT,
+	'BACKEND_PORT/PORT',
+	3000,
+);
 // 0.0.0.0 で待つ: Docker のコンテナ外（nginx / ホスト）から到達させるため
 const HOST = process.env.HOST ?? '0.0.0.0';
 
