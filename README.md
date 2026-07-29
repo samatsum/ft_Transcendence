@@ -1,6 +1,16 @@
 # cub3D
 
-*本プロジェクトは、42 カリキュラムの一環として samatsum によって作成されました。*
+*This project has been created as part of the 42 curriculum by samatsum, torinoue, mamiyaza, hminemur*
+
+<!--
+課題書 第VI章 の1項目目は、この先頭行を**英語**で
+`*This project has been created as part of the 42 curriculum by <login1>[, <login2>...]*`
+の形にすることを要求している。4人全員のログインを列挙する必要があるため、
+旧文（日本語・samatsum のみ）から差し替えた（2026-07-27）。
+README 全体の英語化は Day 5（⓪ §9）。この行だけは書式が指定されているので先に直してある。
+-->
+
+*（このプロジェクトは cub3D エンジンを基盤としたブラウザ対戦ゲームプラットフォームです。README 全体の英語化は Day 5 に行います。）*
 
 <img align="center" src="md_files/screenshot.png" alt="Screenshot of the game" />
 
