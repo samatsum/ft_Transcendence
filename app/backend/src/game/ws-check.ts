@@ -16,6 +16,7 @@ import { closeAllRooms, createRoom, createRoomFromRules } from './rooms.js';
 const PORT = 3999;
 const MAP = 'rsp_map/rsp.cub';
 const TICK_HZ = 30;
+const WS_OPEN_TIMEOUT_MS = 5_000;
 
 function loadMap(): string {
 	return readFileSync(fileURLToPath(new URL(`../../../../maps/${MAP}`, import.meta.url)), 'utf8');
@@ -35,6 +36,7 @@ class TestClient {
 	constructor(roomId: string, readonly userId: number) {
 		this.ws = new WebSocket(`ws://127.0.0.1:${PORT}/ws/game/${roomId}`, {
 			headers: { 'x-dev-user': String(userId) },
+			origin: `http://127.0.0.1:${PORT}`,
 		});
 		this.ws.on('message', (data) => {
 			const parsed = JSON.parse(String(data)) as GameServerMessage | { t: 'error'; d: { code: string; msg: string } };
@@ -48,9 +50,44 @@ class TestClient {
 
 	async open(): Promise<void> {
 		if (this.ws.readyState === WebSocket.OPEN) return;
+		if (this.ws.readyState === WebSocket.CLOSING || this.ws.readyState === WebSocket.CLOSED) {
+			throw new Error(`WebSocket handshake cannot start from readyState=${this.ws.readyState}`);
+		}
+
 		await new Promise<void>((resolve, reject) => {
-			this.ws.once('open', resolve);
-			this.ws.once('error', reject);
+			let settled = false;
+			let timer: NodeJS.Timeout;
+			const cleanup = (): void => {
+				clearTimeout(timer);
+				this.ws.off('open', onOpen);
+				this.ws.off('error', onError);
+				this.ws.off('close', onClose);
+			};
+			const finish = (error?: Error): void => {
+				if (settled) return;
+				settled = true;
+				cleanup();
+				if (error) reject(error);
+				else resolve();
+			};
+			const onOpen = (): void => finish();
+			const onError = (error: Error): void => finish(error);
+			const onClose = (code: number): void =>
+				finish(new Error(`WebSocket closed before open (code=${code})`));
+
+			timer = setTimeout(
+				() => finish(new Error(`WebSocket open timed out after ${WS_OPEN_TIMEOUT_MS}ms`)),
+				WS_OPEN_TIMEOUT_MS,
+			);
+			this.ws.once('open', onOpen);
+			this.ws.once('error', onError);
+			this.ws.once('close', onClose);
+
+			// 最初の readyState 確認と listener 登録の間に状態が変わった場合も取りこぼさない。
+			if (this.ws.readyState === WebSocket.OPEN) onOpen();
+			else if (this.ws.readyState === WebSocket.CLOSING || this.ws.readyState === WebSocket.CLOSED) {
+				onClose(this.ws.readyState);
+			}
 		});
 	}
 
@@ -236,7 +273,39 @@ async function checkInvalidMessages(): Promise<string[]> {
 	if (c5.closedWith !== null) bad.push(`(g) seq 逆行で切断された (code=${c5.closedWith})`);
 	console.log(`  (g) seq 逆行（100→50→100）→ error=0件 / 切断なし ✓`);
 
-	// (h) 巨大な yaw が [-π,π) に正規化される（② §5-A）
+	// (h) 同一ユーザーの新接続が旧接続を置換し、同じ席の入力を引き継げる
+	const c7 = new TestClient('ws-bad', 201);
+	await c7.open();
+	c7.send({ t: 'join' });
+	await sleep(250);
+	if (c5.closedWith !== WS_CLOSE.replaced) {
+		bad.push(`(h) 旧接続が close 4004 にならない (code=${c5.closedWith})`);
+	}
+	const replacementWelcome = c7.find('welcome');
+	if (replacementWelcome?.d.slot !== 0) {
+		bad.push(`(h) 置換接続が元の slot 0 を引き継がない (slot=${replacementWelcome?.d.slot})`);
+	}
+	await sleep(3_400);
+	const replacementYaw = 1.25;
+	c7.send({ t: 'input', d: { seq: 0, yaw: replacementYaw, mv: 0 } });
+	await sleep(250);
+	const replacementSnapshot = c7.received
+		.filter((m): m is Extract<GameServerMessage, { t: 'snapshot' }> => m.t === 'snapshot')
+		.at(-1);
+	const replacementSeat = replacementSnapshot?.d.combatants.find((x) => x.id === 0);
+	if (!replacementSeat || replacementSeat.is_ai) {
+		bad.push('(h) 置換後の slot 0 が人間入力の所有状態を維持していない');
+	} else {
+		const angleError = Math.abs(
+			Math.atan2(Math.sin(replacementSeat.dir - replacementYaw), Math.cos(replacementSeat.dir - replacementYaw)),
+		);
+		if (angleError > 0.05) {
+			bad.push(`(h) 置換接続の入力が slot 0 に反映されない (dir=${replacementSeat.dir})`);
+		}
+	}
+	console.log(`  (h) 同一ユーザー置換 → 旧 close=${c5.closedWith} / slot=${replacementWelcome?.d.slot} ✓`);
+
+	// (i) 巨大な yaw が [-π,π) に正規化される（② §5-A）
 	//     playing でないと snapshot が流れず「0件を検査して合格」になるので、
 	//     専用ルームを作って必ず playing まで進めてから測る
 	await createRoom({
@@ -258,11 +327,12 @@ async function checkInvalidMessages(): Promise<string[]> {
 		.filter((m): m is Extract<GameServerMessage, { t: 'snapshot' }> => m.t === 'snapshot')
 		.flatMap((m) => m.d.combatants.map((x) => x.dir));
 	const outOfRange = dirs.filter((d) => !Number.isFinite(d) || Math.abs(d) > Math.PI + 1e-6);
-	if (dirs.length === 0) bad.push('(h) snapshot が届かず検査になっていない（playing まで進んでいない）');
-	if (c6.errors.length !== 0) bad.push('(h) 有限な巨大 yaw が error になった');
-	if (outOfRange.length > 0) bad.push(`(h) dir が [-π,π) の外に出た (${outOfRange.slice(0, 3).join(', ')})`);
-	console.log(`  (h) yaw=1e30 → dir は全て [-π,π) 内（${dirs.length}件検査）✓`);
+	if (dirs.length === 0) bad.push('(i) snapshot が届かず検査になっていない（playing まで進んでいない）');
+	if (c6.errors.length !== 0) bad.push('(i) 有限な巨大 yaw が error になった');
+	if (outOfRange.length > 0) bad.push(`(i) dir が [-π,π) の外に出た (${outOfRange.slice(0, 3).join(', ')})`);
+	console.log(`  (i) yaw=1e30 → dir は全て [-π,π) 内（${dirs.length}件検査）✓`);
 	c6.close();
+	c7.close();
 
 	c5.close();
 	return bad;
@@ -324,6 +394,8 @@ async function checkMaps(baseUrl: string): Promise<string[]> {
 /* ── 実行 ─────────────────────────────────────────────────────── */
 
 async function main(): Promise<void> {
+	process.env.NODE_ENV = 'development';
+	process.env.ALLOW_DEV_AUTH = 'true';
 	const app = await buildServer();
 	app.log.level = 'silent';
 	await app.listen({ port: PORT, host: '127.0.0.1' });
@@ -334,7 +406,7 @@ async function main(): Promise<void> {
 
 	console.log('\n検査2: 受入条件 №6（不正メッセージ）');
 	const bad2 = await checkInvalidMessages();
-	console.log(bad2.length ? `  NG:\n    ${bad2.join('\n    ')}` : '  OK: 8項目すべて仕様どおり');
+	console.log(bad2.length ? `  NG:\n    ${bad2.join('\n    ')}` : '  OK: 9項目すべて仕様どおり');
 
 	console.log('\n検査3: W-14 マップ API とテキスト配布の一致');
 	const bad3 = await checkMaps(`http://127.0.0.1:${PORT}`);
