@@ -124,8 +124,16 @@ export class GameRoom {
 		this.opts = { ...options, now: options.now ?? Date.now, log: options.log ?? consoleLogger };
 		this.stateEnteredAt = this.opts.now();
 		// 省略時は全席が人間（定員ちょうど埋まったクイックマッチと同じ扱い）
+		const seats = seatCount(options.mode);
+		if (options.humanSlots) {
+			for (const s of options.humanSlots) {
+				if (!Number.isInteger(s) || s < 0 || s >= seats) {
+					throw new Error(`humanSlots の ${s} は ${options.mode} の定員 ${seats} の外`);
+				}
+			}
+		}
 		this.expectedHumanSlots = new Set(
-			options.humanSlots ?? Array.from({ length: seatCount(options.mode) }, (_, i) => i),
+			options.humanSlots ?? Array.from({ length: seats }, (_, i) => i),
 		);
 	}
 

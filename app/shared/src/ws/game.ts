@@ -25,7 +25,7 @@ export const gameInputSchema = z.object({
 	t: z.literal('input'),
 	d: z.object({
 		/** uint32 単調増加。サーバは「最後に受理した seq」より小さいものを黙って破棄 */
-		seq: z.number().int().nonnegative(),
+		seq: z.number().int().min(0).max(0xFFFFFFFF),
 		/**
 		 * 絶対角・ラジアン。視点回転はクライアント権威（② §5-C）なので
 		 * サーバは範囲検証をしない。**NaN / Infinity だけはここで弾く**
@@ -35,7 +35,7 @@ export const gameInputSchema = z.object({
 		/** 4bit ビットマスク: bit0=前進 / bit1=後退 / bit2=左strafe / bit3=右strafe */
 		mv: z.number().int().min(0).max(0b1111),
 		/** 既存エンジンの武器/射撃状態との互換予約。本プロジェクトの両モードでは 0 固定 */
-		act: z.number().int().min(0).max(0b1111).optional(),
+		act: z.literal(0).optional(),
 	}),
 });
 

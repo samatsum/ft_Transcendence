@@ -33,7 +33,7 @@ export interface AuthedUser {
  */
 export async function authenticateRequest(_req: FastifyRequest): Promise<AuthedUser | null> {
 	// TODO(W-04): 上記1〜4を実装する。torinoue がこの関数の中身を置き換える
-	return { userId: 1, sessionId: 1 };
+	return null;
 }
 
 /**
@@ -42,7 +42,7 @@ export async function authenticateRequest(_req: FastifyRequest): Promise<AuthedU
  */
 export function isAllowedOrigin(_req: FastifyRequest): boolean {
 	// TODO(W-05): `.env` の ALLOWED_ORIGIN と `Origin` ヘッダを突き合わせる
-	return true;
+	return false;
 }
 
 /** 上の2つが暫定実装のままか。起動ログで警告を出すために使う */
