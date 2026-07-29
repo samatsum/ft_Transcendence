@@ -100,11 +100,14 @@
 | 404 がエラーエンベロープ形 | レート制限、グローバルエラーハンドラ |
 | `error.ts` / `health.ts` の骨格 | 認証用 zod、Prisma、Session Cookie |
 | FE が health を zod で parse | `/api/auth/*` |
+| `auth/session.ts` にスタブ配置（Issue #11。samatsum が W-11 準備として設置） | `authenticateRequest` / `isAllowedOrigin` の中身（W-04/W-05） |
+| `game/` 一式（W-10 完了。sim.wasm 統合・GameRoom・rooms レジストリ） | — |
+| `shared/ws/` スキーマ（Issue #10。envelope・errors・game） | — |
 
 **契約ギャップ（提案）** — 詳細は [弱点分析](./torinoue_チーム弱点分析.md):
 
-1. 設計書は `shared/api/` と書くが、実装は `app/shared/src/` → **パス表記を ③ に追記提案**  
-2. GitHub Issue が実質空（BACKLOG が正本）→ PM 用の読む順で運用を決める  
+1. 設計書は `shared/api/` と書くが、実装は `app/shared/src/` → **パス表記を ③ に追記提案**（`shared/ws/` については Issue #10 で解消）  
+2. GitHub Issue が実質空 → #10/#11 は合意済み。ブロッカー管理の日次運用は依然弱い  
 3. ⑤ のゲート2 依存に W-12 が含まれるが、⑥ 日割りでは W-12 は Day4 → **判定条件の一文を揃える提案**
 
 ---
