@@ -34,8 +34,13 @@ export const gameInputSchema = z.object({
 		yaw: z.number().finite(),
 		/** 4bit ビットマスク: bit0=前進 / bit1=後退 / bit2=左strafe / bit3=右strafe */
 		mv: z.number().int().min(0).max(0b1111),
-		/** 既存エンジンの武器/射撃状態との互換予約。本プロジェクトの両モードでは 0 固定 */
-		act: z.literal(0).optional(),
+		/**
+		 * ② §5-A: 「4bit ビットマスク。既存エンジンの武器/射撃状態との互換予約。
+		 * 本プロジェクトの両モードでは 0 固定」。仕様どおり 4-bit 空間で受理し、
+		 * 実際の解釈（現状はすべて 0）はサーバ内で判断する（`z.literal(0)` にすると
+		 * 将来の 4-bit 拡張時にスキーマ改訂が要る）
+		 */
+		act: z.number().int().min(0).max(0b1111).optional(),
 	}),
 });
 
