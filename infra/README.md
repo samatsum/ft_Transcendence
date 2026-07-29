@@ -28,8 +28,9 @@
 
 - 既存の `engine-build` サービスが `make web sim` を実行する形になっているので、これを起動経路へ組み込む。
 - 受入確認は必ず **`rm -rf web/build/` してから** `docker compose up` を通すこと。
-- 生成物がホスト側で **root 所有にならないこと**（`docker-compose.yml` の `user:` は `HOST_UID`/`HOST_GID` を見る。既定は 0:0）。
-  `.env.example` の該当行のコメントを外す手順を README に書く。
+- 生成物がホスト側で **root 所有にならないこと**。`docker-compose.yml` の `user:` は `HOST_UID`/`HOST_GID` を参照する（既定は 0:0 = root）。
+  セットアップ手順: `.env.example` を `.env` にコピーし、`HOST_UID=$(id -u)` / `HOST_GID=$(id -g)` のコメントを外す。
+  受入確認: `docker compose up` 後に `ls -ln web/build/` で UID/GID がホストユーザーと一致することを検証する。
 
 参考: 2026-07-27 に samatsum の開発機で `make sim` が `emcc: No such file or directory` で失敗した。
 CI が green なのは `wasm` ジョブが `emscripten/emsdk` コンテナ内で走っているためで、ホスト環境は検査されていない。

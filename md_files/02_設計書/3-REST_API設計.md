@@ -143,7 +143,8 @@ Standard user management モジュール（コア #6）の「フレンド追加�
 
 - マップはサーバ内蔵の**静的ホワイトリスト**（コード内の対応表 `{id, name, mode, path}`）とする。ユーザーアップロードは無い。
   G-09 のマップ制作はこの表への追記で公開される。
-- `id` は `.cub` のファイル stem（例 `rsp_arena_1`）。
+- `id` は `.cub` のファイル stem（実在する例: `rsp` / `rsp_pillars` / `21x21_arena` / `fps_duel`。
+  下のホワイトリスト表が正本）。
   GameRoom 生成時にサーバがこの表でパスを解決し、`welcome.map_text` として配布する（② §5-B。
   **クライアントがマップを REST で取ることはない**）。
 
