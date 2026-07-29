@@ -12,6 +12,9 @@ import type { CombatantView, MatchState, SnapshotMessage } from '@ft/shared';
 export type { CombatantView, MatchState, SnapshotMessage } from '@ft/shared';
 export type { SnapshotPayload } from '@ft/shared';
 
+/** snapshot 内の `match.mode`。② §5-C の改訂 2026-07-29 で追加 */
+export type SnapshotMode = 'rsp' | 'fps';
+
 /** sim.h の SIM_SNAP_HEADER_DOUBLES */
 const HEADER_DOUBLES = 5;
 /** sim.h の SIM_SNAP_COMBATANT_DOUBLES: [id,team,hand,x,y,dir,alive,is_ai,respawn_s] */
@@ -34,10 +37,19 @@ function round(value: number): number {
  * フラット f64 → ② §5-C の snapshot メッセージ。
  *
  * tick は sim が持たない（sim.h: tick 番号はサーバの所有物）ので引数で受ける。
+ * mode も sim のフラット配列には含まれない（RSP/FPS は create 時点で確定して
+ * いる情報）ので、呼び出し側が持っている値を渡す。② §5-C の改訂 2026-07-29 で
+ * snapshot に `match.mode` を含める（snapshot 単体で winner の意味を確定できる）。
  *
  * @param flat SimGame.readSnapshot() の戻り値。**この呼び出し中しか有効でない**
+ * @param tick サーバ側で採番している tick 番号
+ * @param mode ルームのモード。welcome.mode と一致する（試合中は不変）
  */
-export function decodeSnapshot(flat: Float64Array, tick: number): SnapshotMessage {
+export function decodeSnapshot(
+	flat: Float64Array,
+	tick: number,
+	mode: SnapshotMode,
+): SnapshotMessage {
 	if (flat.length < HEADER_DOUBLES) {
 		throw new Error(`snapshot が短すぎる (${flat.length})`);
 	}
@@ -74,6 +86,7 @@ export function decodeSnapshot(flat: Float64Array, tick: number): SnapshotMessag
 			tick,
 			match: {
 				state: STATE_NAME[state] ?? 'playing',
+				mode,
 				winner: winner < 0 ? null : winner,
 				score: [scoreRed, scoreBlue],
 			},

@@ -97,7 +97,14 @@ export const snapshotPayloadSchema = z.object({
 	tick: z.number(),
 	match: z.object({
 		state: matchStateSchema,
-		/** RSP=チーム番号 / FPS=combatant_id / 未決着=null */
+		/**
+		 * `rsp` | `fps`。**snapshot 単体で `winner` の意味（RSP=チーム番号 / FPS=combatant_id）を
+		 * 確定できる**ようにするため（② §5-C 改訂 2026-07-29）。welcome.mode と同一で、
+		 * 試合中は変化しない。観戦・リプレイ・録画再生では welcome を読まずに snapshot
+		 * だけを見る場面があるため、snapshot 側にも入れる。
+		 */
+		mode: z.enum(['rsp', 'fps']),
+		/** RSP=チーム番号 / FPS=combatant_id / 未決着=null。解釈は `mode` で確定する */
 		winner: z.number().nullable(),
 		score: z.tuple([z.number(), z.number()]),
 	}),
