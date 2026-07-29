@@ -1,9 +1,9 @@
-# torinoue データフロー図（自分専用・チーム共有可の学習資料）
+# torinoue データフロー図（torinoue 目線で作成・チーム共有可の学習資料）
 
 > **用途**: インターフェース確認（IRC の `data_flow_diagram.md` 相当）  
-> **正本ではない**: 契約の正本は ②③。乖離したら設計書を直し、本図を追従させる  
+> **正本ではない**: 契約の正本は [② WSプロトコル設計](../02_設計書/2-WSプロトコル設計.md)・[③ REST_API設計](../02_設計書/3-REST_API設計.md)。乖離したら設計書を直し、本図を追従させる  
 > **提案付き**: 末尾に契約ギャップ  
-> **作成**: 2026-07-26（AI 草案 → 本人レビュー前提）
+> **作成**: 2026-07-26（AI 草案 → torinoue レビュー前提）
 
 用語: [torinoue_用語集.md](./torinoue_用語集.md)
 
@@ -14,7 +14,7 @@
 ```mermaid
 flowchart TB
   subgraph Clients["ブラウザ ×2（ゲート2）"]
-    FE["app/frontend<br/>React SPA<br/>担当3・4"]
+    FE["app/frontend<br/>React SPA<br/>mamiyaza・hminemur"]
     RW["render.wasm<br/>描画のみ"]
   end
 
@@ -23,14 +23,14 @@ flowchart TB
   end
 
   subgraph Node["app/backend（Node）"]
-    REST["REST<br/>担当1 torinoue"]
-    LOBBY["ロビー WS<br/>担当2"]
-    GAME["GameRoom + ゲーム WS<br/>担当2"]
+    REST["REST<br/>torinoue"]
+    LOBBY["ロビー WS<br/>samatsum"]
+    GAME["GameRoom + ゲーム WS<br/>samatsum"]
     SIM["sim.wasm<br/>判定の権威"]
   end
 
   subgraph Data["永続化"]
-    DB[(SQLite<br/>Prisma・担当1)]
+    DB[(SQLite<br/>Prisma・torinoue)]
   end
 
   FE -->|HTTPS Cookie| NGX
@@ -39,22 +39,23 @@ flowchart TB
   NGX --> LOBBY
   NGX --> GAME
   REST --> DB
-  LOBBY -.->|Cookie 検証は担当1の仕組みを共有| REST
+  LOBBY -.->|Cookie + Origin 検証（W-05）| REST
+  GAME -.->|Cookie + Origin 検証（W-05）| REST
   GAME --> SIM
   GAME -->|match_end 等| REST
 ```
 
-**読み方（担当1）**: 太い責任は `REST` と `DB`。WS の中身は担当2だが、**Cookie と Origin で入口を閉じる**のはあなた。
+**読み方（torinoue）**: 太い責任は `REST` と `DB`。WS の中身は samatsum だが、**LOBBY・GAME 両方の WS アップグレード時に Cookie と Origin で入口を閉じる**のは torinoue（W-05）。
 
 ---
 
-## 2. 認証の1往復（あなたの本丸）
+## 2. 認証の1往復（torinoue の本丸）
 
 ```mermaid
 sequenceDiagram
   participant B as ブラウザ FE
   participant N as nginx
-  participant R as REST 担当1
+  participant R as REST torinoue
   participant D as SQLite
 
   B->>N: POST /api/auth/login<br/>{email,password}
@@ -71,7 +72,7 @@ sequenceDiagram
   R-->>B: 200 + self / 401 エンベロープ
 ```
 
-失敗時は常に ③ §1-A:
+失敗時は常に ③ §1-A（[③ REST_API設計](../02_設計書/3-REST_API設計.md) 参照）:
 
 ```json
 { "error": { "code": "unauthenticated", "msg": "..." } }
@@ -109,11 +110,11 @@ sequenceDiagram
 
 | 境界 | 渡すもの | 所有者 |
 |---|---|---|
-| FE ↔ REST | JSON（snake_case）+ Cookie | 担当1（③ + shared） |
-| FE ↔ ロビー/ゲーム WS | WS メッセージ | 担当2（②） |
-| WS 入口 | Cookie 検証結果・Origin | 担当1 の仕組みを担当2が呼ぶ |
-| GameRoom ↔ sim.wasm | C API（既存） | 担当2 |
-| GameRoom ↔ DB | 試合結果行 | 担当1（W-13） |
+| FE ↔ REST | JSON（snake_case）+ Cookie | torinoue（③ + shared） |
+| FE ↔ ロビー/ゲーム WS | WS メッセージ | samatsum（②） |
+| WS 入口 | Cookie 検証結果・Origin | torinoue の仕組みを samatsum が呼ぶ |
+| GameRoom ↔ sim.wasm | C API（既存） | samatsum |
+| GameRoom ↔ DB | 試合結果行 | torinoue（W-13） |
 
 ---
 
@@ -139,22 +140,22 @@ W-01 で「同じ zod を FE/BE が import する」型だけ示してある（`
 
 ```mermaid
 flowchart TB
-  subgraph T1["担当1 torinoue"]
+  subgraph T1["torinoue"]
     A1[User / Session / Match 行]
     A2[REST 全エンドポイント]
     A3[Origin / Cookie 共通化]
     A4[docker compose 起動]
   end
-  subgraph T2["担当2 samatsum"]
+  subgraph T2["samatsum"]
     B1[ロビー状態]
     B2[GameRoom 状態機械]
     B3[snapshot 配信]
   end
-  subgraph T3["担当3 mamiyaza"]
+  subgraph T3["mamiyaza"]
     C1[認証 UI]
     C2[ロビー UI]
   end
-  subgraph T4["担当4 hminemur"]
+  subgraph T4["hminemur"]
     D1[補間 + Canvas]
     D2[入力送信]
   end
@@ -176,7 +177,7 @@ flowchart TB
 | G1 | ③ は `shared/api/`、一部設計はルート `backend/`。実装は `app/shared/src/`・`app/backend/` | 新人と FE がパスを探す | ③ 冒頭に実装パスを明記 |
 | G2 | Cookie 検証の「共通モジュール名」が設計に無い | W-05 と W-08 の結合が口頭頼み | ③ か ② に `authenticateRequest(req) → userId \| null` 相当の擬似シグネチャを1節追加 |
 | G3 | health 以外の zod が未設置。`shared/ws/` も未作成 | 契約の実装 SSOT が薄い | W-02 で auth zod を `app/shared` に置く。WS 用の置き場を TL と一文決定 |
-| G4 | 試合永続化がゲート2 後（W-13） | フロー図で「決着→DB」を必須と誤読しやすい | ゲート2 判定から永続化を外す旨を ⑤ ゲート2 行に明記 |
+| G4 | 試合永続化がゲート2 後（W-13） | フロー図で「決着→DB」を必須と誤読しやすい | ゲート2 判定から永続化を外す旨を [⑤ バックログ](../02_設計書/5-バックログ.md) ゲート2 行に明記 |
 | G5 | `.env.example` に SESSION_SECRET / ALLOWED_ORIGIN はコメントのみ | W-04/W-05 着手時に忘れやすい | W-04 PR でコメントを実キーに昇格（値は秘密にしない例示） |
 
-設計書本文への反映は **本人または TL 合意後**に行う（本ファイルは提案）。
+設計書本文への反映は **torinoue または TL（samatsum）合意後**に行う（本ファイルは提案）。
