@@ -1,6 +1,16 @@
 # cub3D
 
-*本プロジェクトは、42 カリキュラムの一環として samatsum によって作成されました。*
+*This project has been created as part of the 42 curriculum by samatsum, torinoue, mamiyaza, hminemur*
+
+<!--
+課題書 第VI章 の1項目目は、この先頭行を**英語**で
+`*This project has been created as part of the 42 curriculum by <login1>[, <login2>...]*`
+の形にすることを要求している。4人全員のログインを列挙する必要があるため、
+旧文（日本語・samatsum のみ）から差し替えた（2026-07-27）。
+README 全体の英語化は Day 5（⓪ §9）。この行だけは書式が指定されているので先に直してある。
+-->
+
+*（このプロジェクトは cub3D エンジンを基盤としたブラウザ対戦ゲームプラットフォームです。README 全体の英語化は Day 5 に行います。）*
 
 <img align="center" src="md_files/screenshot.png" alt="Screenshot of the game" />
 
@@ -22,6 +32,100 @@ ft_transcendence は 4 名のグループプロジェクトです。課題書 II
 - **開発者（全員）**: 実装・コードレビュー・自分の実装のテスト・文書化。
 
 作業の分割・依存・引き継ぎは [チーム分担計画](./md_files/02_設計書/6-チーム分担計画.md) を参照。
+
+## クイックスタート — いま何が遊べるか
+
+**このリポジトリを初めて触る人はここから。** 現時点で動くもの・動かないものを先に示します。
+
+| できること | 状態 | 必要なもの | 所要 |
+|---|---|---|---|
+| **A.** ブラウザで 1 人プレイ | ✅ 動く | Docker のみ | 初回 10 分 |
+| **B.** リプレイを見る（サーバ権威の実物） | ✅ 動く | Docker + Node.js 18+ | +1 分 |
+| **C.** ネイティブ版で 1 人プレイ | ✅ 動く | gcc / make / X11 | 1 分 |
+| **D.** エンジンの受入テストを流す | ✅ 動く | gcc / make | 1 分 |
+| **E.** オンライン 2vs2 対戦・ログイン・ロビー | ❌ **まだ動きません** | — | 実装中 |
+
+**E が現在の開発対象です。** C エンジン（描画・ゲームルール・AI・サーバ用ヘッドレスシム）は完成していますが、
+それを WS でつなぐサーバと画面がまだありません。詳細は [チーム分担計画](./md_files/02_設計書/6-チーム分担計画.md)。
+
+### A. ブラウザで 1 人プレイ（いちばん手軽）
+
+`emcc`（Emscripten）をホストに入れる必要はありません。**Docker の中に入っています。**
+
+```
+HOST_UID=$(id -u) HOST_GID=$(id -g) docker compose up --build
+```
+
+初回はイメージ取得とビルドで 10 分ほどかかります。`web/build/` に `render.js` / `sim.js` が出れば成功です。
+そのままブラウザで開きます。
+
+```
+http://localhost:8000/web/engine_demo.html                      # FPS モード（既定）
+http://localhost:8000/web/engine_demo.html?map=rsp_map/rsp.cub  # RSP モード（じゃんけん鬼ごっこ）
+```
+
+Canvas をクリックすると視点操作が有効になり、`Esc` で解除されます。操作は [操作 (Controls)](#操作-controls) と同じです。
+停止は `Ctrl-C`、後片付けは `docker compose down`。
+
+> `HOST_UID` を付けるのは、付けないと生成ファイルが root 所有になり、後で消すのに `sudo` が要るためです。
+> 動作自体は付けなくても通ります。
+
+### B. リプレイを見る（このプロジェクトの中核構造がひと目で分かる）
+
+**サーバが試合を計算し、ブラウザは描くだけ**という設計（サーバ権威モデル）の実物です。
+A のビルドが済んでいれば、あと 1 コマンドで見られます。
+
+```
+node web/sim_demo/record.mjs
+```
+
+Node 上で `sim.wasm` が RSP 2vs2 を 30Hz で最後まで実行し、各時点の状態を
+`web/sim_demo/snapshots.json` に書き出します（約 54 秒の試合＝ 809 件、1 件あたり約 520 バイト）。
+そのうえで開きます。
+
+```
+http://localhost:8000/web/sim_demo/replay.html
+```
+
+**これは映像の再生ではありません。** ファイルに入っているのは位置・向き・手・スコアといった数値だけで、
+ブラウザは受け取った数値を毎フレーム 3D に描き直しています。スナップショットの間は
+[`web/snapshot_interp.js`](./web/snapshot_interp.js) が補間します（位置＝線形、角度＝最短弧）。
+**勝敗判定のコードはブラウザ側に存在しません。**
+
+本番のオンライン対戦も、この経路の真ん中がファイルから WebSocket に変わるだけです。
+
+```
+記録: sim.wasm(Node) → JSON → ファイル → 補間 → render.wasm
+本番: sim.wasm(Node) → JSON →   WS    → 補間 → render.wasm
+                                 ↑ここだけ差し替わる
+```
+
+### C. ネイティブ版で 1 人プレイ
+
+```
+sudo apt-get install gcc make xorg libxext-dev libbsd-dev
+make
+./cub3D maps/fps_map/1.cub      # FPS モード
+./cub3D maps/rsp_map/rsp.cub    # RSP モード
+```
+
+X11 が要るので、WSL の場合は WSLg か X サーバが必要です。
+
+### D. エンジンの受入テストを流す
+
+```
+make test     # sim の受入テスト 85 検査（X11 不要）
+make check    # C コーディング規約の lint 13 検査
+```
+
+`make test` はヘッドレスの `sim` をネイティブビルドして、先取点ルール・FPS のゴール判定・
+敵ハザード・対戦マップ 4 枚の起動を検査します。**CI が毎 PR でこれを実行**するので、
+C 側を壊す変更は自動で止まります。
+
+### 生成物について
+
+`web/build/`（wasm）・`web/assets/`（テクスチャ）・`web/sim_demo/snapshots.json` は
+**すべて `.gitignore` 対象**です。`git pull` では入手できないので、上の手順で各自生成してください。
 
 ## 概要 (Description)
 

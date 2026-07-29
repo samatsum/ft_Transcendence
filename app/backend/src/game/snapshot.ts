@@ -46,6 +46,12 @@ export function decodeSnapshot(flat: Float64Array, tick: number): SnapshotMessag
 	const scoreRed = flat[2]!;
 	const scoreBlue = flat[3]!;
 	const count = flat[4]!;
+	const required = HEADER_DOUBLES + count * COMBATANT_DOUBLES;
+	if (!Number.isInteger(count) || count < 0 || flat.length < required) {
+		throw new Error(
+			`snapshot combatant 数が不正 (count=${count}, length=${flat.length}, need=${required})`,
+		);
+	}
 
 	const combatants: CombatantView[] = [];
 	for (let i = 0; i < count; i++) {

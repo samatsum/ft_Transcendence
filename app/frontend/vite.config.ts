@@ -15,14 +15,26 @@ export default defineConfig(({ mode }) => {
 	const repoRoot = fileURLToPath(new URL('../../', import.meta.url));
 	const env = { ...loadEnv(mode, repoRoot, ''), ...process.env };
 
+	function requirePort(raw: string | undefined, name: string, fallback: number): number {
+		if (raw === undefined) return fallback;
+		const n = Number(raw);
+		if (!Number.isInteger(n) || n < 1 || n > 65535) {
+			throw new Error(`${name}="${raw}" は不正なポート番号（1〜65535 の整数が必要）`);
+		}
+		return n;
+	}
+
+	const fePort = requirePort(env.FRONTEND_PORT, 'FRONTEND_PORT', 5173);
+	const bePort = requirePort(env.BACKEND_PORT, 'BACKEND_PORT', 3000);
+
 	return {
 		plugins: [react(), tailwindcss()],
 		server: {
 			host: '0.0.0.0',
-			port: Number(env.FRONTEND_PORT ?? 5173),
+			port: fePort,
 			proxy: {
 				'/api': {
-					target: `http://localhost:${env.BACKEND_PORT ?? 3000}`,
+					target: `http://localhost:${bePort}`,
 					changeOrigin: true,
 				},
 			},
