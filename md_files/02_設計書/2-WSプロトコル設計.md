@@ -354,13 +354,18 @@ created ──全人間join or 10s──► countdown(3s) ──► playing ─�
 > 上の表が持つのは**ルーム全体の状態**（created / countdown / playing / finished / closed）だけ。
 > 一方 §5-B の `player_status` は席ごとに `connected` / `ai` / `grace` の3値を持ち、
 > §7-A は「切断 → grace 30秒 → ai_takeover」という**席ごとの遷移**を定めている。
+> grace 満了時、席は `ai` へ遷移し（入力源が AI に切り替わる）、同時にその席を `abandoned` と記録する。
+> `abandoned` は `player_status` とは別のフラグで、試合終了時の結果判定（`endReason: 'abandon'`）に使う。
+> §6-A の `finished(abandon)` は「全人間席が abandoned になった」場合のルーム遷移を指す。
 >
 > **この2つは別の次元であり、ルームの状態機械に grace を足すのではない。**
 > ルームが `playing` のまま、席1が `grace`・席2が `ai`・席3が `connected` という状態が正常にありうる。
 > §6-A の「playing ──(全人間席が grace 満了/abandon)──► finished」という矢印は、
 > **席の次元の集計結果がルームの遷移を引き起こす**ことを表している。
 > W-12 は席の状態表を新設する形で実装すること（ルーム状態機械の拡張ではない）。
-
+>
+> ---
+>
 > **追補（2026-07-27）— ルームは「人間席の slot 一覧」を生成時に受け取る**
 >
 > §4-C は countdown への遷移条件を「**全人間席の join 完了** or 10秒経過」と定めているが、
@@ -374,6 +379,7 @@ created ──全人間join or 10s──► countdown(3s) ──► playing ─�
 > | 受け取る側 | GameRoom（W-10）。`humanSlots: number[]` として保持 |
 > | 用途 | countdown への早期遷移判定（**この一覧の全 slot が join したら10秒を待たずに進む**） |
 > | 省略時 | 全席が人間（クイックマッチで定員ちょうど埋まった場合と同じ） |
+> | `[]`（空配列） | 人間席なし（AI のみのルーム）。早期 countdown 条件は適用せず、既定の 10 秒タイムアウトで countdown へ遷移する。countdown 判定で `humanSlots.length > 0` を確認すること |
 >
 > **これが無いと、人間2人 + AI2席の試合が毎回10秒待たされる**（早期開始の条件が
 > 「定員ぶんの人間が揃う」になってしまい、永久に成立しないため）。
@@ -384,7 +390,7 @@ created ──全人間join or 10s──► countdown(3s) ──► playing ─�
 
 | ルームのイベント | 呼び出す sim API | 備考 |
 |---|---|---|
-| ルーム生成 | `game_create(cub_text, mode, match_rules)` | `match_rules` = §4-B の rules（サーバがマップIDから cub_text を解決）。**あわせて「人間席の slot 一覧」をルームへ渡す**（下記） |
+| ルーム生成 | `game_create(cub_text, mode, match_rules)` | `match_rules` = §4-B の rules（サーバがマップIDから cub_text を解決）。`humanSlots` は GameRoom 側で保持するアプリケーションメタデータであり、sim API の引数には追加しない |
 | 席の確定 | `game_add_combatant(game, slot, is_ai)` × 定員 | 人間未接続席も**先に AI で生成**し、join 時に入力源を EXTERNAL へ切替（下記追補） |
 | `input` 受信 | 席バッファに保持 → 毎 tick `game_set_input(game, combatant_id, t_input)` | `mv`/`yaw`/`act` → `t_input` への写像は platform/headless 層の責務（`hand` は D-17 で `input` から削除済み。手はサーバ側エンジンが決める）。実装済みのラッパは `sim_set_input(game, id, forward, backward, strafe_left, strafe_right, yaw)` |
 | tick | `game_step(game, dt=1/30)` | 戻り値（進行中/決着）で finished 遷移を判定 |

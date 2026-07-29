@@ -1,6 +1,6 @@
 # cub3D
 
-*This project has been created as part of the 42 curriculum by samatsum, torinoue, mamiyaza, hminemur.*
+*This project has been created as part of the 42 curriculum by samatsum, torinoue, mamiyaza, hminemur*
 
 <!--
 課題書 第VI章 の1項目目は、この先頭行を**英語**で
