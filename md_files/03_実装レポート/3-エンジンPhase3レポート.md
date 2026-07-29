@@ -13,7 +13,7 @@
 ### 付随して満たした関連条件
 
 - **② §8 のサイズ予算（№5 の種）**: snapshot JSON 実測 **avg 513B / max 524B**（4 戦闘員、< 1KB 予算内）。
-- **G-05 の中核（先取点の match_rules 化）**: E-10 の API 契約（`game_create(cub_text, mode, match_rules)`）が要求するため先行実装した。`target_score` は ② §4-B の 3–21 のみ受理し、未指定(0)・範囲外は既定の `RSP_SCORE_LIMIT`(10) に落ちる。**native 単体起動の挙動は不変**（`rsp_target_score()` が 0 のとき従来値を返す）。G-05 としての正式受入（肆によるテスト）は残。
+- **G-05 完了（先取点の match_rules 化）**: E-10 の API 契約（`game_create(cub_text, mode, match_rules)`）が要求するため先行実装した。エンジンは `target_score` に N≥1 の任意値を受理し、未指定(0) は既定の `RSP_SCORE_LIMIT`(10) にフォールバックする。② §4-B の 3–21 範囲バリデーションは WS（GameRoom）側で行う。**native 単体起動の挙動は不変**（`rsp_target_score()` が 0 のとき従来値を返す）。
 - **G-10 の一部（headless でファイル I/O ゼロ）**: sim ビルドは bmp.c / screen.c を非リンクのため、構造的に結果 BMP を書けない。
 
 ## 実装の要点
@@ -38,7 +38,7 @@
 
 - `game_apply_snapshot(game, flat, len, view_id)`（platform/web）: 視点席は**カメラを戦闘員から完全導出**（Phase 2 申し送りの「カメラ導出の反転」はこのスナップショット駆動モードで実施。ローカル操作の native/web は従来の「カメラが正本」経路のまま）。他席は位置・向き・チーム×手テクスチャを毎フレーム上書きするため、表示側の初期ランダム配置に正しさが依存しない。
 - `web_render_frame()`: game_step を通さず描画のみ。スナップショット駆動中にローカル sim が権威状態と競合しない。
-- 補間計算は `web/snapshot_interp.js`（④ §4 の分担で壱の担当分。位置=線形・向き=最短弧・離散値は古い側スナップショット。**F-06 がそのまま流用する前提**）。
+- 補間計算は `web/snapshot_interp.js`（④ §4 の分担で Engine の担当分。位置=線形・向き=最短弧・離散値は古い側スナップショット。**F-06 がそのまま流用する前提**）。
 
 ### デモの実行手順（2 コマンド）
 
@@ -54,7 +54,7 @@ python3 -m http.server 8000         # → http://localhost:8000/web/sim_demo/rep
 |---|---|---|
 | 1 | **snapshot に tick を含めない**。① §3-D の表は tick を snapshot のフィールドとするが、② §5-C/§6-B で「tick はサーバ tick 番号・シリアライズは Node 側」と確定しているため、sim はゲーム状態のみを返し、tick は GameRoom が JSON 化時に付与する（record.mjs がその形を実演）。①の表現の問題であり実害はないが、①改訂時に注記を推奨 | 軽微（設計書間の解釈統一） |
 | 2 | **world_delta（FPS の収集済み座標・扉開放）は未実装**。RSP（ゲート2）に不要のため。FPS オンライン化（G-06〜G-08 / W-14）の際に「収集座標リストの蓄積 + 初回全量送信（② §5-C）」を追加する | 意図的な後送り |
-| 3 | **FPS モードのヘッドレスは未完成**: 射撃（render の depth バッファ依存）・ゴール/収集判定（カメラ基準の check_quest で、headless では `game->player` が無く**一切走らない**）・追跡 AI（カメラ座標参照）・接触死（プレイヤーのみ）が「ローカルプレイヤー席」前提のまま。**snapshot の FPS 勝者も常に -1** で、headless の FPS は決着に到達できない。G-06〜G-08（肆担当）で戦闘員基準へ一般化するまで、**FPS モードで W-10 のルームを立てないこと**（レビュー P1） | 依存 Issue 待ち → **2026-07-19 の G-06〜G-08 で解消**: ゴール判定・収集・接触死・復帰・ハザード AI をすべて戦闘員基準へ一般化し、snapshot の FPS 勝者は combatant_id を返す。**残る未対応は射撃のみ**（depth バッファ依存で headless では撃てない。RSP／FPS レースのいずれも射撃を使わないため保留） |
+| 3 | **FPS モードのヘッドレスは未完成**: 射撃（render の depth バッファ依存）・ゴール/収集判定（カメラ基準の check_quest で、headless では `game->player` が無く**一切走らない**）・追跡 AI（カメラ座標参照）・接触死（プレイヤーのみ）が「ローカルプレイヤー席」前提のまま。**snapshot の FPS 勝者も常に -1** で、headless の FPS は決着に到達できない。G-06〜G-08（Gameplay 担当）で戦闘員基準へ一般化するまで、**FPS モードで W-10 のルームを立てないこと**（レビュー P1） | 依存 Issue 待ち → **2026-07-19 の G-06〜G-08 で解消**: ゴール判定・収集・接触死・復帰・ハザード AI をすべて戦闘員基準へ一般化し、snapshot の FPS 勝者は combatant_id を返す。**残る未対応は射撃のみ**（depth バッファ依存で headless では撃てない。RSP／FPS レースのいずれも射撃を使わないため保留） |
 | 4 | **AI 席の t_input 生成は不採用のまま**（Phase 2 申し送りの「速度意図型入力への再設計」は見送り）。AI は従来どおり dir_angle 直接操作で、受入条件「現行と同挙動」を優先。切断時 AI 代替は input_source の付け替えで足りることを E-10 ハーネスで確認済みのため、再設計の必要性は現状ない | ① §3-C-1 からの乖離継続（Phase 2 で報告済み） |
 | 5 | **AI⇔EXTERNAL 切替で当たり半径が 0.8⇔0.5 に変わる**。native の「プレイヤー=0.5 / NPC=0.8」を席の現在の入力源に対応させた。AI 代替中の席は native の NPC と同じ移動判定になる一方、試合中の切替で他戦闘員との間合いがわずかに変わる。固定化したい場合は W-12 の実装時に判断を仰ぎたい | 判断事項（軽微） |
 | 6 | `target_score` の受理範囲は ② §4-B / ⑤ G-05 追補の **3–21** に従った。① §6 G-05 の「テスト用に N=2 でも動く」とは矛盾するため、テストは N=3 を最小とする（E-10/E-12 の検証は N=3, N=5 で決着まで確認済み） | 設計書間の矛盾（②を正とした）→ **2026-07-19 の G-05 正式受入で解消**: エンジンは N≥1 を受理し、3–21 は WS 層（W-11 №6）の責務へ一本化。①②双方の受入条件を満たす |
@@ -98,8 +98,8 @@ python3 -m http.server 8000         # → http://localhost:8000/web/sim_demo/rep
 
 | レーン | 残 Issue | 状態・備考 |
 |---|---|---|
-| 壱（Engine） | **E-08〜E-12 完了** | ゲート2 の壱担当分は本フェーズで完了。E-13/E-14 はゲート2 非依存 |
-| 肆（Gameplay） | G-05 の正式受入 | 中核は E-10 で実装済み。肆による native テスト（可変先取点）と、①§6 の「N=2」矛盾の解消のみ |
-| 弐（Backend） | W-01（骨格）→ W-08（ロビーWS）→ W-09（マッチメイキング）→ **W-10（GameRoom+sim.wasm）** → W-11（ゲームWS）→ W-12（切断/AI代替） | クリティカルパス。W-10 は本レポートの申し送り 1〜9 で着手可能。W-12 の中核 API（`game_set_input_source`）は検証済み |
-| 参（Frontend） | F-01〜F-05（雛形〜ロビー）→ F-06（GameView 統合）→ F-07（HUD）→ F-08（マッチ遷移） | F-06 は `web_apply_snapshot` / `web_render_frame` / `snapshot_interp.js` を流用。入力送信は E-08 のキャプチャ規約 + ② §5-A |
+| Engine（samatsum） | **E-08〜E-12 完了** | ゲート2 の Engine 担当分は本フェーズで完了。E-13/E-14 はゲート2 非依存 |
+| Gameplay（samatsum） | G-05 の正式受入 | 中核は E-10 で実装済み。native テスト（可変先取点）と、①§6 の「N=2」矛盾の解消のみ |
+| Backend/DevOps（samatsum のゲームサーバー分） | W-01（骨格）→ W-08（ロビーWS）→ W-09（マッチメイキング）→ **W-10（GameRoom+sim.wasm）** → W-11（ゲームWS）→ W-12（切断/AI代替） | クリティカルパス。W-10 は本レポートの申し送り 1〜9 で着手可能。W-12 の中核 API（`game_set_input_source`）は検証済み |
+| Frontend（mamiyaza: F-01〜F-05 / hminemur: F-06〜F-08） | F-01〜F-05（雛形〜ロビー）→ F-06（GameView 統合）→ F-07（HUD）→ F-08（マッチ遷移） | F-06 は `web_apply_snapshot` / `web_render_frame` / `snapshot_interp.js` を流用。入力送信は E-08 のキャプチャ規約 + ② §5-A |
 | 横断 | welcome.map_text 経路（W-14 の一部）、ルーム層イベント（countdown/match_start） | sim は waiting/countdown を持たない設計（② §5-C）なので、ルーム層で実装 |

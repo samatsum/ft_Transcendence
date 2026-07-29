@@ -9,16 +9,26 @@ import { GameRoom, type RoomOptions, type RoomState } from './room.js';
 const PUMP_INTERVAL_MS = 250;
 
 const rooms = new Map<string, GameRoom>();
+/** createRoom の await 中に同一 ID の重複作成を防ぐ予約 */
+const reserved = new Set<string>();
 let pumpTimer: NodeJS.Timeout | null = null;
 
 export type CreateRoomOptions = Omit<RoomOptions, 'roomId'> & { roomId?: string };
 
 export async function createRoom(options: CreateRoomOptions): Promise<GameRoom> {
 	const roomId = options.roomId ?? nextRoomId();
-	if (rooms.has(roomId)) {
+	if (rooms.has(roomId) || reserved.has(roomId)) {
 		throw new Error(`room ${roomId} は既に存在する`);
 	}
-	const room = await GameRoom.create({ ...options, roomId });
+	reserved.add(roomId);
+	let room: GameRoom;
+	try {
+		room = await GameRoom.create({ ...options, roomId });
+	} catch (e) {
+		reserved.delete(roomId);
+		throw e;
+	}
+	reserved.delete(roomId);
 	rooms.set(roomId, room);
 	ensurePump();
 	return room;
@@ -48,6 +58,7 @@ export function closeRoom(roomId: string): void {
 export function closeAllRooms(): void {
 	for (const room of rooms.values()) room.close();
 	rooms.clear();
+	reserved.clear();
 	stopPumpIfIdle();
 }
 

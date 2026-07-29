@@ -3,8 +3,8 @@
 **位置づけ**: [ARCHITECTURE_DESIGN.md](./0-全体アーキテクチャ設計.md) §2.4・§3.3 の詳細化。
 [WS_PROTOCOL_DESIGN.md](./2-WSプロトコル設計.md)（②）が REST へ委ねた3点（presence
 初期一覧 / `GET /api/maps` / 試合詳細）の定義を含む。
-弐（Backend/DevOps）の Day 2〜3（認証）と Day 8〜10（履歴・統計・フレンド）の作業指示書に相当し、
-参（Frontend）の API 契約の正本を兼ねる。
+Backend/DevOps レーンのうち **torinoue**（Auth / REST / DB）の作業指示書に相当し、
+**mamiyaza**（フロント基盤）の API 契約の正本を兼ねる。
 **原則**: 本書は実装コードを含まない。
 メッセージスキーマの実装正本は `shared/api/` の zod 定義とし、本書と乖離した場合は本書を改訂してから実装する（② と同じ運用）。
 
@@ -143,7 +143,8 @@ Standard user management モジュール（コア #6）の「フレンド追加�
 
 - マップはサーバ内蔵の**静的ホワイトリスト**（コード内の対応表 `{id, name, mode, path}`）とする。ユーザーアップロードは無い。
   G-09 のマップ制作はこの表への追記で公開される。
-- `id` は `.cub` のファイル stem（例 `rsp_arena_1`）。
+- `id` は `.cub` のファイル stem（実在する例: `rsp` / `rsp_pillars` / `21x21_arena` / `fps_duel`。
+  下のホワイトリスト表が正本）。
   GameRoom 生成時にサーバがこの表でパスを解決し、`welcome.map_text` として配布する（② §5-B。
   **クライアントがマップを REST で取ることはない**）。
 

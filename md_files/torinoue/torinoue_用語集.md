@@ -27,8 +27,8 @@
 | **[zod](#714-fastify--pino--zod)** | TypeScript で「この JSON はこの形」と実行時に検査するライブラリ | `app/shared/src/*.ts`。FE も BE も同じ定義を import する |
 | **[エラーエンベロープ](#713-cookie--エラーエンベロープ--snapshot)** | 失敗時に必ず返す共通の JSON 入れ物 | `{ "error": { "code", "msg", "details?" } }`（③ §1-A）。骨格は `app/shared/src/error.ts` |
 
-**「[REST](#71-restrepresentational-state-transfer) 契約を所有する」の意味（担当1）**  
-[③ REST_API設計](../02_設計書/3-REST_API設計.md) と `app/shared` の形を変える権限と責任があなたにある。変えるときは設計書を先に直し、担当3（[FE](#73-fefrontend--fe-基盤)）と合意してから実装する（[⑥ チーム分担計画](../02_設計書/6-チーム分担計画.md) §7）。  
+**「[REST](#71-restrepresentational-state-transfer) 契約を所有する」の意味（torinoue）**  
+[③ REST_API設計](../02_設計書/3-REST_API設計.md) と `app/shared` の形を変える権限と責任があなたにある。変えるときは設計書を先に直し、mamiyaza（[FE](#73-fefrontend--fe-基盤)）と合意してから実装する（[⑥ チーム分担計画](../02_設計書/6-チーム分担計画.md) §7）。  
 （→ REST 本体の説明: [§7.1](#71-restrepresentational-state-transfer)）
 
 ---
@@ -40,7 +40,7 @@
 | **[セッション / Session](#76-sessionセッション)** | 「このブラウザは user X としてログイン中」というサーバ側の記録 | DB の `Session` 行 + Cookie（③ D-4）。JWT は使わない |
 | **[httpOnly Cookie](#713-cookie--エラーエンベロープ--snapshot)** | JavaScript から読めない Cookie。XSS でトークンを盗まれにくくする | `HttpOnly; Secure; SameSite=Lax; Path=/`（③ D-5） |
 | **opaque トークン** | 中身に意味がない乱数。サーバが DB で照合する | Cookie の値そのものを信用せず、ハッシュを DB 照会 |
-| **Origin 検証** | ブラウザが付ける `Origin` ヘッダを見て、自サイト以外からの変更を拒否 | REST 変更系 + WS アップグレード（③ D-6 / ②）。担当1 の W-05 |
+| **Origin 検証** | ブラウザが付ける `Origin` ヘッダを見て、自サイト以外からの変更を拒否 | REST 変更系 + WS アップグレード（③ D-6 / ②）。torinoue の W-05 |
 | **[CSRF](#712-csrf--csrf-over-ws) / CSRF-over-WS** | 他サイト経由の不正操作。WS 版はアップグレード経路 | 対策は Origin + SameSite（②③）。深い理論は必須ではない → [§7.12](#712-csrf--csrf-over-ws) |
 | **argon2id** | パスワードを保存用にハッシュする方式 | signup/login で使う（W-04） |
 | **認可（authorization）** | 「その人がその操作をしてよいか」 | Cookie で本人確認したあと、他人の資源なら 403 |
@@ -51,16 +51,16 @@
 
 | 用語 | 一言 | 場所 / 詳細 |
 |---|---|---|
-| **[REST](#71-restrepresentational-state-transfer)** | HTTP で1回ずつ JSON をやりとりする API の呼び方 | 担当1。正本③。実装 `app/backend` → [§7.1](#71-restrepresentational-state-transfer) |
-| **[WS](#711-wswebsocket)（WebSocket）** | 双方向の常時接続 | 担当2 本丸。担当1 は Cookie/Origin → [§7.11](#711-wswebsocket) |
-| **[FE](#73-fefrontend--fe-基盤) / FE 基盤** | ブラウザ側 SPA。基盤は認証・ロビー等（非ゲーム画面） | 担当3（mamiyaza）→ [§7.3](#73-fefrontend--fe-基盤) |
+| **[REST](#71-restrepresentational-state-transfer)** | HTTP で1回ずつ JSON をやりとりする API の呼び方 | torinoue。正本③。実装 `app/backend` → [§7.1](#71-restrepresentational-state-transfer) |
+| **[WS](#711-wswebsocket)（WebSocket）** | 双方向の常時接続 | samatsum 本丸。torinoue は Cookie/Origin → [§7.11](#711-wswebsocket) |
+| **[FE](#73-fefrontend--fe-基盤) / FE 基盤** | ブラウザ側 SPA。基盤は認証・ロビー等（非ゲーム画面） | mamiyaza → [§7.3](#73-fefrontend--fe-基盤) |
 | **[ロビー](#74-ロビー--ロビー系)** | 試合前の待合・マッチング画面／その系統 | F-05 / W-08 → [§7.4](#74-ロビー--ロビー系) |
 | **[Fastify](#714-fastify--pino--zod)** | Node.js の HTTP サーバ枠 | `app/backend`。W-01 起動済、W-02 本装 → [§7.14](#714-fastify--pino--zod) |
 | **[pino](#714-fastify--pino--zod)** | Fastify 既定に近い高速 JSON ロガー | W-02 で本設定 → [§7.14](#714-fastify--pino--zod) |
 | **[zod](#714-fastify--pino--zod)** | 実行時スキーマ検証 | `app/shared` → [§7.14](#714-fastify--pino--zod) |
 | **[Prisma](#715-prisma--sqlite)** | TS から DB を扱う ORM | W-03。正本③ §3 → [§7.15](#715-prisma--sqlite) |
 | **[SQLite](#715-prisma--sqlite)** | ファイル1個の DB | 評価は単一ホスト前提 → [§7.15](#715-prisma--sqlite) |
-| **[WASM](#78-wasmwebassembly) / sim.wasm** | C をブラウザ/Node で動かす成果物。sim は判定権威 | 担当2 が Node で駆動 → [§7.8](#78-wasmwebassembly) |
+| **[WASM](#78-wasmwebassembly) / sim.wasm** | C をブラウザ/Node で動かす成果物。sim は判定権威 | samatsum が Node で駆動 → [§7.8](#78-wasmwebassembly) |
 | **サーバ権威** | クライアント申告を信じずサーバ状態を正とする | スナップショット配信の前提（[説4 スナップショットと補間](../説明用/スナップショットと補間.md)） |
 | **[snapshot](#713-cookie--エラーエンベロープ--snapshot)** | ある瞬間のゲーム状態の写真 | ②§5-C。F-06 が補間描画 → [§7.13](#713-cookie--エラーエンベロープ--snapshot) |
 | **[TL](#77-tltechnical-lead)** | テクニカルリード | samatsum → [§7.7](#77-tltechnical-lead) |
@@ -78,10 +78,10 @@
 
 | 接頭辞 | 文書上のレーン（⑤） | 想定元単語 | 備考 |
 |---|---|---|---|
-| **E-xx** | Engine（壱） | **Engine** | 完了済。ほぼ確定と読んでよい |
-| **G-xx** | Gameplay（肆） | **Gameplay** | 完了済。ほぼ確定と読んでよい |
-| **W-xx** | Backend / DevOps（弐） | 候補 **Web**（または Backend の便宜的接頭辞） | 文書は「Backend/DevOps」としか書いていない。W≠Frontend |
-| **F-xx** | Frontend（参） | **Frontend** | ほぼ確定と読んでよい |
+| **E-xx** | Engine レーン（samatsum・完了） | **Engine** | 完了済。ほぼ確定と読んでよい |
+| **G-xx** | Gameplay レーン（samatsum・完了） | **Gameplay** | 完了済。ほぼ確定と読んでよい |
+| **W-xx** | Backend / DevOps レーン（torinoue + samatsum） | 候補 **Web**（または Backend の便宜的接頭辞） | 文書は「Backend/DevOps」としか書いていない。W≠Frontend |
+| **F-xx** | Frontend レーン（mamiyaza + hminemur） | **Frontend** | ほぼ確定と読んでよい |
 | **H-xx** | ハードニング（⑤ゲート表） | 候補 **Hardening** | Day12 相当。出現は少ない |
 
 あなた中心の W: W-02〜W-05, W-15, W-13…（認証・DB・Docker・永続化）。
@@ -91,7 +91,7 @@
 | 略号 | 意味 |
 |---|---|
 | **[ゲート](#79-ゲート--ゲート1--ゲート2--ゲート3)** / **ゲート2** | 結合デモの品質関門。ゲート2 = 2ブラウザで 2vs2 RSP が最後まで遊べる（現行判定は Day3 終わり）→ [§7.9](#79-ゲート--ゲート1--ゲート2--ゲート3) |
-| **壱弐参肆** | 旧レーン名。弐 = Backend（あなた）, 参 = Frontend |
+| **壱弐参肆** | **旧レーン記号（2026-07-27 に使用終了）**。現在の4人と1対1ではない — 弐 Backend/DevOps は torinoue + samatsum、参 Frontend は mamiyaza + hminemur の2人ずつ。読み替えは [⓪ §6](../02_設計書/0-全体アーキテクチャ設計.md) |
 | **⓪〜⑥** | **設計書番号**（丸数字専用）。⓪全体 / ①エンジン / ②WS / ③REST / ④FE設計 / ⑤バックログ / ⑥分担。主に触るのは **③** と **⑤** |
 | **説1〜説12** | **説明用**の読む順（設計書の丸数字とは別）。地図の説明用表を正とする |
 | **[PM](#710-pm--sm) / [SM](#710-pm--sm)** | Project Manager / Scrum Master。あなた（README・⑥） |
@@ -106,7 +106,7 @@
 |---|---|
 | `interface.md`（境界の憲章） | ② WS + ③ REST + ⑥ §4 共有契約 |
 | `complete line` / `CommandResult` | HTTP JSON / WS メッセージ / Cookie |
-| A層（Network）のあなた | 担当1（Auth/REST/DB）+ PM。ネットワーク本丸は担当2 |
+| A層（Network）のあなた | torinoue（Auth/REST/DB）+ PM。ネットワーク本丸は samatsum |
 | 層間 SSOT を先に固める文化 | 設計書は厚いが、**4人並行用の「境界ペラ1枚」が薄い**（弱点分析参照） |
 | Phase / 結合合格基準 | [ゲート](#79-ゲート--ゲート1--ゲート2--ゲート3)（少数の大きな品質関門） |
 
@@ -137,7 +137,7 @@
 | 接続 | リクエストごとに短い | 張りっぱなし |
 | 向き | 主にクライアント→サーバ→応答 | 双方向をサーバからもプッシュ |
 | このプロジェクト | ログイン・プロフィール・履歴など | ロビー presence・試合 snapshot/input |
-| 所有者 | **担当1（あなた）** | **担当2（samatsum）** |
+| 所有者 | **torinoue（あなた）** | **samatsum** |
 
 **当プロジェクトでの実体**
 
@@ -171,7 +171,7 @@
 
 **一言**: ユーザが触るブラウザ側の画面とクライアントロジック。
 
-**FE 基盤（このプロジェクトの言い方）**: ゲーム Canvas 以外の土台 — 認証画面、ロビー、プロフィール、fetch ラッパ、ルートガードなど。担当3（mamiyaza）のレーン。担当4（hminemur）の GameView と対になる。
+**FE 基盤（このプロジェクトの言い方）**: ゲーム Canvas 以外の土台 — 認証画面、ロビー、プロフィール、fetch ラッパ、ルートガードなど。mamiyaza のレーン。hminemur の GameView と対になる。
 
 **当プロジェクトでの実体**: `app/frontend`。F-01〜F-05 が基盤側、F-06〜がゲーム画面側。
 
@@ -227,7 +227,7 @@ IRC比較文の「Session/REST」は、TCP バッファの代わりに **この�
 
 **一言**: C などをブラウザや Node で速く動かすためのバイナリ形式。
 
-**当プロジェクト**: `render.wasm`（描画）と `sim.wasm`（サーバ側判定）。勝敗の権威は sim。担当2 が Node で回す（W-10）。
+**当プロジェクト**: `render.wasm`（描画）と `sim.wasm`（サーバ側判定）。勝敗の権威は sim。samatsum が Node で回す（W-10）。
 
 ---
 
@@ -264,7 +264,7 @@ IRC比較文の「Session/REST」は、TCP バッファの代わりに **この�
 
 **REST との対比**: [§7.1](#71-restrepresentational-state-transfer) の表。
 
-**当プロジェクト**: 契約正本は ②。ロビー WS（W-08）とゲーム WS（W-11）が本丸で担当2。あなたは Cookie 検証と Origin（W-04/W-05）で入口を閉じる。
+**当プロジェクト**: 契約正本は ②。ロビー WS（W-08）とゲーム WS（W-11）が本丸で samatsum。あなたは Cookie 検証と Origin（W-04/W-05）で入口を閉じる。
 
 ---
 

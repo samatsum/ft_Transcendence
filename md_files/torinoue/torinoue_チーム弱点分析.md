@@ -62,7 +62,7 @@
 
 - ③: `shared/api/`。設計の一部はルート直下 `backend/` 表記  
 - 実装: `app/shared/src/`（`@ft/shared`）、`app/backend/`  
-- ②が想定する `shared/ws/` 分割は **未作成**（WS zod の置き場が口頭待ち）  
+- ②が想定する `shared/ws/` 分割は **Issue #10 で配置済み**（`app/shared/src/ws/` に envelope・errors・game）  
 - `.env.example` に `SESSION_SECRET` / `ALLOWED_ORIGIN` はコメント予約のみ  
 - 小さいが、FE/BE 初手で迷う。IRC なら interface 改訂で即修正していた類。
 
@@ -71,12 +71,12 @@
 ### W5. 共有認証 API が「文書の文章」だけで、呼び方がない
 
 - ②は「Cookie を検証」、③は Origin/Cookie 決定。  
-- `authenticate` のモジュール境界がコードにも短い擬似 API にも無い。  
-- 担当2が W-08 で独自実装すると二重化・穴が起きる。
+- `authenticate` のモジュール境界は Issue #11 で合意し `session.ts` に配置済み（中身は W-04 で実装）。  
+- samatsum が W-08 で独自実装すると二重化・穴が起きる。
 
 **打ち手**: W-04/W-05 で `app/backend` 内に共通関数を置き、名前を ⑥§4 か ③ に1行で書く。
 
-### W6. 説明用が厚いが、担当1の最短路が公式に無い
+### W6. 説明用が厚いが、torinoue の最短路が公式に無い
 
 - `説明用/` は TL 視点の教育資産として優秀（pf・ループ反転・snapshot）。  
 - 一方、**REST 未習熟者が2時間でゲート2 ブロッカーを理解する導線**が地図に無かった。  
@@ -123,7 +123,7 @@ IRC は「コード手書き」＋ **AI の git 操作禁止**で安全側に振
 | 1 | W-04 を Day2 中に着地 | あなた |
 | 2 | snapshot 形の紙合わせ | samatsum × hminemur（あなたが議題化） |
 | 3 | ゲート2 定義を一文に固定 | あなた（PM）+ TL |
-| 4 | 認証共通関数の名前を共有 | あなた → 担当2 |
+| 4 | 認証共通関数の名前を共有 | あなた → samatsum |
 | 5 | 定例で PERT を投影 | あなた |
 | 6 | ③のパス表記修正 | あなた（時間あるとき） |
 
@@ -147,12 +147,16 @@ IRC 全セットの再構築はしない。
 
 ---
 
-## 7. 観測ログ（精査時点 2026-07-26）
+## 7. 観測ログ（精査時点 2026-07-29）
 
-- ブランチ: `doc_Review`（origin 追従）  
-- 直近コミット: 説明用・④図・TL Q&A 等の docs が中心  
-- 実装: `app/backend` は health + 404 エンベロープのみ。Prisma/認証未着手  
-- `infra/`: W-15 向け README。compose は engine-build 中心  
-- GitHub: Issue ほぼ空  
-- IRC: `interface.md` / diagrams / reading_guide / AI 方針 draft / `workflow.md` を参照  
-- 追記根拠: IRC成功パターン精査 / Transcendence現状精査（ローカル調査メモ）
+- ブランチ: `main`（6244a91 = W-10 マージ後）
+- 直近コミット: W-10 GameRoom + sim.wasm 統合（PR #8）。docs 系 PR 多数マージ
+- 実装:
+  - `app/backend`: health + 404 エンベロープ + `auth/session.ts`（スタブ）+ `game/`（W-10 完了）
+  - `app/shared/src/ws/`: envelope・errors・game（Issue #10 合意で配置。W-11 準備）
+  - Prisma/認証は未着手（torinoue の W-02〜W-04）
+- ブランチ状況: `feat/w-11-game-ws`（W-11 実装中）、`feat/w-14-maps`（マップ API）が進行中
+- `infra/`: W-15 向け README + engine-build Dockerfile のみ。compose は未着手
+- GitHub: Issue #10（WS スキーマ配置）・#11（認証シグネチャ合意）が確定
+- IRC: `interface.md` / diagrams / reading_guide / AI 方針 draft / `workflow.md` を参照
+- 追記根拠: 本会話での現状精査（git log / ファイル確認）
