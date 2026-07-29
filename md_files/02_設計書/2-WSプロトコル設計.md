@@ -2,8 +2,8 @@
 
 **位置づけ**: [ARCHITECTURE_DESIGN.md](./0-全体アーキテクチャ設計.md) §2.3・§3.1 の詳細化。
 [ENGINE_SEPARATION_DESIGN.md](./1-エンジン分離設計.md) §3-B（sim 公開 API）・§3-D（スナップショット構造）と整合する。
-Backend/DevOps レーンのうち **samatsum**（WS / GameRoom）の作業指示書に相当し、
-**hminemur**（GameView）のクライアント実装契約・マッチメイキング仕様（Gameplay レーン）の正本を兼ねる。
+Backend/DevOps レーンのうち **samatsum**（WS / GameRoom / マッチメイキング W-09）の作業指示書であり正本。
+**hminemur**（GameView）はクライアント実装契約の消費者として本書を参照する。
 **原則**: 本書は実装コードを含まない（ワイヤフォーマット・状態機械・受入条件のみ）。
 メッセージスキーマの実装正本は `shared/` の zod 定義とし、本書と乖離した場合は本書を改訂してから実装する。
 

@@ -13,7 +13,7 @@
 
 ```mermaid
 flowchart TB
-  subgraph Clients["ブラウザ ×2（ゲート2）"]
+  subgraph Clients["ブラウザ ×4（ゲート2：人間4人・AI 席なし）"]
     FE["app/frontend<br/>React SPA<br/>mamiyaza・hminemur"]
     RW["render.wasm<br/>描画のみ"]
   end
