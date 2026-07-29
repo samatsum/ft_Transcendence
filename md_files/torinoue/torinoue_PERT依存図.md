@@ -20,7 +20,7 @@
 flowchart LR
   W01([W-01 骨格 ✅]) --> W02[W-02 Fastify本装]
   W01 --> W03[W-03 Prisma]
-  W01 --> W10[W-10 GameRoom]
+  W01 --> W10([W-10 GameRoom ✅])
   W01 --> F01[F-01 雛形]
   W01 --> F06p[F-06 準備<br/>replay]
 
@@ -56,10 +56,12 @@ flowchart LR
   classDef done fill:#1a3d2e,stroke:#27ae60,color:#fff
   class W02,W03,W04,W05 mine
   class W04,W11,F06 crit
-  class W01 done
+  class W01,W10 done
 ```
 
 ★ = 結合リスクが高い合流点。
+
+> **2026-07-29 更新**: W-10 は main マージ済み（PR #8）。W-11 はブランチ `feat/w-11-game-ws` で実装中。shared/ws スキーマは Issue #10 合意で配置完了。
 
 ---
 

@@ -78,7 +78,7 @@ sequenceDiagram
 { "error": { "code": "unauthenticated", "msg": "..." } }
 ```
 
-実装骨格: 成功パスは未実装。404 だけ `makeError` 済み（`app/backend/src/index.ts`）。
+実装骨格: 認証は `authenticateRequest` のスタブ（シグネチャのみ・常に null を返す暫定実装）が配置済み（Issue #11）。認証の本実装は W-04 で行う。REST 成功パスは未実装。GameRoom（W-10）は完了（PR #8 で main マージ済み）。
 
 ---
 
@@ -175,8 +175,8 @@ flowchart TB
 | # | 観測 | 影響 | 提案 |
 |---|---|---|---|
 | G1 | ③ は `shared/api/`、一部設計はルート `backend/`。実装は `app/shared/src/`・`app/backend/` | 新人と FE がパスを探す | ③ 冒頭に実装パスを明記 |
-| G2 | Cookie 検証の「共通モジュール名」が設計に無い | W-05 と W-08 の結合が口頭頼み | ③ か ② に `authenticateRequest(req) → userId \| null` 相当の擬似シグネチャを1節追加 |
-| G3 | health 以外の zod が未設置。`shared/ws/` も未作成 | 契約の実装 SSOT が薄い | W-02 で auth zod を `app/shared` に置く。WS 用の置き場を TL と一文決定 |
+| G2 | ~~Cookie 検証の「共通モジュール名」が設計に無い~~ → **Issue #11 で合意済み**（`session.ts` に `authenticateRequest` / `isAllowedOrigin`）。中身は W-04/W-05 で実装 | ~~W-05 と W-08 の結合が口頭頼み~~ | シグネチャは確定。本実装待ち |
+| G3 | ~~health 以外の zod が未設置。`shared/ws/` も未作成~~ → **解消**（`app/shared/src/ws/` に envelope・errors・game を配置。Issue #10 合意） | ~~契約の実装 SSOT が薄い~~ | auth zod（W-02）は未着手。WS 用は解消 |
 | G4 | 試合永続化がゲート2 後（W-13） | フロー図で「決着→DB」を必須と誤読しやすい | ゲート2 判定から永続化を外す旨を [⑤ バックログ](../02_設計書/5-バックログ.md) ゲート2 行に明記 |
 | G5 | `.env.example` に SESSION_SECRET / ALLOWED_ORIGIN はコメントのみ | W-04/W-05 着手時に忘れやすい | W-04 PR でコメントを実キーに昇格（値は秘密にしない例示） |
 
