@@ -340,6 +340,7 @@ async function checkInvalidMessages(): Promise<string[]> {
 /* ── 実行 ─────────────────────────────────────────────────────── */
 
 async function main(): Promise<void> {
+	process.env.NODE_ENV = 'development';
 	process.env.ALLOW_DEV_AUTH = 'true';
 	const app = await buildServer();
 	app.log.level = 'silent';

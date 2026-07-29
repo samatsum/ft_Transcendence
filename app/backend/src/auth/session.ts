@@ -23,11 +23,11 @@ export interface AuthedUser {
 /**
  * W-04 の本実装が入るまで `x-dev-user` を使うための明示的な開発用 opt-in。
  *
- * `NODE_ENV !== 'production'` だけでは、NODE_ENV の設定漏れで本番にもスタブ認証が
- * 開くため不十分。専用フラグが true で、かつ production でない場合だけ許可する。
+ * `NODE_ENV !== 'production'` だけでは、NODE_ENV の設定漏れや staging でもスタブ認証が
+ * 開くため不十分。development と専用フラグの両方を明示した場合だけ許可する。
  */
 function isDevAuthEnabled(): boolean {
-	return process.env.NODE_ENV !== 'production' && process.env.ALLOW_DEV_AUTH === 'true';
+	return process.env.NODE_ENV === 'development' && process.env.ALLOW_DEV_AUTH === 'true';
 }
 
 /**
