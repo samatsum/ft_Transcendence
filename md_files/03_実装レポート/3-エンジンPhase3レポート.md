@@ -13,7 +13,7 @@
 ### 付随して満たした関連条件
 
 - **② §8 のサイズ予算（№5 の種）**: snapshot JSON 実測 **avg 513B / max 524B**（4 戦闘員、< 1KB 予算内）。
-- **G-05 の中核（先取点の match_rules 化）**: E-10 の API 契約（`game_create(cub_text, mode, match_rules)`）が要求するため先行実装した。`target_score` は ② §4-B の 3–21 のみ受理し、未指定(0)・範囲外は既定の `RSP_SCORE_LIMIT`(10) に落ちる。**native 単体起動の挙動は不変**（`rsp_target_score()` が 0 のとき従来値を返す）。G-05 としての正式受入（Gameplay 側のテスト）は残。
+- **G-05 完了（先取点の match_rules 化）**: E-10 の API 契約（`game_create(cub_text, mode, match_rules)`）が要求するため先行実装した。エンジンは `target_score` に N≥1 の任意値を受理し、未指定(0) は既定の `RSP_SCORE_LIMIT`(10) にフォールバックする。② §4-B の 3–21 範囲バリデーションは WS（GameRoom）側で行う。**native 単体起動の挙動は不変**（`rsp_target_score()` が 0 のとき従来値を返す）。
 - **G-10 の一部（headless でファイル I/O ゼロ）**: sim ビルドは bmp.c / screen.c を非リンクのため、構造的に結果 BMP を書けない。
 
 ## 実装の要点
