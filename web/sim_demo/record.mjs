@@ -72,6 +72,9 @@ function takeSnapshot(tick) {
 			tick,
 			match: {
 				state: STATE_NAME[f[0]] ?? 'playing',
+				// ② §5-C 改訂 2026-07-29: snapshot 単体で winner の意味を確定できるよう mode を含める。
+				// このデモは RSP 固定。W-10 の GameRoom は room.mode（'rsp'|'fps'）を渡す
+				mode: 'rsp',
 				winner: f[1] < 0 ? null : f[1],
 				score: [f[2], f[3]],
 			},

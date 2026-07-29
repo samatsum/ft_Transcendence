@@ -59,7 +59,7 @@ async function checkPortMatchesRecordMjs(): Promise<boolean> {
 
 		const finished = game.step(1 / TICK_HZ);
 		tick++;
-		if (tick % 2 === 0) snapshots.push(decodeSnapshot(game.readSnapshot(), tick));
+		if (tick % 2 === 0) snapshots.push(decodeSnapshot(game.readSnapshot(), tick, 'rsp'));
 		if (finished && finishedAt < 0) finishedAt = tick;
 		if (finishedAt > 0 && tick - finishedAt > TAIL_SECONDS * TICK_HZ) break;
 	}
@@ -120,7 +120,7 @@ async function checkInstancesAreIndependent(): Promise<boolean> {
 		const json = games.map((game) => {
 			game.setInput(VIEW_ID, driven.input);
 			game.step(1 / TICK_HZ);
-			return JSON.stringify(decodeSnapshot(game.readSnapshot(), tick + 1));
+			return JSON.stringify(decodeSnapshot(game.readSnapshot(), tick + 1, 'rsp'));
 		});
 		if (json.some((s) => s !== json[0])) mismatchTick = tick + 1;
 	}

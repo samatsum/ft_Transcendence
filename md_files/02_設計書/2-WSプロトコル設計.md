@@ -146,6 +146,7 @@ presence の初期一覧（フレンド一覧+状態）は REST で取得し、�
 ### 4-B. カスタムルーム（D-1）
 
 - `room_create` でルームコード発行: **6文字 A–Z 0–9（紛らわしい I/O/0/1 を除く32文字集合）**。有効期間はルーム存続中のみ。
+- **コード発行は原子的に行う**: 生成 → 既存コードとの重複判定 → レジストリ登録 を**単一の同期区間で完結**させる（Node シングルスレッド前提の `insertIfAbsent` パターン）。同時到着した複数の `room_create` に対してもコード衝突は発生しない。実装では W-08 のルームレジストリが `Map<code, Room>` に `if (!map.has(code)) map.set(code, room)` を await を挟まずに行うこと（await を挟むと他の `room_create` にレジストリを奪われる）。
 - ホスト権限: `rules` 変更・`room_start`・（暗黙に）解散。ホストが退室したら**最古参加者へホスト委譲**、全員退室で即解散。
 - ルール（#11 カスタマイズの実体。`Match.settingsJson` にそのまま保存され、`game_create` の `match_rules` になる）:
 
@@ -177,6 +178,7 @@ presence の初期一覧（フレンド一覧+状態）は REST で取得し、�
 ```
 
 - 接続待ちの10秒は D-3 の再接続猶予（30秒）とは別物（開始前は短く、開始後は長く）。
+- **10 秒経過で AI 化された席は、以後「予定していた人間席」の集合から除外**する。`created → countdown` の遷移は 1 回きりで、`playing` 中に早期開始の再判定はしない（**期待人間席は開始時点で凍結される**）。playing 中の再入（§7 の 30 秒猶予での復帰）は participant 表の userId → slot 照合のみで受理し、期待人間席は参照しない。W-12 の grace 満了で `ai_takeover` した席も同様に「予定していた人間席」から外れ、以後は本人が来ても participant 照合で slot が有効なら復帰する（席は AI に戻っていても再取得できる）。
 - マッチ成立後のキャンセル UI は設けない（LoL 型 accept ダイアログは実装しない。評価デモのテンポを優先し、遷移は自動）。
 
 ### 4-D. マッチメイキング状態機械（ユーザー視点）
@@ -254,8 +256,8 @@ native/web/サーバの三者が同じパーサを通る）。テクスチャは
 ```
 { "t":"snapshot", "d":{
   "tick": 12345,
-  "match": { "state":"waiting|playing|finished", "winner": null|0|1|combatant_id,
-             "score":[7,4] },
+  "match": { "state":"waiting|playing|finished", "mode":"rsp|fps",
+             "winner": null|0|1|combatant_id, "score":[7,4] },
   "combatants":[
     { "id":0, "team":0, "hand":0|1|2, "pos":[12.5,4.25], "dir":1.57,
       "alive":true, "is_ai":false, "respawn_ms":0 } ],
@@ -267,7 +269,8 @@ native/web/サーバの三者が同じパーサを通る）。テクスチャは
 |---|---|---|
 | `tick` | tick | サーバ tick 番号（30Hz カウント。配信は偶数 tick） |
 | `match.state` | match の状態 | sim の enum そのまま（waiting/playing/finished）。カウントダウンは**ルーム層の event で表現し sim の enum を拡張しない**（§3-D 改変を避ける） |
-| `match.winner` | 勝者 | RSP=チーム番号 / FPS=combatant_id / 未決着=null |
+| `match.mode` | -（本書 §5-C で新設） | `rsp` \| `fps`。**snapshot 単体で `match.winner` の意味（RSP=チーム番号 / FPS=combatant_id）を確定できる**ようにする（受入 №5 の観戦・リプレイ・録画リプレイ用途で必須）。welcome の mode と同一で試合中は変化しない。値は 2 バイト程度でサイズ予算 1KB に影響しない |
+| `match.winner` | 勝者 | RSP=チーム番号 / FPS=combatant_id / 未決着=null。**解釈は `match.mode` で確定**する |
 | `match.score` | スコア | RSP=チーム別 `[A,B]` / FPS=`[0,0]` 固定（勝敗はゴール到達のみ） |
 | `combatants[]` | id/team/hand/pos(x,y)/dir_angle/alive/is_ai/respawn_timer | FPS の敵ハザードも同形式で含む（クライアントは区別せず描画）。`respawn_ms` はミリ秒残量 |
 | `world_delta` | 収集済みアイテム座標・扉開放フラグ | **含まれる時のみ処理**（差分。初回 join/再接続時は welcome 直後の最初の snapshot に全量を必ず含める） |
@@ -319,7 +322,7 @@ ARCHITECTURE §2.3 の 4 種を核に、ルーム層イベントを追加した�
 | `point_scored` | `team`, `score:[a,b]`, `by_id` | RSP 得点時（演出・効果音トリガ。値の正本は snapshot 側） |
 | `hand_changed` | `id`, `hand` | 手の変更時（同上） |
 | `goal` | `id` | FPS ゴール到達 |
-| `match_end` | `winner`, `reason: score\|goal\|forfeit\|abandon`, `match_id` | 決着。`match_id` は永続化済み DB 行（結果画面が REST で詳細取得） |
+| `match_end` | `winner`, `reason: score\|goal\|forfeit\|abandon`, `match_id` | 決着。`match_id` は永続化済み DB 行の id（結果画面が REST で詳細取得）。**§6-C の順序で 2. の永続化完了後に発火する**（永続化と発火の順序を逆にしないこと。結果画面が REST を叩けない）。永続化に失敗した場合のみ `match_id: null` にフォールバックし、この場合クライアントはロビー WS の `match_result` から match_id を取得する（`match_result` は §6-C 4. で必ず配信される）か、abandon 相当の結果画面（勝敗と最終スコアのみ）で凌ぐ |
 | `player_disconnected` | `slot`, `grace_ms: 30000` | 切断検知（→ player_status: grace） |
 | `player_reconnected` | `slot` | 猶予内復帰（→ player_status: connected） |
 | `ai_takeover` | `slot` | 猶予満了 or `leave` による AI 化（→ player_status: ai） |
@@ -420,7 +423,7 @@ created ──全人間join or 10s──► countdown(3s) ──► playing ─�
 
 ### 6-C. 試合終了時の永続化と結果配信
 
-1. 最終 snapshot（`match.state=finished`）配信 → `event(match_end)` 配信。
+1. 最終 snapshot（`match.state=finished`）配信。この時点でクライアントは勝敗と最終スコアを知る（値の正本は snapshot 側）。
 2. Prisma で `Match` + `MatchPlayer` を書き込み（**AI 席も行として残す**。§3.3 準拠）。`result` の帰属規約:
 
 | ケース | 記録 |
@@ -430,8 +433,9 @@ created ──全人間join or 10s──► countdown(3s) ──► playing ─�
 | RSP 途中離脱して未復帰のまま決着 | 本人は**チーム結果に関わらず abandon**。復帰済みなら通常判定 |
 | 全人間離脱で打ち切り | `winnerTeam=null`、全離脱者 abandon（AI 席は draw 扱いで統計から除外） |
 
-3. ロビー WS へ `match_result` をブロードキャスト（§3-A。「試合結果のライブ反映」のデモ箇所）。
-4. 60 秒後 close 1000 → `game_destroy`。結果画面の詳細（履歴・統計への反映）は REST（③）で取得。
+3. **`event(match_end)` を game WS に配信**（`d.match_id` に 2. で採番された ID を含める。**永続化に失敗した場合のみ null にフォールバック**し、失敗ログを残す）。**この順序（永続化 → match_end）を逆にしない**こと。逆にすると FE の結果画面が「match_id は永続化後に届く」前提で書けなくなり、race condition が入る。実装上は「最終 snapshot 送信直後に永続化を async で開始し、await 後に `event(match_end)` を送る」形になる。永続化は通常 1 SQLite INSERT で ms オーダーなので、この間の待ち時間は表示上ほぼ見えない。
+4. ロビー WS へ `match_result` をブロードキャスト（§3-A。「試合結果のライブ反映」のデモ箇所）。この時点で match_id を必ず含める（3. で null になった場合の救済経路として明示的に）。
+5. 60 秒後 close 1000 → `game_destroy`。結果画面の詳細（履歴・統計への反映）は REST（③）で取得。**60 秒のカウントは `event(match_end)` 発火時点から**（永続化に長時間かかった場合の切れ端を避ける）。
 
 ---
 
@@ -548,3 +552,4 @@ created ──全人間join or 10s──► countdown(3s) ──► playing ─�
 |---|---|
 | 2026-07-11 | §5-A・§9: `input.hand` を削除（⑤ [BACKLOG.md](./5-バックログ.md) D-17。選択肢比較は ⑤ §0） |
 | 2026-07-23 | §6-B: 「§3-B への追補要求」が**実装済み**であることを明記（`game_set_input_source`）。同表に残っていた `hand`（D-17 で削除済み）を `act` に訂正し、実装済みラッパ `sim_set_input` の引数を追記。長い行を折り返して可読性を改善 |
+| 2026-07-29 | 設計不備 4 件の解消（W-08〜W-13 実装前の穴埋め）: **§4-B** 部屋コード発行の原子性を明記／**§4-C** 期待人間席が開始時点で凍結され、以後は participants 表で照合することを明記／**§5-C** snapshot に `match.mode` を追加し、snapshot 単体で winner を解釈可能にする／**§5-D + §6-C** `event(match_end).match_id` は永続化完了後に発火する順序を明示し、失敗時のみ null にフォールバック（クライアントは `match_result` から救済）。実装反映は `app/backend/src/game/room.ts` の `finish` 分割と `app/shared/src/ws/game.ts` の `snapshotPayloadSchema` |
