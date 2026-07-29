@@ -41,6 +41,9 @@ const OPEN = 1;
 const BACKPRESSURE_SKIP_SNAPSHOT_BYTES = 64 * 1024;
 /** これを超えたら回線が死んだと判断して close 4005 */
 const BACKPRESSURE_CLOSE_BYTES = 1024 * 1024;
+/** 認証完了まで保持するフレーム数。無認証接続によるメモリ消費を制限する */
+const PRE_AUTH_MAX_MESSAGES = 16;
+const PRE_AUTH_MAX_BYTES = MAX_CLIENT_MESSAGE_BYTES * PRE_AUTH_MAX_MESSAGES;
 
 /** ② §5-A: yaw を [-π, π) に正規化する。有限値チェックは zod 側（申し送り 7） */
 function normalizeYaw(yaw: number): number {
@@ -54,6 +57,8 @@ interface Connection {
 	userId: number;
 	slot: number | null;
 	joined: boolean;
+	/** 同一ユーザーの新接続に置換された旧接続か。close 時に席を解放しない */
+	replaced: boolean;
 	/** ② §5-A: 最後に受理した seq。これ以下は黙って破棄 */
 	lastSeq: number;
 	/** ② §2-A: スキーマ違反が連続でこの回数に達したら close 4001 */
@@ -86,8 +91,55 @@ async function handleConnection(
 		return;
 	}
 
+	// 認証中にもクライアントは送信できる。listener を先に登録して順序どおり保持し、
+	// 認証・ルーム解決後に同じ handleMessage へ流す。
+	const pendingMessages: unknown[] = [];
+	let pendingMessageBytes = 0;
+	let closed = false;
+	let ready:
+		| { conn: Connection; room: GameRoom; roomId: string; peers: Set<Connection> }
+		| null = null;
+
+	socket.on('message', (raw: unknown) => {
+		if (socket.readyState !== OPEN) return;
+		if (ready) {
+			handleMessage(ready.conn, ready.room, raw, app);
+			return;
+		}
+
+		const text = typeof raw === 'string' ? raw : String(raw);
+		const bytes = Buffer.byteLength(text, 'utf8');
+		if (
+			bytes > MAX_CLIENT_MESSAGE_BYTES ||
+			pendingMessages.length >= PRE_AUTH_MAX_MESSAGES ||
+			pendingMessageBytes + bytes > PRE_AUTH_MAX_BYTES
+		) {
+			pendingMessages.length = 0;
+			pendingMessageBytes = 0;
+			socket.close(WS_CLOSE.protocolViolation, 'too many messages before authentication');
+			return;
+		}
+		pendingMessages.push(raw);
+		pendingMessageBytes += bytes;
+	});
+
+	socket.on('close', () => {
+		closed = true;
+		if (!ready) return;
+		const { conn, room, roomId, peers } = ready;
+		peers.delete(conn);
+		app.log.info(
+			{ room: roomId, user: conn.userId, slot: conn.slot, peers: peers.size },
+			'W-11: WS 切断',
+		);
+		// 置換された旧接続の close は、新接続が引き継ぐ席を解放してはいけない。
+		if (!conn.replaced && conn.slot !== null) room.leave(conn.slot);
+		if (peers.size === 0) releaseRoomConnections(roomId);
+	});
+
 	// ② §1: Cookie を検証。未認証は close 4000。実装は W-04/W-05（いまはスタブ）
 	const user = await authenticateRequest(req);
+	if (closed || socket.readyState !== OPEN) return;
 	if (!user) {
 		socket.close(WS_CLOSE.unauthenticated, 'unauthenticated');
 		return;
@@ -106,6 +158,7 @@ async function handleConnection(
 		userId: user.userId,
 		slot: null,
 		joined: false,
+		replaced: false,
 		lastSeq: -1,
 		consecutiveViolations: 0,
 		inputWindowStart: Date.now(),
@@ -116,27 +169,22 @@ async function handleConnection(
 	const peers = ensureRoomConnections(roomId, room);
 	for (const other of peers) {
 		if (other.userId === conn.userId) {
-			other.socket.close(WS_CLOSE.replaced, 'replaced by a newer connection');
+			other.replaced = true;
 			peers.delete(other);
+			other.socket.close(WS_CLOSE.replaced, 'replaced by a newer connection');
 		}
 	}
 	peers.add(conn);
+	ready = { conn, room, roomId, peers };
 	// ② §8: 接続/切断/join を構造化ログに残す（**input はログしない**。量とプライバシー）
 	app.log.info({ room: roomId, user: conn.userId, peers: peers.size }, 'W-11: WS 接続');
 
-	socket.on('message', (raw: unknown) => {
+	for (const raw of pendingMessages) {
+		if (socket.readyState !== OPEN) break;
 		handleMessage(conn, room, raw, app);
-	});
-	socket.on('close', () => {
-		peers.delete(conn);
-		app.log.info(
-			{ room: roomId, user: conn.userId, slot: conn.slot, peers: peers.size },
-			'W-11: WS 切断',
-		);
-		// 席を AI へ戻す。猶予つきの切断処理は W-12 が上に載せる
-		if (conn.slot !== null) room.leave(conn.slot);
-		if (peers.size === 0) releaseRoomConnections(roomId);
-	});
+	}
+	pendingMessages.length = 0;
+	pendingMessageBytes = 0;
 }
 
 /** ルームの購読はルームにつき1回。接続ごとに購読すると stringify が接続数ぶん走る */
@@ -240,6 +288,7 @@ function handleMessage(
 			if (conn.slot !== null) room.leave(conn.slot);
 			conn.joined = false;
 			conn.slot = null;
+			conn.lastSeq = -1;
 			return;
 		case 'spectate':
 			// 保1（② §5-E）。設計コストのみ先払いで、実装は余力時

@@ -21,6 +21,16 @@ export interface AuthedUser {
 }
 
 /**
+ * W-04 の本実装が入るまで `x-dev-user` を使うための明示的な開発用 opt-in。
+ *
+ * `NODE_ENV !== 'production'` だけでは、NODE_ENV の設定漏れで本番にもスタブ認証が
+ * 開くため不十分。専用フラグが true で、かつ production でない場合だけ許可する。
+ */
+function isDevAuthEnabled(): boolean {
+	return process.env.NODE_ENV !== 'production' && process.env.ALLOW_DEV_AUTH === 'true';
+}
+
+/**
  * Cookie を検証して「このリクエスト/接続が誰か」を返す。無効なら `null`。
  *
  * **本実装（W-04/W-05）でやること**:
@@ -38,18 +48,35 @@ export async function authenticateRequest(req: FastifyRequest): Promise<AuthedUs
 	// **W-11 の複数クライアント検証に必要**（スタブが常に同じ userId を返すと
 	// 2人目が「同一ユーザーの多重接続」扱いで弾かれてしまう）。
 	// 本実装では Cookie だけを見るので、この分岐ごと消えてよい。
+	if (!isDevAuthEnabled()) return null;
 	const devUser = Number(req.headers['x-dev-user']);
-	const userId = Number.isInteger(devUser) && devUser > 0 ? devUser : 1;
-	return { userId, sessionId: userId };
+	if (!Number.isInteger(devUser) || devUser <= 0) return null;
+	return { userId: devUser, sessionId: devUser };
 }
 
 /**
  * ② §1 の Origin 検査。自ホストと一致しない接続を拒否する（CSRF-over-WS 対策）。
  * REST の変更系にも同じ判定を使う（W-05「Origin 検証の共通化」）。
  */
-export function isAllowedOrigin(_req: FastifyRequest): boolean {
-	// TODO(W-05): `.env` の ALLOWED_ORIGIN と `Origin` ヘッダを突き合わせる
-	return true;
+export function isAllowedOrigin(req: FastifyRequest): boolean {
+	// TODO(W-05): W-04 の Cookie 認証と合わせて共通ミドルウェアへ統合する。
+	const origin = req.headers.origin;
+	if (typeof origin !== 'string') return false;
+
+	const allowedOrigin = process.env.ALLOWED_ORIGIN;
+	if (allowedOrigin) return origin === allowedOrigin;
+	if (!isDevAuthEnabled()) return false;
+
+	// ALLOWED_ORIGIN 未設定時の開発用 fallback は loopback origin だけに限定する。
+	try {
+		const url = new URL(origin);
+		return (
+			(url.protocol === 'http:' || url.protocol === 'https:') &&
+			(url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '[::1]')
+		);
+	} catch {
+		return false;
+	}
 }
 
 /** 上の2つが暫定実装のままか。起動ログで警告を出すために使う */

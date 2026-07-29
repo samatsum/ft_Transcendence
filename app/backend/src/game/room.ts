@@ -145,6 +145,21 @@ export class GameRoom {
 		this.mode = options.mode;
 		this.opts = { ...options, now: options.now ?? Date.now, log: options.log ?? consoleLogger };
 		this.stateEnteredAt = this.opts.now();
+		const seats = seatCount(options.mode);
+		const assertValidSlot = (slot: number, source: string): void => {
+			if (!Number.isInteger(slot) || slot < 0 || slot >= seats) {
+				throw new Error(`${source} の slot ${slot} は ${options.mode} の定員 ${seats} の外`);
+			}
+		};
+		if (options.participants?.length === 0) {
+			throw new Error('participants を指定する場合は1人以上必要');
+		}
+		for (const p of options.participants ?? []) {
+			assertValidSlot(p.slot, `participant userId=${p.userId}`);
+		}
+		for (const slot of options.humanSlots ?? []) {
+			assertValidSlot(slot, 'humanSlots');
+		}
 		for (const p of options.participants ?? []) this.participantSlots.set(p.userId, p.slot);
 		// 優先順: humanSlots → participants から導出 → 全席が人間
 		// （定員ちょうど埋まったクイックマッチは最後の扱いで正しい）
