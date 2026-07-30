@@ -4,14 +4,16 @@
 > **実装詳細の暗記は不要**。W-02 の第一手に入れる状態まで  
 > **用語**: [torinoue_用語集.md](./torinoue_用語集.md)  
 > **図**: [データフロー](./torinoue_データフロー図.md) / [PERT](./torinoue_PERT依存図.md)  
-> **作成**: 2026-07-26（AI 草案 → 本人レビュー前提）
+> **作成**: 2026-07-26（AI 草案 → 本人レビュー前提）  
+> **更新**: 2026-07-30 — W-08/W-09/W-11/W-14 完了を反映。公式入口は [reading_guide_torinoue.md](../onboarding_docs/reading_guide_torinoue.md)
 
 ---
 
 ## 0. 今の自分の一文
 
 あなたは **REST・DB・認証・Docker の所有者**であり、ゲーム本体（sim.wasm / ゲーム WS）の所有者ではない。  
-ゲート2 でのあなたの仕事は「対戦ロジック」ではなく、**ログインした人間だけがロビー/ゲームに入れる土台**を Day 2 までに出すこと。
+ゲート2 でのあなたの仕事は「対戦ロジック」ではなく、**ログインした人間だけがロビー/ゲームに入れる土台**（W-02〜W-05）を出すこと。  
+サーバ側の W-08〜W-11/W-14 は samatsum が **dev auth スタブ付きで先行完了**済み。残クリティカルは auth 本線。
 
 | 所有 | 非所有（触る前に相談） |
 |---|---|
@@ -76,23 +78,23 @@
 ## 3. ゲート2 における自分のブロッカー役（暗唱用）
 
 ```text
-私（torinoue）が Day2 中に W-04（認証 Cookie）を出さないと:
-  - mamiyaza の F-03（認証画面）と F-05（ロビー）が結合できない
-  - samatsum の W-08（ロビー WS）に「誰が接続したか」を差し込めない
-結果: ゲート2（4ブラウザ・人間4人・AI 席なし）の「人として入る」経路が止まる。
-対戦判定そのもの（W-10/W-11）は samatsum が auth 無しでも先行できるが、
-「ログインした4人がロビーから試合に入る」は私の着地が前提。
+私（torinoue）が W-04（認証 Cookie）を出さないと:
+  - mamiyaza の F-03（認証画面）と F-05（ロビー）が本番結合できない
+  - W-08/W-11 は動いているが、入口が ALLOW_DEV_AUTH + x-dev-user のまま残る
+結果: ゲート2（4ブラウザ・人間4人・AI 席なし）の「人として入る」本番経路が止まる。
+対戦判定そのもの（W-10/W-11）とロビー WS（W-08）/マッチング（W-09）は
+samatsum が先行完了済み。「ログインした人間が Cookie で入る」は私の着地が前提。
 ```
 
 補足（PERT と一致）:
 
-- **先行可能**: samatsum の W-10（sim 複数ルーム）は auth を待たない  
-- **自分依存**: W-08, F-03, F-05（およびその先のゲート2 合流）  
-- **自分の次の義務**: W-05（Origin）で REST/WS 入口を閉じる。W-15 は Day3 着手・Day4 完了（Day5 持ち越し禁止）
+- **先行済み（samatsum）**: W-10 / W-11 / W-08 / W-09 / W-14（main）  
+- **自分依存（残）**: F-03, F-05、および W-08/W-11 の Cookie 本実装差し込み  
+- **自分の次の義務**: W-02→W-03→W-04→W-05。W-15 はゲート2 と並行で進め、提出前完了（Day5 持ち越し禁止）
 
 ---
 
-## 4. W-01 現状 → W-02 第一手
+## 4. 現状 → W-02 第一手
 
 | 済み（触って確認） | 未着手（あなたの作業） |
 |---|---|
@@ -100,15 +102,15 @@
 | 404 がエラーエンベロープ形 | レート制限、グローバルエラーハンドラ |
 | `error.ts` / `health.ts` の骨格 | 認証用 zod、Prisma、Session Cookie |
 | FE が health を zod で parse | `/api/auth/*` |
-| `auth/session.ts` にスタブ配置（Issue #11。samatsum が W-11 準備として設置） | `authenticateRequest` / `isAllowedOrigin` の中身（W-04/W-05） |
-| `game/` 一式（W-10 完了。sim.wasm 統合・GameRoom・rooms レジストリ） | — |
-| `shared/ws/` スキーマ（Issue #10。envelope・errors・game） | — |
+| `auth/session.ts`（Issue #11。`ALLOW_DEV_AUTH` + `x-dev-user` の暫定実装） | `authenticateRequest` / `isAllowedOrigin` の本実装（W-04/W-05） |
+| `game/`（W-10/W-11）、`lobby/`（W-08/W-09）、`GET /api/maps`（W-14） | — |
+| `shared/ws/`（Issue #10。envelope・errors・game・lobby） | — |
 
 **契約ギャップ（提案）** — 詳細は [弱点分析](./torinoue_チーム弱点分析.md):
 
-1. 設計書は `shared/api/` と書くが、実装は `app/shared/src/` → **パス表記を ③ に追記提案**（`shared/ws/` については Issue #10 で解消）  
-2. GitHub Issue が実質空 → #10/#11 は合意済み。ブロッカー管理の日次運用は依然弱い  
-3. ⑤ のゲート2 依存に W-12 が含まれるが、⑥ 日割りでは W-12 は Day4 → **判定条件の一文を揃える提案**
+1. 設計書は `shared/api/` と書くが、実装は `app/shared/src/` → **パス表記を ③ に追記提案**（`shared/ws/` は Issue #10 で解消）  
+2. Issue #10/#11/#5 は CLOSED。残オープンは #6（評価台本）・#13（切り捨て順）。ブロッカーの日次可視化は依然弱い  
+3. ゲート2 から W-12 除外は #5 で確定・⑤⑥統一済み
 
 ---
 

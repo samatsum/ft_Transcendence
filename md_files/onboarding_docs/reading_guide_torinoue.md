@@ -4,6 +4,7 @@
 > 直前に読むもの: [onboarding.md](./onboarding.md)（未読なら先に）  
 > **このファイルを読む時間の目安**: 実装用 1.5〜2時間 / PM 用は別途 30分（末尾）  
 > 作成: 2026-07-29（AI 草案 → 本人レビュー前提）  
+> 更新: 2026-07-30 — W-08〜W-11/W-14 完了を反映。第一手は依然 W-02  
 > 深い自分用メモ: [../torinoue/](../torinoue/)（契約の正本ではない）
 
 ---
@@ -79,17 +80,17 @@ torinoue は **REST・DB・認証・Docker の所有者**であり、ゲーム�
 ## 3. ゲート2 における torinoue のブロッカー役（暗唱用）
 
 ```text
-torinoue が Day2 中に W-04（認証 Cookie）を出さないと:
-  - mamiyaza の F-03（認証画面）と F-05（ロビー）が結合できない
-  - samatsum の W-08（ロビー WS）に「誰が接続したか」を差し込めない
-結果: ゲート2 の「人として入る」経路が止まる。
-対戦判定そのもの（W-10 / W-11）は samatsum が auth 無しでも先行できるが、
-「ログインした人がロビーから試合に入る」は torinoue の着地が前提。
+torinoue が W-04（認証 Cookie）を出さないと:
+  - mamiyaza の F-03（認証画面）と F-05（ロビー）が本番結合できない
+  - W-08/W-11 は main 済みだが、入口が ALLOW_DEV_AUTH + x-dev-user のまま残る
+結果: ゲート2 の「人として入る」本番経路が止まる。
+対戦判定（W-10/W-11）とロビー/マッチング（W-08/W-09）は samatsum が先行完了済み。
+「ログインした人が Cookie でロビーから試合に入る」は torinoue の着地が前提。
 ```
 
-- **先行可能（auth 待ちでない）**: samatsum の W-10  
-- **torinoue 依存**: W-08、F-03、F-05（およびその先のゲート2 合流）  
-- **次の義務**: W-05（Origin）。W-15 は Day3 着手・Day4 完了（Day5 持ち越し禁止）
+- **先行済み（auth 無しでも可だったもの）**: W-10 / W-11 / W-08 / W-09 / W-14  
+- **torinoue 依存（残）**: F-03、F-05、W-08/W-11 の Cookie 本実装差し込み  
+- **次の義務**: W-02→W-03→W-04→W-05。W-15 は並行着手（提出前完了・Day5 持ち越し禁止）
 
 用語注:
 
@@ -99,7 +100,7 @@ torinoue が Day2 中に W-04（認証 Cookie）を出さないと:
 
 ---
 
-## 4. 第一手（W-01 現状 → W-02）
+## 4. 第一手（現状 → W-02）
 
 | 済み（触って確認） | 未着手（torinoue の作業） |
 |---|---|
@@ -107,7 +108,9 @@ torinoue が Day2 中に W-04（認証 Cookie）を出さないと:
 | 404 がエラーエンベロープ形 | レート制限、グローバルエラーハンドラ |
 | `error.ts` / `health.ts` の骨格 | 認証用 zod、Prisma、Session Cookie |
 | FE が health を zod で parse | `/api/auth/*` |
-| `auth/session.ts` スタブ（Issue #11） | `authenticateRequest` / `isAllowedOrigin` の中身（W-04 / W-05） |
+| `auth/session.ts`（#11。`ALLOW_DEV_AUTH` + `x-dev-user`） | `authenticateRequest` / `isAllowedOrigin` の本実装（W-04 / W-05） |
+| `game/`（W-10/W-11）、`lobby/`（W-08/W-09）、maps（W-14） | — |
+| `shared/ws/`（#10。envelope・errors・game・lobby） | — |
 
 ---
 
