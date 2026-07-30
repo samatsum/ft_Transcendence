@@ -23,21 +23,15 @@ import {
 	type UserContextRegistry,
 } from './state.js';
 import {
+	systemClock,
 	type LobbyClock,
 	type LobbyOperationResult,
+	unrefTimer,
 } from './queue.js';
 
 export const ROOM_RECONNECT_GRACE_MS = 10_000;
 const ROOM_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const ROOM_CODE_ATTEMPTS = 32;
-
-const systemClock: LobbyClock = {
-	now: Date.now,
-	setTimeout,
-	clearTimeout,
-	setInterval,
-	clearInterval,
-};
 
 interface LobbyMember extends CustomRollbackMember {}
 
@@ -70,6 +64,7 @@ export class LobbyRooms {
 	private readonly nextRandomInt: (maxExclusive: number) => number;
 	private readonly onInternalError: (message: string) => void;
 
+	/** room依存関係とclock、招待コード乱数源を初期化する */
 	constructor(options: LobbyRoomsOptions) {
 		this.registry = options.registry;
 		this.onMatchPlan = options.onMatchPlan;
@@ -78,6 +73,7 @@ export class LobbyRooms {
 		this.onInternalError = options.onInternalError ?? (() => {});
 	}
 
+	/** hostをslot 0に置いたopen roomを作り招待コードを返す */
 	create(
 		userId: number,
 		displayName: string,
@@ -122,6 +118,7 @@ export class LobbyRooms {
 		return { ok: true, value: code };
 	}
 
+	/** 招待コードのopen roomへ空席順でuserを参加させる */
 	join(
 		userId: number,
 		displayName: string,
@@ -155,6 +152,7 @@ export class LobbyRooms {
 		return { ok: true, value: room.code };
 	}
 
+	/** open roomからuserを冪等に退室させる */
 	leave(userId: number): LobbyOperationResult {
 		const context = this.registry.getContext(userId);
 		if (context.kind === 'starting_match' || context.kind === 'in_match') {
@@ -171,6 +169,7 @@ export class LobbyRooms {
 		return { ok: true, value: undefined };
 	}
 
+	/** hostだけがmode整合済みrulesへ更新できるようにする */
 	updateRules(userId: number, rules: CanonicalRules): LobbyOperationResult {
 		const roomResult = this.roomForMember(userId);
 		if (!roomResult.ok) return roomResult;
@@ -186,6 +185,7 @@ export class LobbyRooms {
 		return { ok: true, value: undefined };
 	}
 
+	/** roomを同期的にclaimし、空席をAIで埋めた不変planを発行する */
 	start(userId: number): LobbyOperationResult<MatchPlan> {
 		const roomResult = this.roomForMember(userId);
 		if (!roomResult.ok) return roomResult;
@@ -236,11 +236,13 @@ export class LobbyRooms {
 		return { ok: true, value: plan };
 	}
 
+	/** 招待コードに対応する最新room_stateを返す */
 	getState(code: string): RoomStatePayload | null {
 		const room = this.rooms.get(code);
 		return room ? roomState(room) : null;
 	}
 
+	/** 再接続したmemberへ現在のroom_stateを再送する */
 	resend(userId: number): boolean {
 		const context = this.registry.getContext(userId);
 		const code =
@@ -336,14 +338,17 @@ export class LobbyRooms {
 		return true;
 	}
 
+	/** 現在保持しているroom数を返す */
 	roomCount(): number {
 		return this.rooms.size;
 	}
 
+	/** 稼働中の再接続grace timer数を返す */
 	timerCount(): number {
 		return this.graceTimers.size;
 	}
 
+	/** room、logout印、grace timerをすべて破棄する */
 	destroy(): void {
 		for (const timer of this.graceTimers.values()) this.clock.clearTimeout(timer);
 		this.graceTimers.clear();
@@ -351,6 +356,7 @@ export class LobbyRooms {
 		this.rooms.clear();
 	}
 
+	/** 最大32回の衝突再試行で未使用の6文字招待コードを予約する */
 	private reserveCode(): string | null {
 		for (let attempt = 0; attempt < ROOM_CODE_ATTEMPTS; attempt += 1) {
 			let code = '';
@@ -366,6 +372,7 @@ export class LobbyRooms {
 		return null;
 	}
 
+	/** userが所属するroomをcontext検証付きで解決する */
 	private roomForMember(userId: number): LobbyOperationResult<LobbyRoom> {
 		const context = this.registry.getContext(userId);
 		if (context.kind === 'starting_match' || context.kind === 'in_match') {
@@ -380,6 +387,7 @@ export class LobbyRooms {
 			: failure('room_not_found', 'room does not exist');
 	}
 
+	/** memberを席とregistryから除去し、必要ならhostを委譲する */
 	private removeMember(room: LobbyRoom, userId: number): void {
 		const member = room.members.get(userId);
 		if (!member) return;
@@ -404,6 +412,7 @@ export class LobbyRooms {
 		this.broadcast(room);
 	}
 
+	/** room member全員へ同じserialized room_stateを配信する */
 	private broadcast(room: LobbyRoom): void {
 		const message = { t: 'room_state', d: roomState(room) } satisfies LobbyServerMessage;
 		const serialized = JSON.stringify(message);
@@ -412,6 +421,7 @@ export class LobbyRooms {
 		}
 	}
 
+	/** userの再接続grace timerを冪等に解除する */
 	private cancelGrace(userId: number): void {
 		const timer = this.graceTimers.get(userId);
 		if (!timer) return;
@@ -420,6 +430,7 @@ export class LobbyRooms {
 	}
 }
 
+/** room操作前にuserの排他的contextを検証する */
 function contextError(
 	registry: UserContextRegistry,
 	userId: number,
@@ -433,6 +444,7 @@ function contextError(
 	return failure('already_in_game', 'match is already starting or running');
 }
 
+/** modeとmap整合を確認し、既定値を補ったcanonical rulesへ変換する */
 function canonicalizeRules(
 	mode: LobbyMode,
 	input: { map?: string; target_score?: number } | CanonicalRules | undefined,
@@ -454,11 +466,13 @@ function canonicalizeRules(
 		const parsed = rspRulesSchema.safeParse({ map, target_score: targetScore });
 		return parsed.success ? parsed.data : null;
 	}
-	const parsed = fpsRulesSchema.safeParse({ map, ...(input ?? {}) });
+	if (input && 'target_score' in input) return null;
+	const parsed = fpsRulesSchema.safeParse({ map });
 	if (!parsed.success) return null;
 	return { map };
 }
 
+/** mode定員ぶんの空席配列を生成する */
 function emptySeats(mode: LobbyMode): LobbySeat[] {
 	return Array.from({ length: mode === 'rsp' ? 4 : 2 }, (_, slot) => ({
 		slot,
@@ -468,6 +482,7 @@ function emptySeats(mode: LobbyMode): LobbySeat[] {
 	}));
 }
 
+/** lobby memberをhuman seat表示へ変換する */
 function humanSeat(member: LobbyMember): LobbySeat {
 	return {
 		slot: member.slot,
@@ -477,6 +492,7 @@ function humanSeat(member: LobbyMember): LobbySeat {
 	};
 }
 
+/** 内部roomをwire用のdiscriminated room_stateへ変換する */
 function roomState(room: LobbyRoom): RoomStatePayload {
 	const common = {
 		code: room.code,
@@ -492,14 +508,17 @@ function roomState(room: LobbyRoom): RoomStatePayload {
 	return { ...common, mode: 'fps', rules };
 }
 
+/** rules snapshotを浅く複製する */
 function cloneRules(rules: CanonicalRules): CanonicalRules {
 	return { ...rules };
 }
 
+/** joinedAtとsequenceによる安定参加順を比較する */
 function compareMember(a: LobbyMember, b: LobbyMember): number {
 	return a.joinedAt - b.joinedAt || a.sequence - b.sequence;
 }
 
+/** LobbyRooms操作の共通失敗値を生成する */
 function failure(
 	code:
 		| 'internal_error'
@@ -514,9 +533,4 @@ function failure(
 	message: string,
 ): LobbyOperationResult<never> {
 	return { ok: false, code, message };
-}
-
-function unrefTimer(timer: ReturnType<typeof setTimeout>): void {
-	const candidate = timer as ReturnType<typeof setTimeout> & { unref?: () => void };
-	candidate.unref?.();
 }

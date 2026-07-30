@@ -26,7 +26,7 @@ export interface LobbyClock {
 	clearInterval(timer: ReturnType<typeof setInterval>): void;
 }
 
-const systemClock: LobbyClock = {
+export const systemClock: LobbyClock = {
 	now: Date.now,
 	setTimeout,
 	clearTimeout,
@@ -62,12 +62,14 @@ export class MatchQueue {
 	private readonly onMatchPlan: (plan: MatchPlan) => void;
 	private readonly clock: LobbyClock;
 
+	/** queue依存関係を受け取り、mode別のFIFOを初期化する */
 	constructor(options: MatchQueueOptions) {
 		this.registry = options.registry;
 		this.onMatchPlan = options.onMatchPlan;
 		this.clock = options.clock ?? systemClock;
 	}
 
+	/** userをmode別FIFOへ追加し、満員なら同期的にMatchPlanをclaimする */
 	join(
 		userId: number,
 		displayName: string,
@@ -108,6 +110,7 @@ export class MatchQueue {
 		return { ok: true, value: plan };
 	}
 
+	/** queued userを冪等に取り除き、残りの表示とdeadlineを更新する */
 	leave(userId: number): LobbyOperationResult {
 		const context = this.registry.getContext(userId);
 		if (context.kind !== 'queued') return { ok: true, value: undefined };
@@ -120,6 +123,7 @@ export class MatchQueue {
 		return { ok: true, value: undefined };
 	}
 
+	/** queue先頭のuserによるAI補完開始を同期的にclaimする */
 	fillStart(userId: number): LobbyOperationResult<MatchPlan> {
 		const context = this.registry.getContext(userId);
 		if (context.kind !== 'queued') {
@@ -137,6 +141,7 @@ export class MatchQueue {
 		return { ok: true, value: plan };
 	}
 
+	/** userへ表示すべき最新queue_stateを組み立てる */
 	getState(userId: number): Extract<LobbyServerMessage, { t: 'queue_state' }> | null {
 		const context = this.registry.getContext(userId);
 		if (context.kind === 'starting_match' && context.source.kind === 'quick') {
@@ -162,6 +167,7 @@ export class MatchQueue {
 		};
 	}
 
+	/** 再接続したuserへ現在のqueue_stateを再送する */
 	resend(userId: number): boolean {
 		const message = this.getState(userId);
 		return message ? this.registry.send(userId, message) : false;
@@ -199,6 +205,7 @@ export class MatchQueue {
 		return changed;
 	}
 
+	/** commit済みquick planの一時queue_stateを破棄する */
 	complete(plan: MatchPlan): void {
 		if (plan.source.kind !== 'quick') return;
 		for (const participant of plan.participants) {
@@ -206,10 +213,12 @@ export class MatchQueue {
 		}
 	}
 
+	/** 指定mode、または全modeの待機人数を返す */
 	size(mode?: LobbyMode): number {
 		return mode ? this.entries[mode].length : this.entries.rsp.length + this.entries.fps.length;
 	}
 
+	/** 稼働中のdeadline/display timer数を返す */
 	timerCount(): number {
 		return (
 			Number(this.deadlineTimers.rsp !== undefined) +
@@ -218,6 +227,7 @@ export class MatchQueue {
 		);
 	}
 
+	/** queueと全timerを破棄する */
 	destroy(): void {
 		for (const mode of ['rsp', 'fps'] as const) {
 			const timer = this.deadlineTimers[mode];
@@ -230,13 +240,13 @@ export class MatchQueue {
 		this.claimedStates.clear();
 	}
 
+	/** FIFO先頭をstarting_matchへ同期遷移させ、不変planを生成する */
 	private claim(
 		mode: LobbyMode,
 		reason: 'full' | 'manual' | 'timeout',
 	): MatchPlan | null {
 		const queue = this.entries[mode];
-		const humans =
-			reason === 'full' ? queue.slice(0, capacity(mode)) : queue.slice(0, capacity(mode));
+		const humans = queue.slice(0, capacity(mode));
 		if (humans.length === 0 || (reason === 'full' && humans.length < capacity(mode))) return null;
 
 		const token = this.registry.claimQuick(
@@ -297,6 +307,7 @@ export class MatchQueue {
 		return plan;
 	}
 
+	/** 先頭userの60秒deadline到達時にAI補完planを発行する */
 	private handleDeadline(mode: LobbyMode): void {
 		delete this.deadlineTimers[mode];
 		const leader = this.entries[mode][0];
@@ -315,6 +326,7 @@ export class MatchQueue {
 		if (plan) this.onMatchPlan(plan);
 	}
 
+	/** modeの先頭userに合わせてdeadline timerを張り直す */
 	private reschedule(mode: LobbyMode): void {
 		const old = this.deadlineTimers[mode];
 		if (old) this.clock.clearTimeout(old);
@@ -329,6 +341,7 @@ export class MatchQueue {
 		this.ensureDisplayTimer();
 	}
 
+	/** 待機中user全員へ最新queue_stateを配信する */
 	private broadcastAll(): void {
 		for (const mode of ['rsp', 'fps'] as const) {
 			for (const entry of this.entries[mode]) {
@@ -338,6 +351,7 @@ export class MatchQueue {
 		}
 	}
 
+	/** 待機中だけ1秒周期の残時間表示timerを維持する */
 	private ensureDisplayTimer(): void {
 		if (this.size() > 0 && !this.displayTimer) {
 			this.displayTimer = this.clock.setInterval(() => this.broadcastAll(), 1_000);
@@ -349,19 +363,23 @@ export class MatchQueue {
 	}
 }
 
+/** modeごとの対戦定員を返す */
 function capacity(mode: LobbyMode): number {
 	return mode === 'rsp' ? 4 : 2;
 }
 
+/** joinedAtとsequenceによる安定FIFO順を比較する */
 function compareEntry(a: QueueEntry, b: QueueEntry): number {
 	return a.joinedAt - b.joinedAt || a.sequence - b.sequence;
 }
 
+/** lobby操作の共通失敗値を生成する */
 function failure(code: WsErrorCode, message: string): LobbyOperationResult<never> {
 	return { ok: false, code, message };
 }
 
-function unrefTimer(timer: ReturnType<typeof setTimeout>): void {
+/** Node timerならprocess終了を妨げないようunrefする */
+export function unrefTimer(timer: ReturnType<typeof setTimeout>): void {
 	const candidate = timer as ReturnType<typeof setTimeout> & { unref?: () => void };
 	candidate.unref?.();
 }

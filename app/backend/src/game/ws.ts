@@ -22,8 +22,9 @@ import {
 
 import { authenticateRequest, isAllowedOrigin } from '../auth/session.js';
 import {
+	defaultConnectionManager,
 	PreAuthMessageBuffer,
-	registerSessionConnection,
+	type ConnectionManager,
 	type ManagedSocket,
 } from '../ws/connection.js';
 import { getRoom } from './rooms.js';
@@ -66,16 +67,22 @@ const connectionsByRoom = new Map<string, Set<Connection>>();
 /** roomId → 購読解除関数。ルームにつき1回だけ購読する */
 const unsubscribeByRoom = new Map<string, () => void>();
 
-export function registerGameWs(app: FastifyInstance): void {
+/** Fastifyへgame gatewayを登録し、共有connection managerを注入する */
+export function registerGameWs(
+	app: FastifyInstance,
+	connectionManager: ConnectionManager = defaultConnectionManager,
+): void {
 	app.get('/ws/game/:roomId', { websocket: true }, (socket: Socket, req: FastifyRequest) => {
-		void handleConnection(socket, req, app);
+		void handleConnection(socket, req, app, connectionManager);
 	});
 }
 
+/** 1game socketの認証、room参加、置換、切断cleanupを管理する */
 async function handleConnection(
 	socket: Socket,
 	req: FastifyRequest,
 	app: FastifyInstance,
+	connectionManager: ConnectionManager,
 ): Promise<void> {
 	// ② §1: Origin 検査（CSRF-over-WS 対策）。アップグレード時に見る。
 	// ※ ② はこの拒否に close コードを割り当てていないため 4003 を使う（判断）
@@ -148,7 +155,10 @@ async function handleConnection(
 		inputWindowStart: Date.now(),
 		inputCountInWindow: 0,
 	};
-	unregisterSession = registerSessionConnection(socket, user.sessionId);
+	unregisterSession = connectionManager.registerSessionConnection(
+		socket,
+		user.sessionId,
+	);
 
 	// ② §1: 同一ユーザーの多重接続は旧接続を close 4004 で置換
 	const peers = ensureRoomConnections(roomId, room);
@@ -209,6 +219,7 @@ function ensureRoomConnections(roomId: string, room: GameRoom): Set<Connection> 
 	return peers;
 }
 
+/** 接続が空になったroomの購読と接続索引を解放する */
 function releaseRoomConnections(roomId: string): void {
 	unsubscribeByRoom.get(roomId)?.();
 	unsubscribeByRoom.delete(roomId);

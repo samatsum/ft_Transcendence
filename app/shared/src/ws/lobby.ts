@@ -53,13 +53,13 @@ export const lobbyRoomCreateSchema = z.discriminatedUnion('mode', [
 	z
 		.object({
 			mode: z.literal('rsp'),
-			rules: rspRulesSchema.partial().strict().optional(),
+			rules: rspRulesSchema.partial().optional(),
 		})
 		.strict(),
 	z
 		.object({
 			mode: z.literal('fps'),
-			rules: fpsRulesSchema.partial().strict().optional(),
+			rules: fpsRulesSchema.partial().optional(),
 		})
 		.strict(),
 ]);

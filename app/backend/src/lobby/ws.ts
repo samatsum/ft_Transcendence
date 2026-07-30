@@ -19,13 +19,14 @@ import {
 
 import { authenticateRequest, isAllowedOrigin } from '../auth/session.js';
 import {
+	defaultConnectionManager,
 	PreAuthMessageBuffer,
-	registerSessionConnection,
-	wasSessionInvalidated,
+	type ConnectionManager,
 	type ManagedSocket,
 } from '../ws/connection.js';
 import {
 	MatchQueue,
+	systemClock,
 	type LobbyClock,
 	type LobbyOperationResult,
 } from './queue.js';
@@ -70,6 +71,7 @@ export interface LobbyRuntimeOptions {
 	onMatchPlan?: (plan: MatchPlan, controls: MatchPlanControls) => void;
 	clock?: LobbyClock;
 	randomInt?: (maxExclusive: number) => number;
+	connectionManager?: ConnectionManager;
 }
 
 interface ConnectionState {
@@ -101,16 +103,11 @@ export class LobbyRuntime {
 	private readonly onMatchPlan?: LobbyRuntimeOptions['onMatchPlan'];
 	private readonly clock: LobbyClock;
 
+	/** lobby state componentsを同じclockとMatchPlan callbackで構築する */
 	constructor(options: LobbyRuntimeOptions = {}) {
 		this.registry = new UserContextRegistry(options.friendResolver);
 		this.onMatchPlan = options.onMatchPlan;
-		this.clock = options.clock ?? {
-			now: Date.now,
-			setTimeout,
-			clearTimeout,
-			setInterval,
-			clearInterval,
-		};
+		this.clock = options.clock ?? systemClock;
 		const emit = (plan: MatchPlan): void => this.emitMatchPlan(plan);
 		this.queue = new MatchQueue({
 			registry: this.registry,
@@ -125,10 +122,11 @@ export class LobbyRuntime {
 		});
 	}
 
+	/** room_create/joinのuser別1分windowへ1試行を記録する */
 	rateLimitUserAction(
 		userId: number,
 		action: 'room_create' | 'room_join',
-		now = Date.now(),
+		now = this.clock.now(),
 	): boolean {
 		const key = `${userId}:${action}`;
 		const limit =
@@ -145,6 +143,12 @@ export class LobbyRuntime {
 		return true;
 	}
 
+	/** runtimeへ注入されたclockの現在時刻を返す */
+	now(): number {
+		return this.clock.now();
+	}
+
+	/** active planをtoken一致時だけqueue/roomへrollbackする */
 	rollback(plan: MatchPlan): boolean {
 		const active = this.activePlans.get(plan.token);
 		if (!active || active.plan !== plan) return false;
@@ -158,6 +162,7 @@ export class LobbyRuntime {
 		return rolledBack;
 	}
 
+	/** GameRoom生成済みplanを一括commitし、参加者へmatch_foundを送る */
 	commit(plan: MatchPlan, roomId: string, discardPreparedMatch?: () => void): boolean {
 		const active = this.activePlans.get(plan.token);
 		if (!active || active.plan !== plan) {
@@ -183,10 +188,12 @@ export class LobbyRuntime {
 		return true;
 	}
 
+	/** W-09の完了待ちになっているplan数を返す */
 	activePlanCount(): number {
 		return this.activePlans.size;
 	}
 
+	/** lobby runtimeのplan、timer、queue、room、registryを破棄する */
 	destroy(): void {
 		for (const active of this.activePlans.values()) {
 			if (active.timer) this.clock.clearTimeout(active.timer);
@@ -199,6 +206,7 @@ export class LobbyRuntime {
 		this.actionHistory.clear();
 	}
 
+	/** 新planをW-09 callbackへ渡し、5秒timeoutとrollbackを管理する */
 	private emitMatchPlan(plan: MatchPlan): void {
 		if (this.activePlans.has(plan.token)) return;
 		const active = {
@@ -252,15 +260,24 @@ export class LobbyRuntime {
 
 let connectionSequence = 0;
 
+/** Fastifyへlobby gatewayを登録し、server scopeのruntimeを返す */
 export function registerLobbyWs(
 	app: FastifyInstance,
 	options: LobbyRuntimeOptions = {},
 ): LobbyRuntime {
 	const runtime = new LobbyRuntime(options);
 	const profileResolver = options.profileResolver ?? devProfileResolver;
+	const connectionManager = options.connectionManager ?? defaultConnectionManager;
 
 	app.get('/ws/lobby', { websocket: true }, (socket: ManagedSocket, req: FastifyRequest) => {
-		void handleConnection(socket, req, app, runtime, profileResolver);
+		void handleConnection(
+			socket,
+			req,
+			app,
+			runtime,
+			profileResolver,
+			connectionManager,
+		);
 	});
 	app.addHook('onClose', async () => {
 		runtime.destroy();
@@ -268,12 +285,14 @@ export function registerLobbyWs(
 	return runtime;
 }
 
+/** 1socketのOrigin、認証、置換、切断cleanup、pre-auth replayを管理する */
 async function handleConnection(
 	socket: ManagedSocket,
 	req: FastifyRequest,
 	app: FastifyInstance,
 	runtime: LobbyRuntime,
 	profileResolver: UserProfileResolver,
+	connectionManager: ConnectionManager,
 ): Promise<void> {
 	if (!isAllowedOrigin(req)) {
 		socket.close(WS_CLOSE.notAllowed, 'origin not allowed');
@@ -306,7 +325,8 @@ async function handleConnection(
 		if (!current) return;
 
 		const invalidSession =
-			code === WS_CLOSE.unauthenticated || wasSessionInvalidated(socket);
+			code === WS_CLOSE.unauthenticated ||
+			connectionManager.wasSessionInvalidated(socket);
 		if (invalidSession) {
 			runtime.queue.leave(state.connection.userId);
 			runtime.rooms.logout(state.connection.userId);
@@ -351,12 +371,15 @@ async function handleConnection(
 		send: (serialized) => socket.send(serialized),
 		close: (code, reason) => socket.close(code, reason),
 	};
-	const unregisterSession = registerSessionConnection(socket, user.sessionId);
+	const unregisterSession = connectionManager.registerSessionConnection(
+		socket,
+		user.sessionId,
+	);
 	ready = {
 		socket,
 		connection,
 		consecutiveViolations: 0,
-		rateWindowStartedAt: Date.now(),
+		rateWindowStartedAt: runtime.now(),
 		rateCount: 0,
 		consecutiveRateLimits: 0,
 		unregisterSession,
@@ -387,6 +410,7 @@ async function handleConnection(
 	}
 }
 
+/** 1frameをsize、schema、rate limit検証してlobby操作へdispatchする */
 function handleMessage(
 	connection: ConnectionState,
 	raw: unknown,
@@ -423,7 +447,7 @@ function handleMessage(
 	}
 	connection.consecutiveViolations = 0;
 
-	const now = Date.now();
+	const now = runtime.now();
 	if (now - connection.rateWindowStartedAt >= 1_000) {
 		connection.rateWindowStartedAt = now;
 		connection.rateCount = 0;
@@ -449,6 +473,7 @@ function handleMessage(
 	}
 }
 
+/** 検証済みclient messageを排他的なqueue/room操作へ振り分ける */
 function dispatch(
 	connection: LobbyConnection,
 	message: LobbyClientMessage,
@@ -492,6 +517,7 @@ function dispatch(
 	}
 }
 
+/** 再接続userのcontextに対応したauthoritative stateを再送する */
 function resendContext(userId: number, runtime: LobbyRuntime): void {
 	const context = runtime.registry.getContext(userId);
 	switch (context.kind) {
@@ -513,6 +539,7 @@ function resendContext(userId: number, runtime: LobbyRuntime): void {
 	}
 }
 
+/** schema違反を通知し、連続上限でprotocol closeする */
 function violate(
 	connection: ConnectionState,
 	code: WsErrorCode,

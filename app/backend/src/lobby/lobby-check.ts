@@ -15,11 +15,7 @@ import {
 import { buildServer } from '../index.js';
 import { closeAllRooms, createRoomFromRules } from '../game/rooms.js';
 import {
-	clearConnectionManager,
-	closeSessionConnections,
-	connectionManagerStats,
-	registerSessionConnection,
-	runHeartbeatCycle,
+	ConnectionManager,
 	type ManagedSocket,
 } from '../ws/connection.js';
 import { MatchQueue, type LobbyClock } from './queue.js';
@@ -45,22 +41,28 @@ class FakeClock implements LobbyClock {
 		{ due: number; interval: number | null; callback: () => void }
 	>();
 
+	/** 現在の仮想時刻を返す */
 	now = (): number => this.current;
 
+	/** one-shot taskを仮想clockへ登録する */
 	setTimeout = (callback: () => void, ms: number): TimerHandle =>
 		this.add(callback, ms, null);
 
+	/** 登録済みone-shot taskを解除する */
 	clearTimeout = (timer: TimerHandle): void => {
 		this.tasks.delete(timer as unknown as number);
 	};
 
+	/** interval taskを仮想clockへ登録する */
 	setInterval = (callback: () => void, ms: number): TimerHandle =>
 		this.add(callback, ms, ms);
 
+	/** 登録済みinterval taskを解除する */
 	clearInterval = (timer: TimerHandle): void => {
 		this.tasks.delete(timer as unknown as number);
 	};
 
+	/** 仮想時刻を進め、到達したtaskをdue順に実行する */
 	advance(ms: number): void {
 		const target = this.current + ms;
 		let guard = 0;
@@ -79,10 +81,12 @@ class FakeClock implements LobbyClock {
 		this.current = target;
 	}
 
+	/** 未実行task数を返す */
 	pending(): number {
 		return this.tasks.size;
 	}
 
+	/** taskへ連番を付け、指定delayで内部queueへ追加する */
 	private add(callback: () => void, ms: number, interval: number | null): TimerHandle {
 		this.sequence += 1;
 		this.tasks.set(this.sequence, {
@@ -100,6 +104,7 @@ class FakeLobbyConnection implements LobbyConnection {
 	readonly closes: number[] = [];
 	bufferedAmount = 0;
 
+	/** 検査用connection identityを初期化する */
 	constructor(
 		readonly connectionId: number,
 		readonly userId: number,
@@ -107,16 +112,19 @@ class FakeLobbyConnection implements LobbyConnection {
 		readonly sessionId = userId,
 	) {}
 
+	/** wire messageを保存し、server schemaで再検証する */
 	send(serialized: string): void {
 		this.serialized.push(serialized);
 		this.messages.push(lobbyServerMessageSchema.parse(JSON.parse(serialized)));
 	}
 
+	/** close codeを検査用に記録する */
 	close(code: number): void {
 		this.closes.push(code);
 	}
 }
 
+/** fake connectionをregistryのcurrent connectionとして登録する */
 function connect(
 	registry: UserContextRegistry,
 	userId: number,
@@ -127,15 +135,18 @@ function connect(
 	return connection;
 }
 
+/** fake connectionが最後に受信したqueue_stateを返す */
 function latestQueueState(connection: FakeLobbyConnection) {
 	return connection.messages.filter((message) => message.t === 'queue_state').at(-1);
 }
 
+/** pending Promise continuationを2段ぶん進める */
 async function flushPromises(): Promise<void> {
 	await Promise.resolve();
 	await Promise.resolve();
 }
 
+/** lobby client/server wire schemaと正規化を検査する */
 function checkSharedWire(): void {
 	const valid = [
 		{ t: 'queue_join', d: { mode: 'rsp' } },
@@ -170,6 +181,7 @@ function checkSharedWire(): void {
 	assert.equal(normalized.t === 'room_join' ? normalized.d.code : '', 'ABCD23');
 }
 
+/** mode別FIFOとfull/manual/timeout claim、rollbackを検査する */
 function checkQueueAndClaims(): void {
 	// mode独立・同一時刻sequence・join/leave state
 	const clock = new FakeClock();
@@ -186,6 +198,7 @@ function checkQueueAndClaims(): void {
 	queue.leave(1);
 	assert.equal(latestQueueState(connections[1]!)?.d.position, 1);
 	assert.equal(latestQueueState(connections[1]!)?.d.is_leader, true);
+	assert.equal(plans.length, 0);
 	queue.destroy();
 	assert.equal(clock.pending(), 0);
 
@@ -269,6 +282,7 @@ function checkQueueAndClaims(): void {
 	}
 }
 
+/** custom roomの席、host、rules、grace、rollbackを検査する */
 function checkLobbyRooms(): void {
 	const clock = new FakeClock();
 	const registry = new UserContextRegistry();
@@ -368,6 +382,7 @@ function checkLobbyRooms(): void {
 	assert.equal(clock.pending(), 0);
 }
 
+/** friend限定presence、dedupe、非同期version保護を検査する */
 async function checkPresence(): Promise<void> {
 	const resolver: FriendResolver = {
 		getAcceptedFriendIds: async (userId) => (userId === 1 ? [2] : []),
@@ -440,12 +455,13 @@ async function checkPresence(): Promise<void> {
 		.map((message) => (message.t === 'presence_update' ? message.d.status : ''));
 	assert.deepEqual(delayedStatuses, ['in_queue']);
 
-	const old = delayedRegistry.getConnection(10)!;
-	delayedRegistry.registerConnection(new FakeLobbyConnection(999, 10));
+	const replacement = new FakeLobbyConnection(999, 10);
+	delayedRegistry.registerConnection(replacement);
 	assert.equal(delayedRegistry.onlineCount(), 2);
-	assert.equal(old.connectionId, 10);
+	assert.equal(delayedRegistry.getConnection(10), replacement);
 }
 
+/** MatchPlan準備の5秒timeout、late commit破棄、rate windowを検査する */
 function checkPrepareTimeout(): void {
 	const clock = new FakeClock();
 	let capturedPlan: MatchPlan | null = null;
@@ -493,10 +509,12 @@ function checkPrepareTimeout(): void {
 	assert.equal(commitCapture.controls?.commit('game-room'), true);
 	assert.equal(committed.registry.getContext(71).kind, 'in_match');
 	assert.equal(user.messages.some((message) => message.t === 'match_found'), true);
-	assert.equal(committed.rateLimitUserAction(99, 'room_create', 0), true);
-	assert.equal(committed.rateLimitUserAction(99, 'room_create', 1), true);
-	assert.equal(committed.rateLimitUserAction(99, 'room_create', 2), true);
-	assert.equal(committed.rateLimitUserAction(99, 'room_create', 3), false);
+	assert.equal(committed.rateLimitUserAction(99, 'room_create'), true);
+	assert.equal(committed.rateLimitUserAction(99, 'room_create'), true);
+	assert.equal(committed.rateLimitUserAction(99, 'room_create'), true);
+	assert.equal(committed.rateLimitUserAction(99, 'room_create'), false);
+	commitClock.advance(60_000);
+	assert.equal(committed.rateLimitUserAction(99, 'room_create'), true);
 	committed.destroy();
 	assert.equal(commitClock.pending(), 0);
 }
@@ -504,9 +522,11 @@ function checkPrepareTimeout(): void {
 class WsClient {
 	readonly messages: LobbyServerMessage[] = [];
 	readonly invalidMessages: unknown[] = [];
+	readonly connectionErrors: Error[] = [];
 	closedWith: number | null = null;
 	private readonly socket: WebSocket;
 
+	/** 実gatewayへ接続するclientと永続error観測を初期化する */
 	constructor(url: string, userId?: number, origin?: string) {
 		this.socket = new WebSocket(url, {
 			headers: userId === undefined ? undefined : { 'x-dev-user': String(userId) },
@@ -521,8 +541,12 @@ class WsClient {
 		this.socket.on('close', (code) => {
 			this.closedWith = code;
 		});
+		this.socket.on('error', (error) => {
+			this.connectionErrors.push(error);
+		});
 	}
 
+	/** handshake完了を待ち、open中のerrorはrejectする */
 	async open(): Promise<void> {
 		if (this.socket.readyState === WebSocket.OPEN) return;
 		await new Promise<void>((resolve, reject) => {
@@ -538,18 +562,22 @@ class WsClient {
 		});
 	}
 
+	/** objectをJSON text frameとして送る */
 	send(message: unknown): void {
 		this.socket.send(JSON.stringify(message));
 	}
 
+	/** 生のtext frameを送る */
 	sendRaw(raw: string): void {
 		this.socket.send(raw);
 	}
 
+	/** client側からnormal closeを開始する */
 	close(): void {
 		this.socket.close();
 	}
 
+	/** predicate成立を3秒までpollする */
 	async waitFor(predicate: () => boolean, label: string): Promise<void> {
 		const started = Date.now();
 		while (Date.now() - started < 3_000) {
@@ -560,10 +588,12 @@ class WsClient {
 	}
 }
 
+/** 実Fastify serverで認証、Origin、制限、置換、session closeを検査する */
 async function checkRealWebSocket(): Promise<void> {
 	process.env.NODE_ENV = 'development';
 	process.env.ALLOW_DEV_AUTH = 'true';
-	const app = await buildServer();
+	const connectionManager = new ConnectionManager();
+	const app = await buildServer({ connectionManager });
 	app.log.level = 'silent';
 	await app.listen({ port: 0, host: '127.0.0.1' });
 	const port = (app.server.address() as AddressInfo).port;
@@ -676,7 +706,7 @@ async function checkRealWebSocket(): Promise<void> {
 			gameSocket.once('open', resolve);
 			gameSocket.once('error', reject);
 		});
-		closeSessionConnections(88);
+		connectionManager.closeSessionConnections(88);
 		await lobbySession.waitFor(
 			() => lobbySession.closedWith !== null,
 			'lobby session close',
@@ -695,18 +725,23 @@ async function checkRealWebSocket(): Promise<void> {
 		);
 		assert.match(viteConfig, /['"]\/ws['"]\s*:/);
 		assert.match(viteConfig, /ws:\s*true/);
+		for (const client of clients) {
+			assert.deepEqual(client.connectionErrors, []);
+		}
 	} finally {
 		for (const client of clients) client.close();
 		closeAllRooms();
 		await app.close();
 		await new Promise((resolve) => setTimeout(resolve, 30));
 	}
-	assert.equal(connectionManagerStats().connections, 0);
+	assert.equal(connectionManager.stats().connections, 0);
 }
 
+/** heartbeat/session索引用の最小ManagedSocket fakeを生成する */
 function makeManagedSocket(): {
 	socket: ManagedSocket;
 	pings: () => number;
+	pong: () => void;
 	closeCode: () => number | null;
 } {
 	let readyState = 1;
@@ -742,42 +777,55 @@ function makeManagedSocket(): {
 			else if (event === 'pong') pongListeners.push(callback as () => void);
 		},
 	} as ManagedSocket;
-	return { socket, pings: () => pingCount, closeCode: () => closedWith };
+	return {
+		socket,
+		pings: () => pingCount,
+		pong: () => {
+			for (const listener of pongListeners) listener();
+		},
+		closeCode: () => closedWith,
+	};
 }
 
+/** pong graceとserver-local session索引による一括closeを検査する */
 function checkHeartbeatAndSessionIndex(): void {
-	clearConnectionManager();
+	const connectionManager = new ConnectionManager();
 	const a = makeManagedSocket();
 	const b = makeManagedSocket();
-	const unregisterA = registerSessionConnection(a.socket, 500);
-	const unregisterB = registerSessionConnection(b.socket, 500);
+	const unregisterA = connectionManager.registerSessionConnection(a.socket, 500);
+	const unregisterB = connectionManager.registerSessionConnection(b.socket, 500);
 	a.socket.on('close', unregisterA);
 	b.socket.on('close', unregisterB);
 	const heartbeatBase = Date.now();
-	runHeartbeatCycle(heartbeatBase + 10_000);
+	connectionManager.runHeartbeatCycle(heartbeatBase + 10_000);
 	assert.equal(a.pings(), 1);
-	assert.equal(connectionManagerStats().connections, 2);
-	runHeartbeatCycle(heartbeatBase + 20_000);
-	assert.equal(connectionManagerStats().connections, 0);
+	assert.equal(connectionManager.stats().connections, 2);
+	a.pong();
+	connectionManager.runHeartbeatCycle(heartbeatBase + 20_000);
+	assert.equal(a.pings(), 2);
+	assert.equal(connectionManager.stats().connections, 1);
+	a.pong();
+	unregisterA();
 
 	const lobby = makeManagedSocket();
 	const game = makeManagedSocket();
-	const unregisterLobby = registerSessionConnection(lobby.socket, 501);
-	const unregisterGame = registerSessionConnection(game.socket, 501);
+	const unregisterLobby = connectionManager.registerSessionConnection(lobby.socket, 501);
+	const unregisterGame = connectionManager.registerSessionConnection(game.socket, 501);
 	lobby.socket.on('close', unregisterLobby);
 	game.socket.on('close', unregisterGame);
-	closeSessionConnections(501);
+	connectionManager.closeSessionConnections(501);
 	assert.equal(lobby.closeCode(), WS_CLOSE.unauthenticated);
 	assert.equal(game.closeCode(), WS_CLOSE.unauthenticated);
-	assert.deepEqual(connectionManagerStats(), {
+	assert.deepEqual(connectionManager.stats(), {
 		connections: 0,
 		sessions: 0,
 		heartbeatTimer: false,
 		sessionTimer: false,
 	});
-	clearConnectionManager();
+	connectionManager.clear();
 }
 
+/** W-08受入検査を順番に実行する */
 async function main(): Promise<void> {
 	console.log('W-08 検査1: shared wire');
 	checkSharedWire();
@@ -812,7 +860,6 @@ async function main(): Promise<void> {
 
 main().catch((error: unknown) => {
 	console.error(error);
-	clearConnectionManager();
 	closeAllRooms();
 	process.exit(1);
 });

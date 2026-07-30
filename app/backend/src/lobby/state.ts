@@ -125,18 +125,23 @@ export class UserContextRegistry {
 	private readonly contexts = new Map<number, UserContext>();
 	private readonly connections = new Map<number, LobbyConnection>();
 	private readonly presenceVersions = new Map<number, number>();
+	private readonly presenceStatuses = new Map<number, PresenceStatus>();
+	private readonly friendIdsByUser = new Map<number, readonly number[]>();
 	private tokenSequence = 0;
 
+	/** friend resolverを受け取り、user contextの正本を初期化する */
 	constructor(
 		private readonly friendResolver: FriendResolver = {
 			getAcceptedFriendIds: async () => [],
 		},
 	) {}
 
+	/** userの現在contextを返し、未登録ならidleとして扱う */
 	getContext(userId: number): UserContext {
 		return this.contexts.get(userId) ?? IDLE;
 	}
 
+	/** 接続有無とcontextから外部公開用presenceを導出する */
 	getPresence(userId: number): PresenceStatus {
 		const context = this.getContext(userId);
 		switch (context.kind) {
@@ -156,14 +161,17 @@ export class UserContextRegistry {
 		}
 	}
 
+	/** current lobby connectionを持つuser数を返す */
 	onlineCount(): number {
 		return this.connections.size;
 	}
 
+	/** userがcurrent lobby connectionを持つか返す */
 	isConnected(userId: number): boolean {
 		return this.connections.has(userId);
 	}
 
+	/** userのcurrent lobby connectionを返す */
 	getConnection(userId: number): LobbyConnection | undefined {
 		return this.connections.get(userId);
 	}
@@ -175,6 +183,7 @@ export class UserContextRegistry {
 	registerConnection(connection: LobbyConnection): LobbyConnection | undefined {
 		const previous = this.connections.get(connection.userId);
 		this.connections.set(connection.userId, connection);
+		if (!previous) this.friendIdsByUser.delete(connection.userId);
 		this.ensureKnown(connection.userId);
 		this.publishPresence(connection.userId);
 		return previous;
@@ -185,14 +194,17 @@ export class UserContextRegistry {
 		const current = this.connections.get(userId);
 		if (!current || current.connectionId !== connectionId) return false;
 		this.connections.delete(userId);
+		this.friendIdsByUser.delete(userId);
 		this.publishPresence(userId);
 		return true;
 	}
 
+	/** messageを一度serializeしてcurrent connectionへ送る */
 	send(userId: number, message: LobbyServerMessage): boolean {
 		return this.sendSerialized(userId, JSON.stringify(message));
 	}
 
+	/** 送信buffer上限を守りながらserialized messageを送る */
 	sendSerialized(userId: number, serialized: string): boolean {
 		const connection = this.connections.get(userId);
 		if (!connection) return false;
@@ -204,11 +216,13 @@ export class UserContextRegistry {
 		return true;
 	}
 
+	/** 接続中user全員へ確定したmatch_resultを配信する */
 	broadcastMatchResult(result: MatchResultPayload): void {
 		const serialized = JSON.stringify({ t: 'match_result', d: result } satisfies LobbyServerMessage);
 		for (const userId of this.connections.keys()) this.sendSerialized(userId, serialized);
 	}
 
+	/** idle userだけをqueued contextへcompare-and-setする */
 	enterQueue(
 		userId: number,
 		context: Omit<QueuedContext, 'kind'>,
@@ -219,12 +233,14 @@ export class UserContextRegistry {
 		return next;
 	}
 
+	/** queued userをidleへ戻す */
 	leaveQueue(userId: number): boolean {
 		if (this.getContext(userId).kind !== 'queued') return false;
 		this.setContext(userId, IDLE);
 		return true;
 	}
 
+	/** idle userだけを指定roomのcontextへcompare-and-setする */
 	enterRoom(userId: number, code: string, joinedAt: number): InRoomContext | null {
 		if (this.getContext(userId).kind !== 'idle') return null;
 		const next = Object.freeze({ kind: 'in_room', code, joinedAt } satisfies InRoomContext);
@@ -232,6 +248,7 @@ export class UserContextRegistry {
 		return next;
 	}
 
+	/** code一致を任意検証しながらin_room userをidleへ戻す */
 	leaveRoom(userId: number, expectedCode?: string): boolean {
 		const current = this.getContext(userId);
 		if (
@@ -244,6 +261,7 @@ export class UserContextRegistry {
 		return true;
 	}
 
+	/** queued user群を一括でquick starting_matchへclaimする */
 	claimQuick(userIds: readonly number[], reason: 'full' | 'manual' | 'timeout'): string | null {
 		if (
 			userIds.length === 0 ||
@@ -254,6 +272,7 @@ export class UserContextRegistry {
 		return this.claim(userIds, { kind: 'quick', reason });
 	}
 
+	/** 同じroomのmember群を一括でcustom starting_matchへclaimする */
 	claimRoom(code: string, userIds: readonly number[]): string | null {
 		if (
 			userIds.length === 0 ||
@@ -275,6 +294,7 @@ export class UserContextRegistry {
 		return true;
 	}
 
+	/** starting_match userを切断時にidleへ戻す */
 	abandonStarting(userId: number, token: string): boolean {
 		const current = this.getContext(userId);
 		if (current.kind !== 'starting_match' || current.token !== token) return false;
@@ -311,6 +331,7 @@ export class UserContextRegistry {
 		return true;
 	}
 
+	/** 指定roomIdでin_matchだったuserをidleへ解放する */
 	releaseMatch(userId: number, roomId: string): boolean {
 		const current = this.getContext(userId);
 		if (current.kind !== 'in_match' || current.roomId !== roomId) return false;
@@ -318,6 +339,7 @@ export class UserContextRegistry {
 		return true;
 	}
 
+	/** in_match contextからuser固有のmatch_foundを送る */
 	sendMatchFound(userId: number): boolean {
 		const current = this.getContext(userId);
 		if (current.kind !== 'in_match') return false;
@@ -328,16 +350,26 @@ export class UserContextRegistry {
 		return this.send(userId, message);
 	}
 
+	/** idleを含め明示的に保持しているcontext数を返す */
 	contextCount(): number {
 		return this.contexts.size;
 	}
 
+	/** 全context、connection、presence cacheを破棄する */
 	clear(): void {
 		this.contexts.clear();
 		this.connections.clear();
 		this.presenceVersions.clear();
+		this.presenceStatuses.clear();
+		this.friendIdsByUser.clear();
 	}
 
+	/** W-07 のfriend関係変更時に、次回presence fan-outで再解決させる */
+	invalidateFriendCache(userId: number): void {
+		this.friendIdsByUser.delete(userId);
+	}
+
+	/** user群を同じtokenのstarting_matchへ同期的に遷移させる */
 	private claim(userIds: readonly number[], source: MatchPlanSource): string {
 		this.tokenSequence += 1;
 		const token = `claim-${this.tokenSequence.toString(36)}`;
@@ -359,39 +391,55 @@ export class UserContextRegistry {
 		return token;
 	}
 
+	/** 初見userのcontextをidleとして明示登録する */
 	private ensureKnown(userId: number): void {
 		if (!this.contexts.has(userId)) this.contexts.set(userId, IDLE);
 	}
 
+	/** context正本を更新し、presence差分配信を開始する */
 	private setContext(userId: number, context: UserContext): void {
 		this.contexts.set(userId, context);
 		this.publishPresence(userId);
 	}
 
+	/** status差分だけを、cache済みfriend一覧へversion保護付きで配信する */
 	private publishPresence(userId: number): void {
+		const status = this.getPresence(userId);
+		if (this.presenceStatuses.get(userId) === status) return;
+		this.presenceStatuses.set(userId, status);
 		const version = (this.presenceVersions.get(userId) ?? 0) + 1;
 		this.presenceVersions.set(userId, version);
-		const status = this.getPresence(userId);
-		void this.friendResolver
-			.getAcceptedFriendIds(userId)
+		const cachedFriendIds = this.friendIdsByUser.get(userId);
+		const friendIdsPromise = cachedFriendIds
+			? Promise.resolve(cachedFriendIds)
+			: this.friendResolver.getAcceptedFriendIds(userId);
+		void friendIdsPromise
 			.then((friendIds) => {
 				if (this.presenceVersions.get(userId) !== version) return;
+				const resolvedFriendIds =
+					cachedFriendIds ?? Object.freeze([...friendIds]);
+				if (!cachedFriendIds) this.friendIdsByUser.set(userId, resolvedFriendIds);
 				const serialized = JSON.stringify({
 					t: 'presence_update',
 					d: { user_id: userId, status },
 				} satisfies LobbyServerMessage);
-				for (const friendId of friendIds) this.sendSerialized(friendId, serialized);
+				for (const friendId of resolvedFriendIds) this.sendSerialized(friendId, serialized);
 			})
 			.catch(() => {
 				// presence は差分通知。resolver 障害時は REST の次回取得で自己回復する。
+				if (this.presenceVersions.get(userId) === version) {
+					this.presenceStatuses.delete(userId);
+				}
 			});
 	}
 }
 
+/** W-09へ渡すMatchPlan全体を再帰的にfreezeする */
 export function createMatchPlan(plan: MatchPlan): MatchPlan {
 	return deepFreeze(plan);
 }
 
+/** object graphを循環し、各objectを再帰的にfreezeする */
 function deepFreeze<T>(value: T): T {
 	if (value && typeof value === 'object' && !Object.isFrozen(value)) {
 		Object.freeze(value);
