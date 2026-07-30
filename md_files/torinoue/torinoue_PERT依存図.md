@@ -57,13 +57,14 @@ flowchart LR
   classDef crit fill:#5c1a1a,stroke:#e74c3c,color:#fff
   classDef done fill:#1a3d2e,stroke:#27ae60,color:#fff
   class W02,W03,W04,W05 mine
-  class W04,W08,W09,F06 crit
-  class W01,W10,W11 done
-```
+
+  class W04,W11,F06 crit
+  class W01,W10 done
 
 ★ = 結合リスクが高い合流点。
 
 > **2026-07-30 更新**: W-08コア/W-09/W-10/W-11/W-14 は実装済み。現在のサーバ側合流点は W-04/W-05→W-08最終結合。
+
 
 ---
 
