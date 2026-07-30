@@ -116,17 +116,42 @@ class TestClient {
 
 async function checkTwoClientsPlay(): Promise<string[]> {
 	const bad: string[] = [];
-	const room = await createRoom({
+	const resultOrder: string[] = [];
+	let deliveredMatchId: number | null = null;
+	const room = await createRoomFromRules({
 		roomId: 'ws-play',
-		cubText: loadMap(),
 		mode: 'rsp',
-		targetScore: 1, // 実時間で回すので短く
+		rules: { map: 'rsp', target_score: 1 }, // 実時間で回すので短く
 		seed: 42,
 		// ② §4-C の participant 登録。userId 101 → slot 0 / 102 → slot 1
 		participants: [
 			{ userId: 101, slot: 0 },
 			{ userId: 102, slot: 1 },
 		],
+		onBroadcast: (message) => {
+			if (message.t === 'event' && message.d.kind === 'match_end') resultOrder.push('match_end');
+		},
+		persistMatch: async (context) => {
+			resultOrder.push('persist');
+			return {
+				matchId: 123,
+				result: {
+					match_id: 123,
+					mode: context.mode,
+					end_reason: context.reason,
+					winner_team:
+						context.mode === 'rsp' && (context.winner === 0 || context.winner === 1)
+							? context.winner
+							: null,
+					winner_user_id: null,
+					players: [],
+				},
+			};
+		},
+		onMatchResult: (result) => {
+			resultOrder.push('match_result');
+			deliveredMatchId = result.match_id;
+		},
 		log: { info: () => {}, warn: () => {} },
 	});
 
@@ -186,6 +211,18 @@ async function checkTwoClientsPlay(): Promise<string[]> {
 	}
 	if (!kinds.includes('match_start')) bad.push('match_start が無い');
 	if (!kinds.includes('match_end')) bad.push('match_end が無い');
+	const matchEnd = a.received.find((m) => m.t === 'event' && m.d.kind === 'match_end');
+	if (
+		!matchEnd ||
+		matchEnd.t !== 'event' ||
+		matchEnd.d.kind !== 'match_end' ||
+		matchEnd.d.match_id !== 123
+	) {
+		bad.push('persistMatch の matchId が match_end.d.match_id に載っていない');
+	}
+	if (deliveredMatchId !== 123 || resultOrder.join('>') !== 'persist>match_end>match_result') {
+		bad.push(`永続化→match_end→match_result の順序が不正 (${resultOrder.join('>')})`);
+	}
 
 	const sizes = a.received.filter((m) => m.t === 'snapshot').map((m) => JSON.stringify(m).length);
 	const avg = Math.round(sizes.reduce((x, y) => x + y, 0) / Math.max(1, sizes.length));

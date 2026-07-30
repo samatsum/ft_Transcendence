@@ -14,7 +14,7 @@ Backend/DevOps レーンのうち **torinoue**（Auth / REST / DB）の作業指
 
 | # | 論点 | 決定 | 理由 |
 |---|---|---|---|
-| D-4 | セッション方式 | **opaque セッショントークン（DB `Session` 行）+ httpOnly Cookie**。JWT 不採用 | ② §7 の再接続本人確認・ログアウト即時失効に DB 照会が必要で、ステートレスの利点が無い。トークンハッシュのみ DB 保存 |
+| D-4 | セッション方式 | **opaque セッショントークン（DB `Session` 行）+ httpOnly Cookie**。JWT 不採用 | ② §7 の再接続本人確認・ログアウト即時失効に DB 照会が必要で、ステートレスの利点が無い。トークンハッシュのみ DB 保存。logout時はW-08のsession接続索引から開いているlobby/game WSもclose 4000 |
 | D-5 | Cookie 属性 | `HttpOnly; Secure; SameSite=Lax; Path=/`。**TTL 7日・アクセスでスライディング延長** | 評価期間中の再ログイン要求を実質ゼロに。Secure は nginx TLS 終端（A1）前提 |
 | D-6 | CSRF 対策 | **SameSite=Lax + 変更系メソッド（POST/PATCH/PUT/DELETE）の Origin ヘッダ検証** | ② §1 の WS Origin 検査と同方式に統一。CSRF トークンは導入しない（二重の仕組みを作らない） |
 | D-7 | RefreshToken | **作らない**（ARCHITECTURE §3.3 の「Session / RefreshToken」は `Session` に一本化。本書が §3.3 を改訂） | D-5 のスライディングで十分。② §7 の「二重のトークン系を作らない」判断と同じ |
@@ -81,7 +81,7 @@ WS 側は ② §8）。サーバはさらに意味検証（一意性・権限・
 |---|---|---|---|
 | `POST /api/auth/signup` | 不要 | `email`, `password`, `display_name` | 201 + self + `Set-Cookie`（登録と同時にログイン） |
 | `POST /api/auth/login` | 不要 | `email`, `password` | 200 + self + `Set-Cookie` |
-| `POST /api/auth/logout` | 要 | — | 204。`Session` 行削除 + Cookie 破棄 |
+| `POST /api/auth/logout` | 要 | — | 204。`Session` 行削除 + Cookie 破棄 + `closeSessionConnections(sessionId)` で開いている両WSをclose 4000 |
 | `GET /api/auth/me` | 要 | — | 200 self（SPA 起動時のセッション確認） |
 
 - self = `{ id, email, display_name, avatar_url, created_at }`。
@@ -108,13 +108,16 @@ Standard user management モジュール（コア #6）の「フレンド追加�
 
 | Method / Path | 内容 |
 |---|---|
-| `GET /api/friends` | `{ friends: [{ user, status }], sent: [request], received: [request] }`。`status` はロビー WS 接続表から合成した `online\|in_queue\|in_game\|offline` |
+| `GET /api/friends` | `{ friends: [{ user, status }], sent: [request], received: [request] }`。`status` はW-08 `UserContextRegistry.getPresence(userId)`から取得する `online\|in_queue\|in_game\|offline` |
 | `POST /api/friends/requests` | `display_name` 指定で申請。自分自身・既存関係（双方向チェック）は 409 |
 | `POST /api/friends/requests/:id/accept` | 受信者のみ。`status` を accepted へ |
 | `DELETE /api/friends/requests/:id` | 送信者=取消 / 受信者=拒否（行削除） |
 | `DELETE /api/friends/:userId` | フレンド解除（行削除） |
 
 - 申請のリアルタイム通知は行わない（ロビー画面の再取得で反映）。presence のみ WS でライブ更新する、という**意図的な簡略化**。
+- W-08 が所有する `FriendResolver.getAcceptedFriendIds(userId)` interface に、W-07 が
+  Prisma adapterを差し込む。W-08は状態versionを確認してfriend接続だけへ差分送信するため、
+  REST層がWebSocketを直接保持せず、依存方向も W-08→W-07 の実装順と循環しない。
 
 ### 2-D. 試合・統計（`/api/matches`, `/api/users/:id/stats`）— Day 8〜9
 
