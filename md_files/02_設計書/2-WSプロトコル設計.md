@@ -860,3 +860,4 @@ W-09の結合条件とする。
 | 2026-07-23 | §6-B: 「§3-B への追補要求」が**実装済み**であることを明記（`game_set_input_source`）。同表に残っていた `hand`（D-17 で削除済み）を `act` に訂正し、実装済みラッパ `sim_set_input` の引数を追記。長い行を折り返して可読性を改善 |
 | 2026-07-29 | 設計不備 4 件の解消（W-08〜W-13 実装前の穴埋め）: 部屋コード発行の原子性／期待人間席の凍結／snapshotのmode／永続化後のmatch_end発火を追補。`room.ts` と `game.ts` に反映 |
 | 2026-07-30 | **W-08設計完成**: W-01/W-10/W-11/W-14の実装パターンを§0-Aに固定。ロビーwireの全型、UserContextRegistry、friend限定presence、置換/room再接続10秒、heartbeat/session失効、FIFO deadline、LobbyRoom canonical rules、同期claim+token rollback、immutable MatchPlanによるW-09境界、実装配置、W-08単体受入10項目を追加。未実装の速度倍率/AI強さをwireから削除。grace満了後の復帰可という旧記述と「永続化失敗をmatch_resultで救済」という不可能な旧記述を訂正 |
+| 2026-07-30 | **W-08コア実装**: `shared/ws/lobby.ts`、`backend/src/lobby/`、共通`ws/connection.ts`、`/ws/lobby`、Vite `/ws` proxyを実装。`npm run check:lobby`でFIFO/3成立経路/rollback/LobbyRoom/grace/presence/実WS/heartbeat/session索引を検査。本Cookie認証・DB profile・logoutからのhook呼出しはW-04/W-05結合待ち |
