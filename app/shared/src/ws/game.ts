@@ -154,8 +154,8 @@ export const gameEventSchema = z.object({
 			kind: z.literal('match_end'),
 			winner: z.number().nullable(),
 			reason: matchEndReasonSchema,
-			/** 永続化済み DB 行の id。W-13 が採番するまで null */
-			match_id: z.string().nullable(),
+			/** 永続化済み DB 行の正整数 id（③ D-10）。W-13 が採番するまで null */
+			match_id: z.number().int().positive().nullable(),
 		}),
 		z.object({ kind: z.literal('player_disconnected'), slot: z.number(), grace_ms: z.number() }),
 		z.object({ kind: z.literal('player_reconnected'), slot: z.number() }),

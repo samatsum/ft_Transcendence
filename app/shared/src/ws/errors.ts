@@ -17,9 +17,13 @@ import { errorCodeSchema } from '../error.js';
 const wsOnlyErrorCodes = [
 	// ロビー（② §3-B）
 	'queue_already_joined',
+	'already_in_room',
+	'already_in_game',
 	'not_leader',
 	'room_not_found',
 	'room_full',
+	'not_host',
+	'room_starting',
 	'invalid_rules',
 	// ゲーム（② §5-A）
 	'not_participant',

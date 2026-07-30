@@ -60,7 +60,7 @@ export async function createRoomFromRules(options: {
 		roomId: options.roomId,
 		cubText: text,
 		mode: options.mode,
-		// 範囲 3–21 の検証は W-11 のスキーマ側の責務（G-05 の決定）。
+		// 範囲 3–21 の検証は W-08 の共有 lobby スキーマ側の責務（G-05 の決定）。
 		// ここは 0 を渡せばエンジンが既定値へ落とす
 		targetScore: options.rules?.target_score ?? 0,
 		seed: options.seed ?? 0,

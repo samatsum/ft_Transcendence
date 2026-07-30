@@ -34,8 +34,9 @@ export interface RoomDescription {
 }
 
 /**
- * ② §6-C 2. で永続化に渡すコンテキスト。W-13 の Prisma 実装がこれを受けて
- * Match / MatchPlayer 行を作り、採番した id を返す。
+ * ② §6-C 2. で永続化に渡す試合結果。これは outcome だけなので、W-09 が
+ * MatchPlan を閉じ込めた closure で席・ユーザー・rules と結合し、W-13 の Prisma
+ * 実装が Match / MatchPlayer 行を作って採番した id を返す。
  *
  * abandon（人間全員離脱）の場合も呼ばれる（`winner = null`, `reason = 'abandon'`）。
  * このときも Match 行を作る（③ §2-D の統計から漏らさないため）。
@@ -118,10 +119,11 @@ export interface RoomOptions {
 	 * REST `GET /api/matches/:id` を叩く経路）。
 	 *
 	 * **未提供 or 例外 or `null` を返した場合**は `match_id: null` で match_end を
-	 * 発火する（クライアントは lobby WS の `match_result` からの救済にフォールバック
-	 * する。② §5-D）。W-13 未実装のうち（＝現在）は未提供で問題ない。
+	 * 発火する。DB行が無いので lobby WS の `match_result` も送らず、クライアントは
+	 * 最終 snapshot の勝敗・スコアだけで結果画面を表示する（② §5-D）。
+	 * W-13 未実装のうち（＝現在）は未提供で問題ない。
 	 */
-	persistMatch?: (context: PersistedMatchContext) => Promise<string | null>;
+	persistMatch?: (context: PersistedMatchContext) => Promise<number | null>;
 	/** 差し替え可能にしておくとテストで時間を進められる */
 	now?: () => number;
 	log?: RoomLogger;
@@ -278,8 +280,9 @@ export class GameRoom {
 	 * カウントダウンへ進む。判定に使うのは `humanSlots`（② §6-A 追補）で、
 	 * 「定員ぶんの人間」ではない。
 	 *
-	 * 一覧外の slot からの join も受理する（AI 席を人間が取る / W-12 の再接続）。
-	 * ただし**定員外の slot は拒否**する（② §2-B の close 4003 に対応）。
+	 * GameRoom 自体は participant の本人確認を行わず、定員内 slot だけを受け付ける。
+	 * game WS gateway が `getSlotForUser()` で認可してから本メソッドを呼ぶ。
+	 * `humanSlots` は早期 countdown 判定専用であり、認可表として使わない。
 	 */
 	join(slot: number): void {
 		if (this.state !== 'created' && this.state !== 'countdown' && this.state !== 'playing') {
@@ -463,15 +466,15 @@ export class GameRoom {
 	 * 逆にすると FE の結果画面が match_id を非同期に受け取る前提で書けなくなる。
 	 *
 	 * 永続化未提供（W-13 未実装）・例外・null 戻り値のいずれも `match_id: null` へ
-	 * フォールバック（② §5-D）。この場合クライアントは lobby WS の `match_result`
-	 * から match_id を得るか、abandon 相当の結果画面で凌ぐ。
+	 * フォールバック（② §5-D）。DB行が無いため `match_result` は送らず、
+	 * クライアントは最終 snapshot の勝敗・スコアだけで結果画面を表示する。
 	 */
 	private async persistAndAnnounceEnd(
 		winner: number | null,
 		reason: MatchEndReason,
 		score: readonly [number, number],
 	): Promise<void> {
-		let matchId: string | null = null;
+		let matchId: number | null = null;
 		if (this.opts.persistMatch) {
 			try {
 				matchId = await this.opts.persistMatch({
@@ -485,7 +488,7 @@ export class GameRoom {
 			} catch (err) {
 				this.opts.log.warn(
 					{ room: this.roomId, err },
-					'GameRoom: persistMatch が失敗（match_end は match_id=null で送出。lobby の match_result から救済される想定）',
+					'GameRoom: persistMatch が失敗（match_end は match_id=null。最終 snapshot を結果表示に使う）',
 				);
 			}
 		}

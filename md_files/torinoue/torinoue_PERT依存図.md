@@ -27,17 +27,19 @@ flowchart LR
   W02 --> W04[W-04 認証 ★]
   W03 --> W04
   W04 --> W05[W-05 Origin]
-  W04 --> W08[W-08 ロビーWS]
+  W04 --> W08[W-08 ロビーWS ★]
+  W05 --> W08
   W04 --> F03[F-03 認証UI]
 
-  W10 --> W11[W-11 ゲームWS ★]
-  W10 --> W09[W-09 マッチング]
+  W10 --> W11[W-11 ゲームWS ✅]
+  W10 --> W09[W-09 マッチング ★]
   W08 --> W09
 
   F01 --> F02[F-02 fetch]
   F02 --> F03
   F03 --> F05[F-05 ロビー]
   W08 --> F05
+  W09 --> F05
 
   F06p --> F06[F-06 GameView ★]
   W11 --> F06
@@ -55,13 +57,13 @@ flowchart LR
   classDef crit fill:#5c1a1a,stroke:#e74c3c,color:#fff
   classDef done fill:#1a3d2e,stroke:#27ae60,color:#fff
   class W02,W03,W04,W05 mine
-  class W04,W11,F06 crit
-  class W01,W10 done
+  class W04,W08,W09,F06 crit
+  class W01,W10,W11 done
 ```
 
 ★ = 結合リスクが高い合流点。
 
-> **2026-07-29 更新**: W-10 は main マージ済み（PR #8）。W-11 はブランチ `feat/w-11-game-ws` で実装中。shared/ws スキーマは Issue #10 合意で配置完了。
+> **2026-07-30 更新**: W-10/W-11/W-14 は main マージ済み。現在のサーバ側合流点は W-08→W-09。
 
 ---
 
@@ -71,11 +73,11 @@ flowchart LR
 
 | パス | 列 | 遅延時の被害 |
 |---|---|---|
-| **A. 人の入口** | W-02→W-03→**W-04**→W-08/F-03→F-05 | 「ログインした人間」がロビーに入れない |
+| **A. 人の入口** | W-02→W-03→**W-04**→W-05→W-08/W-09・F-03→F-05 | 「ログインした人間」が安全にロビーから試合へ入れない |
 | **B. 対戦の芯** | W-10→**W-11**→F-06→F-07→F-08 | スナップショット対戦が成立しない |
 
-⑥が明記する最大リスクは **B の W-11 × F-06**。  
-あなたが落とすと同時多発するのは **A**（F-03/F-05 と W-08）。
+W-11 は完了したため、最大の残存リスクは **A の W-04/W-05→W-08/W-09 × F-05/F-08**。
+B はサーバ側が着地済みで、残る合流は F-06〜F-08。
 
 ```mermaid
 gantt
@@ -91,10 +93,10 @@ gantt
   W-15 docker 着手       :a5, 2, 2d
 
   section samatsum
-  W-10 GameRoom          :b1, 0, 2d
-  W-11 ゲームWS ★        :crit, b2, after b1, 1d
-  W-08 ロビー            :b3, after a3, 1d
-  W-09 マッチング        :b4, after b3, 1d
+  W-10 GameRoom ✅        :b1, 0, 2d
+  W-11 ゲームWS ✅        :b2, after b1, 1d
+  W-08 ロビー ★          :crit, b3, after a4, 1d
+  W-09 マッチング ★      :crit, b4, after b3, 1d
 
   section mamiyaza
   F-01/02                :c1, 0, 2d
@@ -116,13 +118,13 @@ gantt
 |---|---|---|---|
 | W-04 | W-02, W-03 | サーバ枠と DB | ★★★ |
 | F-03, F-05 | **W-04** | Cookie ログイン | ★★★ |
-| W-08 | **W-04** | WS 接続認可の差し込み | ★★★ |
+| W-08 | **W-04, W-05** | Cookie認証・Origin・logout時の開いているWS失効 | ★★★ |
 | W-09 | W-08, W-10 | マッチ成立→Room | ★★★ |
 | F-06 | W-11, F-05, E-12✅ | snapshot 受信 + ロビー遷移 | ★★★ |
 | F-08 | F-06, W-09 | マッチ遷移 | ★★☆ |
 | W-05 | W-04 | Origin 共通化 | ★★☆ |
 | W-07 | W-04, W-08 | フレンド（切り捨て候補） | ★☆☆ |
-| W-13 | W-11, W-03 | 永続化（ゲート2後でも可） | ★★☆（ゲート3） |
+| W-13 | W-11, W-03, W-09 | MatchPlanと決着結果を結合して永続化（ゲート2後でも可） | ★★☆（ゲート3） |
 | W-15 | W-01✅ | 評価必須。Day5 持ち越し禁止 | ★★★（提出） |
 
 **待ち先行の一言（この表に出る主な待ち先）** — 詳細・受入は [⑤ バックログ](../02_設計書/5-バックログ.md) が正本。
@@ -132,7 +134,7 @@ gantt
 | W-02 | Fastify 本構成（pino・zod 検証・[③ REST_API設計](../02_設計書/3-REST_API設計.md) §1 エラーエンベロープ / レート制限） |
 | W-03 | Prisma + SQLite スキーマ v1（③ §3 の5テーブル）+ マイグレーション |
 | W-04 | 認証一式（signup/login/logout/me・argon2id・Session Cookie） |
-| W-08 | ロビー WS（presence/queue/room） |
+| W-08 | ロビー WS（UserContextRegistry / presence / FIFO / LobbyRoom / immutable MatchPlan）。GameRoom生成はW-09 |
 | W-10 | GameRoom + `sim.wasm` 統合 |
 | W-11 | ゲーム WS（join/input/snapshot 等） |
 
