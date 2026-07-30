@@ -341,7 +341,7 @@ LobbyRoom の10秒は**試合中の再接続猶予30秒とは別の値**であ�
 
 ### 4-C. 成立からゲーム開始まで（両方式共通）
 
-```
+```text
 [同期claim] キュー満員 / fill-start / timeout / room_start
    │  対象userを starting_matchへ、LobbyRoomをstartingへ、rules/席を凍結
    ▼
@@ -366,7 +366,7 @@ LobbyRoom の10秒は**試合中の再接続猶予30秒とは別の値**であ�
 
 ### 4-D. マッチメイキング状態機械（ユーザー視点）
 
-```
+```text
 idle ──queue_join──► queued ──同期claim──► starting_match ──W-09成功──► in_match
   ▲                    │                       │失敗rollback                   │
   └──queue_leave/切断──┘                       └──接続あり───► queued        │
@@ -392,7 +392,7 @@ W-09 の `prepareMatch` へ渡す。
 | `source` | `quick(full\|manual\|timeout)` または `custom(code)` |
 | `mode` | `rsp` / `fps` |
 | `rules` | §4-B の canonical rules |
-| `seats` | 定員ぶんの `{slot, user_id|null, display_name|null, is_ai}` |
+| `seats` | 定員ぶんの `{slot, user_id\|null, display_name\|null, is_ai}` |
 | `participants` | 人間だけの `{userId, slot}`。GameRoomの本人照合表 |
 | `human_slots` | 人間slot一覧。GameRoomの早期countdown判定 |
 | `rollback` | quickは元の `joined_at/sequence`、customは凍結前LobbyRoom snapshot |
@@ -695,14 +695,15 @@ created ──全人間join or 10s──► countdown(3s) ──► playing ─�
 4. 永続化成功時だけロビー WS へ `match_result` をブロードキャスト（§3-A）。DB行と同じ `match_id` を含め、game WS の `match_end` より後に送る。失敗時はDB行もIDも存在しないため、`match_result` を架空生成しない。
 5. 60 秒後 close 1000 → `game_destroy`。結果画面の詳細（履歴・統計への反映）は REST（③）で取得。**60 秒のカウントは `event(match_end)` 発火時点から**（永続化に長時間かかった場合の切れ端を避ける）。
 
-W-09 は MatchPlan を閉じ込めた永続化closureを GameRoom へ渡す。現行
+W-09 は MatchPlan を閉じ込めた永続化closureを GameRoom へ渡す。
 `PersistedMatchContext` の outcome（winner/reason/score/tick）だけでは
 `MatchPlayer`、map、settingsを作れないため、closure側で MatchPlan の
-`seats / participants / rules` と結合する。`createRoomFromRules` は
-`persistMatch` と `onMatchResult` を RoomOptions へそのまま転送できるよう W-09 で拡張する。
+`seats / participants / rules` と結合する。`createRoomFromRules` は現在
+`persistMatch` と `onMatchResult` を RoomOptions へそのまま転送する。
 `persistMatch` は `{matchId:int, result:match_result payload}` を返し、GameRoom は
-match_end送信後に `onMatchResult(result)` を呼ぶ。null/例外なら match_endをnullで送り、
-`onMatchResult` は呼ばない。
+`event(match_end).d.match_id=matchId` をgame WSへ送った直後に
+`onMatchResult(result)` を呼ぶ。W-09/W-13がそのhookをロビー全接続への
+`match_result` 配信へ接続する。null/例外ならmatch_endをnullで送り、hookは呼ばない。
 
 ---
 

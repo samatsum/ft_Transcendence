@@ -49,6 +49,8 @@ export async function createRoomFromRules(options: {
 	participants?: RoomOptions['participants'];
 	humanSlots?: number[];
 	onBroadcast?: RoomOptions['onBroadcast'];
+	persistMatch?: RoomOptions['persistMatch'];
+	onMatchResult?: RoomOptions['onMatchResult'];
 	log?: RoomOptions['log'];
 }): Promise<GameRoom> {
 	const mapId = options.rules?.map ?? defaultMapId(options.mode);
@@ -67,6 +69,8 @@ export async function createRoomFromRules(options: {
 		participants: options.participants,
 		humanSlots: options.humanSlots,
 		onBroadcast: options.onBroadcast,
+		persistMatch: options.persistMatch,
+		onMatchResult: options.onMatchResult,
 		log: options.log,
 	});
 }

@@ -8,7 +8,7 @@
 // W-11 がそこへ WebSocket.send を差し込む。
 import { diffEvents } from './events.js';
 import { SimGame, INPUT_SRC_AI, INPUT_SRC_EXTERNAL, NEUTRAL_INPUT, type SeatInput } from './sim.js';
-import type { GameEvent, MatchEndReason } from '@ft/shared';
+import type { GameEvent, MatchEndReason, MatchResultPayload } from '@ft/shared';
 import { decodeSnapshot, type SnapshotMessage, type SnapshotPayload, type SnapshotMode } from './snapshot.js';
 
 export type RoomState = 'created' | 'countdown' | 'playing' | 'finished' | 'closed';
@@ -51,6 +51,12 @@ export interface PersistedMatchContext {
 	score: readonly [number, number];
 	/** 決着時のサーバ tick 番号 */
 	tick: number;
+}
+
+/** ② §6-C: 永続化成功時に GameRoom が受け取る DB ID とロビー通知の組 */
+export interface PersistedMatchResult {
+	matchId: number;
+	result: MatchResultPayload;
 }
 
 export const TICK_HZ = 30;
@@ -115,7 +121,7 @@ export interface RoomOptions {
 	 * ② §6-C 2. の永続化フック（W-13 の責務）。
 	 *
 	 * 最終 snapshot 配信の直後、`event(match_end)` 発火の直前に呼ばれる。
-	 * 戻り値の `match_id` が `event(match_end).d.match_id` に載る（結果画面が
+	 * 戻り値の `matchId` が `event(match_end).d.match_id` に載る（結果画面が
 	 * REST `GET /api/matches/:id` を叩く経路）。
 	 *
 	 * **未提供 or 例外 or `null` を返した場合**は `match_id: null` で match_end を
@@ -123,7 +129,9 @@ export interface RoomOptions {
 	 * 最終 snapshot の勝敗・スコアだけで結果画面を表示する（② §5-D）。
 	 * W-13 未実装のうち（＝現在）は未提供で問題ない。
 	 */
-	persistMatch?: (context: PersistedMatchContext) => Promise<number | null>;
+	persistMatch?: (context: PersistedMatchContext) => Promise<PersistedMatchResult | null>;
+	/** match_end 配信後、永続化成功時だけロビーの match_result へ渡す */
+	onMatchResult?: (result: MatchResultPayload) => void;
 	/** 差し替え可能にしておくとテストで時間を進められる */
 	now?: () => number;
 	log?: RoomLogger;
@@ -475,9 +483,10 @@ export class GameRoom {
 		score: readonly [number, number],
 	): Promise<void> {
 		let matchId: number | null = null;
+		let matchResult: MatchResultPayload | null = null;
 		if (this.opts.persistMatch) {
 			try {
-				matchId = await this.opts.persistMatch({
+				const persisted = await this.opts.persistMatch({
 					roomId: this.roomId,
 					mode: this.mode,
 					winner,
@@ -485,6 +494,17 @@ export class GameRoom {
 					score,
 					tick: this.tick,
 				});
+				if (persisted) {
+					if (
+						!Number.isInteger(persisted.matchId) ||
+						persisted.matchId <= 0 ||
+						persisted.result.match_id !== persisted.matchId
+					) {
+						throw new Error('persistMatch の matchId と result.match_id が一致しない');
+					}
+					matchId = persisted.matchId;
+					matchResult = persisted.result;
+				}
 			} catch (err) {
 				this.opts.log.warn(
 					{ room: this.roomId, err },
@@ -496,6 +516,16 @@ export class GameRoom {
 			t: 'event',
 			d: { kind: 'match_end', winner, reason, match_id: matchId },
 		});
+		if (matchResult && this.opts.onMatchResult) {
+			try {
+				this.opts.onMatchResult(matchResult);
+			} catch (err) {
+				this.opts.log.warn(
+					{ room: this.roomId, match_id: matchId, err },
+					'GameRoom: onMatchResult の通知に失敗',
+				);
+			}
+		}
 		// ② §6-C 5. の 60 秒保持は match_end 発火時点から数える（永続化に時間が
 		// かかった場合の切れ端を避ける）。setState が stateEnteredAt を更新する
 		this.setState('finished');
@@ -503,7 +533,7 @@ export class GameRoom {
 			{ room: this.roomId, tick: this.tick, reason, winner, score, match_id: matchId },
 			'GameRoom: 試合終了',
 		);
-		// ② §6-C 4. の match_result はロビー WS の責務（W-13 で torinoue が繋ぐ）
+		// ② §6-C 4. の lobby WS 配信は onMatchResult の接続先（W-09/W-13）の責務
 	}
 
 	private setState(next: RoomState): void {
