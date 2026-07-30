@@ -1,0 +1,895 @@
+<!doctype html>
+<html lang="ja">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="color-scheme" content="dark">
+	<title>W作業全体 — エンジンをオンライン製品にする16工程</title>
+	<style>
+		:root {
+			--bg: #07111f;
+			--panel: #0d1b2d;
+			--panel-2: #12243a;
+			--line: #29415d;
+			--text: #edf6ff;
+			--muted: #9fb2c8;
+			--cyan: #5de4d6;
+			--blue: #73a7ff;
+			--yellow: #ffd166;
+			--green: #7ee787;
+			--red: #ff8c8c;
+			--radius: 18px;
+			--shadow: 0 24px 70px rgb(0 0 0 / 28%);
+		}
+
+		* { box-sizing: border-box; }
+		html { scroll-behavior: smooth; }
+		body {
+			margin: 0;
+			background:
+				radial-gradient(circle at 12% 4%, rgb(93 228 214 / 13%), transparent 28rem),
+				radial-gradient(circle at 88% 16%, rgb(115 167 255 / 11%), transparent 30rem),
+				var(--bg);
+			color: var(--text);
+			font-family:
+				Inter, "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic",
+				system-ui, sans-serif;
+			line-height: 1.75;
+		}
+
+		a { color: var(--cyan); text-underline-offset: 0.22em; }
+		a:hover { color: white; }
+		code {
+			border: 1px solid rgb(115 167 255 / 24%);
+			border-radius: 0.4em;
+			background: rgb(7 17 31 / 74%);
+			padding: 0.1em 0.35em;
+			color: #c7ddff;
+			font-family: "SFMono-Regular", Consolas, monospace;
+			font-size: 0.92em;
+		}
+
+		.shell {
+			width: min(1180px, calc(100% - 36px));
+			margin: 0 auto;
+		}
+
+		.hero { padding: 72px 0 42px; }
+		.eyebrow {
+			margin: 0 0 12px;
+			color: var(--cyan);
+			font-size: 0.78rem;
+			font-weight: 800;
+			letter-spacing: 0.16em;
+			text-transform: uppercase;
+		}
+		h1 {
+			max-width: 980px;
+			margin: 0;
+			font-size: clamp(2.2rem, 6vw, 5.3rem);
+			line-height: 1.04;
+			letter-spacing: -0.055em;
+			overflow-wrap: anywhere;
+		}
+		.hero-lead {
+			max-width: 780px;
+			margin: 24px 0 0;
+			color: #c4d4e6;
+			font-size: clamp(1rem, 2vw, 1.24rem);
+			overflow-wrap: anywhere;
+		}
+		.hero-note {
+			display: inline-flex;
+			gap: 0.65rem;
+			align-items: center;
+			flex-wrap: wrap;
+			max-width: 100%;
+			margin-top: 24px;
+			border: 1px solid var(--line);
+			border-radius: 999px;
+			background: rgb(13 27 45 / 72%);
+			padding: 8px 14px;
+			color: var(--muted);
+			font-size: 0.86rem;
+		}
+		.hero-note strong { color: var(--text); }
+
+		.topnav {
+			position: sticky;
+			z-index: 10;
+			top: 0;
+			border-block: 1px solid rgb(41 65 93 / 78%);
+			background: rgb(7 17 31 / 86%);
+			backdrop-filter: blur(16px);
+		}
+		.nav-inner {
+			display: flex;
+			gap: 0.35rem;
+			align-items: center;
+			overflow-x: auto;
+			padding: 10px 0;
+			scrollbar-width: none;
+		}
+		.nav-inner a,
+		.print-button {
+			flex: 0 0 auto;
+			border: 1px solid transparent;
+			border-radius: 999px;
+			background: transparent;
+			padding: 7px 11px;
+			color: var(--muted);
+			font: inherit;
+			font-size: 0.82rem;
+			text-decoration: none;
+			cursor: pointer;
+		}
+		.nav-inner a:hover,
+		.print-button:hover {
+			border-color: var(--line);
+			background: var(--panel);
+			color: white;
+		}
+		.print-button { margin-left: auto; }
+
+		main { padding: 34px 0 80px; }
+		section {
+			scroll-margin-top: 74px;
+			margin-top: 72px;
+		}
+		section:first-child { margin-top: 0; }
+		.section-kicker {
+			margin: 0 0 5px;
+			color: var(--blue);
+			font-size: 0.76rem;
+			font-weight: 800;
+			letter-spacing: 0.12em;
+			text-transform: uppercase;
+		}
+		h2 {
+			margin: 0 0 12px;
+			font-size: clamp(1.7rem, 4vw, 2.7rem);
+			line-height: 1.2;
+			letter-spacing: -0.035em;
+			overflow-wrap: anywhere;
+		}
+		h3 {
+			margin: 0 0 8px;
+			font-size: 1.08rem;
+			line-height: 1.35;
+		}
+		.section-intro {
+			max-width: 820px;
+			margin: 0 0 26px;
+			color: var(--muted);
+		}
+
+		.grid { display: grid; gap: 16px; }
+		.grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+		.grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+		.grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+		.card {
+			border: 1px solid var(--line);
+			border-radius: var(--radius);
+			background: linear-gradient(145deg, rgb(18 36 58 / 90%), rgb(13 27 45 / 90%));
+			padding: 22px;
+			box-shadow: var(--shadow);
+		}
+		.card p:last-child { margin-bottom: 0; }
+		.card-label {
+			margin: 0 0 9px;
+			color: var(--muted);
+			font-size: 0.76rem;
+			font-weight: 800;
+			letter-spacing: 0.08em;
+			text-transform: uppercase;
+		}
+		.metric {
+			margin: 0;
+			font-size: clamp(2rem, 4vw, 3.15rem);
+			font-weight: 850;
+			line-height: 1;
+			letter-spacing: -0.055em;
+		}
+		.metric small {
+			color: var(--muted);
+			font-size: 0.85rem;
+			letter-spacing: normal;
+		}
+		.metric-note {
+			margin: 12px 0 0;
+			color: var(--muted);
+			font-size: 0.86rem;
+			line-height: 1.5;
+		}
+
+		.progress {
+			height: 10px;
+			margin-top: 16px;
+			overflow: hidden;
+			border-radius: 999px;
+			background: #07111f;
+		}
+		.progress > span {
+			display: block;
+			width: 25%;
+			height: 100%;
+			border-radius: inherit;
+			background: linear-gradient(90deg, var(--cyan), var(--blue));
+		}
+
+		.callout {
+			border: 1px solid rgb(93 228 214 / 32%);
+			border-left: 5px solid var(--cyan);
+			border-radius: 14px;
+			background: rgb(93 228 214 / 7%);
+			padding: 18px 20px;
+		}
+		.callout strong { color: var(--cyan); }
+		.callout.warning {
+			border-color: rgb(255 209 102 / 35%);
+			border-left-color: var(--yellow);
+			background: rgb(255 209 102 / 7%);
+		}
+		.callout.warning strong { color: var(--yellow); }
+
+		.lifecycle {
+			display: grid;
+			grid-template-columns: repeat(7, minmax(125px, 1fr));
+			gap: 24px;
+			margin-top: 28px;
+			overflow-x: auto;
+			padding: 4px 3px 18px;
+		}
+		.stage {
+			position: relative;
+			min-width: 125px;
+			border: 1px solid var(--line);
+			border-radius: 15px;
+			background: var(--panel);
+			padding: 16px;
+		}
+		.stage:not(:last-child)::after {
+			position: absolute;
+			top: 50%;
+			right: -20px;
+			color: var(--blue);
+			content: "→";
+			font-weight: 900;
+			transform: translateY(-50%);
+		}
+		.stage .step {
+			color: var(--blue);
+			font-size: 0.72rem;
+			font-weight: 800;
+		}
+		.stage strong { display: block; margin-top: 4px; }
+		.stage p {
+			margin: 7px 0 0;
+			color: var(--muted);
+			font-size: 0.78rem;
+			line-height: 1.5;
+		}
+
+		.legend,
+		.filters {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 8px;
+			align-items: center;
+		}
+		.legend { margin: 0 0 18px; }
+		.pill,
+		.filter-button {
+			border: 1px solid var(--line);
+			border-radius: 999px;
+			background: var(--panel);
+			padding: 6px 10px;
+			color: var(--muted);
+			font-size: 0.78rem;
+		}
+		.filter-button {
+			font: inherit;
+			font-size: 0.78rem;
+			cursor: pointer;
+		}
+		.filter-button[aria-pressed="true"] {
+			border-color: var(--cyan);
+			background: rgb(93 228 214 / 12%);
+			color: white;
+		}
+		.dot {
+			display: inline-block;
+			width: 0.62rem;
+			height: 0.62rem;
+			margin-right: 0.35rem;
+			border-radius: 50%;
+			vertical-align: -0.02rem;
+		}
+		.dot.done { background: var(--green); }
+		.dot.partial { background: var(--yellow); }
+		.dot.todo { background: #71859d; }
+
+		.issue-grid {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 12px;
+			margin-top: 18px;
+		}
+		.issue-card {
+			display: grid;
+			grid-template-columns: 74px 1fr;
+			gap: 14px;
+			border: 1px solid var(--line);
+			border-radius: 15px;
+			background: rgb(13 27 45 / 80%);
+			padding: 17px;
+		}
+		.issue-card[hidden] { display: none; }
+		.issue-id {
+			color: var(--cyan);
+			font-weight: 850;
+			letter-spacing: -0.02em;
+		}
+		.issue-meta {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 7px;
+			margin-top: 10px;
+		}
+		.issue-card p {
+			margin: 6px 0 0;
+			color: var(--muted);
+			font-size: 0.88rem;
+			line-height: 1.55;
+		}
+		.tag {
+			border-radius: 6px;
+			background: rgb(115 167 255 / 13%);
+			padding: 3px 7px;
+			color: #bcd4ff;
+			font-size: 0.7rem;
+			font-weight: 750;
+		}
+		.tag.owner { background: rgb(93 228 214 / 11%); color: #a7f2ea; }
+		.tag.status-done { background: rgb(126 231 135 / 13%); color: var(--green); }
+		.tag.status-partial { background: rgb(255 209 102 / 13%); color: var(--yellow); }
+		.tag.status-todo { background: rgb(159 178 200 / 12%); color: #bac8d8; }
+
+		.table-wrap {
+			overflow-x: auto;
+			border: 1px solid var(--line);
+			border-radius: var(--radius);
+		}
+		table {
+			width: 100%;
+			border-collapse: collapse;
+			background: rgb(13 27 45 / 78%);
+			font-size: 0.88rem;
+		}
+		th, td {
+			border-bottom: 1px solid var(--line);
+			padding: 13px 15px;
+			text-align: left;
+			vertical-align: top;
+		}
+		th {
+			background: #12243a;
+			color: #dceaff;
+			font-size: 0.76rem;
+			letter-spacing: 0.04em;
+		}
+		tr:last-child td { border-bottom: 0; }
+		td:first-child { white-space: nowrap; }
+
+		.path-list {
+			display: grid;
+			gap: 10px;
+			margin: 0;
+			padding: 0;
+			list-style: none;
+			counter-reset: path;
+		}
+		.path-list li {
+			display: grid;
+			grid-template-columns: 38px 1fr;
+			gap: 12px;
+			align-items: start;
+			border-bottom: 1px solid var(--line);
+			padding: 0 0 14px;
+			counter-increment: path;
+		}
+		.path-list li::before {
+			display: grid;
+			width: 32px;
+			height: 32px;
+			border: 1px solid var(--line);
+			border-radius: 50%;
+			place-items: center;
+			color: var(--cyan);
+			content: counter(path);
+			font-size: 0.8rem;
+			font-weight: 800;
+		}
+		.path-list strong { display: block; }
+		.path-list span {
+			display: block;
+			margin-top: 3px;
+			color: var(--muted);
+			font-size: 0.88rem;
+		}
+
+		.script {
+			border: 1px solid rgb(115 167 255 / 35%);
+			border-radius: var(--radius);
+			background:
+				linear-gradient(135deg, rgb(115 167 255 / 9%), rgb(93 228 214 / 5%)),
+				var(--panel);
+			padding: clamp(22px, 4vw, 38px);
+		}
+		.script blockquote {
+			margin: 0;
+			color: #d7e7fa;
+			font-size: clamp(1rem, 2vw, 1.15rem);
+		}
+		.script blockquote p { margin: 0 0 1em; }
+		.script blockquote p:last-child { margin-bottom: 0; }
+
+		footer {
+			border-top: 1px solid var(--line);
+			padding: 28px 0 50px;
+			color: var(--muted);
+			font-size: 0.82rem;
+		}
+
+		@media (max-width: 920px) {
+			.grid-4, .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+			.issue-grid { grid-template-columns: 1fr; }
+		}
+		@media (max-width: 620px) {
+			.shell { width: min(calc(100% - 24px), 1180px); }
+			.hero { padding-top: 46px; }
+			.grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; }
+			.issue-card { grid-template-columns: 58px 1fr; }
+			.hero-note { border-radius: 18px; }
+			.print-button { display: none; }
+		}
+
+		@media print {
+			:root {
+				--bg: white;
+				--panel: white;
+				--panel-2: #f4f7fa;
+				--line: #cbd5df;
+				--text: #122033;
+				--muted: #526477;
+			}
+			body { background: white; }
+			.topnav, .filters { display: none; }
+			.hero { padding: 24px 0; }
+			main { padding-top: 0; }
+			section { margin-top: 38px; break-inside: avoid; }
+			.card, .issue-card, .script { box-shadow: none; break-inside: avoid; }
+			.lifecycle { overflow: visible; }
+			a { color: #155e75; }
+			code { background: #f3f6f8; color: #17324d; }
+		}
+	</style>
+</head>
+<body>
+	<header class="hero">
+		<div class="shell">
+			<p class="eyebrow">Backend / DevOps · W-01—W-16</p>
+			<h1>完成したエンジンを、<br>オンライン製品にする。</h1>
+			<p class="hero-lead">
+				W作業は、E/Gで完成したゲームを作り直す工程ではありません。
+				認証し、対戦相手を集め、サーバーで動かし、ネット越しに配り、
+				結果を保存し、1コマンドで起動できる製品へ包む16工程です。
+			</p>
+			<p class="hero-note">
+				<span aria-hidden="true">●</span>
+				<strong>現在地 2026-07-30</strong>
+				<span>W-01 / W-10 / W-11 / W-14 完了、W-08コア実装済み</span>
+			</p>
+		</div>
+	</header>
+
+	<nav class="topnav" aria-label="ページ内目次">
+		<div class="shell nav-inner">
+			<a href="#meaning">Wとは</a>
+			<a href="#current">現在地</a>
+			<a href="#flow">一試合の流れ</a>
+			<a href="#issues">16工程</a>
+			<a href="#dependencies">依存と次手</a>
+			<a href="#code">コード入口</a>
+			<a href="#frontend">Frontendとの境界</a>
+			<a href="#talk">3分説明</a>
+			<button class="print-button" type="button" onclick="window.print()">印刷 / PDF</button>
+		</div>
+	</nav>
+
+	<main class="shell">
+		<section id="meaning">
+			<p class="section-kicker">01 · Meaning</p>
+			<h2>Wは「Web画面」ではなく、製品を成立させるサーバー側</h2>
+			<p class="section-intro">
+				Issue接頭辞のWは、このプロジェクトではBackend / DevOpsレーンを指します。
+				画面側はF-01〜F-12です。Wは大きく4つの仕事に分かれます。
+			</p>
+			<div class="grid grid-4">
+				<article class="card">
+					<p class="card-label">Foundation · W-01〜W-05</p>
+					<h3>土台と身元確認</h3>
+					<p>TypeScriptの骨格、共通エラー、DB、認証Cookie、Origin検証を整えます。</p>
+				</article>
+				<article class="card">
+					<p class="card-label">Realtime · W-08〜W-12</p>
+					<h3>対戦の心臓</h3>
+					<p>ロビー、マッチ成立、GameRoom、ゲームWS、再接続とAI代替を担当します。</p>
+				</article>
+				<article class="card">
+					<p class="card-label">Product data · W-06/07/13/14</p>
+					<h3>製品データ</h3>
+					<p>アバター、フレンド、試合履歴・統計、対戦マップ一覧を提供します。</p>
+				</article>
+				<article class="card">
+					<p class="card-label">Delivery · W-15/16</p>
+					<h3>起動と品質保証</h3>
+					<p>Docker/nginx/TLSで配り、CIでC・WASM・TypeScriptを毎回検査します。</p>
+				</article>
+			</div>
+			<div class="callout" style="margin-top: 18px">
+				<strong>E/Gとの境界:</strong>
+				E/Gは「ゲーム内で何が起きるか」を完成させました。Wは「誰が入り、どの試合で動かし、
+				誰へ送り、切れたらどうし、結果をどこへ残すか」を受け持ちます。
+			</div>
+		</section>
+
+		<section id="current">
+			<p class="section-kicker">02 · Current position</p>
+			<h2>16件のうち、4件完了＋1件コア完了</h2>
+			<p class="section-intro">
+				厳格な完了率は4/16＝25%。W-08は大部分が動いていますが、本Cookie認証との
+				通し検査が残るため「完全完了」には数えていません。
+			</p>
+			<div class="grid grid-4">
+				<article class="card">
+					<p class="card-label">完了</p>
+					<p class="metric" style="color: var(--green)">4<small> / 16</small></p>
+					<p class="metric-note">W-01 · W-10 · W-11 · W-14</p>
+					<div class="progress" aria-label="W作業25%完了"><span></span></div>
+				</article>
+				<article class="card">
+					<p class="card-label">コア実装済み</p>
+					<p class="metric" style="color: var(--yellow)">1</p>
+					<p class="metric-note">W-08。W-04/W-05の本認証・Origin・session失効との結合待ち</p>
+				</article>
+				<article class="card">
+					<p class="card-label">samatsum側の次</p>
+					<p class="metric">09</p>
+					<p class="metric-note">MatchPlanから実GameRoomを生成し、ロビーとゲームを一本にする</p>
+				</article>
+				<article class="card">
+					<p class="card-label">最大の上流ブロッカー</p>
+					<p class="metric">04/05</p>
+					<p class="metric-note">torinoueの本認証とOrigin共通化。W-08の最終受入に必要</p>
+				</article>
+			</div>
+			<div class="callout warning" style="margin-top: 18px">
+				<strong>重要:</strong>
+				コードが存在することとIssue完了は同じではありません。たとえば
+				<code>auth/session.ts</code>には開発用スタブがありますが、W-04/W-05の
+				Cookie・DB・本番Origin受入は未完です。
+			</div>
+		</section>
+
+		<section id="flow">
+			<p class="section-kicker">03 · One match</p>
+			<h2>一試合を通すと、Wの役割が見える</h2>
+			<p class="section-intro">
+				W番号順に実行されるわけではありません。利用者の体験では、次の順番で複数Issueが連携します。
+			</p>
+			<div class="lifecycle" aria-label="ログインから試合結果までの流れ">
+				<article class="stage">
+					<span class="step">STEP 1</span>
+					<strong>起動</strong>
+					<p>W-15がnginx・app・DB・WASMを1コマンドで立ち上げる</p>
+				</article>
+				<article class="stage">
+					<span class="step">STEP 2</span>
+					<strong>ログイン</strong>
+					<p>W-02〜05が入力を検証し、DBとCookieで本人を確定する</p>
+				</article>
+				<article class="stage">
+					<span class="step">STEP 3</span>
+					<strong>ロビー</strong>
+					<p>W-08がpresence・キュー・カスタムルームを管理する</p>
+				</article>
+				<article class="stage">
+					<span class="step">STEP 4</span>
+					<strong>試合成立</strong>
+					<p>W-09がMatchPlanからGameRoomを安全に生成する</p>
+				</article>
+				<article class="stage">
+					<span class="step">STEP 5</span>
+					<strong>対戦</strong>
+					<p>W-10がsim.wasmを回し、W-11がinputとsnapshotを運ぶ</p>
+				</article>
+				<article class="stage">
+					<span class="step">STEP 6</span>
+					<strong>切断対応</strong>
+					<p>W-12が30秒猶予、人間⇔AI切替、復帰を管理する</p>
+				</article>
+				<article class="stage">
+					<span class="step">STEP 7</span>
+					<strong>結果</strong>
+					<p>W-13が決着をDBへ保存し、履歴・統計・match_resultを返す</p>
+				</article>
+			</div>
+			<p class="section-intro">
+				W-06/07はユーザー機能としてこの流れを横から支え、W-14は対戦前にマップ情報を供給、
+				W-16は全工程をPRごとに検査します。
+			</p>
+		</section>
+
+		<section id="issues">
+			<p class="section-kicker">04 · W-01—W-16</p>
+			<h2>16工程を「何のためか」で読む</h2>
+			<p class="section-intro">
+				詳細な受入条件は⑤バックログが正本です。ここでは、チーム説明で必要な
+				「何を解決するIssueか」と「どこまで済んだか」に絞っています。
+			</p>
+			<div class="legend" aria-label="状態の凡例">
+				<span class="pill"><span class="dot done"></span>完了</span>
+				<span class="pill"><span class="dot partial"></span>部分完了</span>
+				<span class="pill"><span class="dot todo"></span>未完</span>
+			</div>
+			<div class="filters" aria-label="Issue絞り込み">
+				<button class="filter-button" type="button" data-filter="all" aria-pressed="true">すべて</button>
+				<button class="filter-button" type="button" data-filter="done" aria-pressed="false">完了</button>
+				<button class="filter-button" type="button" data-filter="partial" aria-pressed="false">部分完了</button>
+				<button class="filter-button" type="button" data-filter="todo" aria-pressed="false">未完</button>
+				<button class="filter-button" type="button" data-filter="torinoue" aria-pressed="false">torinoue</button>
+				<button class="filter-button" type="button" data-filter="samatsum" aria-pressed="false">samatsum</button>
+			</div>
+
+			<div class="issue-grid">
+				<article class="issue-card" data-status="done" data-owner="samatsum">
+					<div class="issue-id">W-01</div>
+					<div><h3>Webアプリの骨格</h3><p><code>app/backend</code>・<code>frontend</code>・<code>shared</code>・<code>infra</code>を作り、全員が並行着手できる床を用意。</p><div class="issue-meta"><span class="tag owner">samatsum</span><span class="tag status-done">完了</span></div></div>
+				</article>
+				<article class="issue-card" data-status="todo" data-owner="torinoue">
+					<div class="issue-id">W-02</div>
+					<div><h3>Fastify共通処理</h3><p>ログ、zod検証、RESTエラー形式、レート制限を全APIで同じにする。W-01の起動骨格はあるが受入は未完。</p><div class="issue-meta"><span class="tag owner">torinoue</span><span class="tag status-todo">未完</span></div></div>
+				</article>
+				<article class="issue-card" data-status="todo" data-owner="torinoue">
+					<div class="issue-id">W-03</div>
+					<div><h3>Prisma + SQLite</h3><p>User・Session・Friendship・Match・MatchPlayerの正本を作り、migrationで再現可能にする。</p><div class="issue-meta"><span class="tag owner">torinoue</span><span class="tag status-todo">未完</span></div></div>
+				</article>
+				<article class="issue-card" data-status="todo" data-owner="torinoue">
+					<div class="issue-id">W-04</div>
+					<div><h3>認証</h3><p>signup/login/logout/me、argon2id、Session Cookieを実装し、RESTとWSの「誰か」を確定する。</p><div class="issue-meta"><span class="tag owner">torinoue</span><span class="tag status-todo">開発用スタブのみ</span></div></div>
+				</article>
+				<article class="issue-card" data-status="todo" data-owner="torinoue">
+					<div class="issue-id">W-05</div>
+					<div><h3>OriginとCookie認可</h3><p>異Originの変更系RESTとWSを拒否し、認証判定をロビー/ゲーム双方で共用する。</p><div class="issue-meta"><span class="tag owner">torinoue</span><span class="tag status-todo">開発用判定のみ</span></div></div>
+				</article>
+				<article class="issue-card" data-status="todo" data-owner="torinoue">
+					<div class="issue-id">W-06</div>
+					<div><h3>アバター</h3><p>2MB上限、MIMEとマジックバイト検査、nginx静的配信までを安全に通す。</p><div class="issue-meta"><span class="tag owner">torinoue</span><span class="tag status-todo">未完・切り捨て候補</span></div></div>
+				</article>
+				<article class="issue-card" data-status="todo" data-owner="torinoue">
+					<div class="issue-id">W-07</div>
+					<div><h3>フレンドAPI</h3><p>申請・承認・削除とpresence合成を持つ。W-08はfriend resolverの差込口まで準備済み。</p><div class="issue-meta"><span class="tag owner">torinoue</span><span class="tag status-todo">未完・切り捨て候補</span></div></div>
+				</article>
+				<article class="issue-card" data-status="partial" data-owner="samatsum">
+					<div class="issue-id">W-08</div>
+					<div><h3>ロビーWebSocket</h3><p>presence、mode別FIFO、カスタムルーム、同期claim、heartbeat/session索引を実装。本Cookie/Origin結合が残る。</p><div class="issue-meta"><span class="tag owner">samatsum</span><span class="tag status-partial">コア完了</span></div></div>
+				</article>
+				<article class="issue-card" data-status="todo" data-owner="samatsum">
+					<div class="issue-id">W-09</div>
+					<div><h3>マッチ成立の橋</h3><p>W-08のMatchPlanをW-10のGameRoomへ変換し、成功commit・失敗rollback・match_foundを一貫させる。</p><div class="issue-meta"><span class="tag owner">samatsum</span><span class="tag status-todo">次の本丸</span></div></div>
+				</article>
+				<article class="issue-card" data-status="done" data-owner="samatsum">
+					<div class="issue-id">W-10</div>
+					<div><h3>GameRoom + sim.wasm</h3><p>1試合1WASM instance、30Hz tick、15Hz snapshot、状態機械、複数ルームをNode上で駆動。</p><div class="issue-meta"><span class="tag owner">samatsum</span><span class="tag status-done">完了</span></div></div>
+				</article>
+				<article class="issue-card" data-status="done" data-owner="samatsum">
+					<div class="issue-id">W-11</div>
+					<div><h3>ゲームWebSocket</h3><p>join/input/welcome/snapshot/eventを運び、seq・4KB・レート・不正messageを守る。snapshot &lt; 1KBも実測済み。</p><div class="issue-meta"><span class="tag owner">samatsum</span><span class="tag status-done">完了</span></div></div>
+				</article>
+				<article class="issue-card" data-status="todo" data-owner="samatsum">
+					<div class="issue-id">W-12</div>
+					<div><h3>切断・復帰・AI代替</h3><p>30秒の再接続猶予、人間→AI、復帰時AI→人間、FPS放置時の不戦勝までを管理。</p><div class="issue-meta"><span class="tag owner">samatsum</span><span class="tag status-todo">未完</span></div></div>
+				</article>
+				<article class="issue-card" data-status="todo" data-owner="torinoue">
+					<div class="issue-id">W-13</div>
+					<div><h3>試合永続化と統計</h3><p>match_endをDBのMatch/MatchPlayerへ1回だけ保存し、履歴・統計APIとロビーmatch_resultへ展開。</p><div class="issue-meta"><span class="tag owner">torinoue + samatsum連携</span><span class="tag status-todo">未完</span></div></div>
+				</article>
+				<article class="issue-card" data-status="done" data-owner="samatsum">
+					<div class="issue-id">W-14</div>
+					<div><h3>マップ配布</h3><p><code>GET /api/maps</code>と<code>welcome.map_text</code>を同じホワイトリストへ結び、サーバーが読む本文と一致させる。</p><div class="issue-meta"><span class="tag owner">samatsum</span><span class="tag status-done">完了</span></div></div>
+				</article>
+				<article class="issue-card" data-status="todo" data-owner="torinoue">
+					<div class="issue-id">W-15</div>
+					<div><h3>Docker / nginx / TLS</h3><p>空cloneから<code>docker compose up</code>だけでWASM生成、migration、HTTPS、WS proxyまで起動する。</p><div class="issue-meta"><span class="tag owner">torinoue</span><span class="tag status-todo">engine-build土台のみ</span></div></div>
+				</article>
+				<article class="issue-card" data-status="todo" data-owner="mamiyaza">
+					<div class="issue-id">W-16</div>
+					<div><h3>CIの製品層拡張</h3><p>E-14のC/WASM検査を守りつつ、Frontend lint・型検査・buildを毎PRの必須検査へ追加。</p><div class="issue-meta"><span class="tag owner">mamiyaza / samatsum review</span><span class="tag status-todo">既存CI土台あり</span></div></div>
+				</article>
+			</div>
+		</section>
+
+		<section id="dependencies">
+			<p class="section-kicker">05 · Dependencies</p>
+			<h2>次に進む順番は、番号順ではない</h2>
+			<p class="section-intro">
+				現在は認証レーンとゲームサーバーレーンを並行し、W-08/W-09で合流するのが最短です。
+			</p>
+			<div class="grid grid-2">
+				<article class="card">
+					<p class="card-label">torinoue · Backend foundation</p>
+					<ol class="path-list">
+						<li><div><strong>W-02 → W-03</strong><span>共通Fastify処理とDB正本を置く</span></div></li>
+						<li><div><strong>W-04 → W-05</strong><span>本Cookie認証とOrigin共通化を閉じる</span></div></li>
+						<li><div><strong>W-15を並行</strong><span>最終日の前にcompose/TLSを通す</span></div></li>
+						<li><div><strong>W-13</strong><span>試合成立後に永続化・履歴へ接続</span></div></li>
+					</ol>
+				</article>
+				<article class="card">
+					<p class="card-label">samatsum · Game server</p>
+					<ol class="path-list">
+						<li><div><strong>W-08最終結合</strong><span>W-04/W-05を受けて本認証の通し検査</span></div></li>
+						<li><div><strong>W-09</strong><span>ロビーのMatchPlanを完成済みGameRoomへ接続</span></div></li>
+						<li><div><strong>W-12</strong><span>切断・AI代替・復帰を完成させる</span></div></li>
+						<li><div><strong>W-13結合支援</strong><span>match_endと永続化callbackの境界を通す</span></div></li>
+					</ol>
+				</article>
+			</div>
+			<div class="callout" style="margin-top: 18px">
+				<strong>合流点:</strong>
+				<code>W-04/W-05 → W-08 → W-09 ← W-10</code>。
+				ここが通ると「ログインした人がロビーから実試合へ入る」というゲート2のサーバー側が一本になります。
+			</div>
+		</section>
+
+		<section id="code">
+			<p class="section-kicker">06 · Code map</p>
+			<h2>説明するときに開くコードはここ</h2>
+			<p class="section-intro">
+				すべて読む必要はありません。Wの各責務を代表する入口だけを押さえれば、コードと説明が結びつきます。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>責務</th><th>入口</th><th>見るポイント</th></tr></thead>
+					<tbody>
+						<tr><td>W-01 / 起動</td><td><a href="../../app/backend/src/index.ts"><code>app/backend/src/index.ts</code></a></td><td>Fastify、REST、2本のWS gatewayが1 serverへ載る</td></tr>
+						<tr><td>W-04/05 / 認証境界</td><td><a href="../../app/backend/src/auth/session.ts"><code>auth/session.ts</code></a></td><td>確定済みsignatureと、まだ残る開発用stub</td></tr>
+						<tr><td>W-08 / ロビー</td><td><a href="../../app/backend/src/lobby/ws.ts"><code>lobby/ws.ts</code></a> / <a href="../../app/backend/src/lobby/state.ts"><code>state.ts</code></a></td><td>WS gatewayと1ユーザー1contextの正本</td></tr>
+						<tr><td>W-08 / queue・room</td><td><a href="../../app/backend/src/lobby/queue.ts"><code>queue.ts</code></a> / <a href="../../app/backend/src/lobby/rooms.ts"><code>rooms.ts</code></a></td><td>FIFO、60秒、満員、招待コード、同期claim</td></tr>
+						<tr><td>W-10 / GameRoom</td><td><a href="../../app/backend/src/game/room.ts"><code>game/room.ts</code></a> / <a href="../../app/backend/src/game/sim.ts"><code>sim.ts</code></a></td><td>状態機械とsim.wasm駆動</td></tr>
+						<tr><td>W-11 / game WS</td><td><a href="../../app/backend/src/game/ws.ts"><code>game/ws.ts</code></a></td><td>join/input、snapshot配信、違反処理</td></tr>
+						<tr><td>W-14 / maps</td><td><a href="../../app/backend/src/game/maps.ts"><code>game/maps.ts</code></a></td><td>4マップのホワイトリストと本文読込</td></tr>
+						<tr><td>W-15 / delivery</td><td><a href="../../infra/README.md"><code>infra/</code></a></td><td>現状はengine-buildの土台。compose/nginx/TLSはこれから</td></tr>
+						<tr><td>共有wire</td><td><a href="../../app/shared/src/ws/"><code>app/shared/src/ws/</code></a></td><td>Frontend/Backendが同じzod契約をimportする</td></tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+
+		<section id="frontend">
+			<p class="section-kicker">07 · Boundary with F</p>
+			<h2>Wが作るのは「繋ぎ先」、Fが作るのは「体験」</h2>
+			<p class="section-intro">
+				Backendが完成すればFrontendは実装しやすくなりますが、F側にはWSの張り替え、
+				WASM描画、入力、cleanupという独自責務があります。境界を混ぜないことが重要です。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>Wが保証するもの</th><th>消費するF</th><th>F側で残る仕事</th></tr></thead>
+					<tbody>
+						<tr><td>W-04 auth REST + Cookie</td><td>F-03</td><td>フォーム、route guard、401遷移</td></tr>
+						<tr><td>W-08/W-09 lobby WS + match_found</td><td>F-05/F-08</td><td>ロビー表示、再接続、試合画面への遷移</td></tr>
+						<tr><td>W-11 snapshot/event</td><td>F-06/F-07</td><td>render.wasm、補間、Canvas、HUD、入力送信</td></tr>
+						<tr><td>W-12 grace/AI状態</td><td>F-07</td><td>切断猶予とAI切替の可視化</td></tr>
+						<tr><td>W-13 history/stats</td><td>F-09</td><td>プロフィール・履歴・統計表示</td></tr>
+						<tr><td>W-07 presence</td><td>F-10</td><td>フレンド操作とリアルタイムbadge</td></tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+
+		<section id="talk">
+			<p class="section-kicker">08 · Three-minute talk</p>
+			<h2>このまま読める、W全体の3分説明</h2>
+			<div class="script">
+				<blockquote>
+					<p>
+						「EとGで、ゲームのルール・AI・衝突・描画・sim.wasmは完成しています。
+						W作業は、それを作り直す工程ではなく、オンライン製品へ包む工程です。
+					</p>
+					<p>
+						最初にW-01〜W-05で、TypeScriptの骨格、DB、認証Cookie、Origin検証を作ります。
+						ログインした人はW-08のロビーでキューやカスタムルームへ入り、
+						W-09がその参加者をW-10のGameRoomへ変換します。
+					</p>
+					<p>
+						試合中はW-10がサーバー上でsim.wasmを30Hz実行し、
+						W-11が入力とsnapshotをWebSocketで運びます。切断時はW-12が30秒の復帰猶予と
+						AI代替を管理し、決着後はW-13が結果をDBへ保存します。
+					</p>
+					<p>
+						W-14はサーバーが実際に読むマップを配り、W-15は全体をHTTPSとDockerで起動し、
+						W-16は毎PRで壊れていないか検査します。
+					</p>
+					<p>
+						現在はW-01、W-10、W-11、W-14が完了し、W-08もコア実装済みです。
+						次の重要点は、本認証W-04/W-05との結合、ロビーとGameRoomを繋ぐW-09、
+						そして切断対応W-12です。」 
+					</p>
+				</blockquote>
+			</div>
+		</section>
+
+		<section id="references">
+			<p class="section-kicker">09 · Sources of truth</p>
+			<h2>このHTMLは説明用。契約の正本は設計書</h2>
+			<div class="grid grid-3">
+				<article class="card">
+					<h3><a href="../02_設計書/5-バックログ.md">⑤ バックログ</a></h3>
+					<p>W-01〜W-16の受入条件・依存・進捗の正本。</p>
+				</article>
+				<article class="card">
+					<h3><a href="../02_設計書/6-チーム分担計画.md">⑥ チーム分担計画</a></h3>
+					<p>担当者・実装順・5日間の日割りの正本。</p>
+				</article>
+				<article class="card">
+					<h3><a href="../02_設計書/2-WSプロトコル設計.md">② WSプロトコル設計</a></h3>
+					<p>W-08〜W-14のwire、状態機械、切断規約。</p>
+				</article>
+				<article class="card">
+					<h3><a href="../02_設計書/3-REST_API設計.md">③ REST API設計</a></h3>
+					<p>W-02〜W-07/W-13/W-14のREST・DB契約。</p>
+				</article>
+				<article class="card">
+					<h3><a href="appとweb-完成したエンジンとこれから作る層.md">appとweb</a></h3>
+					<p>W-01時点で、E/Gからappへ移る境界を説明した旧資料。</p>
+				</article>
+				<article class="card">
+					<h3><a href="../torinoue/torinoue_データフロー図.md">torinoue データフロー</a></h3>
+					<p>認証・DB側から見た詳細な境界図。正本ではなく学習用。</p>
+				</article>
+			</div>
+		</section>
+	</main>
+
+	<footer>
+		<div class="shell">
+			説明用資料 · W-01〜W-16 · 2026-07-30時点。
+			進捗が変わったら、まず⑤バックログを更新し、その後このHTMLを追従させてください。
+		</div>
+	</footer>
+
+	<script>
+		(() => {
+			const buttons = [...document.querySelectorAll(".filter-button")];
+			const cards = [...document.querySelectorAll(".issue-card")];
+			for (const button of buttons) {
+				button.addEventListener("click", () => {
+					const filter = button.dataset.filter;
+					for (const item of buttons) {
+						item.setAttribute("aria-pressed", String(item === button));
+					}
+					for (const card of cards) {
+						card.hidden =
+							filter !== "all" &&
+							card.dataset.status !== filter &&
+							card.dataset.owner !== filter;
+					}
+				});
+			}
+		})();
+	</script>
+</body>
+</html>
