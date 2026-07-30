@@ -13,7 +13,14 @@ import {
 } from '@ft/shared';
 
 import { buildServer } from '../index.js';
-import { closeAllRooms, createRoomFromRules } from '../game/rooms.js';
+import {
+	closeAllRooms,
+	closeRoom,
+	createRoomFromRules,
+	getRoom,
+	roomCount,
+	roomReservationCount,
+} from '../game/rooms.js';
 import {
 	ConnectionManager,
 	type ManagedSocket,
@@ -30,6 +37,12 @@ import {
 	LobbyRuntime,
 	type MatchPlanControls,
 } from './ws.js';
+import {
+	prepareMatch,
+	type MatchPreparationOptions,
+	type PrepareMatchRoomOptions,
+	type PreparedMatchRoom,
+} from './match.js';
 
 type TimerHandle = ReturnType<typeof setTimeout>;
 
@@ -519,6 +532,237 @@ function checkPrepareTimeout(): void {
 	assert.equal(commitClock.pending(), 0);
 }
 
+interface W09Harness {
+	clock: FakeClock;
+	runtime: LobbyRuntime;
+	plans: MatchPlan[];
+	preparations: Promise<boolean>[];
+}
+
+/** 実GameRoomまたは注入factoryを使うW-09検査runtimeを構築する */
+function createW09Harness(
+	overrides: Partial<
+		Pick<MatchPreparationOptions, 'createRoom' | 'discardRoom'>
+	> = {},
+): W09Harness {
+	const clock = new FakeClock();
+	const plans: MatchPlan[] = [];
+	const preparations: Promise<boolean>[] = [];
+	let runtime: LobbyRuntime;
+	const createRoom =
+		overrides.createRoom ??
+		((options: PrepareMatchRoomOptions) =>
+			createRoomFromRules({
+				...options,
+				now: clock.now,
+				log: { info: () => {}, warn: () => {} },
+			}));
+	runtime = new LobbyRuntime({
+		clock,
+		onMatchPlan: (plan, controls) => {
+			plans.push(plan);
+			preparations.push(
+				prepareMatch(plan, controls, {
+					createRoom,
+					discardRoom: overrides.discardRoom,
+					releaseMatch: (userId, roomId) =>
+						runtime.registry.releaseMatch(userId, roomId),
+					broadcastMatchResult: (result) =>
+						runtime.registry.broadcastMatchResult(result),
+				}),
+			);
+		},
+	});
+	return { clock, runtime, plans, preparations };
+}
+
+/** harnessが現在受け取った全MatchPlan準備の完了を待つ */
+async function waitForW09(harness: W09Harness): Promise<void> {
+	await Promise.all(harness.preparations);
+}
+
+/** W-09の3成立経路、lifecycle解放、失敗・timeout・遅延成功cleanupを検査する */
+async function checkW09Integration(): Promise<void> {
+	assert.equal(roomCount(), 0);
+	assert.equal(roomReservationCount(), 0);
+
+	// 満員: FPS 2人を実GameRoomへcommitし、全人間joinで即countdown。
+	const full = createW09Harness();
+	const fullConnections = [80, 81].map((id) => connect(full.runtime.registry, id));
+	full.runtime.queue.join(80, 'eighty', 'fps');
+	full.runtime.queue.join(81, 'eighty-one', 'fps');
+	await waitForW09(full);
+	assert.deepEqual(full.plans[0]?.source, { kind: 'quick', reason: 'full' });
+	const fullContext = full.runtime.registry.getContext(80);
+	assert.equal(fullContext.kind, 'in_match');
+	const fullRoomId = fullContext.kind === 'in_match' ? fullContext.roomId : '';
+	assert.equal(full.runtime.registry.getContext(81).kind, 'in_match');
+	const fullRoom = getRoom(fullRoomId);
+	assert.ok(fullRoom);
+	fullRoom.join(0);
+	fullRoom.join(1);
+	assert.equal(fullRoom.getState(), 'countdown');
+	assert.equal(
+		fullConnections.every((connection) =>
+			connection.messages.some((message) => message.t === 'match_found'),
+		),
+		true,
+	);
+	closeRoom(fullRoomId);
+	assert.equal(full.runtime.registry.getContext(80).kind, 'idle');
+	assert.equal(full.runtime.registry.getContext(81).kind, 'idle');
+	full.runtime.destroy();
+	assert.equal(full.clock.pending(), 0);
+
+	// 手動: RSP 1人 + AI 3席。予定人間1席のjoinだけで10秒を待たずcountdown。
+	const manual = createW09Harness();
+	connect(manual.runtime.registry, 82);
+	manual.runtime.queue.join(82, 'eighty-two', 'rsp');
+	manual.runtime.queue.fillStart(82);
+	await waitForW09(manual);
+	assert.deepEqual(manual.plans[0]?.source, { kind: 'quick', reason: 'manual' });
+	assert.equal(manual.plans[0]?.seats.filter((seat) => seat.is_ai).length, 3);
+	const manualContext = manual.runtime.registry.getContext(82);
+	const manualRoomId = manualContext.kind === 'in_match' ? manualContext.roomId : '';
+	const manualRoom = getRoom(manualRoomId);
+	assert.ok(manualRoom);
+	manualRoom.join(0);
+	assert.equal(manualRoom.getState(), 'countdown');
+	closeRoom(manualRoomId);
+	assert.equal(manual.runtime.registry.getContext(82).kind, 'idle');
+	manual.runtime.destroy();
+	assert.equal(manual.clock.pending(), 0);
+
+	// カスタムroom_startも同じ橋を通り、commit時に招待コードを失効。
+	const custom = createW09Harness();
+	connect(custom.runtime.registry, 87);
+	const created = custom.runtime.rooms.create(87, 'eighty-seven', {
+		mode: 'rsp',
+		rules: { map: 'rsp', target_score: 3 },
+	});
+	assert.equal(created.ok, true);
+	const customCode = created.ok ? created.value : '';
+	custom.runtime.rooms.start(87);
+	await waitForW09(custom);
+	assert.equal(custom.plans[0]?.source.kind, 'custom');
+	assert.equal(custom.runtime.rooms.getState(customCode), null);
+	const customContext = custom.runtime.registry.getContext(87);
+	const customRoomId = customContext.kind === 'in_match' ? customContext.roomId : '';
+	assert.ok(getRoom(customRoomId));
+	closeRoom(customRoomId);
+	assert.equal(custom.runtime.registry.getContext(87).kind, 'idle');
+	custom.runtime.destroy();
+	assert.equal(custom.clock.pending(), 0);
+
+	// 60秒: 未接続のままさらに10秒でclosed。lifecycleでin_matchも解放。
+	const timeout = createW09Harness();
+	connect(timeout.runtime.registry, 83);
+	timeout.runtime.queue.join(83, 'eighty-three', 'fps');
+	timeout.clock.advance(60_000);
+	await waitForW09(timeout);
+	assert.deepEqual(timeout.plans[0]?.source, { kind: 'quick', reason: 'timeout' });
+	const timeoutContext = timeout.runtime.registry.getContext(83);
+	const timeoutRoomId = timeoutContext.kind === 'in_match' ? timeoutContext.roomId : '';
+	const timeoutRoom = getRoom(timeoutRoomId);
+	assert.ok(timeoutRoom);
+	timeout.clock.advance(10_000);
+	timeoutRoom.pump();
+	assert.equal(timeoutRoom.getState(), 'closed');
+	assert.equal(timeout.runtime.registry.getContext(83).kind, 'idle');
+	closeRoom(timeoutRoomId);
+	timeout.runtime.destroy();
+	assert.equal(timeout.clock.pending(), 0);
+
+	// 生成失敗: 接続中quick userは元FIFOへ戻りinternal_errorを受ける。
+	const failed = createW09Harness({
+		createRoom: async () => {
+			throw new Error('injected creation failure');
+		},
+	});
+	const failedConnection = connect(failed.runtime.registry, 84);
+	failed.runtime.queue.join(84, 'eighty-four', 'rsp');
+	failed.runtime.queue.fillStart(84);
+	await waitForW09(failed);
+	assert.equal(failed.runtime.registry.getContext(84).kind, 'queued');
+	assert.equal(failed.runtime.queue.size('rsp'), 1);
+	assert.equal(
+		failedConnection.messages.some(
+			(message) => message.t === 'error' && message.d.code === 'internal_error',
+		),
+		true,
+	);
+	failed.runtime.destroy();
+	assert.equal(failed.clock.pending(), 0);
+
+	// 5秒timeout後にfactoryが成功してもcommitせず、生成物を1回だけ破棄。
+	const lateDeferred: {
+		resolve?: (room: PreparedMatchRoom) => void;
+	} = {};
+	let discarded = 0;
+	const late = createW09Harness({
+		createRoom: () =>
+			new Promise<PreparedMatchRoom>((resolve) => {
+				lateDeferred.resolve = resolve;
+			}),
+		discardRoom: (roomId) => {
+			assert.equal(roomId, 'late-room');
+			discarded += 1;
+		},
+	});
+	connect(late.runtime.registry, 85);
+	late.runtime.queue.join(85, 'eighty-five', 'fps');
+	late.runtime.queue.fillStart(85);
+	assert.equal(late.runtime.activePlanCount(), 1);
+	late.clock.advance(5_000);
+	assert.equal(late.runtime.activePlanCount(), 0);
+	assert.equal(late.runtime.registry.getContext(85).kind, 'queued');
+	assert.ok(lateDeferred.resolve);
+	lateDeferred.resolve({ roomId: 'late-room' });
+	await waitForW09(late);
+	assert.equal(discarded, 1);
+	assert.equal(late.runtime.registry.getContext(85).kind, 'queued');
+	late.runtime.destroy();
+	assert.equal(late.clock.pending(), 0);
+
+	// match_end由来のfinished通知でも、60秒保持を待たずcontextを解放。
+	const lifecycleCapture: {
+		notify?: PrepareMatchRoomOptions['onLifecycle'];
+	} = {};
+	const finished = createW09Harness({
+		createRoom: async (options) => {
+			lifecycleCapture.notify = options.onLifecycle;
+			return { roomId: 'finished-room' };
+		},
+	});
+	connect(finished.runtime.registry, 88);
+	finished.runtime.queue.join(88, 'eighty-eight', 'fps');
+	finished.runtime.queue.fillStart(88);
+	await waitForW09(finished);
+	assert.equal(finished.runtime.registry.getContext(88).kind, 'in_match');
+	assert.ok(lifecycleCapture.notify);
+	lifecycleCapture.notify('finished', 'match_end');
+	assert.equal(finished.runtime.registry.getContext(88).kind, 'idle');
+	finished.runtime.destroy();
+	assert.equal(finished.clock.pending(), 0);
+
+	// abort済み生成は予約すら残さない。
+	const abort = new AbortController();
+	abort.abort();
+	await assert.rejects(
+		createRoomFromRules({
+			mode: 'fps',
+			participants: [{ userId: 86, slot: 0 }],
+			humanSlots: [0],
+			reservationToken: 'aborted-reservation',
+			signal: abort.signal,
+			log: { info: () => {}, warn: () => {} },
+		}),
+		(error: unknown) => error instanceof Error && error.name === 'AbortError',
+	);
+	assert.equal(roomCount(), 0);
+	assert.equal(roomReservationCount(), 0);
+}
+
 class WsClient {
 	readonly messages: LobbyServerMessage[] = [];
 	readonly invalidMessages: unknown[] = [];
@@ -846,6 +1090,10 @@ async function main(): Promise<void> {
 	console.log('W-08 検査5: prepare 5秒timeout / late success');
 	checkPrepareTimeout();
 	console.log('  OK: abort+rollback、遅延成功はcommitせずdispose');
+
+	console.log('W-09 検査: MatchPlan→実GameRoom / lifecycle / rollback');
+	await checkW09Integration();
+	console.log('  OK: 満員・手動・60秒、10秒待機、AI補完、失敗・timeout cleanup');
 
 	console.log('W-08 検査6: 実WebSocket');
 	await checkRealWebSocket();

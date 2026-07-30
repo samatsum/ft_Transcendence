@@ -8,6 +8,7 @@ import fastifyWebsocket from '@fastify/websocket';
 import { healthSchema, makeError } from '@ft/shared';
 
 import { listMaps, type GameMode } from './game/maps.js';
+import { closeAllRooms } from './game/rooms.js';
 import { registerGameWs } from './game/ws.js';
 import { registerLobbyWs } from './lobby/ws.js';
 import { ConnectionManager } from './ws/connection.js';
@@ -74,6 +75,7 @@ export async function buildServer(options: BuildServerOptions = {}) {
 		registerLobbyWs(scoped, { connectionManager });
 	});
 	app.addHook('onClose', async () => {
+		closeAllRooms();
 		connectionManager.clear();
 	});
 

@@ -12,6 +12,14 @@ import type { GameEvent, MatchEndReason, MatchResultPayload } from '@ft/shared';
 import { decodeSnapshot, type SnapshotMessage, type SnapshotPayload, type SnapshotMode } from './snapshot.js';
 
 export type RoomState = 'created' | 'countdown' | 'playing' | 'finished' | 'closed';
+export type RoomLifecycleReason =
+	| 'countdown_ready'
+	| 'countdown_timeout'
+	| 'match_started'
+	| 'match_end'
+	| 'no_humans'
+	| 'finished_hold'
+	| 'discarded';
 
 // ② §5-D のイベントと match_end.reason は `@ft/shared` の ws/game.ts が正本
 // （Issue #10 で配置を合意）。F-06/F-07 が同じ定義を import するので、
@@ -132,6 +140,12 @@ export interface RoomOptions {
 	persistMatch?: (context: PersistedMatchContext) => Promise<PersistedMatchResult | null>;
 	/** match_end 配信後、永続化成功時だけロビーの match_result へ渡す */
 	onMatchResult?: (result: MatchResultPayload) => void;
+	/**
+	 * ② §4-E: W-09 が試合終了・開始前破棄を購読し、ロビーの in_match context を解放する。
+	 *
+	 * GameRoom の内部状態をポーリングせずに済むよう、状態遷移の直後に同期通知する。
+	 */
+	onLifecycle?: (state: RoomState, reason: RoomLifecycleReason) => void;
 	/** 差し替え可能にしておくとテストで時間を進められる */
 	now?: () => number;
 	log?: RoomLogger;
@@ -304,7 +318,7 @@ export class GameRoom {
 		this.humanSeats.add(slot);
 		this.inputs.set(slot, { ...NEUTRAL_INPUT });
 		if (this.state === 'created' && this.allExpectedHumansJoined()) {
-			this.enterCountdown();
+			this.enterCountdown('countdown_ready');
 		}
 	}
 
@@ -346,37 +360,38 @@ export class GameRoom {
 			if (this.humanSeats.size === 0) {
 				// 誰も来なかったルームは記録を残さず破棄（② §6-A）
 				this.opts.log.info({ room: this.roomId }, 'GameRoom: 人間0人のまま時間切れ → closed');
-				this.close();
+				this.close('no_humans');
 			} else {
-				this.enterCountdown();
+				this.enterCountdown('countdown_timeout');
 			}
 		} else if (this.state === 'countdown' && elapsed >= COUNTDOWN_MS) {
 			this.enterPlaying();
 		} else if (this.state === 'finished' && elapsed >= FINISHED_HOLD_MS) {
-			this.close();
+			this.close('finished_hold');
 		}
 	}
 
 	/** 明示的に開始する（マッチメイキング側が全員そろったと判断した場合など） */
 	startNow(): void {
-		if (this.state === 'created') this.enterCountdown();
+		if (this.state === 'created') this.enterCountdown('countdown_ready');
 	}
 
-	close(): void {
+	/** simとtick timerを冪等に破棄し、closed lifecycleを通知する */
+	close(reason: RoomLifecycleReason = 'discarded'): void {
 		if (this.state === 'closed') return;
 		this.stopTimer();
 		this.sim?.destroy();
 		this.sim = null;
-		this.setState('closed');
+		this.setState('closed', reason);
 	}
 
-	private enterCountdown(): void {
-		this.setState('countdown');
+	private enterCountdown(reason: 'countdown_ready' | 'countdown_timeout' = 'countdown_ready'): void {
+		this.setState('countdown', reason);
 		this.broadcast({ t: 'event', d: { kind: 'countdown', seconds: COUNTDOWN_MS / 1000 } });
 	}
 
 	private enterPlaying(): void {
-		this.setState('playing');
+		this.setState('playing', 'match_started');
 		this.broadcast({ t: 'event', d: { kind: 'match_start' } });
 		// 30Hz の唯一の正（② §6-A）。unref しないのは、走っている試合が
 		// プロセスを延命すべきだから（サーバとしては正しい挙動）
@@ -528,7 +543,7 @@ export class GameRoom {
 		}
 		// ② §6-C 5. の 60 秒保持は match_end 発火時点から数える（永続化に時間が
 		// かかった場合の切れ端を避ける）。setState が stateEnteredAt を更新する
-		this.setState('finished');
+		this.setState('finished', 'match_end');
 		this.opts.log.info(
 			{ room: this.roomId, tick: this.tick, reason, winner, score, match_id: matchId },
 			'GameRoom: 試合終了',
@@ -536,9 +551,17 @@ export class GameRoom {
 		// ② §6-C 4. の lobby WS 配信は onMatchResult の接続先（W-09/W-13）の責務
 	}
 
-	private setState(next: RoomState): void {
+	private setState(next: RoomState, reason: RoomLifecycleReason): void {
 		this.state = next;
 		this.stateEnteredAt = this.opts.now();
+		try {
+			this.opts.onLifecycle?.(next, reason);
+		} catch (err) {
+			this.opts.log.warn(
+				{ room: this.roomId, state: next, reason, err },
+				'GameRoom: onLifecycle の通知に失敗',
+			);
+		}
 	}
 
 	private stopTimer(): void {
