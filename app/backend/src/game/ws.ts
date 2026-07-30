@@ -16,6 +16,7 @@ import {
 	envelopeSchema,
 	gameClientMessageSchema,
 	makeWsError,
+	type PlayerStatusMessage,
 	type WelcomeMessage,
 	type WsErrorCode,
 } from '@ft/shared';
@@ -124,7 +125,7 @@ async function handleConnection(
 			'W-11: WS 切断',
 		);
 		// 置換された旧接続の close は、新接続が引き継ぐ席を解放してはいけない。
-		if (!conn.replaced && conn.slot !== null) room.leave(conn.slot);
+		if (!conn.replaced && conn.slot !== null) room.disconnect(conn.slot);
 		if (peers.size === 0) releaseRoomConnections(roomId);
 	});
 
@@ -299,9 +300,9 @@ function handleJoin(conn: Connection, room: GameRoom, app: FastifyInstance): voi
 		return;
 	}
 
-	const resume = conn.joined;
+	let resume: boolean;
 	try {
-		room.join(slot);
+		({ resume } = room.join(slot));
 	} catch (err) {
 		// 定員外 slot / 受け付けない状態（finished 等）。ルーム層が弾いた
 		app.log.warn({ room: room.roomId, slot, err }, 'W-11: join を拒否');
@@ -333,6 +334,14 @@ function handleJoin(conn: Connection, room: GameRoom, app: FastifyInstance): voi
 		},
 	};
 	conn.socket.send(JSON.stringify(welcome));
+	for (const status of room.getPlayerSeatStates()) {
+		const message: PlayerStatusMessage = { t: 'player_status', d: status };
+		conn.socket.send(JSON.stringify(message));
+	}
+	if (resume) {
+		const snapshot = room.getResumeSnapshot();
+		if (snapshot) conn.socket.send(snapshot.serialized);
+	}
 }
 
 function handleInput(

@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 
 import { SimGame, INPUT_SRC_EXTERNAL, type SeatInput } from './sim.js';
 import { decodeSnapshot, type SnapshotMessage } from './snapshot.js';
-import { seatCount, type RoomEvent, type RoomLogger } from './room.js';
+import { seatCount, type RoomLogger } from './room.js';
 import { closeAllRooms, createRoom, roomCount, roomStates } from './rooms.js';
 
 const MAP = 'rsp_map/rsp.cub';
@@ -192,7 +192,7 @@ async function checkMultipleRoomsRunConcurrently(): Promise<boolean> {
 			// 「定員4人ぶんの人間」を待つことになり、10 秒経過するまで開始しない
 			humanSlots: [0],
 			log,
-			onBroadcast: (message: SnapshotMessage | RoomEvent, serialized: string) => {
+			onBroadcast: (message, serialized) => {
 				// ② §5-B: 配信は1回だけ直列化した同一文字列
 				if (serialized !== JSON.stringify(message)) {
 					bad.push(`${roomId}: serialized がメッセージと一致しない`);
@@ -205,7 +205,7 @@ async function checkMultipleRoomsRunConcurrently(): Promise<boolean> {
 						stat.finished = true;
 						stat.finishedTick = message.d.tick;
 					}
-				} else {
+				} else if (message.t === 'event') {
 					stat.events.push(message.d.kind);
 				}
 			},
