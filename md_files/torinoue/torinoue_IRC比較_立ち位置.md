@@ -2,7 +2,8 @@
 
 > **目的**: 成功例（IRC）での自分の型を、当プロジェクトでの役割に翻訳する  
 > **IRC 参照根**: 過去課題リポジトリ（IRC）の設計・運用ドキュメント  
-> **作成**: 2026-07-26（AI 草案 → 本人レビュー前提）
+> **作成**: 2026-07-26（AI 草案 → 本人レビュー前提）  
+> **更新**: 2026-07-30 — 公式 onboarding 追加を反映。進捗の詳細は PERT / 弱点分析へ
 
 関連: [弱点分析](./torinoue_チーム弱点分析.md) / [読む順_実装](./torinoue_読む順_実装.md) / [読む順_PM](./torinoue_読む順_PM.md)
 
@@ -51,7 +52,7 @@ flowchart LR
 |---|---|---|
 | A層の fd / poll / 送受信バッファ | Cookie セッション、Origin、docker 縁 | パケットではなく HTTP/WS 入口 |
 | `interface.md` の番人 | ③ REST + `app/shared` zod の所有者 | WS 境界の最終決定権は TL |
-| onboarding / reading_guide 作者 | 本 `md_files/torinoue/` 一式 | チーム公式 SSOT にするかは任意 |
+| onboarding / reading_guide 作者 | [onboarding_docs/](../onboarding_docs/)（公式）+ 本 `md_files/torinoue/`（深掘り） | 公式入口は 2026-07-29 に追加（#26） |
 | クリティカルパス分析（AI+自分） | PM としての日次ブロッカー管理 | 公式称号が付いた |
 
 ---
@@ -85,7 +86,7 @@ IRC ではあなたが「下支えして並行を可能にする人」だった�
 ### 無理に持ち込まない
 
 1. IRC 級の層別 `interface.md` 全章（時間がない。②③⑥で代替し、ギャップだけ提案）  
-2. 書籍カリキュラム型オンボーディング（残り5日）  
+2. 書籍カリキュラム型オンボーディング（短期間では教育より auth 着手を優先）  
 3. A層コードの手書き至上主義を REST にそのまま適用（緩和環境を活かし、ただし説明責任は保持）  
 4. quizzes / session_logs 一式（余力なし）
 

@@ -3,7 +3,8 @@
 > **用途**: インターフェース確認（IRC の `data_flow_diagram.md` 相当）  
 > **正本ではない**: 契約の正本は [② WSプロトコル設計](../02_設計書/2-WSプロトコル設計.md)・[③ REST_API設計](../02_設計書/3-REST_API設計.md)。乖離したら設計書を直し、本図を追従させる  
 > **提案付き**: 末尾に契約ギャップ  
-> **作成**: 2026-07-26（AI 草案 → torinoue レビュー前提）
+> **作成**: 2026-07-26（AI 草案 → torinoue レビュー前提）  
+> **更新**: 2026-07-30 — W-08/W-09/W-11/W-14 完了と auth stub の実態を追記
 
 用語: [torinoue_用語集.md](./torinoue_用語集.md)
 
@@ -78,7 +79,12 @@ sequenceDiagram
 { "error": { "code": "unauthenticated", "msg": "..." } }
 ```
 
-実装骨格: 認証は `authenticateRequest` のスタブ（シグネチャのみ・常に null を返す暫定実装）が配置済み（Issue #11）。認証の本実装は W-04 で行う。REST 成功パスは未実装。GameRoom（W-10）は完了（PR #8 で main マージ済み）。
+実装骨格（2026-07-30）:
+
+- 認証: `authenticateRequest` / `isAllowedOrigin` は Issue #11 でシグネチャ確定。  
+  **暫定実装**は `ALLOW_DEV_AUTH=true` かつ `NODE_ENV=development` のときだけ `x-dev-user` を受理（それ以外は `null`）。本実装は W-04/W-05。  
+- REST 成功パス（signup/login 等）は **未実装**。  
+- GameRoom / ゲーム WS（W-10/W-11）、ロビー WS / マッチング（W-08/W-09）、`GET /api/maps`（W-14）は **main 済み**（認可は上記 stub 経由）。
 
 ---
 
@@ -175,8 +181,8 @@ flowchart TB
 | # | 観測 | 影響 | 提案 |
 |---|---|---|---|
 | G1 | ③ は `shared/api/`、一部設計はルート `backend/`。実装は `app/shared/src/`・`app/backend/` | 新人と FE がパスを探す | ③ 冒頭に実装パスを明記 |
-| G2 | ~~Cookie 検証の「共通モジュール名」が設計に無い~~ → **Issue #11 で合意済み**（`session.ts` に `authenticateRequest` / `isAllowedOrigin`）。中身は W-04/W-05 で実装 | ~~W-05 と W-08 の結合が口頭頼み~~ | シグネチャは確定。本実装待ち |
-| G3 | ~~health 以外の zod が未設置。`shared/ws/` も未作成~~ → **解消**（`app/shared/src/ws/` に envelope・errors・game を配置。Issue #10 合意） | ~~契約の実装 SSOT が薄い~~ | auth zod（W-02）は未着手。WS 用は解消 |
+| G2 | Cookie 検証は Issue #11 で `session.ts` に合意。暫定は `ALLOW_DEV_AUTH` + `x-dev-user`。本実装は W-04/W-05 | W-08/W-11 は共通入口を既に呼んでいる。残るのは中身の置換 | Cookie 本実装で stub 分岐を消す（または production で絶対無効） |
+| G3 | ~~health 以外の zod が未設置。`shared/ws/` も未作成~~ → **WS 用は解消**（envelope・errors・game・lobby） | auth zod（W-02）は未着手 | auth 用 zod を shared に追加 |
 | G4 | 試合永続化がゲート2 後（W-13） | フロー図で「決着→DB」を必須と誤読しやすい | ゲート2 判定から永続化を外す旨を [⑤ バックログ](../02_設計書/5-バックログ.md) ゲート2 行に明記 |
 | G5 | `.env.example` に SESSION_SECRET / ALLOWED_ORIGIN はコメントのみ | W-04/W-05 着手時に忘れやすい | W-04 PR でコメントを実キーに昇格（値は秘密にしない例示） |
 
