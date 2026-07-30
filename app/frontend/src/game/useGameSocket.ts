@@ -9,7 +9,7 @@
 // 契約の正本は ② §5・§7 と `app/shared/src/ws/game.ts`。ここではワイヤ検証と
 // バッファ・状態管理のみを持ち、補間・描画・入力は別フックへ切る。
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
 	WS_CLOSE,
 	envelopeSchema,
@@ -84,6 +84,10 @@ export function useGameSocket(roomId: string): UseGameSocketResult {
 
 	useEffect(() => {
 		teardownRef.current = false;
+		// CodeRabbit 指摘#4: roomId 変更で新規セッション扱いにするため
+		// backoff counter をリセット。前 room の高 attempt 値のまま connect すると
+		// 初回接続なのに 'reconnecting' 表示になり、backoff 待機時間も混ざる
+		attemptRef.current = 0;
 		let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
 		function connect() {
@@ -181,11 +185,16 @@ export function useGameSocket(roomId: string): UseGameSocketResult {
 		};
 	}, [roomId]);
 
-	const send = (msg: GameClientMessage) => {
+	// CodeRabbit 指摘#5: send を useCallback で安定化。これがないと
+	// useGameSocket の state 更新（lastEvent/playerStatus 等）ごとに
+	// send の identity が変わり、useGameInput の setInterval effect が
+	// 再セットされて 30Hz 送信が毎回リセットされる。ws は ref 参照なので
+	// deps 空でも常に最新の接続を使う
+	const send = useCallback((msg: GameClientMessage) => {
 		const ws = wsRef.current;
 		if (!ws || ws.readyState !== WebSocket.OPEN) return;
 		ws.send(JSON.stringify(msg));
-	};
+	}, []);
 
 	return {
 		status,

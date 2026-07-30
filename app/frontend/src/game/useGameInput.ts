@@ -8,7 +8,7 @@
 // - タブ非表示/blur は全キー解放（押しっぱなし事故防止）。localYaw は保持。
 // - spectator は input を送らない（サーバも黙って破棄するが二重防御）。
 
-import { useEffect, useRef, type MutableRefObject, type RefObject } from 'react';
+import { useEffect, useRef, type RefObject } from 'react';
 import type { GameClientMessage } from '@ft/shared';
 
 // ② §5-A: mv 4bit ビットマスク
@@ -41,9 +41,9 @@ export interface UseGameInputOptions {
 
 export interface UseGameInputResult {
 	/** 現在の local yaw（描画側が overrideDir に渡すため ref で公開） */
-	localYawRef: MutableRefObject<number>;
+	localYawRef: RefObject<number>;
 	/** キャプチャ中か */
-	capturedRef: MutableRefObject<boolean>;
+	capturedRef: RefObject<boolean>;
 	/** キャプチャ状態を外から見たいときの状態通知フック */
 	setOnCaptureChange: (fn: ((captured: boolean) => void) | null) => void;
 }

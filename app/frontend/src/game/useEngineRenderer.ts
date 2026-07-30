@@ -11,7 +11,7 @@
 // 補間の時計基準: 最初の snapshot 受信時刻を playhead=0 とし、以後 elapsed - 100ms を
 //   描画時刻とする。サーバ tick との絶対同期は取らず、到着間隔から相対時間を導く（② §8）。
 
-import { useEffect, useState, type RefObject, type MutableRefObject } from 'react';
+import { useEffect, useState, type RefObject } from 'react';
 import type { WelcomeMessage } from '@ft/shared';
 
 import { interpolate } from '../engine/snapshotInterp.js';
@@ -36,7 +36,7 @@ export interface UseEngineRendererOptions {
 	/** useGameSocket の snapshotBuffer をそのまま参照する（15Hz 再レンダを避けるため ref） */
 	snapshotBufferRef: { current: TimedSnapshot[] };
 	/** 自席の視点(localYaw)。ref なので再レンダに巻き込まない */
-	localYawRef: MutableRefObject<number>;
+	localYawRef: RefObject<number>;
 }
 
 export interface UseEngineRendererResult {
@@ -58,8 +58,15 @@ export function useEngineRenderer({
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	const [fps, setFps] = useState<number>(0);
 
+	// CodeRabbit 指摘#2: reconnect（welcome.resume=true）では map_text / mode /
+	// combatant_id は変わらないので、welcome の参照ではなくこれら primitive を deps に
+	// 並べる。参照が新しくても中身が同じ session なら wasm 再ロード・再 web_init しない。
+	const mapText = welcome?.map_text ?? null;
+	const mode = welcome?.mode ?? null;
+	const combatantId = welcome?.combatant_id ?? null;
+
 	useEffect(() => {
-		if (!welcome) return;
+		if (!mapText || !mode) return;
 		const canvas = canvasRef.current;
 		if (!canvas) return;
 
@@ -142,22 +149,34 @@ export function useEngineRenderer({
 				if (alpha > 1) alpha = 1;
 			}
 			// 穴3 の決定: 自席（welcome.combatant_id）の dir を localYaw で上書き
-			const overrideDir = welcome && welcome.combatant_id !== null
-				? { id: welcome.combatant_id, dir: localYawRef.current }
+			const overrideDir = combatantId !== null
+				? { id: combatantId, dir: localYawRef.current }
 				: undefined;
 			const flat = interpolate(cur.payload, next?.payload ?? null, alpha, overrideDir);
-			// wasm ヒープの再確保が要るか
-			const bytes = flat.byteLength;
-			if (bytes > flatCap) {
-				if (flatPtr !== 0) mod._free(flatPtr);
-				flatCap = bytes;
-				flatPtr = mod._malloc(flatCap);
+			try {
+				// wasm ヒープの再確保が要るか
+				const bytes = flat.byteLength;
+				if (bytes > flatCap) {
+					if (flatPtr !== 0) mod._free(flatPtr);
+					flatCap = bytes;
+					flatPtr = mod._malloc(flatCap);
+					// CodeRabbit 指摘#3: _malloc 失敗（OOM）時に 0 を書くと
+					// wasm ヒープの先頭を破壊するので必ずチェック
+					if (flatPtr === 0) {
+						flatCap = 0;
+						throw new Error('_malloc failed (wasm メモリ枯渇の可能性)');
+					}
+				}
+				mod.HEAPF64.set(flat, flatPtr / 8);
+				const viewId = combatantId ?? 0;
+				mod._web_apply_snapshot(flatPtr, flat.length, viewId);
+				mod._web_render_frame();
+				present(mod);
+			} catch (err) {
+				setStatus('error');
+				setErrorMessage(err instanceof Error ? err.message : String(err));
+				return; // 再スケジュールしない（無限リトライ回避）
 			}
-			mod.HEAPF64.set(flat, flatPtr / 8);
-			const viewId = welcome?.combatant_id ?? 0;
-			mod._web_apply_snapshot(flatPtr, flat.length, viewId);
-			mod._web_render_frame();
-			present(mod);
 			fpsFrames += 1;
 			const nowMs = performance.now();
 			if (nowMs - fpsWindowStart >= 1000) {
@@ -176,12 +195,12 @@ export function useEngineRenderer({
 				mod = m;
 				setStatus('loading-textures');
 				setTextureProgress({ loaded: 0, total: 0 });
-				await loadTextures(m, welcome.map_text, (p) => setTextureProgress(p));
+				await loadTextures(m, mapText, (p) => setTextureProgress(p));
 				if (cancelled) return;
 				// map テキストを wasm ヒープへ書き、web_init
-				const mapPtr = writeCString(m, welcome.map_text);
+				const mapPtr = writeCString(m, mapText);
 				try {
-					const isRsp = welcome.mode === 'rsp' ? 1 : 0;
+					const isRsp = mode === 'rsp' ? 1 : 0;
 					// 内部解像度は既定（960x540）。0 は「指定なし」（E-13 の web_init 引数）
 					const ok = m._web_init(mapPtr, isRsp, 0, 0);
 					if (!ok) throw new Error('web_init failed');
@@ -213,7 +232,7 @@ export function useEngineRenderer({
 			// GC 任せ（unmount 後の rAF は cancelled で止まっているので副作用なし）
 			mod = null;
 		};
-	}, [welcome, canvasRef, snapshotBufferRef, localYawRef]);
+	}, [mapText, mode, combatantId, canvasRef, snapshotBufferRef, localYawRef]);
 
 	return { status, textureProgress, errorMessage, fps };
 }

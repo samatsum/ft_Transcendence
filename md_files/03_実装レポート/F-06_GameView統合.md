@@ -100,12 +100,13 @@
 - [ ] №4: 試合中にタブを閉じ、30 秒以内の再入で人間に復帰する(F-07 の HUD 表示と共同)
 - [ ] №5: snapshot < 1KB を維持したまま画面が滑らか(60fps @ 960×540 の維持)
 
-**F-06 固有の受入**:
+**F-06 固有の受入(実装済み ✅ = コードで担保、⏳ = 実 E2E 未検証)**:
 
-- [ ] `welcome.map_text` からの `web_init` が成功
-- [ ] 補間 100ms 遅延で位置が飛ばない・角度が逆回りしない
-- [ ] 自席の視点回転がローカルで即時反映(サーバ ラウンドトリップ待ちの目視違和感なし)
-- [ ] unmount 時に WS close / setInterval clear / cancelAnimationFrame / Module 解放が漏れない(メモリリークなし)
+- ✅ `welcome.map_text` からの `web_init` が成功(useEngineRenderer の init 経路で実装)
+- ✅ 補間 100ms 遅延で位置が飛ばない・角度が逆回りしない(snapshotInterp `lerpAngle` + vitest 9件)
+- ✅ 自席の視点回転がローカルで即時反映(useGameInput の localYaw 積分 + interpolate `overrideDir` 経路)
+- ✅ unmount 時に WS close / setInterval clear / cancelAnimationFrame / Module 解放が漏れない(cancelled フラグ + cleanup 関数で実装)
+- ⏳ 実 backend との 2ブラウザ E2E は本 PR では未検証(W-04 認証 + W-15 nginx TLS の結合待ち)
 
 ---
 
@@ -177,11 +178,13 @@
 
 | 項目 | 値 |
 |---|---|
-| ステータス | **未着手**(spec 確定・着手待ち。2026-07-31 時点) |
+| ステータス | **実装コミット済み**(PR #32、2026-07-31)。**E2E 未検証**(実 backend との 2ブラウザ対戦は W-04/W-15 結合待ち) |
 | 担当 | **samatsum**(hminemur が主担当だが連絡不通のため代行) |
 | クリティカルパス | **★はい**(ゲート2 の最終ピース) |
 | 拒否条件 | 直接は該当しないが、対戦成立しないと課題書 IV.6(コア #2 リモートプレイヤー)が 0pt |
-| 予定 Day | Day 2〜3(5日制)。実際は 2026-07-31 以降 |
+| 予定 Day | Day 2〜3(5日制)。実装コミットは 2026-07-31 |
+| 検証済み | typecheck(3 ワークスペース)/ vitest 9件 / vite build / docker `frontend-engine-assets` 実走 |
+| 未検証 | 2ブラウザ実 E2E、React 19 StrictMode 二重マウント下の挙動、100ms 補間遅延のジッタ下の滑らかさ |
 
 ---
 
@@ -190,3 +193,4 @@
 | 日付 | 内容 |
 |---|---|
 | 2026-07-31 | 初版(着手前スペック)。上流工程レビューの結果と4つのローカル決定を含める。samatsum が hminemur 代行で作成 |
+| 2026-07-31 | 実装コミット時に更新。§4 受入条件を実装済みマークに置換、§8 状態を「実装コミット済み」へ、検証済み/未検証を追記。CodeRabbit レビュー反映(TextDecoder 復元 / reconnect 再init 抑制 / `_malloc` 検証 / attemptRef リセット / send メモ化 / MutableRefObject 排除)も同 PR で実施 |

@@ -34,10 +34,13 @@ function loadGlueOnce(): Promise<CreateRenderModule> {
 		const script = document.createElement('script');
 		script.src = GLUE_URL;
 		script.async = true;
-		script.onload = () => {
+		function restoreTextDecoder() {
 			if (window.__cub3dTextDecoder) {
 				window.TextDecoder = window.__cub3dTextDecoder;
 			}
+		}
+		script.onload = () => {
+			restoreTextDecoder();
 			const factory = window.createCub3DModule;
 			if (!factory) {
 				reject(new Error('render.js は読み込めたが createCub3DModule が未定義'));
@@ -46,6 +49,9 @@ function loadGlueOnce(): Promise<CreateRenderModule> {
 			resolve(factory);
 		};
 		script.onerror = () => {
+			// 失敗時も native TextDecoder を必ず戻す。戻さないと再試行や他機能で
+			// TextDecoder が undefined のまま参照エラーになる（CodeRabbit 指摘）
+			restoreTextDecoder();
 			scriptPromise = null;
 			reject(new Error(`render.js の読み込みに失敗: ${GLUE_URL}`));
 		};
