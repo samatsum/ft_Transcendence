@@ -37,6 +37,7 @@ import {
 	type LobbyConnection,
 	type MatchPlan,
 } from './state.js';
+import { prepareMatch } from './match.js';
 
 const OPEN = 1;
 const CREATE_LIMIT_PER_MINUTE = 3;
@@ -61,6 +62,8 @@ export interface UserProfileResolver {
 export interface MatchPlanControls {
 	readonly signal: AbortSignal;
 	rollback(): boolean;
+	/** 生成失敗をrollbackし、接続中参加者へinternal_errorを通知する */
+	fail(message: string): boolean;
 	/** W-09 が GameRoom 生成に成功した後だけ呼ぶ */
 	commit(roomId: string, discardPreparedMatch?: () => void): boolean;
 }
@@ -162,6 +165,18 @@ export class LobbyRuntime {
 		return rolledBack;
 	}
 
+	/** active planをrollbackし、成功時だけ参加者へ生成失敗を通知する */
+	fail(plan: MatchPlan, message: string): boolean {
+		if (!this.rollback(plan)) return false;
+		for (const participant of plan.participants) {
+			this.registry.send(
+				participant.userId,
+				makeWsError('internal_error', message),
+			);
+		}
+		return true;
+	}
+
 	/** GameRoom生成済みplanを一括commitし、参加者へmatch_foundを送る */
 	commit(plan: MatchPlan, roomId: string, discardPreparedMatch?: () => void): boolean {
 		const active = this.activePlans.get(plan.token);
@@ -217,24 +232,12 @@ export class LobbyRuntime {
 		this.activePlans.set(plan.token, active);
 		if (!this.onMatchPlan) {
 			// W-09未接続中も user を starting_match に固着させない。
-			this.rollback(plan);
-			for (const participant of plan.participants) {
-				this.registry.send(
-					participant.userId,
-					makeWsError('internal_error', 'match preparation is not available'),
-				);
-			}
+			this.fail(plan, 'match preparation is not available');
 			return;
 		}
 		active.timer = this.clock.setTimeout(() => {
 			active.timer = null;
-			if (!this.rollback(plan)) return;
-			for (const participant of plan.participants) {
-				this.registry.send(
-					participant.userId,
-					makeWsError('internal_error', 'match preparation timed out'),
-				);
-			}
+			this.fail(plan, 'match preparation timed out');
 		}, MATCH_PREPARE_TIMEOUT_MS);
 		const timerWithUnref = active.timer as ReturnType<typeof setTimeout> & {
 			unref?: () => void;
@@ -244,16 +247,11 @@ export class LobbyRuntime {
 			this.onMatchPlan(plan, {
 				signal: active.abort.signal,
 				rollback: () => this.rollback(plan),
+				fail: (message) => this.fail(plan, message),
 				commit: (roomId, discard) => this.commit(plan, roomId, discard),
 			});
 		} catch {
-			this.rollback(plan);
-			for (const participant of plan.participants) {
-				this.registry.send(
-					participant.userId,
-					makeWsError('internal_error', 'match preparation failed'),
-				);
-			}
+			this.fail(plan, 'match preparation failed');
 		}
 	}
 }
@@ -265,7 +263,16 @@ export function registerLobbyWs(
 	app: FastifyInstance,
 	options: LobbyRuntimeOptions = {},
 ): LobbyRuntime {
-	const runtime = new LobbyRuntime(options);
+	let runtime: LobbyRuntime;
+	const onMatchPlan =
+		options.onMatchPlan ??
+		((plan: MatchPlan, controls: MatchPlanControls): void => {
+			void prepareMatch(plan, controls, {
+				releaseMatch: (userId, roomId) => runtime.registry.releaseMatch(userId, roomId),
+				broadcastMatchResult: (result) => runtime.registry.broadcastMatchResult(result),
+			});
+		});
+	runtime = new LobbyRuntime({ ...options, onMatchPlan });
 	const profileResolver = options.profileResolver ?? devProfileResolver;
 	const connectionManager = options.connectionManager ?? defaultConnectionManager;
 
