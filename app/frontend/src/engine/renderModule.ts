@@ -37,6 +37,10 @@ function loadGlueOnce(): Promise<CreateRenderModule> {
 		function restoreTextDecoder() {
 			if (window.__cub3dTextDecoder) {
 				window.TextDecoder = window.__cub3dTextDecoder;
+				// CodeRabbit 追加指摘: sentinel を undefined に戻して、次回の
+				// loadGlueOnce リトライで上部の shim アーム条件を通す。残したままだと
+				// retry 時 shim が張られず GATE1 の resizable ArrayBuffer 問題を踏む
+				window.__cub3dTextDecoder = undefined;
 			}
 		}
 		script.onload = () => {
