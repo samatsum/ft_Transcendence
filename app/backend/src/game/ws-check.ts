@@ -118,14 +118,15 @@ class TestClient {
 		return this.received.find((m) => m.t === t) as Extract<GameServerMessage, { t: T }> | undefined;
 	}
 
-	/** predicate成立を3秒までpollする */
-	async waitFor(predicate: () => boolean, label: string): Promise<void> {
+	/** predicate成立を3秒までpollし、timeoutは後続検査を止めず収集する */
+	async waitFor(predicate: () => boolean, label: string, bad: string[]): Promise<boolean> {
 		const started = Date.now();
 		while (Date.now() - started < 3_000) {
-			if (predicate()) return;
+			if (predicate()) return true;
 			await sleep(10);
 		}
-		throw new Error(`timeout waiting for ${label}`);
+		bad.push(`timeout waiting for ${label}`);
+		return false;
 	}
 
 	close(): void {
@@ -401,6 +402,35 @@ async function checkInvalidMessages(): Promise<string[]> {
 /** 30秒graceのRSP復帰/全員abandonとFPS forfeitを実WSで検査する */
 async function checkReconnectAndForfeit(): Promise<string[]> {
 	const bad: string[] = [];
+	const clients: TestClient[] = [];
+	try {
+		await runReconnectAndForfeitChecks(bad, clients);
+	} catch (error) {
+		bad.push(`W-12検査中の例外: ${error instanceof Error ? error.message : String(error)}`);
+	} finally {
+		for (const client of clients) client.close();
+		for (const roomId of [
+			'ws-reconnect-rsp',
+			'ws-reconnect-fps',
+			'ws-leave-fps',
+			'ws-late-initial-rsp',
+		]) {
+			closeRoom(roomId);
+		}
+	}
+	return bad;
+}
+
+/** W-12の各シナリオを順に実行し、失敗をbadへ集約する */
+async function runReconnectAndForfeitChecks(
+	bad: string[],
+	clients: TestClient[],
+): Promise<void> {
+	const makeClient = (roomId: string, userId: number): TestClient => {
+		const client = new TestClient(roomId, userId);
+		clients.push(client);
+		return client;
+	};
 	let rspNow = 0;
 	const rspCapture: { persisted?: PersistedMatchContext } = {};
 	const rspMessages: GameServerMessage[] = [];
@@ -422,14 +452,14 @@ async function checkReconnectAndForfeit(): Promise<string[]> {
 		},
 		log: { info: () => {}, warn: () => {} },
 	});
-	const rspA = new TestClient(rspRoom.roomId, 501);
-	const rspB = new TestClient(rspRoom.roomId, 502);
+	const rspA = makeClient(rspRoom.roomId, 501);
+	const rspB = makeClient(rspRoom.roomId, 502);
 	await Promise.all([rspA.open(), rspB.open()]);
 	rspA.send({ t: 'join' });
 	rspB.send({ t: 'join' });
 	await Promise.all([
-		rspA.waitFor(() => Boolean(rspA.find('welcome')), 'RSP A welcome'),
-		rspB.waitFor(() => Boolean(rspB.find('welcome')), 'RSP B welcome'),
+		rspA.waitFor(() => Boolean(rspA.find('welcome')), 'RSP A welcome', bad),
+		rspB.waitFor(() => Boolean(rspB.find('welcome')), 'RSP B welcome', bad),
 	]);
 	rspNow += 3_000;
 	rspRoom.pump();
@@ -446,17 +476,19 @@ async function checkReconnectAndForfeit(): Promise<string[]> {
 					message.d.state === 'grace',
 			),
 		'RSP slot0 grace',
+		bad,
 	);
 	if (rspRoom.getPlayerSeatState(0) !== 'grace') bad.push('RSP slot0 がgraceにならない');
-	const rspAResume = new TestClient(rspRoom.roomId, 501);
+	const rspAResume = makeClient(rspRoom.roomId, 501);
 	await rspAResume.open();
 	rspAResume.send({ t: 'join' });
-	await rspAResume.waitFor(() => Boolean(rspAResume.find('welcome')), 'RSP resume welcome');
+	await rspAResume.waitFor(() => Boolean(rspAResume.find('welcome')), 'RSP resume welcome', bad);
 	const resumedWelcome = rspAResume.find('welcome');
 	if (resumedWelcome?.d.resume !== true) bad.push('grace内復帰のwelcome.resumeがtrueでない');
 	await rspAResume.waitFor(
 		() => rspAResume.received.some((message) => message.t === 'snapshot'),
 		'RSP resume snapshot',
+		bad,
 	);
 	if (rspRoom.getPlayerSeatState(0) !== 'connected') {
 		bad.push('RSP slot0 がconnectedへ復帰しない');
@@ -483,16 +515,17 @@ async function checkReconnectAndForfeit(): Promise<string[]> {
 					message.d.slot === 0,
 			).length >= 2,
 		'RSP second disconnect',
+		bad,
 	);
 	rspNow += 29_999;
 	rspRoom.pump();
 	if (rspRoom.getPlayerSeatState(0) !== 'grace') bad.push('RSP graceが30秒未満で満了した');
 	rspNow += 1;
 	// pumpと再joinが同時刻に競合しても、join側が期限を再確認してplayer復帰を拒否する。
-	const rspLate = new TestClient(rspRoom.roomId, 501);
+	const rspLate = makeClient(rspRoom.roomId, 501);
 	await rspLate.open();
 	rspLate.send({ t: 'join' });
-	await rspLate.waitFor(() => rspLate.closedWith !== null, 'RSP late reconnect close');
+	await rspLate.waitFor(() => rspLate.closedWith !== null, 'RSP late reconnect close', bad);
 	if (rspLate.closedWith !== WS_CLOSE.notAllowed) {
 		bad.push(`grace満了後のplayer復帰がclose 4003でない (${rspLate.closedWith})`);
 	}
@@ -501,8 +534,12 @@ async function checkReconnectAndForfeit(): Promise<string[]> {
 
 	// 残る人間もgrace満了するとRSPはabandon終了。
 	rspB.close();
-	await rspB.waitFor(() => rspB.closedWith !== null, 'RSP B close');
-	await sleep(30);
+	await rspB.waitFor(() => rspB.closedWith !== null, 'RSP B close', bad);
+	await rspB.waitFor(
+		() => rspRoom.getPlayerSeatState(1) === 'grace',
+		'RSP slot1 disconnect state',
+		bad,
+	);
 	rspNow += 30_000;
 	rspRoom.pump();
 	await flushPromises();
@@ -545,14 +582,14 @@ async function checkReconnectAndForfeit(): Promise<string[]> {
 		},
 		log: { info: () => {}, warn: () => {} },
 	});
-	const fpsA = new TestClient(fpsRoom.roomId, 601);
-	const fpsB = new TestClient(fpsRoom.roomId, 602);
+	const fpsA = makeClient(fpsRoom.roomId, 601);
+	const fpsB = makeClient(fpsRoom.roomId, 602);
 	await Promise.all([fpsA.open(), fpsB.open()]);
 	fpsA.send({ t: 'join' });
 	fpsB.send({ t: 'join' });
 	await Promise.all([
-		fpsA.waitFor(() => Boolean(fpsA.find('welcome')), 'FPS A welcome'),
-		fpsB.waitFor(() => Boolean(fpsB.find('welcome')), 'FPS B welcome'),
+		fpsA.waitFor(() => Boolean(fpsA.find('welcome')), 'FPS A welcome', bad),
+		fpsB.waitFor(() => Boolean(fpsB.find('welcome')), 'FPS B welcome', bad),
 	]);
 	fpsNow += 3_000;
 	fpsRoom.pump();
@@ -566,6 +603,7 @@ async function checkReconnectAndForfeit(): Promise<string[]> {
 					message.d.state === 'grace',
 			),
 		'FPS slot0 grace',
+		bad,
 	);
 	fpsNow += 29_999;
 	fpsRoom.pump();
@@ -582,6 +620,7 @@ async function checkReconnectAndForfeit(): Promise<string[]> {
 					message.d.slot === 0,
 			),
 		'FPS grace ai_takeover',
+		bad,
 	);
 	const fpsEnd = fpsMessages.find(
 		(message) => message.t === 'event' && message.d.kind === 'match_end',
@@ -597,16 +636,6 @@ async function checkReconnectAndForfeit(): Promise<string[]> {
 	}
 	if (fpsCapture.persisted?.abandonedSlots.join(',') !== '0') {
 		bad.push(`FPS abandonedSlotsが不正 (${fpsCapture.persisted?.abandonedSlots.join(',')})`);
-	}
-	if (
-		!fpsB.received.some(
-			(message) =>
-				message.t === 'event' &&
-				message.d.kind === 'ai_takeover' &&
-				message.d.slot === 0,
-		)
-	) {
-		bad.push('FPS grace満了のai_takeoverが届かない');
 	}
 	fpsB.close();
 	closeRoom(fpsRoom.roomId);
@@ -628,14 +657,14 @@ async function checkReconnectAndForfeit(): Promise<string[]> {
 		onBroadcast: (message) => leaveMessages.push(message),
 		log: { info: () => {}, warn: () => {} },
 	});
-	const leaveA = new TestClient(leaveRoom.roomId, 611);
-	const leaveB = new TestClient(leaveRoom.roomId, 612);
+	const leaveA = makeClient(leaveRoom.roomId, 611);
+	const leaveB = makeClient(leaveRoom.roomId, 612);
 	await Promise.all([leaveA.open(), leaveB.open()]);
 	leaveA.send({ t: 'join' });
 	leaveB.send({ t: 'join' });
 	await Promise.all([
-		leaveA.waitFor(() => Boolean(leaveA.find('welcome')), 'leave A welcome'),
-		leaveB.waitFor(() => Boolean(leaveB.find('welcome')), 'leave B welcome'),
+		leaveA.waitFor(() => Boolean(leaveA.find('welcome')), 'leave A welcome', bad),
+		leaveB.waitFor(() => Boolean(leaveB.find('welcome')), 'leave B welcome', bad),
 	]);
 	leaveNow += 3_000;
 	leaveRoom.pump();
@@ -649,6 +678,7 @@ async function checkReconnectAndForfeit(): Promise<string[]> {
 					message.d.reason === 'forfeit',
 			),
 		'FPS explicit leave forfeit',
+		bad,
 	);
 	const leaveEnd = leaveMessages.find(
 		(message) => message.t === 'event' && message.d.kind === 'match_end',
@@ -681,41 +711,36 @@ async function checkReconnectAndForfeit(): Promise<string[]> {
 		now: () => lateInitialNow,
 		log: { info: () => {}, warn: () => {} },
 	});
-	const lateInitialA = new TestClient(lateInitialRoom.roomId, 621);
+	const lateInitialA = makeClient(lateInitialRoom.roomId, 621);
 	await lateInitialA.open();
 	lateInitialA.send({ t: 'join' });
-	await lateInitialA.waitFor(() => Boolean(lateInitialA.find('welcome')), 'late initial A welcome');
+	await lateInitialA.waitFor(
+		() => Boolean(lateInitialA.find('welcome')),
+		'late initial A welcome',
+		bad,
+	);
 	lateInitialNow += 10_000;
 	lateInitialRoom.pump();
 	lateInitialNow += 3_000;
 	lateInitialRoom.pump();
-	const lateInitialB = new TestClient(lateInitialRoom.roomId, 622);
+	if (lateInitialRoom.getState() !== 'playing') {
+		bad.push(`late-initial roomがplayingでない (${lateInitialRoom.getState()})`);
+	}
+	const lateInitialB = makeClient(lateInitialRoom.roomId, 622);
 	await lateInitialB.open();
 	lateInitialB.send({ t: 'join' });
-	await lateInitialB.waitFor(() => lateInitialB.closedWith !== null, 'late initial B close');
+	await lateInitialB.waitFor(() => lateInitialB.closedWith !== null, 'late initial B close', bad);
 	if (lateInitialB.closedWith !== WS_CLOSE.notAllowed) {
 		bad.push(`playing後の初回joinがclose 4003でない (${lateInitialB.closedWith})`);
 	}
 	lateInitialA.close();
 	closeRoom(lateInitialRoom.roomId);
 
-	for (const client of [
-		rspA,
-		rspB,
-		rspAResume,
-		rspLate,
-		fpsA,
-		fpsB,
-		leaveA,
-		leaveB,
-		lateInitialA,
-		lateInitialB,
-	]) {
+	for (const client of clients) {
 		if (client.connectionErrors.length > 0) {
 			bad.push(`user ${client.userId} にWebSocket error (${client.connectionErrors.length}件)`);
 		}
 	}
-	return bad;
 }
 
 /** pending async永続化を2段ぶん進める */
@@ -806,7 +831,7 @@ async function main(): Promise<void> {
 	await app.close();
 
 	if (bad1.length || bad2.length || bad3.length || bad4.length) {
-		console.error('\nW-11: 失敗');
+		console.error('\nW-11 / W-12 / W-14: 失敗');
 		process.exit(1);
 	}
 	console.log('\nW-11: 受入条件 №5 / №6 を満たしています');

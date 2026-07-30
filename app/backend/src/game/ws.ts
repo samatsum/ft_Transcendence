@@ -16,6 +16,7 @@ import {
 	envelopeSchema,
 	gameClientMessageSchema,
 	makeWsError,
+	type PlayerStatusMessage,
 	type WelcomeMessage,
 	type WsErrorCode,
 } from '@ft/shared';
@@ -334,7 +335,8 @@ function handleJoin(conn: Connection, room: GameRoom, app: FastifyInstance): voi
 	};
 	conn.socket.send(JSON.stringify(welcome));
 	for (const status of room.getPlayerSeatStates()) {
-		conn.socket.send(JSON.stringify({ t: 'player_status', d: status }));
+		const message: PlayerStatusMessage = { t: 'player_status', d: status };
+		conn.socket.send(JSON.stringify(message));
 	}
 	if (resume) {
 		const snapshot = room.getResumeSnapshot();

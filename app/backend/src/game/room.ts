@@ -402,9 +402,8 @@ export class GameRoom {
 		const changed = playerSeat.state !== 'connected';
 		playerSeat.state = 'connected';
 		playerSeat.graceUntil = null;
-		this.requireSim().setInputSource(slot, INPUT_SRC_EXTERNAL);
-		this.humanSeats.add(slot);
-		this.inputs.set(slot, { ...NEUTRAL_INPUT });
+		this.requireSim();
+		this.setSeatInputSource(slot, INPUT_SRC_EXTERNAL);
 		if (changed) this.broadcastPlayerStatus(slot, 'connected');
 		if (resume) {
 			this.broadcast({ t: 'event', d: { kind: 'player_reconnected', slot } });
