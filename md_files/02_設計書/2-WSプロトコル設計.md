@@ -709,6 +709,12 @@ W-09 は MatchPlan を閉じ込めた永続化closureを GameRoom へ渡す。
 
 ## 7. 切断・再接続・AI 代替（Remote players モジュールの中核デモ）
 
+> **✅ W-12 実装完了（2026-07-30）**: `GameRoom` がparticipant席ごとの
+> `connected / grace / ai` と復帰可否を正本として保持する。通常closeは即AI入力へ
+> 切替えて30秒grace、同一userの再joinは `welcome.resume=true` と即時snapshotで復帰、
+> 満了後はplayer復帰を拒否する。RSP全員満了はabandon、FPS満了/明示leaveはforfeit。
+> `game/ws-check.ts` の実WebSocket検査で§10-B №4と永続化callbackへの離脱席引渡しを確認済み。
+
 ### 7-A. フロー（RSP の例）
 
 ```
@@ -862,3 +868,4 @@ W-09の結合条件とする。
 | 2026-07-30 | **W-08設計完成**: W-01/W-10/W-11/W-14の実装パターンを§0-Aに固定。ロビーwireの全型、UserContextRegistry、friend限定presence、置換/room再接続10秒、heartbeat/session失効、FIFO deadline、LobbyRoom canonical rules、同期claim+token rollback、immutable MatchPlanによるW-09境界、実装配置、W-08単体受入10項目を追加。未実装の速度倍率/AI強さをwireから削除。grace満了後の復帰可という旧記述と「永続化失敗をmatch_resultで救済」という不可能な旧記述を訂正 |
 | 2026-07-30 | **W-08コア実装**: `shared/ws/lobby.ts`、`backend/src/lobby/`、共通`ws/connection.ts`、`/ws/lobby`、Vite `/ws` proxyを実装。`npm run check:lobby`でFIFO/3成立経路/rollback/LobbyRoom/grace/presence/実WS/heartbeat/session索引を検査。本Cookie認証・DB profile・logoutからのhook呼出しはW-04/W-05結合待ち |
 | 2026-07-30 | **W-09実装完了**: `lobby/match.ts` でimmutable MatchPlanを実GameRoomへ接続。token commit/rollback、5秒abort、予約token、遅延成功破棄、`match_found`、GameRoom lifecycleによるcontext解放を実装。`npm run check:lobby`で手動/60秒/満員、10秒人間0close、生成失敗、timeout、予約残留ゼロを自動検査 |
+| 2026-07-30 | **W-12実装完了**: participant席状態をGameRoomへ実装し、通常closeの即AI代替+30秒grace、同一user復帰、満了後復帰拒否、RSP abandon、FPS forfeit、明示leave、離脱席の永続化境界を接続。実WebSocket検査で§10-B №4を自動確認 |

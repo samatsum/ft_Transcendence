@@ -8,10 +8,17 @@
 // W-11 がそこへ WebSocket.send を差し込む。
 import { diffEvents } from './events.js';
 import { SimGame, INPUT_SRC_AI, INPUT_SRC_EXTERNAL, NEUTRAL_INPUT, type SeatInput } from './sim.js';
-import type { GameEvent, MatchEndReason, MatchResultPayload } from '@ft/shared';
+import type {
+	GameEvent,
+	MatchEndReason,
+	MatchResultPayload,
+	PlayerStatusMessage,
+} from '@ft/shared';
 import { decodeSnapshot, type SnapshotMessage, type SnapshotPayload, type SnapshotMode } from './snapshot.js';
 
 export type RoomState = 'created' | 'countdown' | 'playing' | 'finished' | 'closed';
+export type PlayerSeatState = 'connected' | 'grace' | 'ai';
+export const PLAYER_RECONNECT_GRACE_MS = 30_000;
 export type RoomLifecycleReason =
 	| 'countdown_ready'
 	| 'countdown_timeout'
@@ -59,6 +66,12 @@ export interface PersistedMatchContext {
 	score: readonly [number, number];
 	/** 決着時のサーバ tick 番号 */
 	tick: number;
+	/**
+	 * 決着時に人間が接続していなかったparticipant席。
+	 *
+	 * grace中に通常決着した席も、② §6-C の「離脱して未復帰なら abandon」に従い含める。
+	 */
+	abandonedSlots: readonly number[];
 }
 
 /** ② §6-C: 永続化成功時に GameRoom が受け取る DB ID とロビー通知の組 */
@@ -124,7 +137,7 @@ export interface RoomOptions {
 	 * （クライアント別加工なし）」と定めているので、接続ごとに stringify しない。
 	 * オブジェクト側はテストと将来の分岐用。
 	 */
-	onBroadcast?: (message: SnapshotMessage | RoomEvent, serialized: string) => void;
+	onBroadcast?: (message: RoomMessage, serialized: string) => void;
 	/**
 	 * ② §6-C 2. の永続化フック（W-13 の責務）。
 	 *
@@ -152,7 +165,20 @@ export interface RoomOptions {
 }
 
 /** 配信の購読者。`serialized` は ② §5-B の「同一シリアライズ済み文字列」 */
-export type BroadcastListener = (message: SnapshotMessage | RoomEvent, serialized: string) => void;
+export type RoomMessage = SnapshotMessage | RoomEvent | PlayerStatusMessage;
+export type BroadcastListener = (message: RoomMessage, serialized: string) => void;
+
+export interface RoomJoinResult {
+	/** grace状態から30秒以内に復帰した場合だけtrue */
+	resume: boolean;
+}
+
+interface PlayerSeat {
+	state: PlayerSeatState;
+	graceUntil: number | null;
+	/** grace満了または明示leave後はplayerとして復帰できない */
+	abandoned: boolean;
+}
 
 export interface RoomLogger {
 	info(obj: Record<string, unknown>, msg: string): void;
@@ -187,6 +213,8 @@ export class GameRoom {
 	private readonly expectedHumanSlots: Set<number>;
 	/** userId → slot（② §4-C の participant 登録）。join の本人特定に使う */
 	private readonly participantSlots = new Map<number, number>();
+	/** W-12: participant席ごとのconnected/grace/aiとabandonedを持つ正本 */
+	private readonly playerSeats = new Map<number, PlayerSeat>();
 	/** 配信の購読者。W-11 の WS 層がここに1つ登録して接続へファンアウトする */
 	private readonly listeners = new Set<BroadcastListener>();
 
@@ -221,7 +249,15 @@ export class GameRoom {
 		for (const slot of options.humanSlots ?? []) {
 			assertValidSlot(slot, 'humanSlots');
 		}
-		for (const p of options.participants ?? []) this.participantSlots.set(p.userId, p.slot);
+		for (const p of options.participants ?? []) {
+			if (this.participantSlots.has(p.userId)) {
+				throw new Error(`participant userId=${p.userId} が重複している`);
+			}
+			if ([...this.participantSlots.values()].includes(p.slot)) {
+				throw new Error(`participant slot=${p.slot} が重複している`);
+			}
+			this.participantSlots.set(p.userId, p.slot);
+		}
 		// 優先順: humanSlots → participants から導出 → 全席が人間
 		// （定員ちょうど埋まったクイックマッチは最後の扱いで正しい）
 		this.expectedHumanSlots = new Set(
@@ -230,6 +266,16 @@ export class GameRoom {
 					? options.participants.map((p) => p.slot)
 					: Array.from({ length: seatCount(options.mode) }, (_, i) => i)),
 		);
+		const playerSlots =
+			options.participants?.map((participant) => participant.slot) ??
+			[...this.expectedHumanSlots];
+		for (const slot of playerSlots) {
+			this.playerSeats.set(slot, {
+				state: 'ai',
+				graceUntil: null,
+				abandoned: false,
+			});
+		}
 		if (options.onBroadcast) this.listeners.add(options.onBroadcast);
 	}
 
@@ -295,6 +341,26 @@ export class GameRoom {
 		return this.humanSeats.size;
 	}
 
+	/** HUDと検査向けにparticipant席の現在状態を返す */
+	getPlayerSeatState(slot: number): PlayerSeatState | undefined {
+		return this.playerSeats.get(slot)?.state;
+	}
+
+	/** 新規・再接続clientへ現在の全participant席状態を渡す */
+	getPlayerSeatStates(): ReadonlyArray<{ slot: number; state: PlayerSeatState }> {
+		return [...this.playerSeats]
+			.map(([slot, seat]) => ({ slot, state: seat.state }))
+			.sort((a, b) => a.slot - b.slot);
+	}
+
+	/** grace満了または明示leaveで復帰不能になったparticipant席一覧を返す */
+	getAbandonedSlots(): number[] {
+		return [...this.playerSeats]
+			.filter(([, seat]) => seat.abandoned)
+			.map(([slot]) => slot)
+			.sort((a, b) => a - b);
+	}
+
 	/**
 	 * 人間が席に着く。W-11 の join、W-12 の再接続から呼ぶ。
 	 *
@@ -306,20 +372,47 @@ export class GameRoom {
 	 * game WS gateway が `getSlotForUser()` で認可してから本メソッドを呼ぶ。
 	 * `humanSlots` は早期 countdown 判定専用であり、認可表として使わない。
 	 */
-	join(slot: number): void {
-		if (this.state !== 'created' && this.state !== 'countdown' && this.state !== 'playing') {
+	join(slot: number): RoomJoinResult {
+		if (
+			this.finishStarted ||
+			(this.state !== 'created' && this.state !== 'countdown' && this.state !== 'playing')
+		) {
 			throw new Error(`join は ${this.state} では受け付けない`);
 		}
 		if (!Number.isInteger(slot) || slot < 0 || slot >= seatCount(this.mode)) {
 			// W-11 は外部メッセージから slot を決めるので、ここで必ず弾く
 			throw new Error(`slot ${slot} は ${this.mode} の定員 ${seatCount(this.mode)} の外`);
 		}
+		const playerSeat = this.playerSeats.get(slot);
+		if (!playerSeat) throw new Error(`slot ${slot} はparticipant席ではない`);
+		if (
+			playerSeat.state === 'grace' &&
+			playerSeat.graceUntil !== null &&
+			playerSeat.graceUntil <= this.opts.now()
+		) {
+			this.abandonSeat(slot);
+		}
+		if (playerSeat.abandoned) {
+			throw new Error(`slot ${slot} はgrace満了後のためplayer復帰できない`);
+		}
+		if (this.state === 'playing' && playerSeat.state === 'ai') {
+			throw new Error(`slot ${slot} は開始前に未接続だったためplayer参加できない`);
+		}
+		const resume = playerSeat.state === 'grace';
+		const changed = playerSeat.state !== 'connected';
+		playerSeat.state = 'connected';
+		playerSeat.graceUntil = null;
 		this.requireSim().setInputSource(slot, INPUT_SRC_EXTERNAL);
 		this.humanSeats.add(slot);
 		this.inputs.set(slot, { ...NEUTRAL_INPUT });
+		if (changed) this.broadcastPlayerStatus(slot, 'connected');
+		if (resume) {
+			this.broadcast({ t: 'event', d: { kind: 'player_reconnected', slot } });
+		}
 		if (this.state === 'created' && this.allExpectedHumansJoined()) {
 			this.enterCountdown('countdown_ready');
 		}
+		return { resume };
 	}
 
 	/** 予定していた人間席が全部 join 済みか（② §4-C の早期開始条件） */
@@ -330,20 +423,38 @@ export class GameRoom {
 		return true;
 	}
 
-	/**
-	 * 席を AI に戻す。猶予つきの切断処理（W-12）は上位が持ち、ここは即時の付け替えだけ。
-	 * closed 後にも呼ばれうる（WS の close が遅れて届く）ので、その場合は何もしない。
-	 */
-	leave(slot: number): void {
-		if (!this.humanSeats.delete(slot)) return;
-		if (!this.sim) return;
-		this.sim.setInputSource(slot, INPUT_SRC_AI);
-		this.inputs.set(slot, { ...NEUTRAL_INPUT });
-		// 全人間が抜けたら試合を続ける意味がない（② §6-A の abandon）
-		if (this.state === 'playing' && this.humanSeats.size === 0) {
-			this.opts.log.info({ room: this.roomId }, 'GameRoom: 人間が0人になったので abandon');
-			this.finish('abandon');
+	/** 通常切断。即AI代替し、30秒のplayer復帰猶予へ入れる */
+	disconnect(slot: number): void {
+		const playerSeat = this.playerSeats.get(slot);
+		if (
+			!playerSeat ||
+			playerSeat.state !== 'connected' ||
+			this.finishStarted ||
+			this.state === 'finished' ||
+			this.state === 'closed'
+		) {
+			return;
 		}
+		this.setSeatInputSource(slot, INPUT_SRC_AI);
+		playerSeat.state = 'grace';
+		playerSeat.graceUntil = this.opts.now() + PLAYER_RECONNECT_GRACE_MS;
+		this.broadcastPlayerStatus(slot, 'grace');
+		this.broadcast({
+			t: 'event',
+			d: { kind: 'player_disconnected', slot, grace_ms: PLAYER_RECONNECT_GRACE_MS },
+		});
+	}
+
+	/** 明示leave。猶予なしで復帰不能のAI席へ移し、FPSなら即forfeitにする */
+	leave(slot: number): void {
+		this.abandonSeat(slot);
+	}
+
+	/** 再接続welcome直後へ送る、その時点の全量snapshotを1回だけserializeする */
+	getResumeSnapshot(): { message: SnapshotMessage; serialized: string } | null {
+		if (!this.sim || this.state !== 'playing') return null;
+		const message = decodeSnapshot(this.sim.readSnapshot(), this.tick, this.mode);
+		return { message, serialized: JSON.stringify(message) };
 	}
 
 	/** W-11 が受信した input を席バッファへ。反映は次の tick（② §6-B） */
@@ -355,6 +466,7 @@ export class GameRoom {
 
 	/** created から時間切れ・カウントダウン満了を進める。tick ループ外の時間経過を処理する */
 	pump(): void {
+		this.expireGraceSeats();
 		const elapsed = this.opts.now() - this.stateEnteredAt;
 		if (this.state === 'created' && elapsed >= JOIN_GRACE_MS) {
 			if (this.humanSeats.size === 0) {
@@ -382,6 +494,7 @@ export class GameRoom {
 		this.stopTimer();
 		this.sim?.destroy();
 		this.sim = null;
+		for (const seat of this.playerSeats.values()) seat.graceUntil = null;
 		this.setState('closed', reason);
 	}
 
@@ -447,7 +560,7 @@ export class GameRoom {
 	}
 
 	/**
-	 * @param reason decided = sim が決着を報告 / abandon = 人間が全員抜けた（② §6-A）
+	 * @param outcome decided = sim決着 / abandon = 全員離脱 / forfeit = FPS離脱負け
 	 * @param alreadyBroadcasted 同じ tick で最終 snapshot を配信済みか
 	 *
 	 * ② §6-C の同期部分（1. 最終 snapshot 配信）だけをここで行う。
@@ -458,7 +571,11 @@ export class GameRoom {
 	 * ここで state=finished の snapshot を作ると ② §5-C の「match.state は sim の
 	 * enum そのまま」に反する。クライアントは match_end イベントで終了を知る。
 	 */
-	private finish(outcome: 'decided' | 'abandon', alreadyBroadcasted = false): void {
+	private finish(
+		outcome: 'decided' | 'abandon' | 'forfeit',
+		alreadyBroadcasted = false,
+		forfeitWinner?: number,
+	): void {
 		if (this.finishStarted) return; // 二重起動防止（onTick と leave の両方から来うる）
 		this.finishStarted = true;
 		this.stopTimer();
@@ -473,10 +590,21 @@ export class GameRoom {
 			}
 			this.previous = last.d;
 		}
-		const winner = outcome === 'abandon' ? null : last.d.match.winner;
+		const winner =
+			outcome === 'abandon'
+				? null
+				: outcome === 'forfeit'
+					? (forfeitWinner ?? null)
+					: last.d.match.winner;
 		// ② §5-D: reason は score|goal|forfeit|abandon。forfeit は W-12（leave / 猶予満了）で使う
 		const reason: MatchEndReason =
-			outcome === 'abandon' ? 'abandon' : this.mode === 'fps' ? 'goal' : 'score';
+			outcome === 'abandon'
+				? 'abandon'
+				: outcome === 'forfeit'
+					? 'forfeit'
+					: this.mode === 'fps'
+						? 'goal'
+						: 'score';
 		// state は 'playing' のまま持ち越し（タイマー停止済み・入力反映も stopTimer で
 		// 次 tick が来ないので実質固まる）。await 完了後に 'finished' へ落とす。
 		void this.persistAndAnnounceEnd(winner, reason, [last.d.match.score[0], last.d.match.score[1]]);
@@ -508,6 +636,7 @@ export class GameRoom {
 					reason,
 					score,
 					tick: this.tick,
+					abandonedSlots: this.disconnectedParticipantSlots(),
 				});
 				if (persisted) {
 					if (
@@ -571,7 +700,72 @@ export class GameRoom {
 		}
 	}
 
-	private broadcast(message: SnapshotMessage | RoomEvent): void {
+	/** grace期限へ到達した席をAI確定し、mode別の終了条件を評価する */
+	private expireGraceSeats(): void {
+		if (this.state === 'finished' || this.state === 'closed') return;
+		const now = this.opts.now();
+		for (const [slot, seat] of this.playerSeats) {
+			if (
+				seat.state === 'grace' &&
+				seat.graceUntil !== null &&
+				seat.graceUntil <= now
+			) {
+				this.abandonSeat(slot);
+				if (this.finishStarted) return;
+			}
+		}
+	}
+
+	/** participant席を復帰不能なAIへ確定し、forfeit/全員abandonを必要なら開始する */
+	private abandonSeat(slot: number): void {
+		const seat = this.playerSeats.get(slot);
+		if (
+			!seat ||
+			seat.abandoned ||
+			this.finishStarted ||
+			this.state === 'finished' ||
+			this.state === 'closed'
+		) {
+			return;
+		}
+		this.setSeatInputSource(slot, INPUT_SRC_AI);
+		seat.state = 'ai';
+		seat.graceUntil = null;
+		seat.abandoned = true;
+		this.broadcastPlayerStatus(slot, 'ai');
+		this.broadcast({ t: 'event', d: { kind: 'ai_takeover', slot } });
+		if (this.state !== 'playing' && this.state !== 'countdown') return;
+		if (this.mode === 'fps') {
+			const winner = slot === 0 ? 1 : 0;
+			this.finish('forfeit', false, winner);
+		} else if ([...this.playerSeats.values()].every((playerSeat) => playerSeat.abandoned)) {
+			this.finish('abandon');
+		}
+	}
+
+	/** sim入力源とconnected席集合を同じ操作で更新する */
+	private setSeatInputSource(slot: number, source: number): void {
+		if (!this.sim) return;
+		this.sim.setInputSource(slot, source);
+		if (source === INPUT_SRC_EXTERNAL) this.humanSeats.add(slot);
+		else this.humanSeats.delete(slot);
+		this.inputs.set(slot, { ...NEUTRAL_INPUT });
+	}
+
+	/** 席状態の正本を全接続へ1回だけserializeして配信する */
+	private broadcastPlayerStatus(slot: number, state: PlayerSeatState): void {
+		this.broadcast({ t: 'player_status', d: { slot, state } });
+	}
+
+	/** 決着時点でconnectedでないparticipant席をW-13永続化用に返す */
+	private disconnectedParticipantSlots(): number[] {
+		return [...this.playerSeats]
+			.filter(([, seat]) => seat.state !== 'connected')
+			.map(([slot]) => slot)
+			.sort((a, b) => a - b);
+	}
+
+	private broadcast(message: RoomMessage): void {
 		if (this.listeners.size === 0) return;
 		// ② §5-B: 1回だけ直列化して同じ文字列を全員へ
 		const serialized = JSON.stringify(message);

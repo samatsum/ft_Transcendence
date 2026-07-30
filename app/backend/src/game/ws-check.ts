@@ -3,6 +3,7 @@
 //
 // 検査1: 対人戦の疎通 — 2クライアントが join → welcome → input → snapshot → match_end
 // 検査2: ② §10 受入条件 №6 — 不正メッセージ4種がそれぞれ仕様どおりに扱われる
+// 検査3: W-12 — 30秒grace内の復帰、満了AI確定、RSP abandon、FPS forfeit
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
@@ -11,7 +12,13 @@ import { WS_CLOSE, type GameServerMessage } from '@ft/shared';
 
 import { buildServer } from '../index.js';
 import { listMaps, loadMapText } from './maps.js';
-import { closeAllRooms, createRoom, createRoomFromRules } from './rooms.js';
+import {
+	closeAllRooms,
+	closeRoom,
+	createRoom,
+	createRoomFromRules,
+} from './rooms.js';
+import type { PersistedMatchContext } from './room.js';
 
 const PORT = 3999;
 const MAP = 'rsp_map/rsp.cub';
@@ -30,6 +37,7 @@ function sleep(ms: number): Promise<void> {
 class TestClient {
 	readonly received: GameServerMessage[] = [];
 	readonly errors: { code: string; msg: string }[] = [];
+	readonly connectionErrors: Error[] = [];
 	closedWith: number | null = null;
 	private readonly ws: WebSocket;
 
@@ -45,6 +53,9 @@ class TestClient {
 		});
 		this.ws.on('close', (code) => {
 			this.closedWith = code;
+		});
+		this.ws.on('error', (error) => {
+			this.connectionErrors.push(error);
 		});
 	}
 
@@ -105,6 +116,16 @@ class TestClient {
 
 	find<T extends GameServerMessage['t']>(t: T): Extract<GameServerMessage, { t: T }> | undefined {
 		return this.received.find((m) => m.t === t) as Extract<GameServerMessage, { t: T }> | undefined;
+	}
+
+	/** predicate成立を3秒までpollする */
+	async waitFor(predicate: () => boolean, label: string): Promise<void> {
+		const started = Date.now();
+		while (Date.now() - started < 3_000) {
+			if (predicate()) return;
+			await sleep(10);
+		}
+		throw new Error(`timeout waiting for ${label}`);
 	}
 
 	close(): void {
@@ -375,7 +396,335 @@ async function checkInvalidMessages(): Promise<string[]> {
 	return bad;
 }
 
-/* ── 検査3: W-14 マップ API とテキスト配布の一致 ─────────────────── */
+/* ── 検査3: W-12 切断・再接続・AI代替 ───────────────────────────── */
+
+/** 30秒graceのRSP復帰/全員abandonとFPS forfeitを実WSで検査する */
+async function checkReconnectAndForfeit(): Promise<string[]> {
+	const bad: string[] = [];
+	let rspNow = 0;
+	const rspCapture: { persisted?: PersistedMatchContext } = {};
+	const rspMessages: GameServerMessage[] = [];
+	const rspRoom = await createRoomFromRules({
+		roomId: 'ws-reconnect-rsp',
+		mode: 'rsp',
+		rules: { map: 'rsp', target_score: 21 },
+		seed: 42,
+		participants: [
+			{ userId: 501, slot: 0 },
+			{ userId: 502, slot: 1 },
+		],
+		humanSlots: [0, 1],
+		now: () => rspNow,
+		onBroadcast: (message) => rspMessages.push(message),
+		persistMatch: async (context) => {
+			rspCapture.persisted = context;
+			return null;
+		},
+		log: { info: () => {}, warn: () => {} },
+	});
+	const rspA = new TestClient(rspRoom.roomId, 501);
+	const rspB = new TestClient(rspRoom.roomId, 502);
+	await Promise.all([rspA.open(), rspB.open()]);
+	rspA.send({ t: 'join' });
+	rspB.send({ t: 'join' });
+	await Promise.all([
+		rspA.waitFor(() => Boolean(rspA.find('welcome')), 'RSP A welcome'),
+		rspB.waitFor(() => Boolean(rspB.find('welcome')), 'RSP B welcome'),
+	]);
+	rspNow += 3_000;
+	rspRoom.pump();
+	if (rspRoom.getState() !== 'playing') bad.push(`RSP がplayingにならない (${rspRoom.getState()})`);
+
+	// 通常closeは即AI代替+grace。30秒以内なら同一userがplayer復帰できる。
+	rspA.close();
+	await rspB.waitFor(
+		() =>
+			rspB.received.some(
+				(message) =>
+					message.t === 'player_status' &&
+					message.d.slot === 0 &&
+					message.d.state === 'grace',
+			),
+		'RSP slot0 grace',
+	);
+	if (rspRoom.getPlayerSeatState(0) !== 'grace') bad.push('RSP slot0 がgraceにならない');
+	const rspAResume = new TestClient(rspRoom.roomId, 501);
+	await rspAResume.open();
+	rspAResume.send({ t: 'join' });
+	await rspAResume.waitFor(() => Boolean(rspAResume.find('welcome')), 'RSP resume welcome');
+	const resumedWelcome = rspAResume.find('welcome');
+	if (resumedWelcome?.d.resume !== true) bad.push('grace内復帰のwelcome.resumeがtrueでない');
+	await rspAResume.waitFor(
+		() => rspAResume.received.some((message) => message.t === 'snapshot'),
+		'RSP resume snapshot',
+	);
+	if (rspRoom.getPlayerSeatState(0) !== 'connected') {
+		bad.push('RSP slot0 がconnectedへ復帰しない');
+	}
+	if (
+		!rspB.received.some(
+			(message) =>
+				message.t === 'event' &&
+				message.d.kind === 'player_reconnected' &&
+				message.d.slot === 0,
+		)
+	) {
+		bad.push('player_reconnectedが他playerへ届かない');
+	}
+
+	// 再切断後、29.999秒ではgrace、30秒ちょうどでAI確定・復帰拒否。
+	rspAResume.close();
+	await rspB.waitFor(
+		() =>
+			rspB.received.filter(
+				(message) =>
+					message.t === 'event' &&
+					message.d.kind === 'player_disconnected' &&
+					message.d.slot === 0,
+			).length >= 2,
+		'RSP second disconnect',
+	);
+	rspNow += 29_999;
+	rspRoom.pump();
+	if (rspRoom.getPlayerSeatState(0) !== 'grace') bad.push('RSP graceが30秒未満で満了した');
+	rspNow += 1;
+	// pumpと再joinが同時刻に競合しても、join側が期限を再確認してplayer復帰を拒否する。
+	const rspLate = new TestClient(rspRoom.roomId, 501);
+	await rspLate.open();
+	rspLate.send({ t: 'join' });
+	await rspLate.waitFor(() => rspLate.closedWith !== null, 'RSP late reconnect close');
+	if (rspLate.closedWith !== WS_CLOSE.notAllowed) {
+		bad.push(`grace満了後のplayer復帰がclose 4003でない (${rspLate.closedWith})`);
+	}
+	if (rspRoom.getPlayerSeatState(0) !== 'ai') bad.push('RSP grace満了でAI確定しない');
+	if (!rspRoom.getAbandonedSlots().includes(0)) bad.push('RSP grace満了席がabandonedでない');
+
+	// 残る人間もgrace満了するとRSPはabandon終了。
+	rspB.close();
+	await rspB.waitFor(() => rspB.closedWith !== null, 'RSP B close');
+	await sleep(30);
+	rspNow += 30_000;
+	rspRoom.pump();
+	await flushPromises();
+	const rspEnd = rspMessages.find(
+		(message) => message.t === 'event' && message.d.kind === 'match_end',
+	);
+	if (
+		!rspEnd ||
+		rspEnd.t !== 'event' ||
+		rspEnd.d.kind !== 'match_end' ||
+		rspEnd.d.reason !== 'abandon' ||
+		rspEnd.d.winner !== null
+	) {
+		bad.push('RSP全participant満了がwinner=null/reason=abandonにならない');
+	}
+	if (rspCapture.persisted?.abandonedSlots.join(',') !== '0,1') {
+		bad.push(`RSP abandonedSlotsが不正 (${rspCapture.persisted?.abandonedSlots.join(',')})`);
+	}
+	closeRoom(rspRoom.roomId);
+
+	// FPSはgrace中も続行し、30秒満了した側がlose・反対slotがforfeit勝者。
+	let fpsNow = 0;
+	const fpsCapture: { persisted?: PersistedMatchContext } = {};
+	const fpsMessages: GameServerMessage[] = [];
+	const fpsRoom = await createRoomFromRules({
+		roomId: 'ws-reconnect-fps',
+		mode: 'fps',
+		rules: { map: 'fps_duel' },
+		seed: 42,
+		participants: [
+			{ userId: 601, slot: 0 },
+			{ userId: 602, slot: 1 },
+		],
+		humanSlots: [0, 1],
+		now: () => fpsNow,
+		onBroadcast: (message) => fpsMessages.push(message),
+		persistMatch: async (context) => {
+			fpsCapture.persisted = context;
+			return null;
+		},
+		log: { info: () => {}, warn: () => {} },
+	});
+	const fpsA = new TestClient(fpsRoom.roomId, 601);
+	const fpsB = new TestClient(fpsRoom.roomId, 602);
+	await Promise.all([fpsA.open(), fpsB.open()]);
+	fpsA.send({ t: 'join' });
+	fpsB.send({ t: 'join' });
+	await Promise.all([
+		fpsA.waitFor(() => Boolean(fpsA.find('welcome')), 'FPS A welcome'),
+		fpsB.waitFor(() => Boolean(fpsB.find('welcome')), 'FPS B welcome'),
+	]);
+	fpsNow += 3_000;
+	fpsRoom.pump();
+	fpsA.close();
+	await fpsB.waitFor(
+		() =>
+			fpsB.received.some(
+				(message) =>
+					message.t === 'player_status' &&
+					message.d.slot === 0 &&
+					message.d.state === 'grace',
+			),
+		'FPS slot0 grace',
+	);
+	fpsNow += 29_999;
+	fpsRoom.pump();
+	if (fpsRoom.getState() !== 'playing') bad.push('FPSがgrace 30秒未満で終了した');
+	fpsNow += 1;
+	fpsRoom.pump();
+	await flushPromises();
+	await fpsB.waitFor(
+		() =>
+			fpsB.received.some(
+				(message) =>
+					message.t === 'event' &&
+					message.d.kind === 'ai_takeover' &&
+					message.d.slot === 0,
+			),
+		'FPS grace ai_takeover',
+	);
+	const fpsEnd = fpsMessages.find(
+		(message) => message.t === 'event' && message.d.kind === 'match_end',
+	);
+	if (
+		!fpsEnd ||
+		fpsEnd.t !== 'event' ||
+		fpsEnd.d.kind !== 'match_end' ||
+		fpsEnd.d.reason !== 'forfeit' ||
+		fpsEnd.d.winner !== 1
+	) {
+		bad.push('FPS grace満了がopponent winner/reason=forfeitにならない');
+	}
+	if (fpsCapture.persisted?.abandonedSlots.join(',') !== '0') {
+		bad.push(`FPS abandonedSlotsが不正 (${fpsCapture.persisted?.abandonedSlots.join(',')})`);
+	}
+	if (
+		!fpsB.received.some(
+			(message) =>
+				message.t === 'event' &&
+				message.d.kind === 'ai_takeover' &&
+				message.d.slot === 0,
+		)
+	) {
+		bad.push('FPS grace満了のai_takeoverが届かない');
+	}
+	fpsB.close();
+	closeRoom(fpsRoom.roomId);
+
+	// 明示leaveは30秒を待たず、FPSを即forfeitで終了する。
+	let leaveNow = 0;
+	const leaveMessages: GameServerMessage[] = [];
+	const leaveRoom = await createRoomFromRules({
+		roomId: 'ws-leave-fps',
+		mode: 'fps',
+		rules: { map: 'fps_duel' },
+		seed: 42,
+		participants: [
+			{ userId: 611, slot: 0 },
+			{ userId: 612, slot: 1 },
+		],
+		humanSlots: [0, 1],
+		now: () => leaveNow,
+		onBroadcast: (message) => leaveMessages.push(message),
+		log: { info: () => {}, warn: () => {} },
+	});
+	const leaveA = new TestClient(leaveRoom.roomId, 611);
+	const leaveB = new TestClient(leaveRoom.roomId, 612);
+	await Promise.all([leaveA.open(), leaveB.open()]);
+	leaveA.send({ t: 'join' });
+	leaveB.send({ t: 'join' });
+	await Promise.all([
+		leaveA.waitFor(() => Boolean(leaveA.find('welcome')), 'leave A welcome'),
+		leaveB.waitFor(() => Boolean(leaveB.find('welcome')), 'leave B welcome'),
+	]);
+	leaveNow += 3_000;
+	leaveRoom.pump();
+	leaveA.send({ t: 'leave' });
+	await leaveB.waitFor(
+		() =>
+			leaveB.received.some(
+				(message) =>
+					message.t === 'event' &&
+					message.d.kind === 'match_end' &&
+					message.d.reason === 'forfeit',
+			),
+		'FPS explicit leave forfeit',
+	);
+	const leaveEnd = leaveMessages.find(
+		(message) => message.t === 'event' && message.d.kind === 'match_end',
+	);
+	if (
+		!leaveEnd ||
+		leaveEnd.t !== 'event' ||
+		leaveEnd.d.kind !== 'match_end' ||
+		leaveEnd.d.reason !== 'forfeit' ||
+		leaveEnd.d.winner !== 1
+	) {
+		bad.push('FPS明示leaveが即時opponent winner/reason=forfeitにならない');
+	}
+	leaveA.close();
+	leaveB.close();
+	closeRoom(leaveRoom.roomId);
+
+	// 開始前10秒に未接続でAI化されたparticipantは、playing後に初回joinできない。
+	let lateInitialNow = 0;
+	const lateInitialRoom = await createRoomFromRules({
+		roomId: 'ws-late-initial-rsp',
+		mode: 'rsp',
+		rules: { map: 'rsp', target_score: 21 },
+		seed: 42,
+		participants: [
+			{ userId: 621, slot: 0 },
+			{ userId: 622, slot: 1 },
+		],
+		humanSlots: [0, 1],
+		now: () => lateInitialNow,
+		log: { info: () => {}, warn: () => {} },
+	});
+	const lateInitialA = new TestClient(lateInitialRoom.roomId, 621);
+	await lateInitialA.open();
+	lateInitialA.send({ t: 'join' });
+	await lateInitialA.waitFor(() => Boolean(lateInitialA.find('welcome')), 'late initial A welcome');
+	lateInitialNow += 10_000;
+	lateInitialRoom.pump();
+	lateInitialNow += 3_000;
+	lateInitialRoom.pump();
+	const lateInitialB = new TestClient(lateInitialRoom.roomId, 622);
+	await lateInitialB.open();
+	lateInitialB.send({ t: 'join' });
+	await lateInitialB.waitFor(() => lateInitialB.closedWith !== null, 'late initial B close');
+	if (lateInitialB.closedWith !== WS_CLOSE.notAllowed) {
+		bad.push(`playing後の初回joinがclose 4003でない (${lateInitialB.closedWith})`);
+	}
+	lateInitialA.close();
+	closeRoom(lateInitialRoom.roomId);
+
+	for (const client of [
+		rspA,
+		rspB,
+		rspAResume,
+		rspLate,
+		fpsA,
+		fpsB,
+		leaveA,
+		leaveB,
+		lateInitialA,
+		lateInitialB,
+	]) {
+		if (client.connectionErrors.length > 0) {
+			bad.push(`user ${client.userId} にWebSocket error (${client.connectionErrors.length}件)`);
+		}
+	}
+	return bad;
+}
+
+/** pending async永続化を2段ぶん進める */
+async function flushPromises(): Promise<void> {
+	await Promise.resolve();
+	await Promise.resolve();
+}
+
+/* ── 検査4: W-14 マップ API とテキスト配布の一致 ─────────────────── */
 
 async function checkMaps(baseUrl: string): Promise<string[]> {
 	const bad: string[] = [];
@@ -445,18 +794,23 @@ async function main(): Promise<void> {
 	const bad2 = await checkInvalidMessages();
 	console.log(bad2.length ? `  NG:\n    ${bad2.join('\n    ')}` : '  OK: 9項目すべて仕様どおり');
 
-	console.log('\n検査3: W-14 マップ API とテキスト配布の一致');
-	const bad3 = await checkMaps(`http://127.0.0.1:${PORT}`);
-	console.log(bad3.length ? `  NG:\n    ${bad3.join('\n    ')}` : '  OK');
+	console.log('\n検査3: W-12 切断・再接続・AI代替');
+	const bad3 = await checkReconnectAndForfeit();
+	console.log(bad3.length ? `  NG:\n    ${bad3.join('\n    ')}` : '  OK: grace復帰・AI代替・abandon・forfeit');
+
+	console.log('\n検査4: W-14 マップ API とテキスト配布の一致');
+	const bad4 = await checkMaps(`http://127.0.0.1:${PORT}`);
+	console.log(bad4.length ? `  NG:\n    ${bad4.join('\n    ')}` : '  OK');
 
 	closeAllRooms();
 	await app.close();
 
-	if (bad1.length || bad2.length || bad3.length) {
+	if (bad1.length || bad2.length || bad3.length || bad4.length) {
 		console.error('\nW-11: 失敗');
 		process.exit(1);
 	}
 	console.log('\nW-11: 受入条件 №5 / №6 を満たしています');
+	console.log('W-12: 受入条件 №4 を満たしています');
 	console.log('W-14: マップ一覧とテキスト配布の一致を確認しました');
 }
 
