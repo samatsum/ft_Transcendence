@@ -63,7 +63,7 @@ flowchart LR
 
 ★ = 結合リスクが高い合流点。
 
-> **2026-07-30 更新**: W-10/W-11/W-14 は main マージ済み。現在のサーバ側合流点は W-08→W-09。
+> **2026-07-30 更新**: W-08コア/W-10/W-11/W-14 は実装済み。現在のサーバ側合流点は W-04/W-05→W-08結合→W-09。
 
 ---
 
@@ -76,7 +76,7 @@ flowchart LR
 | **A. 人の入口** | W-02→W-03→**W-04**→W-05→W-08/W-09・F-03→F-05 | 「ログインした人間」が安全にロビーから試合へ入れない |
 | **B. 対戦の芯** | W-10→**W-11**→F-06→F-07→F-08 | スナップショット対戦が成立しない |
 
-W-11 は完了したため、最大の残存リスクは **A の W-04/W-05→W-08/W-09 × F-05/F-08**。
+W-11とW-08コアは完了したため、最大の残存リスクは **A の W-04/W-05→W-08結合→W-09 × F-05/F-08**。
 B はサーバ側が着地済みで、残る合流は F-06〜F-08。
 
 ```mermaid
@@ -134,7 +134,7 @@ gantt
 | W-02 | Fastify 本構成（pino・zod 検証・[③ REST_API設計](../02_設計書/3-REST_API設計.md) §1 エラーエンベロープ / レート制限） |
 | W-03 | Prisma + SQLite スキーマ v1（③ §3 の5テーブル）+ マイグレーション |
 | W-04 | 認証一式（signup/login/logout/me・argon2id・Session Cookie） |
-| W-08 | ロビー WS（UserContextRegistry / presence / FIFO / LobbyRoom / immutable MatchPlan）。GameRoom生成はW-09 |
+| W-08 | **コア実装済み・W-04/W-05結合待ち**。ロビー WS（UserContextRegistry / presence / FIFO / LobbyRoom / immutable MatchPlan）。GameRoom生成はW-09 |
 | W-10 | GameRoom + `sim.wasm` 統合 |
 | W-11 | ゲーム WS（join/input/snapshot 等） |
 
@@ -155,7 +155,7 @@ gantt
 
 ## 5. ゲート2 判定スコープ（確定）
 
-ゲート2はDay3終わりに判定し、残るサーバ範囲は **W-08/W-09**、
+ゲート2はDay3終わりに判定し、残るサーバ範囲は **W-04/W-05とのW-08結合およびW-09**、
 フロント範囲は F-05〜F-08 とする。
 
 W-12（切断/再接続・AI代替）はゲート2に含めず、Day4の必須受入とする。

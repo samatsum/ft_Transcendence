@@ -9,6 +9,7 @@ import { healthSchema, makeError } from '@ft/shared';
 
 import { listMaps, type GameMode } from './game/maps.js';
 import { registerGameWs } from './game/ws.js';
+import { registerLobbyWs } from './lobby/ws.js';
 
 // BACKEND_PORT が正（`.env.example` の名前・Vite のプロキシ先と同じ）。
 // PORT は docker/PaaS の慣習で注入されることがあるためフォールバックに残す。
@@ -62,6 +63,7 @@ export async function buildServer() {
 	});
 	await app.register(async (scoped) => {
 		registerGameWs(scoped);
+		registerLobbyWs(scoped);
 	});
 
 	// 未定義ルートも ③§1-A のエラーエンベロープで返す（形を最初から揃える）

@@ -21,19 +21,16 @@ import {
 } from '@ft/shared';
 
 import { authenticateRequest, isAllowedOrigin } from '../auth/session.js';
+import {
+	PreAuthMessageBuffer,
+	registerSessionConnection,
+	type ManagedSocket,
+} from '../ws/connection.js';
 import { getRoom } from './rooms.js';
 import { FINISHED_HOLD_MS, type GameRoom } from './room.js';
 
 /** ws の WebSocket は型が環境依存なので、使う分だけを構造的に要求する */
-interface Socket {
-	send(data: string): void;
-	close(code?: number, reason?: string): void;
-	on(event: 'message', cb: (data: unknown) => void): void;
-	on(event: 'close', cb: () => void): void;
-	readyState: number;
-	/** 未送信のバイト数。② §8 のバックプレッシャ判定に使う */
-	bufferedAmount: number;
-}
+interface Socket extends ManagedSocket {}
 const OPEN = 1;
 
 // ② §8 バックプレッシャ。回線が詰まった接続を切らずに守るための2段構え
@@ -41,10 +38,6 @@ const OPEN = 1;
 const BACKPRESSURE_SKIP_SNAPSHOT_BYTES = 64 * 1024;
 /** これを超えたら回線が死んだと判断して close 4005 */
 const BACKPRESSURE_CLOSE_BYTES = 1024 * 1024;
-/** 認証完了まで保持するフレーム数。無認証接続によるメモリ消費を制限する */
-const PRE_AUTH_MAX_MESSAGES = 16;
-const PRE_AUTH_MAX_BYTES = MAX_CLIENT_MESSAGE_BYTES * PRE_AUTH_MAX_MESSAGES;
-
 /** ② §5-A: yaw を [-π, π) に正規化する。有限値チェックは zod 側（申し送り 7） */
 function normalizeYaw(yaw: number): number {
 	const wrapped = ((yaw + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
@@ -93,9 +86,9 @@ async function handleConnection(
 
 	// 認証中にもクライアントは送信できる。listener を先に登録して順序どおり保持し、
 	// 認証・ルーム解決後に同じ handleMessage へ流す。
-	const pendingMessages: unknown[] = [];
-	let pendingMessageBytes = 0;
+	const pendingMessages = new PreAuthMessageBuffer();
 	let closed = false;
+	let unregisterSession: (() => void) | null = null;
 	let ready:
 		| { conn: Connection; room: GameRoom; roomId: string; peers: Set<Connection> }
 		| null = null;
@@ -107,24 +100,15 @@ async function handleConnection(
 			return;
 		}
 
-		const text = typeof raw === 'string' ? raw : String(raw);
-		const bytes = Buffer.byteLength(text, 'utf8');
-		if (
-			bytes > MAX_CLIENT_MESSAGE_BYTES ||
-			pendingMessages.length >= PRE_AUTH_MAX_MESSAGES ||
-			pendingMessageBytes + bytes > PRE_AUTH_MAX_BYTES
-		) {
-			pendingMessages.length = 0;
-			pendingMessageBytes = 0;
+		if (!pendingMessages.push(raw)) {
 			socket.close(WS_CLOSE.protocolViolation, 'too many messages before authentication');
-			return;
 		}
-		pendingMessages.push(raw);
-		pendingMessageBytes += bytes;
 	});
 
 	socket.on('close', () => {
 		closed = true;
+		pendingMessages.clear();
+		unregisterSession?.();
 		if (!ready) return;
 		const { conn, room, roomId, peers } = ready;
 		peers.delete(conn);
@@ -164,6 +148,7 @@ async function handleConnection(
 		inputWindowStart: Date.now(),
 		inputCountInWindow: 0,
 	};
+	unregisterSession = registerSessionConnection(socket, user.sessionId);
 
 	// ② §1: 同一ユーザーの多重接続は旧接続を close 4004 で置換
 	const peers = ensureRoomConnections(roomId, room);
@@ -179,12 +164,10 @@ async function handleConnection(
 	// ② §8: 接続/切断/join を構造化ログに残す（**input はログしない**。量とプライバシー）
 	app.log.info({ room: roomId, user: conn.userId, peers: peers.size }, 'W-11: WS 接続');
 
-	for (const raw of pendingMessages) {
+	for (const raw of pendingMessages.drain()) {
 		if (socket.readyState !== OPEN) break;
 		handleMessage(conn, room, raw, app);
 	}
-	pendingMessages.length = 0;
-	pendingMessageBytes = 0;
 }
 
 /** ルームの購読はルームにつき1回。接続ごとに購読すると stringify が接続数ぶん走る */
