@@ -34,8 +34,13 @@ export const gameInputSchema = z.object({
 		yaw: z.number().finite(),
 		/** 4bit ビットマスク: bit0=前進 / bit1=後退 / bit2=左strafe / bit3=右strafe */
 		mv: z.number().int().min(0).max(0b1111),
-		/** 既存エンジンの武器/射撃状態との互換予約。本プロジェクトの両モードでは 0 固定 */
-		act: z.literal(0).optional(),
+		/**
+		 * ② §5-A: 「4bit ビットマスク。既存エンジンの武器/射撃状態との互換予約。
+		 * 本プロジェクトの両モードでは 0 固定」。仕様どおり 4-bit 空間で受理し、
+		 * 実際の解釈（現状はすべて 0）はサーバ内で判断する（`z.literal(0)` にすると
+		 * 将来の 4-bit 拡張時にスキーマ改訂が要る）
+		 */
+		act: z.number().int().min(0).max(0b1111).optional(),
 	}),
 });
 
@@ -92,7 +97,14 @@ export const snapshotPayloadSchema = z.object({
 	tick: z.number(),
 	match: z.object({
 		state: matchStateSchema,
-		/** RSP=チーム番号 / FPS=combatant_id / 未決着=null */
+		/**
+		 * `rsp` | `fps`。**snapshot 単体で `winner` の意味（RSP=チーム番号 / FPS=combatant_id）を
+		 * 確定できる**ようにするため（② §5-C 改訂 2026-07-29）。welcome.mode と同一で、
+		 * 試合中は変化しない。観戦・リプレイ・録画再生では welcome を読まずに snapshot
+		 * だけを見る場面があるため、snapshot 側にも入れる。
+		 */
+		mode: z.enum(['rsp', 'fps']),
+		/** RSP=チーム番号 / FPS=combatant_id / 未決着=null。解釈は `mode` で確定する */
 		winner: z.number().nullable(),
 		score: z.tuple([z.number(), z.number()]),
 	}),
@@ -142,8 +154,8 @@ export const gameEventSchema = z.object({
 			kind: z.literal('match_end'),
 			winner: z.number().nullable(),
 			reason: matchEndReasonSchema,
-			/** 永続化済み DB 行の id。W-13 が採番するまで null */
-			match_id: z.string().nullable(),
+			/** 永続化済み DB 行の正整数 id（③ D-10）。W-13 が採番するまで null */
+			match_id: z.number().int().positive().nullable(),
 		}),
 		z.object({ kind: z.literal('player_disconnected'), slot: z.number(), grace_ms: z.number() }),
 		z.object({ kind: z.literal('player_reconnected'), slot: z.number() }),

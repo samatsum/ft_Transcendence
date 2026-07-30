@@ -8,10 +8,18 @@
 // W-11 がそこへ WebSocket.send を差し込む。
 import { diffEvents } from './events.js';
 import { SimGame, INPUT_SRC_AI, INPUT_SRC_EXTERNAL, NEUTRAL_INPUT, type SeatInput } from './sim.js';
-import type { GameEvent, MatchEndReason } from '@ft/shared';
-import { decodeSnapshot, type SnapshotMessage, type SnapshotPayload } from './snapshot.js';
+import type { GameEvent, MatchEndReason, MatchResultPayload } from '@ft/shared';
+import { decodeSnapshot, type SnapshotMessage, type SnapshotPayload, type SnapshotMode } from './snapshot.js';
 
 export type RoomState = 'created' | 'countdown' | 'playing' | 'finished' | 'closed';
+export type RoomLifecycleReason =
+	| 'countdown_ready'
+	| 'countdown_timeout'
+	| 'match_started'
+	| 'match_end'
+	| 'no_humans'
+	| 'finished_hold'
+	| 'discarded';
 
 // ② §5-D のイベントと match_end.reason は `@ft/shared` の ws/game.ts が正本
 // （Issue #10 で配置を合意）。F-06/F-07 が同じ定義を import するので、
@@ -23,7 +31,7 @@ export type RoomEvent = GameEvent;
 
 /** ② §5-B の welcome を W-11 が組み立てるために必要な、ルームが持つ情報 */
 export interface RoomDescription {
-	mode: 'rsp' | 'fps';
+	mode: SnapshotMode;
 	/** welcome.map_text。サーバがロードした .cub をそのまま配る（② §5-B の単一情報源） */
 	mapText: string;
 	rules: { target_score: number };
@@ -31,6 +39,32 @@ export interface RoomDescription {
 	snap_rate: number;
 	interp_ms: number;
 	state: RoomState;
+}
+
+/**
+ * ② §6-C 2. で永続化に渡す試合結果。これは outcome だけなので、W-09 が
+ * MatchPlan を閉じ込めた closure で席・ユーザー・rules と結合し、W-13 の Prisma
+ * 実装が Match / MatchPlayer 行を作って採番した id を返す。
+ *
+ * abandon（人間全員離脱）の場合も呼ばれる（`winner = null`, `reason = 'abandon'`）。
+ * このときも Match 行を作る（③ §2-D の統計から漏らさないため）。
+ */
+export interface PersistedMatchContext {
+	roomId: string;
+	mode: SnapshotMode;
+	/** RSP=チーム番号 / FPS=combatant_id / 未決着=null */
+	winner: number | null;
+	reason: MatchEndReason;
+	/** [red, blue]。FPS は [0,0] 固定（勝敗はゴール到達のみ） */
+	score: readonly [number, number];
+	/** 決着時のサーバ tick 番号 */
+	tick: number;
+}
+
+/** ② §6-C: 永続化成功時に GameRoom が受け取る DB ID とロビー通知の組 */
+export interface PersistedMatchResult {
+	matchId: number;
+	result: MatchResultPayload;
 }
 
 export const TICK_HZ = 30;
@@ -42,10 +76,15 @@ export const INTERP_MS = 100;
 /** created で人間を待つ上限（② §6-A） */
 const JOIN_GRACE_MS = 10_000;
 const COUNTDOWN_MS = 3_000;
-/** finished で結果画面のため接続を維持する時間（② §6-A） */
-const FINISHED_HOLD_MS = 60_000;
-/** 1 tick の処理がこれを超えたら過負荷とみなして警告（⑤ W-10 受入条件） */
-const TICK_OVERRUN_MS = TICK_MS;
+/** finished で結果画面のため接続を維持する時間（② §6-A）。満了で close 1000 */
+export const FINISHED_HOLD_MS = 60_000;
+/**
+ * 1 tick の処理がこれを超えたら過負荷とみなして警告（⑤ W-10 受入条件）。
+ *
+ * ② §8 は「`game_step` 所要が**周期の 50%**」と定めている。周期いっぱい（100%）で
+ * 警告していては、気づいた時にはもう配信が遅れている。半分で予兆を拾う。
+ */
+const TICK_OVERRUN_MS = TICK_MS * 0.5;
 /** 同じ警告でログを溢れさせないための間引き */
 const OVERRUN_LOG_INTERVAL_MS = 1_000;
 
@@ -53,7 +92,7 @@ export interface RoomOptions {
 	roomId: string;
 	/** .cub の中身。マップ ID からの解決は W-14 の責務 */
 	cubText: string;
-	mode: 'rsp' | 'fps';
+	mode: SnapshotMode;
 	targetScore: number;
 	seed: number;
 	/**
@@ -68,6 +107,16 @@ export interface RoomOptions {
 	 */
 	humanSlots?: number[];
 	/**
+	 * 席に着く予定の人間の一覧（② §4-C の participant 登録）。W-09 が渡す。
+	 *
+	 * ゲーム WS の `join` は**ペイロードを持たない**（② §5-A）。Cookie から得た
+	 * userId をこの表で slot に引き当てて本人特定する。表に無い userId は
+	 * participant ではないので close `4003`。
+	 *
+	 * 省略時は `humanSlots` を、それも無ければ全席を人間とみなす。
+	 */
+	participants?: ReadonlyArray<{ userId: number; slot: number }>;
+	/**
 	 * 全参加者へ配信する。W-11 が WS へ差し替える。
 	 *
 	 * `serialized` は **ルーム内で1回だけ `JSON.stringify` した文字列**。
@@ -76,10 +125,34 @@ export interface RoomOptions {
 	 * オブジェクト側はテストと将来の分岐用。
 	 */
 	onBroadcast?: (message: SnapshotMessage | RoomEvent, serialized: string) => void;
+	/**
+	 * ② §6-C 2. の永続化フック（W-13 の責務）。
+	 *
+	 * 最終 snapshot 配信の直後、`event(match_end)` 発火の直前に呼ばれる。
+	 * 戻り値の `matchId` が `event(match_end).d.match_id` に載る（結果画面が
+	 * REST `GET /api/matches/:id` を叩く経路）。
+	 *
+	 * **未提供 or 例外 or `null` を返した場合**は `match_id: null` で match_end を
+	 * 発火する。DB行が無いので lobby WS の `match_result` も送らず、クライアントは
+	 * 最終 snapshot の勝敗・スコアだけで結果画面を表示する（② §5-D）。
+	 * W-13 未実装のうち（＝現在）は未提供で問題ない。
+	 */
+	persistMatch?: (context: PersistedMatchContext) => Promise<PersistedMatchResult | null>;
+	/** match_end 配信後、永続化成功時だけロビーの match_result へ渡す */
+	onMatchResult?: (result: MatchResultPayload) => void;
+	/**
+	 * ② §4-E: W-09 が試合終了・開始前破棄を購読し、ロビーの in_match context を解放する。
+	 *
+	 * GameRoom の内部状態をポーリングせずに済むよう、状態遷移の直後に同期通知する。
+	 */
+	onLifecycle?: (state: RoomState, reason: RoomLifecycleReason) => void;
 	/** 差し替え可能にしておくとテストで時間を進められる */
 	now?: () => number;
 	log?: RoomLogger;
 }
+
+/** 配信の購読者。`serialized` は ② §5-B の「同一シリアライズ済み文字列」 */
+export type BroadcastListener = (message: SnapshotMessage | RoomEvent, serialized: string) => void;
 
 export interface RoomLogger {
 	info(obj: Record<string, unknown>, msg: string): void;
@@ -92,13 +165,13 @@ const consoleLogger: RoomLogger = {
 };
 
 /** RSP は 4 席（0,1=赤 / 2,3=青）、FPS は 2 席（申し送り 3） */
-export function seatCount(mode: 'rsp' | 'fps'): number {
+export function seatCount(mode: SnapshotMode): number {
 	return mode === 'rsp' ? 4 : 2;
 }
 
 export class GameRoom {
 	readonly roomId: string;
-	readonly mode: 'rsp' | 'fps';
+	readonly mode: SnapshotMode;
 
 	private sim: SimGame | null = null;
 	private state: RoomState = 'created';
@@ -112,10 +185,20 @@ export class GameRoom {
 	private readonly humanSeats = new Set<number>();
 	/** 人間が座る予定の席（② §6-A 追補）。early start の判定に使う */
 	private readonly expectedHumanSlots: Set<number>;
+	/** userId → slot（② §4-C の participant 登録）。join の本人特定に使う */
+	private readonly participantSlots = new Map<number, number>();
+	/** 配信の購読者。W-11 の WS 層がここに1つ登録して接続へファンアウトする */
+	private readonly listeners = new Set<BroadcastListener>();
 
 	private lastOverrunLogAt = 0;
 	/** 直前に配信した snapshot。差分から point_scored / hand_changed / goal を起こす */
 	private previous: SnapshotPayload | null = null;
+	/**
+	 * ② §6-C の永続化フェーズに入ったか。onTick と leave の両方から finish() が
+	 * 呼ばれうるので、二重起動を防ぐ。true の間はタイマー停止済み・永続化 async 実行中で
+	 * state はまだ 'playing'（match_end 発火時に 'finished' へ落とす）。
+	 */
+	private finishStarted = false;
 	private readonly opts: Required<Pick<RoomOptions, 'now' | 'log'>> & RoomOptions;
 
 	private constructor(options: RoomOptions) {
@@ -123,18 +206,51 @@ export class GameRoom {
 		this.mode = options.mode;
 		this.opts = { ...options, now: options.now ?? Date.now, log: options.log ?? consoleLogger };
 		this.stateEnteredAt = this.opts.now();
-		// 省略時は全席が人間（定員ちょうど埋まったクイックマッチと同じ扱い）
 		const seats = seatCount(options.mode);
-		if (options.humanSlots) {
-			for (const s of options.humanSlots) {
-				if (!Number.isInteger(s) || s < 0 || s >= seats) {
-					throw new Error(`humanSlots の ${s} は ${options.mode} の定員 ${seats} の外`);
-				}
+		const assertValidSlot = (slot: number, source: string): void => {
+			if (!Number.isInteger(slot) || slot < 0 || slot >= seats) {
+				throw new Error(`${source} の slot ${slot} は ${options.mode} の定員 ${seats} の外`);
 			}
+		};
+		if (options.participants?.length === 0) {
+			throw new Error('participants を指定する場合は1人以上必要');
 		}
+		for (const p of options.participants ?? []) {
+			assertValidSlot(p.slot, `participant userId=${p.userId}`);
+		}
+		for (const slot of options.humanSlots ?? []) {
+			assertValidSlot(slot, 'humanSlots');
+		}
+		for (const p of options.participants ?? []) this.participantSlots.set(p.userId, p.slot);
+		// 優先順: humanSlots → participants から導出 → 全席が人間
+		// （定員ちょうど埋まったクイックマッチは最後の扱いで正しい）
 		this.expectedHumanSlots = new Set(
-			options.humanSlots ?? Array.from({ length: seats }, (_, i) => i),
+			options.humanSlots ??
+				(options.participants
+					? options.participants.map((p) => p.slot)
+					: Array.from({ length: seatCount(options.mode) }, (_, i) => i)),
 		);
+		if (options.onBroadcast) this.listeners.add(options.onBroadcast);
+	}
+
+	/**
+	 * ② §5-A の `join` 用。Cookie から得た userId に対応する slot を返す。
+	 * participant でなければ `undefined`（呼び出し側は close 4003）。
+	 */
+	getSlotForUser(userId: number): number | undefined {
+		return this.participantSlots.get(userId);
+	}
+
+	/**
+	 * 配信を購読する。戻り値を呼ぶと解除。
+	 *
+	 * W-11 は**ルームにつき1回**購読し、そこから接続集合へファンアウトする。
+	 * 接続ごとに購読すると ② §5-B の「同一シリアライズ済み文字列を配信」が
+	 * 崩れる（接続数ぶん stringify してしまう）。
+	 */
+	subscribe(listener: BroadcastListener): () => void {
+		this.listeners.add(listener);
+		return () => this.listeners.delete(listener);
 	}
 
 	/** W-11 が welcome（② §5-B）を組み立てるための情報 */
@@ -186,8 +302,9 @@ export class GameRoom {
 	 * カウントダウンへ進む。判定に使うのは `humanSlots`（② §6-A 追補）で、
 	 * 「定員ぶんの人間」ではない。
 	 *
-	 * 一覧外の slot からの join も受理する（AI 席を人間が取る / W-12 の再接続）。
-	 * ただし**定員外の slot は拒否**する（② §2-B の close 4003 に対応）。
+	 * GameRoom 自体は participant の本人確認を行わず、定員内 slot だけを受け付ける。
+	 * game WS gateway が `getSlotForUser()` で認可してから本メソッドを呼ぶ。
+	 * `humanSlots` は早期 countdown 判定専用であり、認可表として使わない。
 	 */
 	join(slot: number): void {
 		if (this.state !== 'created' && this.state !== 'countdown' && this.state !== 'playing') {
@@ -201,7 +318,7 @@ export class GameRoom {
 		this.humanSeats.add(slot);
 		this.inputs.set(slot, { ...NEUTRAL_INPUT });
 		if (this.state === 'created' && this.allExpectedHumansJoined()) {
-			this.enterCountdown();
+			this.enterCountdown('countdown_ready');
 		}
 	}
 
@@ -243,37 +360,38 @@ export class GameRoom {
 			if (this.humanSeats.size === 0) {
 				// 誰も来なかったルームは記録を残さず破棄（② §6-A）
 				this.opts.log.info({ room: this.roomId }, 'GameRoom: 人間0人のまま時間切れ → closed');
-				this.close();
+				this.close('no_humans');
 			} else {
-				this.enterCountdown();
+				this.enterCountdown('countdown_timeout');
 			}
 		} else if (this.state === 'countdown' && elapsed >= COUNTDOWN_MS) {
 			this.enterPlaying();
 		} else if (this.state === 'finished' && elapsed >= FINISHED_HOLD_MS) {
-			this.close();
+			this.close('finished_hold');
 		}
 	}
 
 	/** 明示的に開始する（マッチメイキング側が全員そろったと判断した場合など） */
 	startNow(): void {
-		if (this.state === 'created') this.enterCountdown();
+		if (this.state === 'created') this.enterCountdown('countdown_ready');
 	}
 
-	close(): void {
+	/** simとtick timerを冪等に破棄し、closed lifecycleを通知する */
+	close(reason: RoomLifecycleReason = 'discarded'): void {
 		if (this.state === 'closed') return;
 		this.stopTimer();
 		this.sim?.destroy();
 		this.sim = null;
-		this.setState('closed');
+		this.setState('closed', reason);
 	}
 
-	private enterCountdown(): void {
-		this.setState('countdown');
+	private enterCountdown(reason: 'countdown_ready' | 'countdown_timeout' = 'countdown_ready'): void {
+		this.setState('countdown', reason);
 		this.broadcast({ t: 'event', d: { kind: 'countdown', seconds: COUNTDOWN_MS / 1000 } });
 	}
 
 	private enterPlaying(): void {
-		this.setState('playing');
+		this.setState('playing', 'match_started');
 		this.broadcast({ t: 'event', d: { kind: 'match_start' } });
 		// 30Hz の唯一の正（② §6-A）。unref しないのは、走っている試合が
 		// プロセスを延命すべきだから（サーバとしては正しい挙動）
@@ -295,7 +413,7 @@ export class GameRoom {
 		// ② §6-A: 偶数 tick のみ配信（実効 15Hz）
 		const broadcastedThisTick = this.tick % 2 === 0;
 		if (broadcastedThisTick) {
-			const message = decodeSnapshot(sim.readSnapshot(), this.tick);
+			const message = decodeSnapshot(sim.readSnapshot(), this.tick, this.mode);
 			this.broadcast(message);
 			// snapshot を配ってからイベントを出す（値の正本が先に届く。② §5-D）
 			for (const event of diffEvents(this.previous, message.d, this.mode)) {
@@ -332,16 +450,22 @@ export class GameRoom {
 	 * @param reason decided = sim が決着を報告 / abandon = 人間が全員抜けた（② §6-A）
 	 * @param alreadyBroadcasted 同じ tick で最終 snapshot を配信済みか
 	 *
+	 * ② §6-C の同期部分（1. 最終 snapshot 配信）だけをここで行う。
+	 * 永続化（2.）と `event(match_end)` 発火（3.）は
+	 * {@link persistAndAnnounceEnd} が async で実施する。
+	 *
 	 * abandon では **snapshot を追加配信しない**。sim はまだ playing なので、
 	 * ここで state=finished の snapshot を作ると ② §5-C の「match.state は sim の
 	 * enum そのまま」に反する。クライアントは match_end イベントで終了を知る。
 	 */
 	private finish(outcome: 'decided' | 'abandon', alreadyBroadcasted = false): void {
+		if (this.finishStarted) return; // 二重起動防止（onTick と leave の両方から来うる）
+		this.finishStarted = true;
 		this.stopTimer();
 		const sim = this.requireSim();
 		// 決着後の game_step は状態を進めず 1 を返し続ける（申し送り 6）。
-		// 最終 snapshot を1回だけ配信してから finished に落とす（② §6-C の 1.）
-		const last = decodeSnapshot(sim.readSnapshot(), this.tick);
+		// 最終 snapshot を1回だけ配信してから永続化フェーズへ入る（② §6-C 1.）
+		const last = decodeSnapshot(sim.readSnapshot(), this.tick, this.mode);
 		if (outcome === 'decided' && !alreadyBroadcasted) {
 			this.broadcast(last);
 			for (const event of diffEvents(this.previous, last.d, this.mode)) {
@@ -353,23 +477,91 @@ export class GameRoom {
 		// ② §5-D: reason は score|goal|forfeit|abandon。forfeit は W-12（leave / 猶予満了）で使う
 		const reason: MatchEndReason =
 			outcome === 'abandon' ? 'abandon' : this.mode === 'fps' ? 'goal' : 'score';
-		this.broadcast({
-			t: 'event',
-			// match_id は W-13 の永続化が採番する。W-11 時点では null で、
-			// 結果画面は snapshot の score/winner で描ける（② §5-D の「正本は snapshot」）
-			d: { kind: 'match_end', winner, reason, match_id: null },
-		});
-		this.setState('finished');
-		this.opts.log.info(
-			{ room: this.roomId, tick: this.tick, reason, winner, score: last.d.match.score },
-			'GameRoom: 試合終了',
-		);
-		// W-13 連携: ここで torinoue 側の永続化へ渡す（② §6-C の 2.）
+		// state は 'playing' のまま持ち越し（タイマー停止済み・入力反映も stopTimer で
+		// 次 tick が来ないので実質固まる）。await 完了後に 'finished' へ落とす。
+		void this.persistAndAnnounceEnd(winner, reason, [last.d.match.score[0], last.d.match.score[1]]);
 	}
 
-	private setState(next: RoomState): void {
+	/**
+	 * ② §6-C の 2. 永続化 → 3. `event(match_end)` 発火 → 60 秒保持の起点。
+	 *
+	 * **永続化と発火の順序を逆にしない**（②§6-C の改訂 2026-07-29）。
+	 * 逆にすると FE の結果画面が match_id を非同期に受け取る前提で書けなくなる。
+	 *
+	 * 永続化未提供（W-13 未実装）・例外・null 戻り値のいずれも `match_id: null` へ
+	 * フォールバック（② §5-D）。DB行が無いため `match_result` は送らず、
+	 * クライアントは最終 snapshot の勝敗・スコアだけで結果画面を表示する。
+	 */
+	private async persistAndAnnounceEnd(
+		winner: number | null,
+		reason: MatchEndReason,
+		score: readonly [number, number],
+	): Promise<void> {
+		let matchId: number | null = null;
+		let matchResult: MatchResultPayload | null = null;
+		if (this.opts.persistMatch) {
+			try {
+				const persisted = await this.opts.persistMatch({
+					roomId: this.roomId,
+					mode: this.mode,
+					winner,
+					reason,
+					score,
+					tick: this.tick,
+				});
+				if (persisted) {
+					if (
+						!Number.isInteger(persisted.matchId) ||
+						persisted.matchId <= 0 ||
+						persisted.result.match_id !== persisted.matchId
+					) {
+						throw new Error('persistMatch の matchId と result.match_id が一致しない');
+					}
+					matchId = persisted.matchId;
+					matchResult = persisted.result;
+				}
+			} catch (err) {
+				this.opts.log.warn(
+					{ room: this.roomId, err },
+					'GameRoom: persistMatch が失敗（match_end は match_id=null。最終 snapshot を結果表示に使う）',
+				);
+			}
+		}
+		this.broadcast({
+			t: 'event',
+			d: { kind: 'match_end', winner, reason, match_id: matchId },
+		});
+		if (matchResult && this.opts.onMatchResult) {
+			try {
+				this.opts.onMatchResult(matchResult);
+			} catch (err) {
+				this.opts.log.warn(
+					{ room: this.roomId, match_id: matchId, err },
+					'GameRoom: onMatchResult の通知に失敗',
+				);
+			}
+		}
+		// ② §6-C 5. の 60 秒保持は match_end 発火時点から数える（永続化に時間が
+		// かかった場合の切れ端を避ける）。setState が stateEnteredAt を更新する
+		this.setState('finished', 'match_end');
+		this.opts.log.info(
+			{ room: this.roomId, tick: this.tick, reason, winner, score, match_id: matchId },
+			'GameRoom: 試合終了',
+		);
+		// ② §6-C 4. の lobby WS 配信は onMatchResult の接続先（W-09/W-13）の責務
+	}
+
+	private setState(next: RoomState, reason: RoomLifecycleReason): void {
 		this.state = next;
 		this.stateEnteredAt = this.opts.now();
+		try {
+			this.opts.onLifecycle?.(next, reason);
+		} catch (err) {
+			this.opts.log.warn(
+				{ room: this.roomId, state: next, reason, err },
+				'GameRoom: onLifecycle の通知に失敗',
+			);
+		}
 	}
 
 	private stopTimer(): void {
@@ -380,9 +572,10 @@ export class GameRoom {
 	}
 
 	private broadcast(message: SnapshotMessage | RoomEvent): void {
-		if (!this.opts.onBroadcast) return;
+		if (this.listeners.size === 0) return;
 		// ② §5-B: 1回だけ直列化して同じ文字列を全員へ
-		this.opts.onBroadcast(message, JSON.stringify(message));
+		const serialized = JSON.stringify(message);
+		for (const listener of this.listeners) listener(message, serialized);
 	}
 
 	private requireSim(): SimGame {
