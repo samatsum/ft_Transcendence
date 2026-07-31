@@ -132,4 +132,18 @@ describe('apiFetch', () => {
 		const [, init] = fn.mock.calls[0]!;
 		expect(init?.credentials).toBe('same-origin');
 	});
+
+	it('呼び出し側が Content-Type を任意の case で指定していれば上書きしない', async () => {
+		const fn = mockFetch(async () => jsonResponse(200, {}));
+		await apiFetch('/api/x', {
+			method: 'POST',
+			body: { a: 1 },
+			headers: { 'content-type': 'application/vnd.api+json' },
+		});
+		const [, init] = fn.mock.calls[0]!;
+		const headers = init?.headers as Record<string, string>;
+		// 大文字化された 'Content-Type' 側は追加されない
+		expect(headers['Content-Type']).toBeUndefined();
+		expect(headers['content-type']).toBe('application/vnd.api+json');
+	});
 });

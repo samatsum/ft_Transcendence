@@ -20,7 +20,11 @@ F-03/F-05/F-09 が backend REST を叩くときの共通経路。次を提供す
 - `ApiError` — 3系統(network_error / invalid_response / envelope の code)を統一
 - `ERROR_MESSAGES_JA` — サーバ msg が空/欠落時のフォールバック日本語文言
 
-**評価要件**: ④ §6-1「コンソール error/warning ゼロ」の実装面(発生した error を全て Toast へ流し、`code` は開発ログのみ)。⑤ F-02 受入「401 で /login、エラーがトーストに出る」。
+**評価要件**: ④ §6-1「コンソール error/warning ゼロ」の実装面(**Toast 対象のエラーは Toast へ流し**、`code` は開発ログのみ)。⑤ F-02 受入「401 で /login、エラーがトーストに出る」。
+
+**Toast の例外(useApi が特別扱いするケース)**:
+- **AbortError**: Toast/navigate せず、そのまま呼び出し側へ再スロー(cancel を区別できるように)
+- **`unauthenticated`(401)**: Toast を出さず `state.from` 付きで `/login` へ redirect(redirect が feedback として十分)
 
 ---
 
@@ -41,7 +45,7 @@ F-03/F-05/F-09 が backend REST を叩くときの共通経路。次を提供す
 | # | 穴 | 決定 |
 |---|---|---|
 | 1 | 401 応答時のリダイレクト後の元 URL 復帰方針 | **401 でも `state.from` に元 URL を積んで `/login` へ navigate**。F-01 の RequireAuth と同じ契約。ログイン後に元ページへ戻す。Toast は出さない(redirect が feedback として十分) |
-| 2 | Toast に出すメッセージの言語・優先順位 | **サーバの `msg` を優先**。空/欠落なら F-02 内の `code → 日本語` マップから引く。呼び出し側で `onError` により個別 override 可 |
+| 2 | Toast に出すメッセージの言語・優先順位 | **サーバの `msg` を優先**。空/欠落なら F-02 内の `code → 日本語` マップから引く。呼び出し側で自前の Toast を出したい場合は `toast: false` で既定 Toast を抑止し、`onError` で個別処理する(onError 自体は既定 Toast の後に呼ばれる副次コールバックで、`void` を返すため message を書き換える機構ではない) |
 | 3 | エラー分類の統一(3系統) | `ApiError.code: ApiErrorCode` に統一。`ApiErrorCode = ErrorCode \| 'network_error' \| 'invalid_response'`。network 失敗と非 JSON / envelope 不一致 / schema 不一致は `invalid_response` に丸め、Toast の統一路へ |
 | 4 | クライアントの形 | **`useApi()` フックが `{ request, get, post, put, patch, del }` を返す**(useCallback + useMemo で identity 安定)。純関数 `apiFetch()` も別途 export(vitest / hook 外の AuthContext から使う)。`/api` prefix は呼び出し側でフルパス指定 |
 
@@ -77,9 +81,13 @@ F-03/F-05/F-09 が backend REST を叩くときの共通経路。次を提供す
 ### `apiFetch<T>(url, options?, schema?): Promise<T>` — 純関数
 
 - `options`: `method` / `body` / `signal` / `headers` / `json`(既定 true)
-- `body` は json:true(既定) で `JSON.stringify` + `Content-Type: application/json` 自動付与。multipart は `json: false` を渡す
+- `body` は json:true(既定) で `JSON.stringify` + `Content-Type: application/json` 自動付与(**呼び出し側が Content-Type を大小どちらの形で指定していても検出し重複を避ける**)。multipart は `json: false` を渡す
 - `credentials: 'same-origin'` 固定(⓪ §3.1 の同一オリジン方針)
-- 戻り値: schema があれば `schema.parse()` した T、無ければ raw JSON。204 は `undefined`
+- **戻り値**:
+  - schema があれば `schema.parse()` した T
+  - schema が無ければ raw JSON を T として返す
+  - `204 No Content` + schema 未指定 → `undefined`
+  - `204 No Content` + schema 指定 → `ApiError('invalid_response', status=204)` を throw(契約不一致)
 
 **throw**:
 - `DOMException('AbortError')` — cancel。呼び出し側で `isAbortError()` で判定
@@ -107,10 +115,13 @@ del    <T>(url: string, opts?: Omit<...>): Promise<T>
 ```ts
 class ApiError extends Error {
     code: ApiErrorCode;      // ErrorCode | 'network_error' | 'invalid_response'
-    status?: number;         // HTTP status(envelope 経由のとき)
+    status?: number;         // HTTP レスポンスがあれば設定される
     details?: Record<string, string>;  // validation エラーのフィールド別理由
 }
 ```
+
+- `status` は **HTTP レスポンスに到達したケースすべて**で設定される(envelope 経由の code、非 JSON 応答の `invalid_response`、schema 不一致の `invalid_response`、204+schema 指定の `invalid_response` を含む)。**`network_error` のように HTTP レスポンス自体が無いケースでは未設定**
+- `details` は envelope の `error.details`(zod 検証のフィールド別理由)を保持する
 
 ---
 

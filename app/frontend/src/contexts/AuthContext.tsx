@@ -4,6 +4,7 @@ import {
 	useContext,
 	useEffect,
 	useMemo,
+	useRef,
 	useState,
 	type ReactNode,
 } from 'react';
@@ -59,6 +60,11 @@ async function fetchMe(signal: AbortSignal): Promise<AuthUser | null> {
 export function AuthProvider({ children }: { children: ReactNode }) {
 	const [status, setStatus] = useState<AuthStatus>('loading');
 	const [user, setUserState] = useState<AuthUser | null>(null);
+	// CodeRabbit 指摘: 起動時 bootstrap fetch が飛んでいる間に login/logout が走ると、
+	// 遅れて到着した bootstrap 応答が最新 state を上書きしうる。世代カウンタで
+	// bootstrap 応答の「現行性」を判定し、setUser/logout 時は世代を進めて無効化する
+	const bootstrapGenRef = useRef<number>(0);
+	const bootstrapControllerRef = useRef<AbortController | null>(null);
 
 	useEffect(() => {
 		// 開発スタブ: VITE_DEV_AUTOLOGIN=1 で /me を叩かずログイン済みにする。
@@ -69,25 +75,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 			setStatus('authenticated');
 			return;
 		}
+		const myGen = ++bootstrapGenRef.current;
 		const controller = new AbortController();
+		bootstrapControllerRef.current = controller;
 		fetchMe(controller.signal)
 			.then((u) => {
+				// setUser/logout が世代を進めていたら、この応答は無効(遅れて到着)
+				if (myGen !== bootstrapGenRef.current) return;
 				if (controller.signal.aborted) return;
 				setUserState(u);
 				setStatus(u ? 'authenticated' : 'unauthenticated');
 			})
 			.catch(() => {
-				// AbortError（cleanup で abort されたケース）は無視
+				// AbortError（cleanup or 明示 abort）は無視
 			});
-		return () => controller.abort();
+		return () => {
+			controller.abort();
+			if (bootstrapControllerRef.current === controller) {
+				bootstrapControllerRef.current = null;
+			}
+		};
 	}, []);
 
-	const setUser = useCallback((u: AuthUser | null) => {
-		setUserState(u);
-		setStatus(u ? 'authenticated' : 'unauthenticated');
+	// setUser/logout は共通で bootstrap を無効化する必要があるため helper 化
+	const invalidateBootstrap = useCallback(() => {
+		bootstrapGenRef.current++;
+		bootstrapControllerRef.current?.abort();
+		bootstrapControllerRef.current = null;
 	}, []);
+
+	const setUser = useCallback(
+		(u: AuthUser | null) => {
+			invalidateBootstrap();
+			setUserState(u);
+			setStatus(u ? 'authenticated' : 'unauthenticated');
+		},
+		[invalidateBootstrap],
+	);
 
 	const logout = useCallback(async () => {
+		invalidateBootstrap();
 		// W-04 未実装なので失敗は握って state だけ落とす。
 		// F-02 の apiFetch 経由(credentials・error 統一)。204 が返る前提なので schema なし
 		try {
@@ -98,7 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		}
 		setUserState(null);
 		setStatus('unauthenticated');
-	}, []);
+	}, [invalidateBootstrap]);
 
 	const value = useMemo<AuthContextValue>(
 		() => ({ status, user, setUser, logout }),

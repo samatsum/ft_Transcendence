@@ -47,7 +47,14 @@ export async function apiFetch<T = unknown>(
 	let finalBody: BodyInit | undefined;
 	if (body !== undefined) {
 		if (json) {
-			finalHeaders['Content-Type'] ??= 'application/json';
+			// CodeRabbit 指摘: HTTP ヘッダ名は大文字小文字を区別しない。
+			// 'content-type' や 'CONTENT-TYPE' で指定された場合の重複を避ける
+			const hasContentType = Object.keys(finalHeaders).some(
+				(k) => k.toLowerCase() === 'content-type',
+			);
+			if (!hasContentType) {
+				finalHeaders['Content-Type'] = 'application/json';
+			}
 			finalBody = JSON.stringify(body);
 		} else {
 			finalBody = body as BodyInit;
