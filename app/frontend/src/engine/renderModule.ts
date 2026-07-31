@@ -75,6 +75,11 @@ export async function createRenderModule(): Promise<RenderModule> {
 export function writeCString(mod: RenderModule, text: string): number {
 	const bytes = new TextEncoder().encode(text);
 	const ptr = mod._malloc(bytes.length + 1);
+	// CodeRabbit 指摘: _malloc が 0 を返した場合に HEAPU8 の先頭を破壊しないよう
+	// 事前に検証する。呼び出し側は catch して Toast / error status に流す
+	if (ptr === 0) {
+		throw new Error('writeCString: _malloc failed (wasm メモリ枯渇の可能性)');
+	}
 	mod.HEAPU8.set(bytes, ptr);
 	mod.HEAPU8[ptr + bytes.length] = 0;
 	return ptr;
