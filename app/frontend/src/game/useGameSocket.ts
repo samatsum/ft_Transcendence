@@ -85,12 +85,20 @@ export function useGameSocket(roomId: string): UseGameSocketResult {
 	useEffect(() => {
 		teardownRef.current = false;
 		// CodeRabbit 指摘#4: roomId 変更で新規セッション扱いにするため
-		// backoff counter をリセット。前 room の高 attempt 値のまま connect すると
-		// 初回接続なのに 'reconnecting' 表示になり、backoff 待機時間も混ざる
+		// backoff counter をリセット
 		attemptRef.current = 0;
+		// CodeRabbit 指摘（追加）: roomId 変更で前 room のデータが一瞬でも
+		// 描画されないよう welcome / snapshot バッファ / player_status / lastEvent もクリア
+		setWelcome(null);
+		snapshotBufferRef.current.length = 0;
+		setLastEvent(null);
+		setPlayerStatus(new Map());
+		setCloseCode(null);
 		let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
 		function connect() {
+			// 再接続時にも「切断されました」バナーが残らないよう、接続開始で closeCode を戻す
+			setCloseCode(null);
 			setStatus(attemptRef.current === 0 ? 'connecting' : 'reconnecting');
 			const ws = new WebSocket(buildWsUrl(roomId));
 			wsRef.current = ws;

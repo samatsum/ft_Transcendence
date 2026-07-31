@@ -124,6 +124,19 @@ export function useEngineRenderer({
 				firstSnapshotReceivedAt = head.receivedAtMs;
 				playheadStartMs = performance.now();
 			}
+			// CodeRabbit 指摘: playhead が tail を超えて進んだ場合（長時間の無通信の後）、
+			// 補間クロックが固定のままだと、通信が再開しても「未来」を再生し続けて
+			// alpha が退化する。tail が現在時刻の外に出たら基準を打ち直し、
+			// 100ms の補間遅延を保ちながら次の snapshot が来たら滑らかに繋がるようにする
+			const tail = buf[buf.length - 1];
+			if (tail) {
+				const tailRelUnderCurrent = tail.receivedAtMs - firstSnapshotReceivedAt;
+				const currentPlayAt = (performance.now() - playheadStartMs) - INTERP_DELAY_MS;
+				if (currentPlayAt > tailRelUnderCurrent) {
+					firstSnapshotReceivedAt = tail.receivedAtMs;
+					playheadStartMs = performance.now();
+				}
+			}
 			const nowElapsed = performance.now() - playheadStartMs;
 			const playAtServerMs = nowElapsed - INTERP_DELAY_MS;
 			// buf は「サーバ到着時刻の相対時間」で並んでいる（receivedAtMs - firstSnapshotReceivedAt）

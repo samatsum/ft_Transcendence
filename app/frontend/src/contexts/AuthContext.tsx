@@ -61,8 +61,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	const [user, setUserState] = useState<AuthUser | null>(null);
 
 	useEffect(() => {
-		// 開発スタブ: VITE_DEV_AUTOLOGIN=1 で /me を叩かずログイン済みにする
-		if (import.meta.env.VITE_DEV_AUTOLOGIN === '1') {
+		// 開発スタブ: VITE_DEV_AUTOLOGIN=1 で /me を叩かずログイン済みにする。
+		// CodeRabbit 指摘: import.meta.env.DEV も同時に要求することで、production
+		// ビルドで誤って env を立ててもスタブが有効化されない二重ガード
+		if (import.meta.env.DEV && import.meta.env.VITE_DEV_AUTOLOGIN === '1') {
 			setUserState({ id: 0, displayName: 'dev-user' });
 			setStatus('authenticated');
 			return;

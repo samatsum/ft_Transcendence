@@ -31,7 +31,7 @@
 | **E-12** snapshot 受け口 + `snapshot_interp.js` | ✅ 完了(samatsum) | 補間ロジックの移植元 |
 | **E-13** 描画ハードニング(`web_init` の内部解像度引数) | ✅ 完了(samatsum) | Canvas 内部解像度の指定口 |
 | **W-01** frontend 骨格 | ✅ 完了(samatsum) | React + Vite + Tailwind + shared |
-| **F-01** ルータ + ErrorBoundary + StrictMode | 未着手(mamiyaza) | 本来はここに Route を追加すべきだが、**F-06 が単独 Route を先に足すことで先行可** |
+| **F-01** ルータ + ErrorBoundary + StrictMode | ✅ 実装済み([PR #33](https://github.com/samatsum/ft_Transcendence/pull/33) — samatsum が mamiyaza 代行) | F-06 が先行導入した BrowserRouter + `/game/:roomId` を F-01 が Layout つき nested routes に取り込み、`/game/:roomId` は Layout 外に配置。以後 F-06 の GameView はそのまま乗る |
 | **W-04** 認証 | 未着手(torinoue) | `/game/:roomId` の認可ガード。**開発 stub で先行可、本認証は W-04/W-05 結合時** |
 | **W-12** 切断/再接続/AI 代替 | ✅ 完了(samatsum) | `welcome.resume=true` の受け側実装が F-06 に必要 |
 
@@ -76,7 +76,7 @@
 | 新規 | `app/frontend/src/game/useEngineRenderer.ts` | canvas mount + `requestAnimationFrame` + 100ms 遅延補間 + `web_apply_snapshot` + `web_render_frame` + BGRA→RGBA present |
 | 新規 | `app/frontend/src/game/useGameInput.ts` | Canvas キャプチャ・keydown/keyup・localYaw 積分・30Hz setInterval で input 送信 |
 | 新規 | `app/frontend/src/pages/GameView.tsx` | 3フックを組む + HUD 差し込み口(F-07 用)+ Canvas letterbox CSS |
-| 変更 | `app/frontend/src/App.tsx` | `/game/:roomId` Route を追加(F-01 前なので暫定ルータで先行) |
+| 変更 | `app/frontend/src/App.tsx` | `/game/:roomId` Route を追加(F-01 で Layout つき nested routes に再編。当 PR ではその前身の暫定ルータ) |
 | 変更 | `app/frontend/src/main.tsx` | React Router(まだ入っていない)を導入 |
 | 変更 | `app/frontend/package.json` | `react-router-dom` + `vitest` + `@types/emscripten`(あるいは自作型) |
 | 変更 | `app/frontend/vite.config.ts` | 必要なら `resolve.alias` で `@/engine` エイリアス |

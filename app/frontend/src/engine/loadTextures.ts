@@ -41,7 +41,14 @@ async function registerOne(mod: RenderModule, entry: ManifestEntry): Promise<voi
 	const height = view.getUint32(4, true);
 	const pixels = new Uint8Array(buffer, 8);
 	const pathPtr = writeCString(mod, entry.path);
+	// CodeRabbit 指摘: dataPtr=0（_malloc 失敗）で HEAPU8.set を呼ぶと
+	// wasm ヒープ先頭を破壊する。事前検証し、失敗時は既に確保した pathPtr を
+	// 必ず free してから throw する（finally は throw より前に到達するので pathPtr は残す）
 	const dataPtr = mod._malloc(pixels.byteLength);
+	if (dataPtr === 0) {
+		mod._free(pathPtr);
+		throw new Error(`texture data malloc failed: ${entry.path}`);
+	}
 	try {
 		mod.HEAPU8.set(pixels, dataPtr);
 		const ok = mod._web_register_texture(pathPtr, dataPtr, width, height);

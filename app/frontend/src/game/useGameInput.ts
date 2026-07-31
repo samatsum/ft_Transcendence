@@ -8,7 +8,7 @@
 // - タブ非表示/blur は全キー解放（押しっぱなし事故防止）。localYaw は保持。
 // - spectator は input を送らない（サーバも黙って破棄するが二重防御）。
 
-import { useEffect, useRef, type RefObject } from 'react';
+import { useCallback, useEffect, useRef, type RefObject } from 'react';
 import type { GameClientMessage } from '@ft/shared';
 
 // ② §5-A: mv 4bit ビットマスク
@@ -100,7 +100,18 @@ export function useGameInput({
 			captureListenerRef.current?.(next);
 		}
 		function onKeyDown(ev: KeyboardEvent) {
-			if (!capturedRef.current) return;
+			if (!capturedRef.current) {
+				// CodeRabbit 指摘: キーボードのみ操作の要件（④ §6-7）。
+				// canvas に focus 済みの状態で Enter / Space を押したら capture 開始
+				if (
+					(ev.code === 'Enter' || ev.code === 'Space') &&
+					document.activeElement === canvasRef.current
+				) {
+					ev.preventDefault();
+					setCaptured(true);
+				}
+				return;
+			}
 			const bit = HOLD_KEYS[ev.code];
 			if (bit !== undefined) {
 				ev.preventDefault();
@@ -159,11 +170,18 @@ export function useGameInput({
 		};
 	}, [canvasRef, spectator]);
 
+	// CodeRabbit 指摘: identity を安定化させて GameView 側の useEffect が
+	// 再レンダごとに再セットアップされないようにする
+	const setOnCaptureChange = useCallback(
+		(fn: ((captured: boolean) => void) | null) => {
+			captureListenerRef.current = fn;
+		},
+		[],
+	);
+
 	return {
 		localYawRef,
 		capturedRef,
-		setOnCaptureChange: (fn) => {
-			captureListenerRef.current = fn;
-		},
+		setOnCaptureChange,
 	};
 }

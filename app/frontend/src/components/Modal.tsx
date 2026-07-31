@@ -19,6 +19,22 @@ export interface ModalProps {
 export function Modal({ open, onClose, title, children, actions }: ModalProps) {
 	const dialogRef = useRef<HTMLDivElement | null>(null);
 
+	// CodeRabbit 指摘: 以前は [open, onClose] を1つの effect にまとめており、
+	// onClose の identity が変わるたびに dialogRef.focus() が再発火して
+	// モーダル内の他要素からフォーカスを奪う恐れがあった。effect を2つに分ける:
+	//   - open が false→true に変わった瞬間だけ dialog へフォーカス
+	//     + open 前のフォーカス要素を退避し、close 時に復元
+	//   - Escape ハンドラは onClose 変化にも追従する（focus には触らない）
+	useEffect(() => {
+		if (!open) return;
+		const previouslyFocused = document.activeElement as HTMLElement | null;
+		dialogRef.current?.focus();
+		return () => {
+			// close 時に元の要素へフォーカスを戻す（キーボード操作の連続性を保つ）
+			previouslyFocused?.focus?.();
+		};
+	}, [open]);
+
 	useEffect(() => {
 		if (!open) return;
 		function onKey(ev: KeyboardEvent) {
@@ -28,8 +44,6 @@ export function Modal({ open, onClose, title, children, actions }: ModalProps) {
 			}
 		}
 		window.addEventListener('keydown', onKey);
-		// 開いた瞬間にダイアログへフォーカス（読み上げ・キーボード操作の起点）
-		dialogRef.current?.focus();
 		return () => window.removeEventListener('keydown', onKey);
 	}, [open, onClose]);
 
