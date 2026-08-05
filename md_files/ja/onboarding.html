@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="ja">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="color-scheme" content="dark">
+	<title>オンボーディング — ft_transcendence</title>
+	<link rel="stylesheet" href="./assets/style.css">
+</head>
+<body>
+	<header class="hero">
+		<div class="shell">
+			<p class="eyebrow">Onboarding · 共通リファレンス</p>
+			<h1>ft_transcendence<br>オンボーディング</h1>
+			<p class="hero-lead">
+				42の課題 <strong>ft_transcendence</strong>（ブラウザで遊べるオンライン対戦。cub3D由来のエンジンをWeb化したもの）に
+				取り組むための入口。役割とレーンの定義、略号、モジュール境界、ゲート2の定義、よくある質問をまとめた、
+				特定の担当者を前提としない共通リファレンス。
+			</p>
+			<p class="hero-note">
+				<span aria-hidden="true">●</span>
+				<strong>読む目安 15〜20分</strong>
+				<span>正本ではない: 契約・日程の正本は各設計書（本文中にリンク）</span>
+			</p>
+		</div>
+	</header>
+
+	<nav class="topnav" aria-label="ページ内目次">
+		<div class="shell nav-inner">
+			<a href="#now">いま作っているもの</a>
+			<a href="#lanes">レーンと役割</a>
+			<a href="#glossary">略号・用語</a>
+			<a href="#boundaries">モジュール境界</a>
+			<a href="#faq">よくある質問</a>
+			<button class="print-button" type="button" onclick="window.print()">印刷 / PDF</button>
+		</div>
+	</nav>
+
+	<main class="shell">
+		<section id="now">
+			<p class="section-kicker">01 · Now</p>
+			<h2>いま何を作っているか</h2>
+			<p class="section-intro">
+				42の課題 ft_transcendence: ブラウザで遊べるオンライン対戦（cub3D由来のエンジンをWeb化）。
+				Cエンジンはすでに完成しており、これからTypeScriptのBackend / Frontendを積み上げる段階。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>状態</th><th>内容</th></tr></thead>
+					<tbody>
+						<tr>
+							<td><span class="tag status-done">完了</span></td>
+							<td>Cエンジン（<code>codes/</code> / <code>web/</code>）。判定を担う <code>sim.wasm</code> と、描画を担う <code>render.wasm</code>。</td>
+						</tr>
+						<tr>
+							<td><span class="tag status-todo">これから</span></td>
+							<td>TypeScriptのBackend / Frontend（<code>app/</code>）。次の関門は<strong>ゲート2</strong>。</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			<div class="callout" style="margin-top: 18px">
+				<strong>ゲート2の定義:</strong>
+				複数ブラウザでRSP（じゃんけん鬼ごっこ）対戦が最後まで成立すること。
+				これが結合デモのgo/no-go関門であり、連番の課題番号ではない。
+				日程の正本は<a href="../02_設計書/6-チーム分担計画.md">⑥ チーム分担計画</a> §5.1。
+			</div>
+			<p class="section-intro" style="margin-top: 18px">
+				要件の一次情報: <a href="../01_課題/ft_トランセンデンス.md">01_課題/ft_トランセンデンス.md</a>
+			</p>
+		</section>
+
+		<section id="lanes">
+			<p class="section-kicker">02 · Lanes &amp; roles</p>
+			<h2>開発レーンと管理役割</h2>
+			<p class="section-intro">
+				このプロジェクトの実装は4つの開発レーンに分かれる。誰が何を担当するかは体制によって変わるが、
+				レーンの境界そのものは変わらない共通の地図として使える。詳細の正本は
+				<a href="../02_設計書/6-チーム分担計画.md">⑥ チーム分担計画</a> §3。
+			</p>
+			<div class="grid grid-2">
+				<article class="card">
+					<p class="card-label">Lane · Game server</p>
+					<h3>ゲームサーバーレーン</h3>
+					<p><code>sim.wasm</code>駆動・WS・GameRoom。対戦の心臓部を動かす。</p>
+				</article>
+				<article class="card">
+					<p class="card-label">Lane · Backend foundation</p>
+					<h3>Auth / REST / DB / Dockerレーン</h3>
+					<p>身元確認、REST API、DB、起動基盤を担う。</p>
+				</article>
+				<article class="card">
+					<p class="card-label">Lane · Non-game UI</p>
+					<h3>非ゲームUIレーン</h3>
+					<p>認証画面・ロビーなど、対戦そのものではない画面を担う。</p>
+				</article>
+				<article class="card">
+					<p class="card-label">Lane · GameView</p>
+					<h3>GameViewレーン</h3>
+					<p>GameView / HUD / マッチ遷移。対戦画面の体験を担う。</p>
+				</article>
+			</div>
+			<div class="callout" style="margin-top: 18px">
+				<strong>管理役割（課題書 II.1.1）:</strong>
+				テクニカルリード（TL）、プロジェクトマネージャー / スクラムマスター（PM/SM）、
+				プロダクトオーナー（PO）、開発者（専任）の4種。
+				<strong>全員が開発者</strong>であり、管理役割は開発と兼任できる。
+				評価では「自分の役割と貢献」を説明できる必要がある。
+			</div>
+		</section>
+
+		<section id="glossary">
+			<p class="section-kicker">03 · Glossary</p>
+			<h2>略号・用語（初めて読む人向け）</h2>
+			<p class="section-intro">
+				Issue番号の正本: <a href="../02_設計書/5-バックログ.md">⑤ バックログ</a>
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>略号</th><th>意味</th><th>例</th></tr></thead>
+					<tbody>
+						<tr><td><code>E-xx</code></td><td>Engine（エンジン分離）。<strong>完了済み</strong></td><td>E-11 = sim.wasm</td></tr>
+						<tr><td><code>G-xx</code></td><td>Gameplay（対戦ルール等）。<strong>完了済み</strong></td><td>G-01 = 戦闘員統合</td></tr>
+						<tr><td><code>W-xx</code></td><td>Backend / DevOps側のIssue（Web層のサーバ寄りの作業）</td><td>W-04 = 認証、W-10 = GameRoom</td></tr>
+						<tr><td><code>F-xx</code></td><td>Frontend側のIssue</td><td>F-05 = ロビーUI、F-06 = GameView</td></tr>
+						<tr><td>ゲート</td><td>結合デモのgo/no-go関門（連番の課題番号ではない）</td><td>ゲート2 = 対人戦成立</td></tr>
+						<tr><td>RSP</td><td>じゃんけん鬼ごっこモード（ゲート2の題材）</td><td>—</td></tr>
+						<tr><td>WS</td><td>WebSocket（常時双方向）。契約の正本は<a href="../02_設計書/2-WSプロトコル設計.md">② WSプロトコル設計</a></td><td>—</td></tr>
+						<tr><td>REST</td><td>HTTPでJSONをやり取りするAPI。契約の正本は<a href="../02_設計書/3-REST_API設計.md">③ REST API設計</a></td><td>—</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p class="section-intro" style="margin-top: 22px">
+				設計書を指すとき、本文に残る<strong>⓪〜⑥</strong>は丸数字＝設計書番号。紙・検索では次のファイル名を使う。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>よく出る呼び方</th><th>ファイル</th></tr></thead>
+					<tbody>
+						<tr><td>全体アーキテクチャ</td><td><a href="../02_設計書/0-全体アーキテクチャ設計.md"><code>02_設計書/0-全体アーキテクチャ設計.md</code></a></td></tr>
+						<tr><td>WSプロトコル</td><td><a href="../02_設計書/2-WSプロトコル設計.md"><code>02_設計書/2-WSプロトコル設計.md</code></a></td></tr>
+						<tr><td>REST API</td><td><a href="../02_設計書/3-REST_API設計.md"><code>02_設計書/3-REST_API設計.md</code></a></td></tr>
+						<tr><td>フロントエンド設計</td><td><a href="../02_設計書/4-フロントエンド設計.md"><code>02_設計書/4-フロントエンド設計.md</code></a></td></tr>
+						<tr><td>バックログ</td><td><a href="../02_設計書/5-バックログ.md"><code>02_設計書/5-バックログ.md</code></a></td></tr>
+						<tr><td>チーム分担計画</td><td><a href="../02_設計書/6-チーム分担計画.md"><code>02_設計書/6-チーム分担計画.md</code></a></td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p class="section-intro" style="margin-top: 22px">
+				用語の詳細（zod・ロビー・snapshot等）: <a href="../torinoue/torinoue_用語集.md">torinoue_用語集.md</a>（学習用。契約の正本は各設計書）
+			</p>
+		</section>
+
+		<section id="boundaries">
+			<p class="section-kicker">04 · Boundaries</p>
+			<h2>モジュール境界（ここだけ合意すれば並行できる）</h2>
+			<p class="section-intro">
+				正本: <a href="../02_設計書/6-チーム分担計画.md">⑥ チーム分担計画</a> §4。
+				担当者が誰であっても、この契約の境界自体は変わらない。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>契約</th><th>所有レーン</th><th>主な消費レーン</th></tr></thead>
+					<tbody>
+						<tr>
+							<td><code>app/shared/</code>のzod（型の単一情報源）</td>
+							<td>Auth/REST/DBレーン（非ゲームUIレーンが必須レビュアー）</td>
+							<td>全レーン</td>
+						</tr>
+						<tr>
+							<td>REST API</td>
+							<td>Auth/REST/DBレーン</td>
+							<td>非ゲームUIレーン</td>
+						</tr>
+						<tr>
+							<td>WSプロトコル（メッセージ形・GameRoom）</td>
+							<td>ゲームサーバーレーン</td>
+							<td>GameViewレーン（＋ロビーは非ゲームUIレーン）</td>
+						</tr>
+						<tr>
+							<td>sim公開API / snapshot受信・補間（C側）</td>
+							<td>完了・原則不変</td>
+							<td>ゲームサーバーレーン / GameViewレーン</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			<div class="callout" style="margin-top: 18px">
+				<strong>最優先の同期:</strong>
+				ゲームサーバーレーン ⇄ GameViewレーンのsnapshot JSON形（<a href="../02_設計書/2-WSプロトコル設計.md">②WSプロトコル設計</a>のsnapshot節）。<br>
+				<strong>次点:</strong>
+				Auth/REST/DBレーン ⇄ 非ゲームUIレーンのエラーエンベロープとCookie。
+			</div>
+			<p class="section-intro" style="margin-top: 18px">
+				契約を変えるときは所有レーンの担当者に相談し、<strong>設計書を先に直してから</strong>実装する
+				（<a href="../02_設計書/6-チーム分担計画.md">⑥ チーム分担計画</a> §7）。
+			</p>
+		</section>
+
+		<section id="faq">
+			<p class="section-kicker">05 · FAQ</p>
+			<h2>よくある混乱</h2>
+
+			<div class="grid grid-2">
+				<article class="card">
+					<h3>Q. Cub3D / レイキャスタの数学まで読むか？</h3>
+					<p>
+						<strong>A.</strong>
+						ゲート2前は、ゲームサーバーレーン（エンジン駆動）以外は不要。
+						説明用の深いエンジン資料や、印刷用全記録のレイキャスタ章は後回しでよい。
+					</p>
+				</article>
+				<article class="card">
+					<h3>Q. <code>codes/</code>（C）を直してよいか？</h3>
+					<p>
+						<strong>A.</strong>
+						原則凍結。変更が必要な場合は、ゲームサーバーレーンの担当者と合意したうえで
+						（<a href="../02_設計書/6-チーム分担計画.md">⑥ チーム分担計画</a> §7の手順に従い）進める。
+					</p>
+				</article>
+				<article class="card">
+					<h3>Q. 進捗の正本はどれか？</h3>
+					<p>
+						<strong>A.</strong>
+						Issue受入・ゲート定義 → <a href="../02_設計書/5-バックログ.md">⑤ バックログ</a>。
+						日程 → <a href="../02_設計書/6-チーム分担計画.md">⑥ チーム分担計画</a> §5.1。
+						<a href="../02_設計書/0-全体アーキテクチャ設計.md">0-全体アーキテクチャ設計.md</a>の14日表は<strong>日程としては無効</strong>。
+					</p>
+				</article>
+				<article class="card">
+					<h3>Q. 説明用資料はすべて読む必要があるか？</h3>
+					<p>
+						<strong>A.</strong>
+						いいえ。自分が今取り組んでいる分野に関係する資料から読めば十分。
+						説明用（説1〜説12）を通読する必要はない。
+					</p>
+				</article>
+			</div>
+		</section>
+	</main>
+
+	<footer class="shell">
+		元資料: md_files/onboarding_docs/onboarding.md（archive/ に移設。2026-08-05に個人別ガイドへの導線を削除）
+	</footer>
+</body>
+</html>

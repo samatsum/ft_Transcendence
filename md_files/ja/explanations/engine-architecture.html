@@ -1,0 +1,851 @@
+<!doctype html>
+<html lang="ja">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="color-scheme" content="dark">
+	<title>エンジン構成 — ft_transcendence</title>
+	<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+	<header class="hero">
+		<div class="shell">
+			<p class="eyebrow">Engine · pf_* / 言語配置 / ディレクトリ / app 連携</p>
+			<h1>同じCのコードを、<br>3か所で動かす仕組み。</h1>
+			<p class="hero-lead">
+				cub3Dは42の課題としてはLinuxのデスクトップ1か所で動けば十分でした。
+				でもこのプロジェクトは、同じゲームロジックをLinuxアプリ・ブラウザ・Node
+				サーバの3か所で動かす必要があります。画面まわりだけを差し替える
+				<code>pf_*</code>という継ぎ目、C/TypeScriptがどこで何になって動くか、
+				リポジトリがなぜ今の形に分かれているか、そして「完成したエンジン」と
+				「これから作る製品層」がどう繋がるか——エンジンの構造をひとつづきに説明します。
+			</p>
+			<p class="hero-note">
+				<span aria-hidden="true">●</span>
+				<strong>対象</strong>
+				<span>チームメンバー全員。とくにsamatsum（境界の保守）とhminemur（F-06でpf_presentの受け側を書く）</span>
+			</p>
+		</div>
+	</header>
+
+	<nav class="topnav" aria-label="ページ内目次">
+		<div class="shell nav-inner">
+			<a href="#pf">pf_*の継ぎ目</a>
+			<a href="#languages">言語の配置</a>
+			<a href="#directory">ディレクトリ構成</a>
+			<a href="#layers">appとエンジン</a>
+			<a href="#rendering">並列描画しない理由</a>
+			<a href="#faq">FAQ</a>
+			<button class="print-button" type="button" onclick="window.print()">印刷 / PDF</button>
+		</div>
+	</nav>
+
+	<main class="shell">
+		<section id="pf">
+			<p class="section-kicker">01 · pf_* boundary</p>
+			<h2>MLXに触る処理だけを、10個の関数にくくり出す</h2>
+			<p class="section-intro">
+				cub3Dは42の課題として、<strong>MiniLibX（MLX）</strong>というライブラリで画面を出しています。
+				MLXはLinuxのX11（デスクトップの画面表示の仕組み）を前提にしたライブラリです。
+			</p>
+
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>どこで動かす</th><th>画面</th><th>MLXは使えるか</th></tr></thead>
+					<tbody>
+						<tr><td>Linuxのデスクトップ（従来のcub3D）</td><td>X11のウィンドウ</td><td>使える</td></tr>
+						<tr><td><strong>ブラウザ</strong></td><td>HTMLの<code>&lt;canvas&gt;</code></td><td><strong>使えない</strong>（X11が無い）</td></tr>
+						<tr><td><strong>Nodeサーバ</strong>（対戦の判定役）</td><td>画面そのものが無い</td><td><strong>使えない</strong></td></tr>
+					</tbody>
+				</table>
+			</div>
+
+			<p>
+				つまり、<strong>ゲームのロジック（移動・当たり判定・じゃんけんの勝敗・スコア）は
+				3か所でまったく同じものを使いたいのに、画面まわりだけが3か所で全部違う</strong>わけです。
+				ここで何も工夫しないと、ロジックを3回書くことになります。ブラウザ用にTypeScriptで
+				書き直し、サーバ用にもう一度書き、元のCも残す。そうすると「サーバでは勝ちだった
+				のにブラウザでは負けに見える」といった<strong>3つの実装がズレるバグ</strong>が必ず
+				出ますし、直すときは3か所直す必要があります。
+			</p>
+
+			<div class="callout">
+				<strong>解決策:</strong>
+				「MLXに触る処理」だけを10個の関数に押し込め、名前を<code>pf_</code>
+				（platformの略）で統一しました。ゲームのロジックは
+				「<code>pf_present()</code>を呼べば画面に出る」としか知りません。その中身が
+				MLXなのかCanvasなのか、何もしないのかは知らないし、知る必要もありません。
+			</div>
+
+			<pre><code>        ゲームのロジック（移動・衝突・敵AI・じゃんけん・スコア）
+                    ↑ ここは1つだけ。3か所で共通 ↑
+                             │
+                    pf_* を呼ぶ（ここが境界）
+                             │
+        ┌────────────────────┼────────────────────┐
+        ▼                    ▼                    ▼
+   pf_* の実装A          pf_* の実装B          pf_* の実装C
+   （MLX を使う）      （Canvas を使う）      （何もしない）
+        ▼                    ▼                    ▼
+   Linux アプリ           ブラウザ            Node サーバ</code></pre>
+
+			<h3>10個の関数</h3>
+			<p>
+				正本は<code>codes/includes/platform/platform.h</code>です。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>関数</th><th>役割</th><th>Linux（native）</th><th>ブラウザ（web）</th><th>サーバ（headless）</th></tr></thead>
+					<tbody>
+						<tr><td><code>pf_init</code></td><td>描画先の用意</td><td>MLX初期化+ウィンドウを開く</td><td>Canvasは JS 側が持つのでサイズだけ控える</td><td><strong>何もしない</strong></td></tr>
+						<tr><td><code>pf_create_framebuffer</code></td><td>絵を描くメモリを確保</td><td><code>mlx_new_image</code></td><td>WASMヒープ上に確保</td><td><strong>確保しない</strong>（描かないので）</td></tr>
+						<tr><td><code>pf_present</code></td><td>描いた絵を画面へ出す</td><td><code>mlx_put_image_to_window</code></td><td>JSがWASMメモリを読んでCanvasへ</td><td><strong>何もしない</strong></td></tr>
+						<tr><td><code>pf_now_ms</code></td><td>現在時刻（ミリ秒）</td><td><code>gettimeofday</code></td><td>ブラウザの時計</td><td>システム時計</td></tr>
+						<tr><td><code>pf_load_texture</code></td><td>画像を読み込む</td><td>XPMファイルを読む</td><td>事前変換済みRGBAを渡す</td><td><strong>1x1のダミーを返す</strong></td></tr>
+						<tr><td><code>pf_destroy_texture</code></td><td>画像を解放</td><td><code>mlx_destroy_image</code></td><td>メモリ解放</td><td>メモリ解放</td></tr>
+						<tr><td><code>pf_poll_events</code></td><td>キー入力を拾う</td><td>X11のキーイベント</td><td>JSのキーイベント</td><td><strong>何もしない</strong>（入力は通信で来る）</td></tr>
+						<tr><td><code>pf_setup_hooks</code></td><td>イベント登録</td><td><code>mlx_hook</code>×4</td><td>JS側が持つ</td><td><strong>何もしない</strong></td></tr>
+						<tr><td><code>pf_loop</code></td><td>イベントループ開始</td><td><code>mlx_loop</code>（ここで実行が止まる）</td><td><code>requestAnimationFrame</code>が回す</td><td><strong>何もしない</strong>（サーバのtickが回す）</td></tr>
+						<tr><td><code>pf_shutdown</code></td><td>後始末</td><td><code>mlx_destroy_*</code>一式</td><td>メモリ解放</td><td>メモリ解放</td></tr>
+					</tbody>
+				</table>
+			</div>
+
+			<p>
+				サーバ版（headless）は<strong>半分が「何もしない」</strong>ですが、これは手抜きではなく
+				<strong>設計どおり</strong>です。サーバは絵を描く必要がなく、画面もキーボードもありません。
+				でも移動・衝突・じゃんけんの勝敗判定は完全に同じものを使いたい。そこで
+				「描画まわりは全部空っぽの実装を用意する」ことで、<strong>ゲームのロジック側は
+				1行も分岐せずに</strong>サーバでも動くようになります。
+			</p>
+			<pre><code>// ゲームのロジックはこう書いてある（3環境で共通、if文なし）
+pf_present(&game->window);   // Linux: 画面に出る / ブラウザ: Canvasに出る / サーバ: 何も起きない</code></pre>
+			<p>
+				もし<code>pf_</code>が無ければ、ここに<code>if(サーバなら描画しない)</code>という分岐が
+				コードのあちこちに入ることになります。
+			</p>
+
+			<h3>なぜ「headless」で「server」じゃないのか</h3>
+			<p>
+				headless（ヘッドレス）は「頭が無い」という意味の一般的な業界用語で、ここでのhead
+				は<strong>ディスプレイ</strong>を指します。モニタもキーボードもマウスも繋がっていない
+				コンピュータをheadless computerと呼ぶのが元で、headless browser（Chromeの画面
+				なしモード）やheadless CMSも同じ用法です。<code>platform/server</code>にしなかった
+				理由は3つあります。
+			</p>
+			<div class="grid grid-3">
+				<article class="card">
+					<p class="card-label">理由1</p>
+					<h3>層の名前は「何であるか」を表すべき</h3>
+					<p>
+						<code>platform/</code>の3つは実行環境の性質で並んでいます。ここに
+						<code>server</code>を混ぜると2つが「環境」で1つだけ「役割」になり、軸がずれます。
+						<code>native</code>=OSのデスクトップ上、<code>web</code>=ブラウザの中、
+						<code>headless</code>=<strong>画面が無い</strong>、という性質の並びです。
+					</p>
+				</article>
+				<article class="card">
+					<p class="card-label">理由2（決定的）</p>
+					<h3>実際、サーバ以外でも使っている</h3>
+					<p>
+						<code>make test</code>（85検査の受入テスト）は、headless実装を含んだ
+						<strong>ただのネイティブ実行ファイル</strong>をgccでビルドして走らせています。
+						サーバでもwasmでもありません。デモ記録用の<code>web/sim_demo/record.mjs</code>
+						も同じ層を使います。もし<code>server</code>という名前だったら、「なぜテストが
+						サーバ実装をリンクしているのか」という不要な疑問が毎回発生します。
+					</p>
+				</article>
+				<article class="card">
+					<p class="card-label">理由3</p>
+					<h3>サーバであることはこの層の関心事ではない</h3>
+					<p>
+						headless実装がやっているのは「描画しない・入力を拾わない・ループを持たない」
+						の3つだけで、<strong>誰がその上でtickを回すかを知りません</strong>。回すのが
+						Fastifyでも、テストの<code>for</code>ループでも、<code>record.mjs</code>でも
+						同じように動きます。
+					</p>
+				</article>
+			</div>
+			<div class="table-wrap" style="margin-top: 16px">
+				<table>
+					<thead><tr><th>語</th><th>指すもの</th></tr></thead>
+					<tbody>
+						<tr><td><strong>headless</strong></td><td>プラットフォーム層の実装（<code>platform_headless.c</code>）。「画面が無い」という性質</td></tr>
+						<tr><td><strong><code>sim.wasm</code></strong></td><td>headless実装を含めてビルドした成果物</td></tr>
+						<tr><td><strong>サーバ / GameRoom</strong></td><td><code>sim.wasm</code>を30Hzで回すNode側のコード（W-10）</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p>
+				「headlessだからサーバ」ではなく、<strong>「headlessだからサーバでも動かせる」</strong>
+				という順序です。
+			</p>
+
+			<h3>実際どこにあるのか</h3>
+			<p>MLXを使う実装は<strong>1ファイルだけ</strong>に閉じ込めてあります。</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>ファイル</th><th>行数</th><th>中身</th></tr></thead>
+					<tbody>
+						<tr><td><code>platform/native/platform_native.c</code></td><td>160</td><td><strong>MLXを使う唯一のファイル</strong></td></tr>
+						<tr><td><code>platform/web/platform_web.c</code></td><td>280</td><td>ブラウザ版（Canvas / RGBAテクスチャ登録）</td></tr>
+						<tr><td><code>platform/headless/platform_headless.c</code></td><td>144</td><td>サーバ版（ほぼ「何もしない」）</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p>
+				確認するには、リポジトリのルートで「<code>mlx.h</code>をincludeしている」か
+				「<code>mlx_◯◯()</code>を呼んでいる」ファイルを探します。
+			</p>
+			<pre><code>grep -rln 'mlx\.h\|mlx_[a-z]' codes/srcs</code></pre>
+			<p>
+				<code>codes/srcs/platform/native/platform_native.c</code>の<strong>1行しか
+				出ません</strong>。つまり<code>codes/srcs/common/</code>（ゲームのロジック本体）は、
+				MLXを一切呼んでいません。
+			</p>
+
+			<h3>呼ぶ側は、どうやってnative / headlessを指定しているのか</h3>
+			<p>
+				<strong>指定していません。</strong>3つのファイルは、<strong>まったく同じ10個の
+				関数名</strong>を定義しています。
+			</p>
+			<pre><code>// platform_native.c
+void pf_present(t_window* w) { mlx_put_image_to_window(...); }   // 画面に出す
+
+// platform_web.c
+void pf_present(t_window* w) { /* JSがHEAPU8を読んでCanvasへ */ }
+
+// platform_headless.c
+void pf_present(t_window* w) { (void)w; }                        // 何もしない</code></pre>
+			<p>呼ぶ側（<code>loop.c</code>）は、ただこう書いてあるだけです。</p>
+			<pre><code>pf_present(&game->window);</code></pre>
+			<p>
+				<strong><code>if</code>も<code>#ifdef</code>も関数ポインタもありません。</strong>
+				Makefileがターゲットごとに1つしかソースを渡していないので、<strong>リンカが
+				「その場にある<code>pf_present</code>」に解決する</strong>だけです。選択の余地がありません。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>コマンド</th><th>生成物</th><th>渡す<code>pf_*</code>実装</th><th>Makefileの変数</th></tr></thead>
+					<tbody>
+						<tr><td><code>make</code></td><td><code>cub3D</code>（Linuxアプリ）</td><td><code>platform_native.c</code></td><td><code>NATIVE_PLATFORM_SRCS</code></td></tr>
+						<tr><td><code>make web</code></td><td><code>render.wasm</code>（ブラウザ）</td><td><code>platform_web.c</code></td><td><code>WEB_PLATFORM_SRCS</code></td></tr>
+						<tr><td><code>make sim</code></td><td><code>sim.wasm</code>（サーバ用）</td><td><code>platform_headless.c</code></td><td><code>SIM_PLATFORM_SRCS</code></td></tr>
+						<tr><td><code>make test</code></td><td><code>sim_test</code>（受入テスト）</td><td><code>platform_headless.c</code></td><td>同上（<code>SIM_SRCS</code>を流用）</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p>
+				2つ混ぜれば<code>duplicate symbol</code>、0個なら<code>undefined reference</code>で
+				リンクが落ちます。<strong>間違えようがない</strong>のが、この方式の一番の利点です。
+				Cで実装を差し替えるときの最も古典的なやり方で、特別な技術は使っていません。
+				<strong>ゲームロジックのソースは4つとも同じものを使っています。</strong>
+				違うのは<code>pf_*</code>の実装だけです。
+			</p>
+
+			<p>
+				もう一段の節約として、<code>make sim</code>はさらに<strong>描画のソースコード自体を
+				リンク対象から外して</strong>います（Makefileの<code>SIM_RENDER_EXCLUDES</code>）。
+				<code>draw.c</code> / <code>raycast.c</code> / <code>sprite.c</code> / <code>font.c</code>
+				などは<code>sim.wasm</code>に含まれていません。だからheadlessの
+				<code>pf_create_framebuffer</code>は「メモリを確保しない」で済みます。
+				<strong>描く人がそもそも居ない</strong>からです。
+			</p>
+
+			<div class="callout warning">
+				<strong>正確を期すと:</strong>
+				「分岐は一切ない」と言い切ると少し不正確です。コードベース全体で条件コンパイルは
+				<strong>2箇所だけ</strong>あります。<code>engine/render/cast_columns.c</code>
+				（nativeはpthreadで並列描画、webは単一スレッド）と<code>core/loop.c</code>
+				（ブラウザでは計測用の<code>printf</code>を出さない、「コンソール警告ゼロ」要件のため）。
+				どちらもpthreadと計測ログの都合であって、<code>pf_*</code>の選択とは無関係です。
+				<code>pf_*</code>に関しては、本当に分岐ゼロです。
+			</div>
+
+			<h3>壊さないために守ること</h3>
+			<div class="callout">
+				<strong>原則:</strong>
+				<code>codes/srcs/common/</code>（と<code>fps/</code> <code>rsp/</code>）にMLXを
+				持ち込まない。もし<code>common/</code>のどこかに<code>#include "mlx.h"</code>を
+				書いてしまうと、<strong><code>make web</code>と<code>make sim</code>が
+				コンパイルエラーで落ちます</strong>（ブラウザ用・サーバ用のビルドにはMLXの
+				ヘッダが存在しないため）。これは事故ではなく、<strong>わざとそうなるように
+				作ってある安全装置</strong>です。CI（GitHub Actions）が毎回3つとも全部ビルドするので、
+				この退行は必ず検知されます。なお<code>make check</code>（lint）にはこれを検査する
+				項目はありません。検知しているのは<strong>ビルドそのもの</strong>です。
+				「lintが通ったから大丈夫」ではなく「3ターゲットのビルドが通ったから大丈夫」と
+				考えてください。
+			</div>
+
+			<h3>Backend / Frontend担当への実務的な影響</h3>
+			<p><strong>結論から言うと、<code>pf_*</code>を直接呼ぶ機会はほぼありません。</strong></p>
+			<div class="grid grid-2" style="margin-top: 12px">
+				<article class="card">
+					<p class="card-label">samatsum（ゲームサーバ / W-10・W-11）</p>
+					<p>
+						<code>sim.wasm</code>をNodeで動かすとき、中ではheadless版の<code>pf_*</code>
+						が使われています。「描画しない・入力を拾わない・ループを持たない」実装なので、
+						<strong>tickを回すのはNodeの責務</strong>です（<code>setInterval</code>で
+						<code>game_step</code>を呼ぶ）。呼ぶのは<code>pf_*</code>ではなく
+						<strong>sim公開API</strong>（<code>sim_create</code> / <code>sim_set_input</code>
+						/ <code>game_step</code> / <code>game_snapshot</code>）です。
+					</p>
+				</article>
+				<article class="card">
+					<p class="card-label">hminemur（フロントゲーム / F-06）</p>
+					<p>
+						ブラウザでは<strong><code>pf_present</code>が「JSがWASMメモリを読んで
+						Canvasに描く」</strong>という形になっています。C側は絵をメモリに書くだけで、
+						Canvasに出すのはJSの仕事です。そのため<code>web_framebuffer_ptr()</code>
+						などで<strong>バッファの場所をJSから取得</strong>します。この配線は
+						<code>web/sim_demo/replay.html</code>に動く実例があります。
+					</p>
+				</article>
+			</div>
+		</section>
+
+		<section id="languages">
+			<p class="section-kicker">02 · Where languages run</p>
+			<h2>「書く言語」と「動く言語」は別物</h2>
+			<p class="section-intro">
+				意外かもしれませんが、<strong>TypeScriptというプログラムが動く場所は、ブラウザにも
+				サーバにも存在しません。</strong>TypeScriptは<strong>書くための言語</strong>で、
+				動かす前に必ず<strong>JavaScriptに変換</strong>されます。型チェックという安全装置が
+				付いたJavaScript、と思ってください。走る前に型は外され、ただのJavaScriptになります。
+			</p>
+			<p>
+				例えるならTypeScriptは「補助輪付きのJavaScript」。<strong>走り出す前に補助輪（型）
+				が外れて、実際に走るのはJavaScript</strong>です。だから、ランタイム（ブラウザや
+				Node）に渡せる形は3つだけです。<strong>機械語</strong>（nativeのCから。Linuxが
+				直接動かす）、<strong>JavaScript</strong>（ブラウザとNodeが受け取る）、
+				<strong>WASM</strong>（ブラウザとNodeが受け取る）。ブラウザもNodeも、TypeScriptは
+				受け取れません。JavaScriptとWASMだけです。
+			</p>
+
+			<h3>実は、全部いずれ機械語になる — 違いは「いつ」</h3>
+			<p>
+				「JavaScriptやWASMは機械語ではないの?」と思ったら、その勘は正しいです。
+				<strong>CPUは機械語しか実行できません。例外はありません。</strong>だから
+				JavaScriptもWASMも、最後は必ず機械語になってCPUが走らせます。「実行される言語が
+				3種類ある」のではなく、<strong>機械語にするタイミングと配る形が違う</strong>だけです。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th></th><th>いつ機械語になるか</th><th>配る（shipする）もの</th></tr></thead>
+					<tbody>
+						<tr><td><strong>C（native）</strong></td><td><strong>ビルド時</strong>（<code>gcc</code>で先に翻訳）</td><td>機械語そのもの（<code>cub3D</code>）</td></tr>
+						<tr><td><strong>JavaScript</strong></td><td><strong>実行時</strong>（ブラウザ/Nodeの中で自動的に）</td><td>ソースコード（文字のまま）</td></tr>
+						<tr><td><strong>WASM</strong></td><td><strong>実行時</strong>（同上。ただし高速・確実）</td><td>バイトコード（機械語に近い中間形式）</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p>
+				Cは「先に全部機械語へ翻訳してから配る」＝<strong>AOT</strong>（Ahead-Of-Time、事前
+				コンパイル）。JavaScript / WASMは「そのまま配って、動かす瞬間に機械語へ翻訳する」＝
+				<strong>JIT</strong>（Just-In-Time、実行時コンパイル）。ブラウザやNodeの中には
+				<strong>V8</strong>というエンジンが入っていて、こいつがJavaScriptを読みながら
+				<strong>その場で機械語に変換して走らせて</strong>います。「JSが動く」の実体は
+				「V8がJSを機械語にしてCPUに流している」ことです。
+			</p>
+			<p>
+				では、なぜWASMのほうが速いのか。「両方とも機械語になるなら速さは同じでは?」——
+				<strong>同じ機械語でも"質"が違います</strong>。JavaScriptは型が実行時まで決まりません
+				（<code>x</code>が数値か文字列か、動かすまで不明）。だからエンジンは「たぶん数値
+				だろう」と推測して機械語を作り、外れたら作り直すという保険とやり直しを抱えます。
+				これが遅さの元です。WASMはC由来で<strong>型がガチガチに決まっている</strong>ので、
+				<strong>推測なしで素直に速い機械語</strong>を吐けます。だからCに近い速度が出ます。
+				レイキャストのような重い計算をC/WASMに任せる理由がこれです（→ §5でも触れる
+				「速度が足りていた」の裏付け）。
+			</p>
+
+			<h3>言語→いつ変換→どこで動く</h3>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>書く言語</th><th>いつ変換される</th><th>何になる</th><th>最終的に動く場所</th></tr></thead>
+					<tbody>
+						<tr><td><strong>C</strong>（エンジン）</td><td>ビルド時（<code>emcc</code>）</td><td>WASM</td><td><strong>ブラウザとNode</strong>の両方</td></tr>
+						<tr><td>C（エンジン・native用）</td><td>ビルド時（<code>gcc</code>）</td><td>機械語</td><td>Linuxが直接</td></tr>
+						<tr><td><strong>TypeScript</strong>（フロント）</td><td>ビルド時（Vite）</td><td>JavaScript</td><td><strong>ブラウザ</strong></td></tr>
+						<tr><td><strong>TypeScript</strong>（バック）</td><td>起動時（tsx）</td><td>JavaScript</td><td><strong>Node（サーバ）</strong></td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p>
+				バックエンドは<code>tsx</code>というツールで動かします。tsxはTypeScriptを
+				<strong>その場でJavaScriptに変換してからNodeに渡す</strong>ので、体感は「TSをそのまま
+				実行」ですが、中身は「TS→JS→Node」です。フロントのViteも同じで、TSをJSへ変換して
+				ブラウザに渡します。<strong>どちらも走るのはJavaScript</strong>です。
+			</p>
+
+			<h3>実行時、各場所で動いているもの</h3>
+			<p>ブラウザとサーバ、<strong>どちらも中身は「JavaScript＋WASM」の2層</strong>です。</p>
+			<pre><code>┌─ プレイヤーのブラウザ ─────────────┐        ┌─ あなたのサーバ（Node）─────────┐
+│                                     │  通信   │                                 │
+│  JavaScript  ← フロントの TS から   │  (WS)   │  JavaScript  ← バックの TS から │
+│  （画面・入力・通信の"手"）         │◀──────▶│  （通信・DB・タイミングの"手"） │
+│      │ 呼ぶ                         │        │      │ 呼ぶ                     │
+│      ▼                              │        │      ▼                          │
+│  render.wasm ← C エンジンから       │        │  sim.wasm  ← C エンジンから     │
+│  （絵を計算する"脳"）               │        │  （勝敗を計算する"脳"）         │
+└─────────────────────────────────────┘        └─────────────────────────────────┘</code></pre>
+			<p>「脳（WASM）と手（JavaScript）」のペアが、<strong>両方の場所にいる</strong>イメージです。</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>場所</th><th>JavaScript（手）の担当</th><th>WASM（脳）の担当</th></tr></thead>
+					<tbody>
+						<tr><td><strong>ブラウザ</strong></td><td>Canvasに描く・キー入力・サーバと通信</td><td>画面のピクセルを計算（<code>render.wasm</code>）</td></tr>
+						<tr><td><strong>Nodeサーバ</strong></td><td>WS通信・DB・30Hzのタイミング</td><td>移動・勝敗を計算（<code>sim.wasm</code>）</td></tr>
+					</tbody>
+				</table>
+			</div>
+
+			<h3>TypeScriptは「3つ」ではなく「2か所で書く」</h3>
+			<p>
+				<code>app/</code>の中にTypeScriptが3つありますが、これは<strong>用途と行き先で
+				分かれている</strong>だけです。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>フォルダ</th><th>書く言語</th><th>変換後</th><th>動く場所</th></tr></thead>
+					<tbody>
+						<tr><td><code>app/frontend/</code></td><td>TypeScript</td><td>JavaScript</td><td><strong>ブラウザ</strong></td></tr>
+						<tr><td><code>app/backend/</code></td><td>TypeScript</td><td>JavaScript</td><td><strong>Node（サーバ）</strong></td></tr>
+						<tr><td><code>app/shared/</code></td><td>TypeScript</td><td>両方に取り込まれる</td><td>ブラウザとNodeの両方</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p>
+				同じTypeScriptでも、フロント用は最終的にブラウザ、バック用はNodeで動きます。
+				<code>app/shared/</code>（zodの型）は、フロントとバックの<strong>両方に取り込まれて</strong>、
+				それぞれのJavaScriptの一部になります。書く言語は同じでも、<strong>変換後に
+				置かれる場所が違う</strong>わけです。
+			</p>
+
+			<h3>よくある勘違い</h3>
+			<div class="grid grid-2">
+				<article class="card">
+					<h3>Q. TypeScriptはブラウザで動くの?</h3>
+					<p>
+						動きません。ビルドでJavaScriptに変換され、<strong>ブラウザが動かすのは
+						JavaScript</strong>です。「TypeScriptが動いている」ように見えても、実体は
+						変換後のJavaScriptです。
+					</p>
+				</article>
+				<article class="card">
+					<h3>Q. JavaScriptとWASMは、別々に動く別のプログラム?</h3>
+					<p>
+						いいえ、<strong>ペアで動きます</strong>。JavaScriptが主役（ホスト）で、WASMを
+						読み込んでその関数を呼びます。WASMは計算専門で、画面や通信にはJavaScriptを
+						通してしか触れません。
+					</p>
+				</article>
+				<article class="card">
+					<h3>Q. ブラウザのJavaScriptとNodeのJavaScriptは同じもの?</h3>
+					<p>
+						言語としては同じJavaScriptです。違うのは<strong>居場所と権限</strong>。
+						ブラウザのJSはセキュリティの檻の中（ファイルは触れない）、NodeのJSは檻の外
+						（ファイルも通信もできる）です。
+					</p>
+				</article>
+				<article class="card">
+					<h3>Q. Cはどこで動くの?</h3>
+					<p>
+						nativeでは機械語としてLinuxが直接。ブラウザとNodeでは<strong>WASMに
+						変換されて</strong>動きます。<strong>同じCのソースが、3つの場所すべてで
+						（形を変えて）動いている</strong>のがこの設計の肝です。
+					</p>
+				</article>
+			</div>
+		</section>
+
+		<section id="directory">
+			<p class="section-kicker">03 · Directory layout</p>
+			<h2>切り分けの軸は「コードかどうか」ではない</h2>
+			<p class="section-intro">
+				「コードなら1か所に集めたほうが素直では?」と感じるかもしれません。でも実際の軸は
+				<strong>言語（ツールチェーン）</strong>と<strong>担当レーン</strong>の2つです。
+			</p>
+
+			<pre><code>app/        TypeScript の Web アプリ一式（backend / frontend / shared + tsconfig.base）
+codes/      C エンジン本体（srcs / includes / minilibx / tests）
+web/        C を WASM 化した成果物＋それを動かす JS（build / engine_demo.js / sim_demo）
+maps/       .cub マップ（ゲームの入力データ）
+textures/   画像素材（.cub が参照）
+infra/      nginx・証明書・Dockerfile（docker/）＝デプロイまわり
+md_files/   資料一式（この説明も含む）
+screenshot/ 実行時のスクリーンショット出力先（中身は git 管理外）
+
+Makefile              C のビルド入口
+package.json /
+package-lock.json     npm（TypeScript）の入口と依存ロック
+docker-compose.yml    docker compose up（評価の単一コマンド）
+README.md             プロジェクトの顔</code></pre>
+			<p>
+				このほか<code>node_modules/</code>（npm生成物）、<code>cub3D</code>（ビルド出力）、
+				<code>.gitignore</code>等の隠しファイルがありますが、いずれも「自動生成」か
+				「隠し」なので数に入れません。
+			</p>
+
+			<div class="grid grid-2">
+				<article class="card">
+					<p class="card-label">軸1・言語（＝ビルドの仕組み）</p>
+					<h3><code>codes/</code>はCプロジェクト、<code>app/</code>はTypeScriptプロジェクト</h3>
+					<p>
+						<code>codes/</code>は「コード全般」ではなく<strong>Cプロジェクト</strong>です。
+						<code>Makefile</code>・MiniLibX・<code>.c</code>/<code>.h</code>の世界で、
+						ビルドは<code>make</code>。いっぽう<code>app/</code>は<strong>TypeScript
+						プロジェクト</strong>で、ビルドは<code>npm</code>。この2つは<strong>ツールも
+						依存関係も完全に別</strong>です。同じフォルダに混ぜるとlintやビルドの設定が
+						ぶつかります。<strong>言語で切ると、ツールチェーンが素直に分かれます。</strong>
+					</p>
+				</article>
+				<article class="card">
+					<p class="card-label">軸2・担当レーン</p>
+					<h3>フォルダを開けば「誰の担当か」が分かる</h3>
+					<p>
+						<code>app/</code>の中は担当分担そのままです。<code>app/backend/</code>＝
+						torinoue（Auth / REST / DB）、<code>app/frontend/</code>＝mamiyaza +
+						hminemur（画面）、<code>app/shared/</code>＝全員が使うzod契約、
+						<code>codes/</code>＝samatsum（完成済み。もう触らない）。4人で並行作業する
+						うえで、この対応が効きます。
+					</p>
+				</article>
+			</div>
+
+			<h3>なぜ<code>app/</code>にまとめたのか（ルートを減らす工夫）</h3>
+			<p>
+				もともと<code>backend/</code> <code>frontend/</code> <code>shared/</code>
+				<code>tsconfig.base.json</code>は<strong>ルート直下にバラけて</strong>いました。
+				これらは「TypeScriptのWebアプリ」という1つの塊なので、<code>app/</code>配下へ
+				まとめました。ルートから<strong>3ディレクトリ+1ファイルが消えて<code>app/</code>
+				1つ</strong>に。担当レーンとの対応は<code>app/backend</code>（torinoue）のように
+				<strong>1階層下で保たれる</strong>ので、「フォルダ＝担当」の見やすさは失っていません。
+			</p>
+			<div class="callout">
+				<strong>なぜ壊れないのか:</strong>
+				各パッケージは互いを<strong>パッケージ名</strong>（<code>@ft/shared</code>など）で
+				参照しているので、フォルダを動かしてもimportは無傷です。<code>tsconfig.base.json</code>
+				も一緒に<code>app/</code>へ下ろしたため、<code>extends: "../tsconfig.base.json"</code>
+				の相対パスは変わらず解決します。実装コードは1行も変えていません。
+			</div>
+
+			<h3>なぜ「これはルートのまま」なのか</h3>
+			<p>
+				ルートに残っている物の多くは、<strong>ツールがそこにあることを要求する</strong>
+				からです。動かすと壊れるか、規約と戦うことになります。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>ルート固定の物</th><th>理由</th></tr></thead>
+					<tbody>
+						<tr><td><code>package.json</code> / <code>package-lock.json</code></td><td>npm workspacesのルート。ここでしか成立しない</td></tr>
+						<tr><td><code>Makefile</code></td><td><code>make</code>の既定入口。動かすと<code>make -f codes/Makefile</code>になり不便</td></tr>
+						<tr><td><code>docker-compose.yml</code></td><td><code>docker compose up</code>（評価の単一コマンド）がルートを見る</td></tr>
+						<tr><td><code>README.md</code></td><td>課題要件。プロジェクトの顔はルート</td></tr>
+						<tr><td><code>node_modules/</code></td><td>npmが生成。移動不可（git管理外）</td></tr>
+						<tr><td>dotfiles（<code>.gitignore</code>等）</td><td>隠しファイル。通常の<code>ls</code>に出ない</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p>この「床」より下にはルートを減らせません。ここは諦めるのが正解です。</p>
+
+			<h3>各設定ファイルは何をするか</h3>
+			<p>
+				<code>package.json</code>や<code>tsconfig</code>は<strong>JSONなので
+				<code>//</code>コメントを書けません</strong>（npm/tscが弾く）。そこで役割はここに
+				一覧します。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>ファイル</th><th>役割</th></tr></thead>
+					<tbody>
+						<tr><td><code>package.json</code>（ルート）</td><td>npm workspacesのルート定義。<code>app/*</code>をまとめ、<code>dev</code>/<code>build</code>/<code>typecheck</code>スクリプトを持つ</td></tr>
+						<tr><td><code>package-lock.json</code></td><td>依存ライブラリのバージョン固定（<strong>自動生成。手で編集しない</strong>）</td></tr>
+						<tr><td><code>app/tsconfig.base.json</code></td><td>全TSパッケージ共通のtsc設定。<code>app/*/tsconfig.json</code>が<code>extends</code>する</td></tr>
+						<tr><td><code>Makefile</code></td><td>Cの3ターゲット（<code>make</code>=native / <code>web</code> / <code>sim</code>）と<code>test</code> / <code>check</code>のビルド定義</td></tr>
+						<tr><td><code>docker-compose.yml</code></td><td>いまは<code>engine-build</code>（emccビルド環境）のみ</td></tr>
+						<tr><td><code>.env.example</code></td><td>環境変数のひな型（実体の<code>.env</code>はgit除外）。ポート等をここで宣言</td></tr>
+						<tr><td><code>.gitignore</code> / <code>.dockerignore</code> / <code>.gitattributes</code></td><td>git / dockerの除外リストと属性設定</td></tr>
+					</tbody>
+				</table>
+			</div>
+
+			<h3>あえて動かさなかった物</h3>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>フォルダ</th><th>動かさなかった理由</th></tr></thead>
+					<tbody>
+						<tr><td><code>codes/</code></td><td>Cプロジェクトそのもの。今のままが正しい</td></tr>
+						<tr><td><code>web/</code></td><td><code>Makefile</code>（<code>web/build</code>）・<code>record.mjs</code>・CIが参照。動かすとパス書き換えが多い。W-10でbackendが読みに来る時に見直すのが自然</td></tr>
+						<tr><td><code>maps/</code> <code>textures/</code></td><td><strong>評価者が打つ<code>./cub3D maps/...</code>が変わってしまう</strong>。<code>.cub</code>内の<code>./textures/...</code>全行とUSER_DOCも直す羽目に。費用が大きく評価に触るので据え置き</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p>
+				「コードを<code>codes/</code>へ」の発想でいくと<code>maps</code>/<code>textures</code>
+				も入れたくなりますが、<strong>これは評価者が打つコマンドを変えてしまう</strong>ので、
+				あえて外に置いています。<code>maps</code>/<code>textures</code>は「コード」ではなく
+				「ゲームの入力データ」だ、という整理です。
+			</p>
+		</section>
+
+		<section id="layers">
+			<p class="section-kicker">04 · app vs engine</p>
+			<h2>完成したエンジンと、これから作る製品層</h2>
+			<p class="section-intro">
+				<strong><code>codes/</code>+<code>web/</code></strong>（Cエンジンと WASM デモ）は
+				完成していて、<strong><code>app/</code></strong>（TypeScriptのオンライン対戦の層）は
+				これから作る、という話です。ここまでの説明がエンジン中心だったのは、そこが「動いていて
+				説明できるもの」だったからです。
+			</p>
+
+			<div class="callout warning">
+				<strong>進捗上の注意（原資料は2026-07-30時点）:</strong>
+				このセクションは<strong>W-01完了時点の出発点</strong>を説明した記録です。その後
+				W-01/W-09/W-10/W-11/W-12/W-14までとW-08コアが実装され、進捗はさらに進んでいます。
+				「<code>app/</code>は骨格だけ」という以下の記述はその時点のスナップショットとして
+				読んでください。現在地・依存・担当の最新は
+				<a href="../../説明用/W作業全体-エンジンをオンライン製品にする16工程.html">W作業全体 —
+				エンジンをオンライン製品にする16工程</a>を参照してください。
+			</div>
+
+			<h3>プロジェクトは「2つの半分」でできている</h3>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>半分</th><th>実体</th><th>状態</th><th>役割</th></tr></thead>
+					<tbody>
+						<tr><td><strong>エンジン</strong></td><td><code>codes/</code>（C）+ <code>web/</code>（WASMとデモ）</td><td>完成（Engine E-01〜E-14 / Gameplay G-01〜G-10）</td><td>移動・衝突・敵AI・じゃんけん・描画。単体で動く</td></tr>
+						<tr><td><strong>製品層</strong></td><td><code>app/</code>（backend / frontend / shared）</td><td>W-01完了時点ではほぼ未着手（骨格のみ）</td><td>認証・ロビー・オンライン対戦・履歴。エンジンをネット越しの製品にする</td></tr>
+					</tbody>
+				</table>
+			</div>
+
+			<h3><code>app/</code>の「当時の今」— 骨格だけ</h3>
+			<p>
+				<code>app/</code>はW-01で枠だけ作った状態でした。ゲームのコードはまだ1行も
+				入っていません。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>フォルダ</th><th>当時あったもの</th></tr></thead>
+					<tbody>
+						<tr><td><code>app/backend/</code></td><td>Fastifyが起動し<code>/api/health</code>を返すだけ（約40行）</td></tr>
+						<tr><td><code>app/frontend/</code></td><td>Reactが<code>/api/health</code>を叩いて結果を表示するだけ（1画面）</td></tr>
+						<tr><td><code>app/shared/</code></td><td>FE/BE共有のzod契約（エラーエンベロープ・health）の骨格</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p>
+				唯一その時点で意味があったのは<code>app/shared</code>のzod契約で、
+				「FE/BEが同じ型定義を共有して起動する」ことを実証していました。
+			</p>
+
+			<h3><code>app/</code>が完成すると、エンジンと「こう繋がる」</h3>
+			<p>
+				<code>app/</code>は無関係な別物ではなく、<strong>エンジンの部品（<code>sim.wasm</code> /
+				<code>render.wasm</code> / <code>snapshot_interp.js</code>）をオンライン対戦として
+				繋ぐ入れ物</strong>です。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th><code>app/</code>の部分</th><th>これから作る中身</th><th>エンジンとの接続</th></tr></thead>
+					<tbody>
+						<tr><td><code>app/backend/</code></td><td>REST・認証・DB・WSとGameRoom</td><td><strong><code>sim.wasm</code>をNodeで回す</strong>（W-10）</td></tr>
+						<tr><td><code>app/frontend/</code></td><td>ロビー・GameView・HUD・プロフィール</td><td><strong><code>render.wasm</code> + <code>snapshot_interp.js</code></strong>を使う（F-06）</td></tr>
+						<tr><td><code>app/shared/</code></td><td>REST/WSのメッセージ契約（zod）</td><td>型の単一情報源。両者がimport</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p>
+				<code>app/backend</code>がinputを受けて<code>sim.wasm</code>を回しsnapshotを配信し、
+				<code>app/frontend</code>が受けて<code>render.wasm</code>で描く。単体のデモ
+				（engine_demo）の代わりに、この2つが役割を分担するのがオンライン対戦の実体です。
+			</p>
+
+			<h3>補足：<code>web/</code>は今後も触るのか</h3>
+			<p>「ほぼ完成だが、3つの経路で今後も関わる」が答えです。</p>
+			<ol class="path-list">
+				<li><div><strong><code>codes/</code>を直すと<code>web/build/*.wasm</code>が再生成される</strong><span>手で<code>web/</code>を編集するのではなく、Cを直して<code>make web</code> / <code>make sim</code>が生成物を更新する（例: W-14の<code>world_delta</code>）</span></div></li>
+				<li><div><strong><code>snapshot_interp.js</code>はF-06が流用する</strong><span><code>app/frontend</code>からimport/取り込む形になり、実質<code>web/</code>の資産が<code>app/</code>に持ち込まれる（補間ロジックを書き直さずに済む）</span></div></li>
+				<li><div><strong>wasmの置き場や読み込み経路の見直し</strong><span><code>app/</code>とエンジンを結線するW-10 / F-06の際、<code>web/build/</code>の成果物をどこから読むかを再検討する可能性がある（設計上の未決事項）</span></div></li>
+			</ol>
+			<p>
+				<code>engine_demo</code> / <code>sim_demo</code> / <code>bench_render.mjs</code>
+				そのものを積極的に書き換える予定は薄く、<strong>「動く参照実装」として残す</strong>
+				のが基本方針です（F-06は<code>replay.html</code>を下敷きにする）。
+			</p>
+		</section>
+
+		<section id="rendering">
+			<p class="section-kicker">05 · Single-threaded rendering</p>
+			<h2>なぜブラウザは並列描画しないのか</h2>
+			<p class="section-intro">
+				<strong>やれば遅くなる要素があり、しかも要らなかった</strong>から、です。
+				「ブラウザはCPUをうまく使えない」からではありません。
+			</p>
+
+			<p>
+				cub3Dの描画は<strong>レイキャスト</strong>という方式です。画面を縦に細い列へ切り、
+				<strong>1列ずつ「壁までの距離」を計算</strong>して、その距離から壁の高さを決めて
+				描きます。960幅なら960本の列を毎フレーム計算します。列と列は互いに独立なので、
+				<strong>複数のCPUコアで分担すれば速くなる</strong>はずです。実際native版はそうしています。
+			</p>
+			<pre><code>// codes/srcs/common/engine/render/cast_columns.c
+jobs[i].start = (cols * i) / n;      // 各スレッドに担当する列の範囲を割り当て
+jobs[i].end   = (cols * (i + 1)) / n;
+pthread_create(&tid[i], NULL, &cast_worker, &jobs[i]);  // n 個のスレッドで並列</code></pre>
+			<p>
+				列ごとに書き込むピクセルが重ならないので、<strong>mutex（排他ロック）が1つも
+				ありません</strong>。並列化に理想的な構造です。<strong>ところがweb版は、これを使わず
+				1スレッドで全列を描きます。</strong>なぜか、理由は2つあります。
+			</p>
+
+			<h3>理由その1 — ブラウザで並列化すると「代償」がつく</h3>
+			<p>
+				Emscriptenで Cの<code>pthread</code>をブラウザ向けにビルドすると、こう変換されます。
+			</p>
+			<pre><code>C の pthread      →  Web Worker（複数コアで動く。ここは問題ない）
+スレッド間の共有メモリ →  SharedArrayBuffer   ← ★これが厄介</code></pre>
+			<p>
+				<strong>SharedArrayBuffer（SAB）</strong>が問題です。2018年の
+				<strong>Spectre / Meltdown</strong>（CPUの投機実行の穴を突いて、本来読めない
+				メモリを盗み見る攻撃）で、SABが<strong>超高精度なタイマー</strong>として悪用でき、
+				攻撃の部品になることが分かりました。そのためブラウザ各社はSABを一度
+				<strong>全面無効化</strong>し、今は条件付きでしか使えません。その条件が
+				<strong>cross-origin isolation</strong>です。サーバが<strong>全レスポンス</strong>
+				に次の2つのヘッダを付ける必要があります。
+			</p>
+			<pre><code>Cross-Origin-Opener-Policy:   same-origin
+Cross-Origin-Embedder-Policy: require-corp</code></pre>
+			<p>
+				これを有効にすると、<strong>そのページが読み込む外部リソース全部</strong>
+				（画像・フォント・他オリジンの何か）にも、対応するヘッダが必要になります。
+				<strong>1つでも欠けると、そのリソースが読めなくなります</strong>。
+			</p>
+			<div class="callout warning">
+				<strong>私たちにとって、これが何を意味するか:</strong>
+				nginx（W-15）の設定が、その分ややこしくなる。<strong>評価の拒否条件「コンソールに
+				警告・エラーゼロ」を、原因の分かりにくいヘッダ由来のエラーで落とすリスク</strong>を
+				抱える。W-15は残り日程で沼ると痛い。要するに、<strong>並列化の見返り（速度）に
+				対して、リスクとインフラの手間が見合わない</strong>。
+			</div>
+
+			<h3>理由その2 — そもそも速度が足りていた</h3>
+			<p>
+				E-13で、シングルスレッドのまま実測しました（開発機・Nodeヘッドレス・300フレーム）。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>内部解像度</th><th>fps（fps_map）</th><th>fps（rsp_map）</th></tr></thead>
+					<tbody>
+						<tr><td><strong>960×540（既定）</strong></td><td><strong>112.0</strong></td><td><strong>106.8</strong></td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p>
+				<strong>60fps要件に対して約1.8倍の余裕</strong>があります。評価機が開発機の半分の
+				性能でも要件を満たす計算です。つまり「並列化しないと60fpsに届かない」という状況
+				ではありませんでした。<strong>面倒を持ち込んでまで速くする理由が、そもそも
+				無かった</strong>わけです。
+			</p>
+			<p>
+				参考までに、nativeは並列なので1920×1080でも<strong>1フレームを約8.5msで
+				描けます</strong>（＝秒110枚ぶんの"能力"）。実際の<code>./cub3D</code>は
+				<code>frame_delta</code>が60fpsに制限しているので出力は60fps固定ですが、1080pでも
+				8.5msしかかからないため60fpsを楽に満たす余裕があります。この余裕が小さいのが
+				シングルスレッドのwebで、<strong>解像度を下げるノブが要るのはwebだけ</strong>です。
+			</p>
+
+			<h3>足りなくなったら、まず解像度を下げる</h3>
+			<p>
+				重い評価機に当たった場合の対処は、<strong>pthread有効化ではなく内部解像度</strong>
+				です。その口はもう実装済みです（E-13）。
+			</p>
+			<pre><code>engine_demo.html?res=848x480      ← URL で内部解像度を指定できる</code></pre>
+			<p>
+				<code>web_init(map, is_rsp, width, height)</code>の後半2引数がこれです。
+				<strong>内部解像度を下げても、Canvas側はCSSで画面いっぱいに引き伸ばす</strong>ので、
+				プレイヤーから見たウィンドウの大きさは変わりません（少し粗くなるだけ）。描画コストは
+				ほぼピクセル数に比例するので、848×480は960×540の約78%の負荷です。
+			</p>
+			<div class="grid grid-2">
+				<article class="card">
+					<p class="card-label">対処の優先順位1</p>
+					<h3>内部解像度を848×480に下げる</h3>
+					<p>設定変更だけ。<strong>無料</strong>。ノブは実装済み。</p>
+				</article>
+				<article class="card">
+					<p class="card-label">対処の優先順位2</p>
+					<h3>COOP/COEPを入れてpthread有効化</h3>
+					<p>必須要件を壊しかねない。<strong>1を先に試してから</strong>、それでも足りない場合のみ。</p>
+				</article>
+			</div>
+			<p>
+				<strong>2を先にやってはいけません。</strong>1はコストゼロ、2は「コンソール警告ゼロ」
+				を危険にさらします。
+			</p>
+
+			<div class="callout">
+				<strong>まとめ:</strong>
+				webが単一スレッドなのは、ブラウザが非力だからではありません（Web Workerで並列は
+				可能）。ブラウザで並列化＝SharedArrayBuffer＝COOP/COEPヘッダが必須＝nginxが複雑化し、
+				コンソール警告ゼロ要件を脅かします。しかもE-13で960×540＝112fps、60fpsの約1.8倍
+				あり、そもそも要らなかった。描画のコード自体は並列化しやすい構造（列分割・mutex
+				なし）なので、やろうと思えばいつでも有効化できます。ただし動機がありません。
+			</div>
+		</section>
+
+		<section id="faq">
+			<p class="section-kicker">06 · FAQ</p>
+			<h2>テクニカルリード自己確認シートより — エンジン構造編</h2>
+			<p class="section-intro">
+				samatsumが評価・チーム説明で即答できるように用意した自己確認シートから、
+				エンジン構造・<code>pf_*</code>境界に関する項目だけをここに集めました
+				（サーバ権威モデル・ビルドターゲット・スナップショット・戦闘員などの項目は他の
+				テーマページに分類しています）。
+			</p>
+			<div class="grid grid-2">
+				<article class="card">
+					<h3>Q. native / web / serverで1フレームを「回す人」は誰?</h3>
+					<p>
+						A. native=MLX（<code>mlx_loop</code>）、web=ブラウザ
+						（<code>requestAnimationFrame</code>）、server=Node（<code>setInterval</code>。
+						W-10で実装）。<strong>呼ばれる<code>game_step</code>は3つとも同一</strong>。
+					</p>
+				</article>
+				<article class="card">
+					<h3>Q. MLXに依存しているのはどこ? 何ファイル?</h3>
+					<p>
+						A. <code>pf_*</code>のnative実装<strong>1ファイルだけ</strong>
+						（<code>platform/native/platform_native.c</code>）。sim層・render層はMLXを
+						呼ばない。確認は<code>grep -rln 'mlx\.h\|mlx_[a-z]' codes/srcs</code>。
+					</p>
+				</article>
+				<article class="card">
+					<h3>Q. どうやってnative / web / headlessを切り替えている?</h3>
+					<p>
+						A. 切り替えていない。3実装が<strong>同じ関数名</strong>を持ち、Makefileが
+						ターゲットごとに1つだけリンクする（<code>NATIVE_/WEB_/SIM_PLATFORM_SRCS</code>）。
+						リンカが解決するだけ。
+					</p>
+				</article>
+				<article class="card">
+					<h3>Q. headless（サーバ）が「何もしない」pf関数だらけなのはなぜ?</h3>
+					<p>
+						A. サーバは描画も入力もループも持たないから。空実装にすることで、ロジック側に
+						<code>if(サーバ)</code>を書かずに済む。確認は
+						<code>platform/headless/platform_headless.c</code>。
+					</p>
+				</article>
+			</div>
+		</section>
+	</main>
+
+	<footer class="shell">
+		統合元: md_files/説明用/{pfプレフィックス関数について.md,
+		なぜブラウザは並列描画しないのか.md, ディレクトリ構成はなぜこうなのか.md,
+		どの言語がどこで動くのか.md, appとweb-完成したエンジンとこれから作る層.md}
+		（いずれも archive/ に移設）
+	</footer>
+</body>
+</html>

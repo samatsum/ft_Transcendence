@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<title>チーム体制 — ft_transcendence</title>
+<link rel="stylesheet" href="./assets/style.css">
+</head>
+<body>
+
+<div class="shell hero">
+	<p class="eyebrow">Team Structure</p>
+	<h1>チーム体制</h1>
+	<p class="hero-lead">
+		本書はもともと4人体制の作業分担計画だったが、旧チーム（torinoue / mamiyaza / hminemur）は解散し、
+		2026-08-05 時点で稼働しているのは <strong>samatsum 1人のみ</strong>。
+		新メンバーはまだ集まっていない。個人別のタスク割当・日割り・引き継ぎ経路は、
+		相談相手が不在のいま書いても意味を持たないため全削除した。
+		一方で、課題書（II.1.1）が定める役割の「枠」自体はチーム再編に備えて残す。
+	</p>
+	<div class="hero-note">
+		<strong>更新: 2026-08-05</strong>
+		<span>体制: samatsum 単独稼働（新メンバー未定）</span>
+	</div>
+</div>
+
+<main class="shell">
+
+<section id="status">
+	<p class="section-kicker">01 — Current Status</p>
+	<h2>現在の体制</h2>
+	<p class="section-intro">
+		当初の設計は「4レーン = 4人」（Engine / Backend・DevOps / Frontend / Gameplay）を前提にしていた。
+		いまはその前提が崩れ、全レーンを samatsum が兼務している状態。
+	</p>
+	<div class="grid grid-3">
+		<div class="card">
+			<p class="card-label">稼働人数</p>
+			<p class="metric">1<small> / 4〜5人（課題要件）</small></p>
+			<p class="metric-note">samatsum のみ。旧チーム3名は離脱済み。</p>
+		</div>
+		<div class="card">
+			<p class="card-label">新メンバー</p>
+			<p class="metric">未定</p>
+			<p class="metric-note">募集・合流のめどは立っていない。</p>
+		</div>
+		<div class="card">
+			<p class="card-label">役割の枠</p>
+			<p class="metric">維持</p>
+			<p class="metric-note">課題書 II.1.1 の必須役割は削除せず、空きスロットとして残す。</p>
+		</div>
+	</div>
+</section>
+
+<section id="roles">
+	<p class="section-kicker">02 — Required Roles</p>
+	<h2>管理役割の枠（課題書 II.1.1）</h2>
+	<p class="section-intro">
+		課題書 II.1.1 は PO / PM・スクラムマスター / テクニカルリード / 開発者（全員）の割当を義務づけ、
+		README.md への明記を求めている。この枠組みは維持し、現状は samatsum が全役割を兼任する。
+		残りの人数分は将来の合流に備えた空きスロットとして扱う。
+	</p>
+	<div class="table-wrap">
+		<table>
+			<thead>
+				<tr><th>管理役割</th><th>主な責務</th><th>現在の担当</th></tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td>プロダクトオーナー (PO)</td>
+					<td>機能の優先順位付け、完了検証、バックログ管理、評価者との窓口</td>
+					<td>samatsum（兼任）<br><span class="tag">空きスロットあり</span></td>
+				</tr>
+				<tr>
+					<td>プロジェクトマネージャー / スクラムマスター</td>
+					<td>進捗・期限の追跡、ブロッカー管理、定例の調整</td>
+					<td>samatsum（兼任）<br><span class="tag">空きスロットあり</span></td>
+				</tr>
+				<tr>
+					<td>テクニカルリード / アーキテクト</td>
+					<td>アーキテクチャと技術決定、重要変更のレビュー（sim / WS プロトコル境界）</td>
+					<td>samatsum（固定）<br><span class="tag owner">cub3D エンジンの設計・実装元</span></td>
+				</tr>
+				<tr>
+					<td>開発者（全員）</td>
+					<td>実装・コードレビュー・自分の実装のテスト・文書化</td>
+					<td>samatsum</td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+	<p class="section-intro" style="margin-top:16px;">
+		テクニカルリードのみ samatsum 固定（エンジンの設計・実装知識を要するため）。
+		PO と PM・SM は、新メンバーが加入した時点で希望・得意に応じて配分し直せる。
+	</p>
+</section>
+
+<section id="lanes">
+	<p class="section-kicker">03 — Development Lanes</p>
+	<h2>開発レーン構成（Engine / Backend・DevOps / Frontend / Gameplay）</h2>
+	<p class="section-intro">
+		4レーン構成そのものは課題書の想定に沿った枠組みとして維持する。
+		現状は全レーンを samatsum が兼務しており、Backend・DevOps と Frontend は
+		本来複数人で分担する前提だったレーンのため、空きスロットが大きい。
+	</p>
+	<div class="grid grid-2">
+		<div class="card">
+			<p class="card-label">Engine</p>
+			<h3>Cエンジン本体</h3>
+			<p>native / web / sim の3ターゲット、sim 公開 API、snapshot 受け口など。現在は samatsum が担当。</p>
+		</div>
+		<div class="card">
+			<p class="card-label">Backend・DevOps</p>
+			<h3>サーバー基盤・ゲームサーバー・インフラ</h3>
+			<p>Auth / REST / DB / DevOps と、WS・GameRoom・sim.wasm 駆動。現在は samatsum が兼務。
+			<span class="tag">空きスロットあり</span></p>
+		</div>
+		<div class="card">
+			<p class="card-label">Frontend</p>
+			<h3>フロント基盤・フロントゲーム</h3>
+			<p>認証・ロビー・プロフィール画面と、GameView / HUD / ゲーム統合。現在は samatsum が兼務。
+			<span class="tag">空きスロットあり</span></p>
+		</div>
+		<div class="card">
+			<p class="card-label">Gameplay</p>
+			<h3>対戦ロジック・マップ</h3>
+			<p>戦闘員統合・先取点・対戦マップなど。現在は samatsum が担当。</p>
+		</div>
+	</div>
+</section>
+
+<section id="risk">
+	<p class="section-kicker">04 — Unresolved Risk</p>
+	<h2>未解決リスク：人数要件との齟齬</h2>
+	<div class="callout warning">
+		<p>
+			<strong>未解決。</strong>
+			課題書は本プロジェクトを4〜5人のグループプロジェクトと定義しており（課題書 II章）、
+			II.1.1 の必須役割割当もその人数を前提にしている。
+			一方でリポジトリ直下の <code>README.md</code>「チーム役割 (Team Roles)」節（第VI章 要件対応）は、
+			現時点でも旧チーム4名（samatsum / torinoue / mamiyaza / hminemur）を列挙したままであり、
+			本ページが示す「samatsum 単独稼働」という実態と一致していない。
+		</p>
+		<p style="margin-bottom:0;">
+			この齟齬は本書では解消しない。新メンバーが合流するか、
+			README側の記載を単独稼働の実態に合わせて更新するか、
+			いずれかの判断がなされるまで未解決のまま残す。
+		</p>
+	</div>
+</section>
+
+</main>
+
+<footer class="shell">
+	元資料: md_files/02_設計書/6-チーム分担計画.md（archive/ に移設。2026-08-05にsamatsum単独稼働体制へ更新）
+</footer>
+
+</body>
+</html>
