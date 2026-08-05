@@ -2,7 +2,7 @@
 
 C エンジンを `emcc` で WASM にビルドした成果物（`build/`）と、それをブラウザ / Node
 から動かす JavaScript を置くフォルダです。**ここに TypeScript（`app/`）は含みません。**
-仕組みの背景は [説明用ドキュメント](../md_files/説明用/) を参照。
+仕組みの背景は [説明用ドキュメント](../md_files/ja/explanations/) を参照。
 
 ---
 
@@ -65,8 +65,8 @@ C エンジンを `emcc` で WASM にビルドした成果物（`build/`）と�
 
 つまりオンラインは「`sim_demo/replay.html` の作り（snapshot 駆動）」を TypeScript で
 本番化したもので、`engine_demo`（ローカル単体）とは駆動の仕方が別です
-（[④ スナップショットと補間](../md_files/説明用/スナップショットと補間.md) /
-[② ループ反転](../md_files/説明用/ループ反転-誰がゲームを回しているか.md)）。
+（[サーバ権威モデル](../md_files/ja/explanations/server-authority-model.html) /
+[ビルドと実行](../md_files/ja/explanations/build-and-run.html)）。
 
 ---
 
@@ -78,7 +78,8 @@ C エンジンを `emcc` で WASM にビルドした成果物（`build/`）と�
 確認ページだったので `gate1` と呼んでいました。
 
 ただ「gate1」では用途が伝わらないため、**`engine_demo`（エンジンの動作確認デモ）に
-改称**しました。実装レポート（`md_files/03_実装レポート/`）には当時の名前 `gate1` の
+改称**しました。実装レポート（`archive/03_実装レポート/`。2026-08-05 のドキュメント再構成で
+`md_files/` から archive へ移設）には当時の名前 `gate1` の
 まま残っています（過去の記録なので変更しません）。
 
 ## `package.json` について（JSON はコメントを書けない）
