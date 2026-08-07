@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ja">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="color-scheme" content="dark">
+	<title>E・専門用語 — ft_transcendence</title>
+	<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+	<header class="hero">
+		<div class="shell">
+			<p class="eyebrow">専門用語集 · Engine (E)</p>
+			<h1>知っている cub3D を、<br>3か所で動く形にする語彙。</h1>
+			<p class="hero-lead">
+				<code>codes/</code>のCコード自体はもう読めるはずなので、ここでは
+				「<strong>普通のcub3Dには無かった、このプロジェクトで足された概念</strong>」に絞ります。
+				C言語そのものの説明はしません。
+			</p>
+			<div class="hero-note">
+				<strong>前提</strong>
+				<span><a href="./全体-専門用語.html">全体-専門用語.html</a>は読了済みとする</span>
+			</div>
+		</div>
+	</header>
+
+	<nav class="topnav" aria-label="ページ内目次">
+		<div class="shell nav-inner">
+			<a href="#pf">pf_* 層</a>
+			<a href="#targets">3ビルド</a>
+			<a href="#sim">sim公開API</a>
+			<a href="#combatant">戦闘員</a>
+			<button class="print-button" type="button" onclick="window.print()">印刷 / PDF</button>
+		</div>
+	</nav>
+
+	<main class="shell">
+		<section id="pf">
+			<p class="section-kicker">01 · Platform layer</p>
+			<h2><code>pf_*</code> 層 — 画面まわりだけを差し替え可能にする継ぎ目</h2>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>用語</th><th>意味</th></tr></thead>
+					<tbody>
+						<tr><td><code>pf_*</code>（platform層）</td><td>MLXに触る処理だけを10個の関数（<code>pf_init</code>・<code>pf_present</code>など）にくくり出したもの。ゲームロジックはこの関数名だけを呼び、中身がMLXなのかCanvasなのか何もしないのかを知らない。正本: <code>codes/includes/platform/platform.h</code></td></tr>
+						<tr><td>native</td><td>元のcub3Dどおり、MLX/X11でLinuxデスクトップに描く実装（<code>platform_native.c</code>）</td></tr>
+						<tr><td>web</td><td>ブラウザのCanvasに描くための実装（<code>platform_web.c</code>）。<code>pf_present</code>は「何もしない」代わりに、JS側がWASMメモリを読んでCanvasに転送する</td></tr>
+						<tr><td>headless（ヘッドレス）</td><td>「画面が無い」実装（<code>platform_headless.c</code>）。描画・入力デバイス・ループを一切持たない。サーバ用の<code>sim.wasm</code>や<code>make test</code>の受入テストがこれを使う</td></tr>
+						<tr><td>framebuffer（<code>t_framebuffer</code>）</td><td>「ピクセルへのポインタ・幅・高さ」だけを持つ構造体。MLXの<code>t_image</code>の代わりに、<code>draw_pixel</code>が直接参照する</td></tr>
+						<tr><td>ループ反転</td><td>元のcub3Dは「MLXが暇なたびにmain_loopを呼ぶ」構造だったのを、「1フレーム分の処理＝<code>game_step</code>という普通の関数」に切り出し、呼ぶ側（MLX/ブラウザ/Node）をどれでも良くした設計変更。詳細は<a href="../explanations/ビルドと実行.html">ビルドと実行.html</a></td></tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+
+		<section id="targets">
+			<p class="section-kicker">02 · 3 build targets</p>
+			<h2>3つのビルドターゲット</h2>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>コマンド</th><th>成果物</th><th>用途</th></tr></thead>
+					<tbody>
+						<tr><td><code>make</code></td><td><code>cub3D</code>（Linux実行ファイル）</td><td>開発・回帰確認用。従来のcub3Dそのもの</td></tr>
+						<tr><td><code>make web</code></td><td><code>render.wasm</code></td><td>ブラウザで<strong>描くだけ</strong>。判定はしない</td></tr>
+						<tr><td><code>make sim</code></td><td><code>sim.wasm</code></td><td>Nodeサーバで<strong>判定だけ</strong>。描画コードは物理的にリンクされていない（<code>SIM_RENDER_EXCLUDES</code>）</td></tr>
+						<tr><td><code>make test</code></td><td><code>sim_test</code></td><td>headless実装をネイティブビルドした受入テスト（85検査）</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<div class="callout" style="margin-top: 18px">
+				<strong>覚え方：</strong>
+				<code>render.wasm</code>＝目（見た目だけ担当）、<code>sim.wasm</code>＝脳（勝敗の判定だけ担当）。
+				どちらも同じCソースから作るが、リンクする<code>pf_*</code>実装と含めるソースが違うだけ。
+			</div>
+		</section>
+
+		<section id="sim">
+			<p class="section-kicker">03 · sim public API</p>
+			<h2>sim公開API — サーバが呼ぶ関数群</h2>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>関数</th><th>役割</th></tr></thead>
+					<tbody>
+						<tr><td><code>game_create</code></td><td><code>.cub</code>のテキストからゲームを1つ作る（対戦1試合＝1インスタンス）</td></tr>
+						<tr><td><code>sim_set_input</code></td><td>ある戦闘員の入力（移動・視点）をサーバから渡す</td></tr>
+						<tr><td><code>game_step</code></td><td>1tick分だけゲームを進める。native/web/serverの3環境で呼ばれ方が違うだけで中身は共通</td></tr>
+						<tr><td><code>game_snapshot</code></td><td>今の状態をフラットな数値配列として取り出す。JSON化はNode側の仕事（simはしない）</td></tr>
+						<tr><td><code>game_apply_snapshot</code></td><td><strong>クライアント専用</strong>。受け取ったスナップショットを表示用に書き込むだけで、判定はしない</td></tr>
+						<tr><td><code>game_set_input_source</code></td><td>ある席の入力元をAI⇔外部（人間）で切り替える。切断時のAI代替・復帰の要</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p class="section-intro" style="margin-top: 16px">正本: <code>codes/includes/platform/sim.h</code></p>
+		</section>
+
+		<section id="combatant">
+			<p class="section-kicker">04 · Combatant</p>
+			<h2>戦闘員統合 — 人もNPCも同じ1種類</h2>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>用語</th><th>意味</th></tr></thead>
+					<tbody>
+						<tr><td>戦闘員（combatant）</td><td>プレイヤーもAIも同じ<code>t_enemy</code>構造体の1要素として扱う、という統合設計。違いは<code>input_source</code>だけ</td></tr>
+						<tr><td><code>input_source</code></td><td><code>AI</code>か<code>EXTERNAL</code>（外部入力＝人間）かのフラグ。これを切り替えるだけで人間⇔AI代替が実現する</td></tr>
+						<tr><td>ハザード（<code>is_hazard</code>）</td><td>マップ上の敵'M'のうち、席（プレイヤー枠）ではなく純粋な障害物として振る舞うもの</td></tr>
+						<tr><td>スポーン（spawn）</td><td>戦闘員の初期・復帰位置。席ごとに固定で持つ</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p class="section-intro" style="margin-top: 16px">
+				詳細は<a href="../explanations/サーバ権威モデル.html">サーバ権威モデル.html</a>の「戦闘員統合」章、
+				ゲームルール寄りの用語は<a href="./G-専門用語.html">G-専門用語.html</a>へ。
+			</p>
+		</section>
+	</main>
+
+	<footer class="shell">
+		<p>2026-08-07 作成。次は<a href="./G-専門用語.html">G-専門用語.html</a>（ゲームルール）か
+			<a href="./W-専門用語.html">W-専門用語.html</a>（サーバ側、未経験ならここが本命）。</p>
+	</footer>
+</body>
+</html>

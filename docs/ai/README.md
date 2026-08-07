@@ -3,8 +3,12 @@
 This directory is the **AI-facing documentation set**: English Markdown, written for an AI coding
 assistant (e.g. Claude Code) to consult while implementing or reviewing code in this repository.
 
-The **human-facing** documentation set is the parallel `md_files/ja/` directory: Japanese HTML,
+The **human-facing** documentation set is the parallel `docs/ja/` directory: Japanese HTML,
 written for samatsum. Start there instead if you're a person, not an AI — [`../ja/index.html`](../ja/index.html).
+It includes a lane-by-lane Japanese terminology glossary under `docs/ja/専門用語/` (samatsum is
+working toward the Technical Lead role and knows only the `codes/` C engine so far) — if you're
+asked to explain a term to samatsum, check whether it's already defined there before improvising
+your own explanation, so the vocabulary stays consistent across sessions.
 
 Superseded/original documents (the Japanese Markdown these files were translated from, plus
 material that didn't carry forward into either the AI or human doc set) live under

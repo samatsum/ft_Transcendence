@@ -71,7 +71,7 @@ Match the convention already established across 35+ PRs in this repo's history â
 |---|---|
 | `feat/` | New functionality (`feat/f-01-scaffold`, `feat/w-08-lobby`) |
 | `fix/` | Bug fixes, review-feedback fixups |
-| `docs/` | `md_files/` or `README.md` changes only, no code |
+| `docs/` | `docs/` directory or `README.md` changes only, no code |
 | `chore/` | Tooling, deps, config with no product-facing behavior change |
 | `ci/` | CI workflow changes |
 

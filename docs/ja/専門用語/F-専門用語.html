@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="ja">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="color-scheme" content="dark">
+	<title>F・専門用語 — ft_transcendence</title>
+	<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+	<header class="hero">
+		<div class="shell">
+			<p class="eyebrow">専門用語集 · Frontend (F)</p>
+			<h1>ブラウザに出る画面が、<br>何で出来ているか。</h1>
+			<p class="hero-lead">
+				<strong>依頼文には無かったレーンですが、W同様「何も分からない」対象のはずなので追加しました。</strong>
+				ここは<code>app/frontend/</code>——プレイヤーが実際にクリックする画面（ロビー・対戦画面・
+				プロフィールなど）を作っている部分です。<code>web/</code>（Cエンジンの WASM 化）とは別物。
+			</p>
+		</div>
+	</header>
+
+	<nav class="topnav" aria-label="ページ内目次">
+		<div class="shell nav-inner">
+			<a href="#tools">道具立て</a>
+			<a href="#react">Reactの基本</a>
+			<a href="#state">状態管理</a>
+			<a href="#game">対戦画面まわり</a>
+			<button class="print-button" type="button" onclick="window.print()">印刷 / PDF</button>
+		</div>
+	</nav>
+
+	<main class="shell">
+		<section id="tools">
+			<p class="section-kicker">01 · Tooling</p>
+			<h2>道具立て</h2>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>用語</th><th>意味</th></tr></thead>
+					<tbody>
+						<tr><td>TypeScript</td><td>JavaScriptに型（変数の種類のチェック）を足した言語。ブラウザは実行できないので、必ずビルドでJavaScriptに変換してから配る</td></tr>
+						<tr><td>React</td><td>画面を「部品（コンポーネント）の組み合わせ」として作るためのライブラリ。このプロジェクトの画面はすべてReactで書かれている</td></tr>
+						<tr><td>Vite</td><td>TypeScript/ReactのコードをJavaScriptへ変換し、開発中はブラウザへ即座に反映してくれるビルドツール</td></tr>
+						<tr><td>Tailwind CSS</td><td>あらかじめ用意されたクラス名（<code>text-sm</code>や<code>flex</code>など）をHTMLに直接並べて見た目を作る手法。別ファイルにCSSを書く量を減らせる</td></tr>
+						<tr><td>SPA（Single Page Application）</td><td>ページ遷移のたびにサーバーから新しいHTMLを取得するのではなく、1枚のHTMLの中でJavaScriptが画面を書き換え続ける方式。<code>/lobby</code>や<code>/game/:id</code>のようなURLの切り替えもJS側（ルーター）が担う</td></tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+
+		<section id="react">
+			<p class="section-kicker">02 · React basics</p>
+			<h2>Reactの基本語彙</h2>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>用語</th><th>意味</th></tr></thead>
+					<tbody>
+						<tr><td>コンポーネント</td><td>画面の部品を表す関数（例:<code>ScoreBar</code>・<code>Button</code>）。組み合わせて画面全体を作る</td></tr>
+						<tr><td>JSX</td><td>TypeScriptの中にHTMLのようなタグを直接書ける記法。<code>&lt;div&gt;{score}&lt;/div&gt;</code>のように書く</td></tr>
+						<tr><td>props</td><td>コンポーネントに渡す引数。C関数の引数と同じ発想</td></tr>
+						<tr><td>state（状態）</td><td>コンポーネントが内部で持つ、変化する値。変わると画面が自動で再描画される</td></tr>
+						<tr><td>Hook（フック）</td><td><code>use</code>で始まる特別な関数。<code>useState</code>（状態を持つ）・<code>useEffect</code>（副作用を実行する）などReactの標準機能と、プロジェクト独自の<code>useLobbySocket</code>・<code>useGameSocket</code>のような「カスタムフック」がある</td></tr>
+						<tr><td>Context</td><td>props を各階層に渡さなくても、遠くのコンポーネントへ値を届ける仕組み。<code>AuthContext</code>（ログイン状態）などで使う</td></tr>
+						<tr><td>ルーター（React Router）</td><td>URL（<code>/lobby</code>など）と表示するコンポーネントを対応付ける仕組み</td></tr>
+						<tr><td>route guard</td><td>ログインしていないユーザーを保護されたページから<code>/login</code>へ弾く仕組み</td></tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+
+		<section id="state">
+			<p class="section-kicker">03 · Data flow</p>
+			<h2>サーバーとのやり取り</h2>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>用語</th><th>意味</th></tr></thead>
+					<tbody>
+						<tr><td>fetch wrapper</td><td>REST APIを呼ぶ処理を1か所にまとめた関数（<code>apiFetch</code>）。エラー形式の統一やトークン付与を毎回書かなくて済む</td></tr>
+						<tr><td>Toast</td><td>画面の隅に一瞬出る通知（エラーメッセージなど）</td></tr>
+						<tr><td>ErrorBoundary</td><td>コンポーネント内で例外が起きても、画面全体が真っ白にならないようにする仕組み。評価要件の「コンソールにエラーを出さない」対策の一部</td></tr>
+						<tr><td>401リダイレクト</td><td>APIが「未ログイン」を返したら、自動的に<code>/login</code>へ飛ばす処理</td></tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+
+		<section id="game">
+			<p class="section-kicker">04 · GameView</p>
+			<h2>対戦画面（GameView）まわり — EngineレーンやWレーンとの接点</h2>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>用語</th><th>意味</th></tr></thead>
+					<tbody>
+						<tr><td>Canvas</td><td>HTMLの中で絵を描ける領域。<code>render.wasm</code>が計算したピクセルをここに転送する</td></tr>
+						<tr><td>useGameSocket</td><td>ゲーム用WebSocketへの接続・自動再接続を管理するカスタムフック</td></tr>
+						<tr><td>補間（interpolation）</td><td>サーバーから届く間引かれたsnapshot同士の「あいだ」を計算で滑らかに埋める処理。詳しくは<a href="../explanations/サーバ権威モデル.html">サーバ権威モデル.html</a></td></tr>
+						<tr><td>HUD</td><td>スコア・カウントダウン・接続状態など、3D画面の上に重ねて表示する情報レイヤー</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p class="section-intro" style="margin-top: 16px">
+				<code>render.wasm</code>そのもの（Cのエンジン）は<a href="./E-専門用語.html">E-専門用語.html</a>、
+				それを送り出すサーバー側は<a href="./W-専門用語.html">W-専門用語.html</a>を参照。
+			</p>
+		</section>
+	</main>
+
+	<footer class="shell">
+		<p>2026-08-07 作成。ここまで読んだら<a href="../オンボーディング.html">オンボーディング.html</a>で
+			全体のモジュール境界を確認するのがおすすめ。</p>
+	</footer>
+</body>
+</html>

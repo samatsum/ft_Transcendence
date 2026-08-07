@@ -14,7 +14,7 @@
 		<p class="hero-lead">
 			ここが人間（samatsum）向け資料の入口です。全ページ日本語 HTML、共通デザインで統一しています。
 			AI（Claude Code など）向けの参照資料は英語 Markdown で別に置いており、そちらの入口は
-			<code>md_files/ai/README.md</code> です — 人はそちらを読む必要はありません。
+			<code>docs/ai/README.md</code> です — 人はそちらを読む必要はありません。
 		</p>
 		<div class="hero-note">
 			<strong>2026-08-05</strong> にドキュメント全体を再構成しました。旧構成（設計書・実装レポート・説明用13本など）は
@@ -47,7 +47,7 @@
 					</div>
 				</div>
 				<p class="section-intro" style="margin-top:16px;">
-					詳しい進捗・Issue一覧は AI向け資料の <code>md_files/ai/backlog.md</code> が正本です
+					詳しい進捗・Issue一覧は AI向け資料の <code>docs/ai/backlog.md</code> が正本です
 					（英語ですが、内容はこのプロジェクトのバックログそのものです）。
 				</p>
 			</section>
@@ -70,6 +70,10 @@
 				<h2>まず何を読むか</h2>
 				<p class="section-intro">個人別 reading guide は廃止したため、以下の順に読めば全体像がつかめます。</p>
 				<ol class="path-list">
+					<li>
+						<strong><a href="./専門用語/全体-専門用語.html">専門用語/全体-専門用語.html</a></strong>
+						<span>この先の全ページで前提にする共通語彙（リポジトリ構成・サーバ権威・WS/REST・Git用語・42評価用語）。ここから読み始めるのが一番迷わない。</span>
+					</li>
 					<li>
 						<strong><a href="./Git運用フロー.html">Git運用フロー.html</a></strong>
 						<span>何かコミットする前に。branch → PR → CI → GitHub上でマージ → ローカルpull、というこのリポジトリの唯一の正しい統合手順。</span>
@@ -99,6 +103,13 @@
 						<span>.cub マップ書式。マップ文字・RSP/FPS判定・対戦マップのホワイトリスト。</span>
 					</li>
 				</ol>
+				<p class="section-intro" style="margin-top: 16px;">
+					レーンごとの専門用語（<a href="./専門用語/E-専門用語.html">E</a>・
+					<a href="./専門用語/G-専門用語.html">G</a>・
+					<a href="./専門用語/W-専門用語.html">W</a>・
+					<a href="./専門用語/F-専門用語.html">F</a>）は、上の一覧を順に読みながら
+					分からない単語が出たタイミングで都度参照するのがおすすめです。
+				</p>
 			</section>
 
 			<section id="files">
@@ -110,6 +121,11 @@
 							<tr><th>ファイル</th><th>内容</th></tr>
 						</thead>
 						<tbody>
+							<tr><td><a href="./専門用語/全体-専門用語.html">専門用語/全体-専門用語.html</a></td><td>レーン横断の共通語彙（リポジトリ構成・アーキテクチャ・ビルド・Git・42評価用語）</td></tr>
+							<tr><td><a href="./専門用語/E-専門用語.html">専門用語/E-専門用語.html</a></td><td>Engineレーンの用語（pf_*層・3ビルドターゲット・sim公開API・戦闘員統合）</td></tr>
+							<tr><td><a href="./専門用語/G-専門用語.html">専門用語/G-専門用語.html</a></td><td>Gameplayレーンの用語（RSP/FPSのルール・マップ文字）</td></tr>
+							<tr><td><a href="./専門用語/W-専門用語.html">専門用語/W-専門用語.html</a></td><td>Backend・DevOpsレーンの用語（REST/認証・DB/ORM・WebSocket・ロビー・インフラ）</td></tr>
+							<tr><td><a href="./専門用語/F-専門用語.html">専門用語/F-専門用語.html</a></td><td>Frontendレーンの用語（React・状態管理・GameView）</td></tr>
 							<tr><td><a href="./オンボーディング.html">オンボーディング.html</a></td><td>役割・略号・モジュール境界・ゲート2定義・FAQ（全員共通、個人別導線なし）</td></tr>
 							<tr><td><a href="./チーム体制.html">チーム体制.html</a></td><td>役割・レーン構成の枠組み、samatsum単独稼働の体制、4〜5人要件との齟齬（未解決リスク）</td></tr>
 							<tr><td><a href="./Git運用フロー.html">Git運用フロー.html</a></td><td>branch → PR → CI緑確認 → GitHub上でマージ → ローカルpullの運用ルール。コミット前に必読</td></tr>
@@ -130,9 +146,9 @@
 				<div class="callout">
 					旧構成（<code>01_課題/</code>・<code>02_設計書/</code>・<code>03_実装レポート/</code>・
 					<code>04_エンジン資料/</code>・<code>説明用/</code>・<code>onboarding_docs/</code>・
-					<code>torinoue/</code>・旧ドキュメント地図）は、このページと <code>md_files/ai/</code> に
+					<code>torinoue/</code>・旧ドキュメント地図）は、このページと <code>docs/ai/</code> に
 					統合・移設した上で、リポジトリルートの <code>archive/</code> へ移動しています。
-					内容の正本は今後 <code>md_files/ja/</code>（人間向け）と <code>md_files/ai/</code>（AI向け）側です。
+					内容の正本は今後 <code>docs/ja/</code>（人間向け）と <code>docs/ai/</code>（AI向け）側です。
 					<code>archive/</code> は履歴参照用で、更新はしません。
 				</div>
 			</section>
