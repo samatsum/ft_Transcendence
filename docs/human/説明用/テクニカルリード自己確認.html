@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="ja">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="color-scheme" content="dark">
+	<title>テクニカルリード自己確認 — ft_transcendence</title>
+	<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+	<header class="hero">
+		<div class="shell">
+			<p class="eyebrow">説明用ドキュメント · コード想定Q&amp;A</p>
+			<h1>コードのどこで<br>何をしているか、即答する。</h1>
+			<p class="hero-lead">
+				評価・チーム説明で「コードのどこで何をしているか」を即答できるようにするための
+				自己確認シートです。<strong>答えの隣に「どこを見れば確認できるか」</strong>を
+				付けているので、迷ったら実物を開いて裏を取れます。
+			</p>
+			<p class="hero-note">
+				<span aria-hidden="true">●</span>
+				<strong>使い方</strong>
+				<span>質問だけ見て頭の中で答える → 下の答えと照合 → ズレたらファイルを開いて確認</span>
+			</p>
+		</div>
+	</header>
+
+	<nav class="topnav" aria-label="ページ内目次">
+		<div class="shell nav-inner">
+			<a href="#a">起動と1フレーム</a>
+			<a href="#b">pf_*層</a>
+			<a href="#c">戦闘員統合</a>
+			<a href="#d">敵AI</a>
+			<a href="#e">ゲームルール</a>
+			<a href="#f">sim API</a>
+			<a href="#g">マップ・ビルド・品質</a>
+			<a href="#h">詰まったら</a>
+			<button class="print-button" type="button" onclick="window.print()">印刷 / PDF</button>
+		</div>
+	</nav>
+
+	<main class="shell">
+		<section id="a">
+			<p class="section-kicker">A · Startup &amp; frame loop</p>
+			<h2>起動と1フレームの流れ</h2>
+			<div class="grid grid-2">
+				<article class="card">
+					<h3>Q. プログラムはどこから始まり、1フレームはどう回る？</h3>
+					<p>
+						A. <code>main()</code> → 引数/マップ検証でモード決定 → 初期化 →
+						<code>pf_setup_hooks</code>（イベント登録）→ <code>pf_loop</code>（制御をMLXに渡す）。
+						以後MLXが毎フレーム<code>main_loop</code>を呼ぶ。<code>main_loop</code>は時間を測って
+						<code>game_frame</code>（= <code>game_step</code> + <code>render_frame</code> + <code>pf_present</code>）。
+					</p>
+					<p style="margin-top: 10px; font-size: 0.86rem;">
+						確認: <a href="../../../codes/srcs/common/main.c"><code>common/main.c</code></a> /
+						<a href="../../../codes/srcs/common/core/loop.c"><code>common/core/loop.c:31</code></a><br>
+						なぜ: <a href="../説明用/ビルドと実行.html">ビルドと実行.html</a>「誰がループを回すか」
+					</p>
+				</article>
+				<article class="card">
+					<h3>Q. <code>game_step</code>の中身と順序は？（順序に意味がある）</h3>
+					<p>
+						A. ①決着済みなら即return ②<code>update_death</code>（全戦闘員の死亡タイマー）
+						③自席が生存なら<code>apply_input</code> ④<code>step_external_combatants</code>（外部入力席）
+						⑤<code>update_enemies</code>（AI席）⑥<code>mode_ops.combat</code>（FPS=接触判定/RSP=じゃんけん）
+						⑦<code>check_quest</code>（ゴール・収集）。
+					</p>
+					<p style="margin-top: 10px; font-size: 0.86rem;">
+						確認: <a href="../../../codes/srcs/common/core/loop.c"><code>common/core/loop.c:67</code></a>（<code>game_step</code>）<br>
+						なぜ死亡を先に: 死んだ席が同tickでゴール/収集しないため（レビューP1修正）
+					</p>
+				</article>
+				<article class="card">
+					<h3>Q. native / web / server で1フレームを「回す人」は誰？</h3>
+					<p>
+						A. native=MLX（<code>mlx_loop</code>）、web=ブラウザ（<code>requestAnimationFrame</code>）、
+						server=Node（<code>setInterval</code>。W-10で実装済み）。
+						<strong>呼ばれる<code>game_step</code>は3つとも同一</strong>。
+					</p>
+					<p style="margin-top: 10px; font-size: 0.86rem;">
+						なぜ: <a href="../説明用/ビルドと実行.html">ビルドと実行.html</a>「誰がループを回すか」
+					</p>
+				</article>
+			</div>
+		</section>
+
+		<section id="b">
+			<p class="section-kicker">B · Platform layer (pf_*)</p>
+			<h2>プラットフォーム層（pf_*）</h2>
+			<div class="grid grid-2">
+				<article class="card">
+					<h3>Q. MLXに依存しているのはどこ？ 何ファイル？</h3>
+					<p>
+						A. <code>pf_*</code>のnative実装<strong>1ファイルだけ</strong>
+						（<code>platform/native/platform_native.c</code>）。sim層・render層はMLXを呼ばない。
+						確認は<code>grep -rln 'mlx\.h\|mlx_[a-z]' codes/srcs</code>。
+					</p>
+					<p style="margin-top: 10px; font-size: 0.86rem;">
+						確認: <a href="../../../codes/srcs/platform/native/platform_native.c"><code>platform/native/platform_native.c</code></a><br>
+						なぜ: <a href="../説明用/エンジン構成.html">エンジン構成.html</a>「pf_*の継ぎ目」
+					</p>
+				</article>
+				<article class="card">
+					<h3>Q. どうやってnative / web / headlessを切り替えている？</h3>
+					<p>
+						A. 切り替えていない。3実装が<strong>同じ関数名</strong>を持ち、Makefileがターゲットごとに
+						1つだけリンクする（<code>NATIVE_/WEB_/SIM_PLATFORM_SRCS</code>）。リンカが解決するだけ。
+					</p>
+					<p style="margin-top: 10px; font-size: 0.86rem;">
+						確認: <a href="../../../Makefile"><code>Makefile</code></a>の各<code>*_PLATFORM_SRCS</code>
+					</p>
+				</article>
+				<article class="card">
+					<h3>Q. headless（サーバ）が「何もしない」pf関数だらけなのはなぜ？</h3>
+					<p>
+						A. サーバは描画も入力もループも持たないから。空実装にすることで、ロジック側に
+						<code>if(サーバ)</code>を書かずに済む。
+					</p>
+					<p style="margin-top: 10px; font-size: 0.86rem;">
+						確認: <code>platform/headless/platform_headless.c</code>
+					</p>
+				</article>
+			</div>
+		</section>
+
+		<section id="c">
+			<p class="section-kicker">C · Combatant unification, movement, collision</p>
+			<h2>戦闘員統合・移動・衝突</h2>
+			<div class="grid grid-2">
+				<article class="card">
+					<h3>Q. プレイヤーとNPCはどう区別している？</h3>
+					<p>
+						A. 区別しない。両方<code>world.enemies</code>の1ノード（<code>t_enemy</code>）で、
+						違いは<code>input_source</code>（<code>AI</code> / <code>EXTERNAL</code>）だけ。自席は<code>is_player</code>。
+					</p>
+					<p style="margin-top: 10px; font-size: 0.86rem;">
+						確認: <a href="../../../codes/includes/enemy/enemy_types.h"><code>enemy/enemy_types.h</code></a>（<code>t_enemy</code> / <code>t_input_source</code>）<br>
+						なぜ: <a href="../説明用/サーバ権威モデル.html">サーバ権威モデル.html</a>「戦闘員統合」
+					</p>
+				</article>
+				<article class="card">
+					<h3>Q. 外部入力席（サーバの人間）はどこで動く？</h3>
+					<p>
+						A. <code>step_external_combatants</code>が<code>input_source==EXTERNAL</code>かつ
+						非自席の生存席へ、保持中の<code>t_input</code>を適用。native/web単体では該当席が無くno-op。
+					</p>
+					<p style="margin-top: 10px; font-size: 0.86rem;">
+						確認: <a href="../../../codes/srcs/common/core/combatant.c"><code>common/core/combatant.c:22</code></a>
+					</p>
+				</article>
+				<article class="card">
+					<h3>Q. 壁ずり（片軸が壁でももう片軸へ滑る）はどう実現？</h3>
+					<p>
+						A. 移動をX軸→Y軸の順に分けて当たり判定する（<code>combatant_walk</code>が軸分割）。
+						プレイヤーの<code>move_camera</code>系と同じ挙動に統一（G-03）。
+					</p>
+					<p style="margin-top: 10px; font-size: 0.86rem;">
+						確認: <a href="../../../codes/srcs/common/core/combatant.c"><code>common/core/combatant.c</code></a> /
+						<a href="../../../codes/srcs/common/engine/raycast/camera.c"><code>common/engine/raycast/camera.c:23</code></a>
+					</p>
+				</article>
+			</div>
+		</section>
+
+		<section id="d">
+			<p class="section-kicker">D · Enemy AI</p>
+			<h2>敵AI</h2>
+			<div class="grid grid-2">
+				<article class="card">
+					<h3>Q. FPSの敵はどう索敵・追跡する？</h3>
+					<p>
+						A. 正面視野内に戦闘員が入り、間に遮蔽（壁・通行不可・閉扉）が無ければ検知して追跡。
+						見失っても既定5秒（<code>.cub</code>の<code>ET</code>）は追跡、時間切れで巡回へ。<code>P</code>セルを周回。
+					</p>
+					<p style="margin-top: 10px; font-size: 0.86rem;">
+						確認: <a href="../../../codes/srcs/fps/enemy/"><code>fps/enemy/</code></a>
+						（<code>fps_enemy_sense.c</code> / <code>fps_enemy_ai.c</code>）
+					</p>
+				</article>
+				<article class="card">
+					<h3>Q. RSPのNPC AIは何を基準に動く？</h3>
+					<p>
+						A. 最寄りの異チーム戦闘員を見て「勝てる手なら追跡・負ける手なら逃走・あいこは徘徊」。
+					</p>
+					<p style="margin-top: 10px; font-size: 0.86rem;">
+						確認: <a href="../../../codes/srcs/rsp/enemy/rsp_enemy_ai.c"><code>rsp/enemy/rsp_enemy_ai.c:21</code></a>（<code>update_rsp_enemy</code>）
+					</p>
+				</article>
+			</div>
+		</section>
+
+		<section id="e">
+			<p class="section-kicker">E · Game rules (RSP / FPS)</p>
+			<h2>ゲームルール（RSP / FPS）</h2>
+			<div class="grid grid-2">
+				<article class="card">
+					<h3>Q. RSPの勝敗・スコアはどこで決まる？先取点は可変？</h3>
+					<p>
+						A. <code>resolve_rsp_combat</code>が全異チームペアのじゃんけんを解決し、勝者チームへ
+						<code>award_rsp_point</code>。<code>match_rules.target_score</code>（既定<code>RSP_SCORE_LIMIT</code>）
+						到達で決着。下限は1（3〜21の製品範囲チェックはWS層の責務、エンジンは機構）。
+					</p>
+					<p style="margin-top: 10px; font-size: 0.86rem;">
+						確認: <a href="../../../codes/srcs/rsp/core/rsp_combat.c"><code>rsp/core/rsp_combat.c:34</code></a> /
+						席配置は<a href="../../../codes/srcs/rsp/core/rsp_setup.c"><code>rsp/core/rsp_setup.c:23</code></a>
+					</p>
+				</article>
+				<article class="card">
+					<h3>Q. FPSのゴール・収集・扉・敵ハザードはどこ？</h3>
+					<p>
+						A. <code>check_quest</code>が全戦闘員の足元を見てゴール到達・アイテム収集を判定
+						（死亡中は対象外）。接触＝死亡ペナルティは<code>check_enemy_contact</code>、
+						復帰は<code>respawn_combatant</code>。
+					</p>
+					<p style="margin-top: 10px; font-size: 0.86rem;">
+						確認: <a href="../../../codes/srcs/fps/core/fps_item.c"><code>fps/core/fps_item.c:30</code></a>（<code>check_quest</code>）/
+						<a href="../../../codes/srcs/fps/core/fps_respawn.c"><code>fps/core/fps_respawn.c:17</code></a>（<code>check_enemy_contact</code>）/
+						<a href="../../../codes/srcs/common/core/respawn.c"><code>common/core/respawn.c:45</code></a>（<code>respawn_combatant</code>）
+					</p>
+				</article>
+				<article class="card">
+					<h3>Q. マップ文字<code>G</code>（ゴール）は新設した？</h3>
+					<p>
+						A. していない。<code>IS_GOAL</code>セル + <code>goal_tex</code>は元から実装済み。
+						G-06は「勝者を席idに帰属させる」だけ。<code>D</code>（扉）<code>M</code>（敵）も元からある。
+					</p>
+					<p style="margin-top: 10px; font-size: 0.86rem;">
+						確認: <a href="../../../codes/includes/config/config.h"><code>config/config.h</code></a>
+						（<code>IS_GOAL</code> / <code>DOOR_CHAR</code> / <code>VALID_MAP_CHARACTERS</code>）
+					</p>
+				</article>
+			</div>
+		</section>
+
+		<section id="f">
+			<p class="section-kicker">F · sim public API &amp; snapshot</p>
+			<h2>sim公開APIとスナップショット</h2>
+			<div class="grid grid-2">
+				<article class="card">
+					<h3>Q. サーバから使うAPIは？ 呼び出し順は？</h3>
+					<p>
+						A. <code>game_create</code> → <code>game_add_combatant</code>×定員 → 毎tick
+						<code>sim_set_input</code> → <code>game_step</code> → <code>game_snapshot</code> → JSON化（Node）。
+						<code>game_set_input_source</code>で席をAI⇔外部に切替。
+					</p>
+					<p style="margin-top: 10px; font-size: 0.86rem;">
+						確認: 正本<a href="../../../codes/includes/platform/sim.h"><code>includes/platform/sim.h</code></a> /
+						実装<a href="../../../codes/srcs/platform/headless/sim_api.c"><code>platform/headless/sim_api.c</code></a>
+					</p>
+				</article>
+				<article class="card">
+					<h3>Q. スナップショットの形は？ tickは誰が付ける？</h3>
+					<p>
+						A. フラットなf64配列（ヘッダ5 + 戦闘員1人9）。<strong>tickはsimが持たずNodeが採番</strong>、
+						JSON化もNodeの責務。レイアウトは<code>sim.h</code>の<code>#define</code>が正本。
+					</p>
+					<p style="margin-top: 10px; font-size: 0.86rem;">
+						確認: <a href="../../../codes/includes/platform/sim.h"><code>includes/platform/sim.h</code></a>（<code>SIM_SNAP_*</code>）/
+						<a href="../../../codes/srcs/platform/headless/sim_api.c"><code>platform/headless/sim_api.c:261</code></a>（<code>game_snapshot</code>）<br>
+						なぜ: <a href="../説明用/サーバ権威モデル.html">サーバ権威モデル.html</a>「スナップショット」
+					</p>
+				</article>
+				<article class="card">
+					<h3>Q. <code>game_apply_snapshot</code>は誰が使う？ どこにある？</h3>
+					<p>
+						A. <strong>クライアント専用</strong>（サーバは使わない）。idで戦闘員を照合し、表示用
+						<code>t_game</code>に書く。勝敗は一切判定しない。
+					</p>
+					<p style="margin-top: 10px; font-size: 0.86rem;">
+						確認: <a href="../../../codes/srcs/platform/web/web_snapshot.c"><code>platform/web/web_snapshot.c:42</code></a>
+					</p>
+				</article>
+				<article class="card">
+					<h3>Q. <code>world_delta</code>（FPSの収集/扉）は実装済み？</h3>
+					<p>
+						A. <strong>未実装</strong>（唯一の意図的な後送り）。ゲート2のRSPに不要なため。
+						FPSオンライン化（W-14）で追加予定だったが、W-14自体は既に完了済み——
+						この項目自体の要否は現状のバックログで再確認が必要（要出典再確認）。
+					</p>
+					<p style="margin-top: 10px; font-size: 0.86rem;">
+						確認: <a href="../../ai/backlog.md">backlog.md</a>
+					</p>
+				</article>
+			</div>
+		</section>
+
+		<section id="g">
+			<p class="section-kicker">G · Map, build, quality</p>
+			<h2>マップ・ビルド・品質</h2>
+			<div class="grid grid-2">
+				<article class="card">
+					<h3>Q. RSPかFPSかはどう決まる？</h3>
+					<p>
+						A. マップの<strong>置き場所</strong>。<code>maps/rsp_map/</code>ならRSP、
+						<code>maps/fps_map/</code>ならFPS。<code>.cub</code>の中身では宣言しない。
+						RSPのスポーンは<code>N/W</code>=赤・<code>S/E</code>=青。
+					</p>
+					<p style="margin-top: 10px; font-size: 0.86rem;">
+						確認: <a href="../../../codes/srcs/common/main.c"><code>common/main.c:97</code></a>（<code>set_mode_from_path</code>）<br>
+						なぜ: <a href="../説明用/cubマップ書式.html">cubマップ書式.html</a>
+					</p>
+				</article>
+				<article class="card">
+					<h3>Q. makeのターゲットは？ simに描画が入らないのはなぜ？</h3>
+					<p>
+						A. <code>make</code>（native）/ <code>web</code>（render.wasm）/ <code>sim</code>（sim.wasm）/
+						<code>test</code>（受入85検査）。simは<code>SIM_RENDER_EXCLUDES</code>で描画ソース
+						（draw/raycast/sprite/font等）をリンクから外す。
+					</p>
+					<p style="margin-top: 10px; font-size: 0.86rem;">
+						確認: <a href="../../../Makefile"><code>Makefile</code></a>
+					</p>
+				</article>
+				<article class="card">
+					<h3>Q. コード品質はどう担保している？（テクニカルリードの見せ場）</h3>
+					<p>
+						A. <code>make check</code>（独自lint。CR001〜。common→モード依存も検知）+
+						<code>make test</code>（sim85検査）+ CI（3ターゲットビルド + check + test + xvfbスモーク）を毎push。
+					</p>
+					<p style="margin-top: 10px; font-size: 0.86rem;">
+						確認: <a href="../../../.github/workflows/ci.yml"><code>.github/workflows/ci.yml</code></a> / <code>make check</code>
+					</p>
+				</article>
+			</div>
+		</section>
+
+		<section id="h">
+			<p class="section-kicker">H · When stuck</p>
+			<h2>「詰まったら」テクニカルリードの動き方</h2>
+			<ol class="path-list">
+				<li><div><strong>合流点を先に紙合わせする</strong><span>レーンの境界（例: W-11×F-06のsnapshot JSON形）は、実装前に契約を文書化してから着手する。</span></div></li>
+				<li><div><strong>Cを触るPRが来たら必ず見る</strong><span>原則Cは凍結。触る必要＝設計の見落としのサイン。</span></div></li>
+				<li><div><strong>「これ何？」にはまず該当の説明用ドキュメントを指す</strong><span>無ければ1本書く（それがTech Leadの文書化）。</span></div></li>
+				<li><div><strong>迷ったらこのQ&amp;Aの「確認」リンクを開いて実物で答え合わせする</strong><span>憶測で答えない。</span></div></li>
+			</ol>
+		</section>
+	</main>
+
+	<footer class="shell">
+		<p>
+			移設元: <code>archive/説明用/コード想定Q&amp;A-テクニカルリード自己確認.md</code>。
+			2026-08-07に<code>docs/human/説明用/</code>へHTML化して移設（本文は元資料からほぼ忠実に移植。
+			リンク切れの旧参照先は現行ドキュメントへ張り替え済み）。
+		</p>
+	</footer>
+</body>
+</html>

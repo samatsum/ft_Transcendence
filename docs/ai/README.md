@@ -3,9 +3,9 @@
 This directory is the **AI-facing documentation set**: English Markdown, written for an AI coding
 assistant (e.g. Claude Code) to consult while implementing or reviewing code in this repository.
 
-The **human-facing** documentation set is the parallel `docs/ja/` directory: Japanese HTML,
-written for samatsum. Start there instead if you're a person, not an AI — [`../ja/index.html`](../ja/index.html).
-It includes a lane-by-lane Japanese terminology glossary under `docs/ja/専門用語/` (samatsum is
+The **human-facing** documentation set is the parallel `docs/human/` directory: Japanese HTML,
+written for samatsum. Start there instead if you're a person, not an AI — [`../human/index.html`](../human/index.html).
+It includes a lane-by-lane Japanese terminology glossary under `docs/human/専門用語/` (samatsum is
 working toward the Technical Lead role and knows only the `codes/` C engine so far) — if you're
 asked to explain a term to samatsum, check whether it's already defined there before improvising
 your own explanation, so the vocabulary stays consistent across sessions.
@@ -35,7 +35,7 @@ As of 2026-08-05 the former 4-person team (torinoue / mamiyaza / hminemur, plus 
   guidance — that information was deliberately removed from the docs during the 2026-08-05
   refactor because there is no one to route it to.
 - The project brief still requires a 4–5 person team (this is an open, unresolved discrepancy
-  with the repo's own README — see [`../ja/チーム体制.html`](../ja/チーム体制.html) for the
+  with the repo's own README — see [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html) for the
   human-facing writeup of this risk). Don't try to resolve it; just be aware of it.
 - Role/lane framework (PO / PM·SM / Technical Lead / Developer; Engine / Backend·DevOps /
   Frontend / Gameplay) is preserved as a structural requirement, with samatsum currently filling
@@ -83,7 +83,7 @@ code comments, or these documents' own prose all refer to the same content now l
 
 ⑥ (`02_設計書/6-チーム分担計画.md`, the old team-assignment plan) has no AI-doc counterpart — it
 was human-facing organizational content and was rewritten for the solo-dev era as
-[`../ja/チーム体制.html`](../ja/チーム体制.html) instead.
+[`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html) instead.
 
 Note: cross-reference links *inside* these translated files (e.g. a line pointing at
 `../03_実装レポート/...` or `./コーディング規約.md`) were preserved verbatim from the Japanese

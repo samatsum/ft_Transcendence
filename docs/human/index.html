@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="ja">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="color-scheme" content="dark">
+	<title>ドキュメント地図 — ft_transcendence</title>
+	<link rel="stylesheet" href="./assets/style.css">
+</head>
+<body>
+	<div class="shell hero">
+		<p class="eyebrow">ドキュメント地図</p>
+		<h1>ft_transcendence 資料の入口</h1>
+		<p class="hero-lead">
+			ここが人間（samatsum）向け資料の入口です。全ページ日本語 HTML、共通デザインで統一しています。
+			AI（Claude Code など）向けの参照資料は英語 Markdown で別に置いており、そちらの入口は
+			<code>docs/ai/README.md</code> です — 人はそちらを読む必要はありません。
+		</p>
+		<div class="hero-note">
+			<strong>2026-08-05</strong> にドキュメント全体を再構成しました。旧構成（設計書・実装レポート・説明用13本など）は
+			<code>archive/</code> に移設済みです。<strong>2026-08-07</strong> に<code>docs/ja/</code>を
+			<code>docs/human/</code>（<code>ai/</code>と対称的な名前）へ改名し、内容の種類ごとに
+			<code>はじめに/</code>・<code>運用/</code>・<code>開発状況/</code>・<code>説明用/</code>・
+			<code>専門用語/</code>・<code>プレイヤー向け/</code>へ再分類しました。
+		</div>
+	</div>
+
+	<div class="shell">
+		<main>
+			<section id="status">
+				<p class="section-kicker">現在地</p>
+				<h2>プロジェクトの進捗（2026-08-07時点、origin/main 反映済み）</h2>
+				<div class="grid grid-3">
+					<div class="card">
+						<p class="card-label">C エンジン</p>
+						<p>Engine E-01〜E-14 / Gameplay G-01〜G-10 完了。</p>
+					</div>
+					<div class="card">
+						<p class="card-label">サーバ（W系列）</p>
+						<p>W-01・W-08・W-09・W-10・W-11・W-12・W-14 完了。W-08〜W-12 は
+							<code>ALLOW_DEV_AUTH</code> 経由の先行実装で、<strong>W-02〜W-05（Cookie本認証+Origin）</strong>
+							との結合が残る。<strong>W-13・W-15・W-16</strong> も未着手。CI は全ジョブ green。</p>
+					</div>
+					<div class="card">
+						<p class="card-label">フロントエンド（F系列）</p>
+						<p><strong>F-01・F-02・F-06・F-07 完了</strong>（samatsum単独実装。F-07は
+							<a href="https://github.com/samatsum/ft_Transcendence/pull/35">PR #35</a>としてマージ済み）。
+							F-03〜F-05・F-08〜F-12 は未着手。次の関門は <strong>ゲート2</strong>（2ブラウザで 2vs2 RSP 対戦が最後まで成立すること）で、
+							残るはF-05（ロビー）とF-08（試合遷移）。</p>
+					</div>
+				</div>
+				<p class="section-intro" style="margin-top:16px;">
+					詳しい進捗・Issue一覧は AI向け資料の <code>docs/ai/backlog.md</code> が正本です
+					（英語ですが、内容はこのプロジェクトのバックログそのものです）。
+				</p>
+			</section>
+
+			<section id="team">
+				<p class="section-kicker">体制</p>
+				<h2>チーム体制</h2>
+				<div class="callout warning">
+					<strong>2026-08-05時点、旧4人チーム（torinoue / mamiyaza / hminemur、samatsum）は解散し、
+					samatsum 1人のみが稼働中です。</strong> 新メンバーはまだ集まっていません。
+					役割の枠（PO / PM・SM / テクニカルリード / 開発者）とレーン構成（Engine / Backend・DevOps /
+					Frontend / Gameplay）は課題要件として残していますが、「誰がどのタスクをやるか」という
+					個人アサイン情報は資料から全削除しています。課題書が要求する4〜5人体制との齟齬は、
+					未解決リスクとして <a href="./はじめに/チーム体制.html">チーム体制.html</a> に一箇所だけ記録しています。
+				</div>
+			</section>
+
+			<section id="reading-order">
+				<p class="section-kicker">読む順</p>
+				<h2>まず何を読むか</h2>
+				<p class="section-intro">個人別 reading guide は廃止したため、以下の順に読めば全体像がつかめます。</p>
+				<ol class="path-list">
+					<li>
+						<strong><a href="./はじめに/プロジェクト概要.html">はじめに/プロジェクト概要.html</a></strong>
+						<span>ルート<code>README.md</code>の日本語サマリー。今何が動いて何が動かないか、チーム、アーキテクチャ図。</span>
+					</li>
+					<li>
+						<strong><a href="./専門用語/全体-専門用語.html">専門用語/全体-専門用語.html</a></strong>
+						<span>この先の全ページで前提にする共通語彙（リポジトリ構成・サーバ権威・WS/REST・Git用語・42評価用語）。ここから読み始めるのが一番迷わない。</span>
+					</li>
+					<li>
+						<strong><a href="./運用/Git運用フロー.html">運用/Git運用フロー.html</a></strong>
+						<span>何かコミットする前に。branch → PR → CI → GitHub上でマージ → ローカルpull、というこのリポジトリの唯一の正しい統合手順。</span>
+					</li>
+					<li>
+						<strong><a href="./運用/ドキュメント作法.html">運用/ドキュメント作法.html</a></strong>
+						<span>docs/配下に何か書く前に。ページテンプレート・共通CSS・Mermaidの使い所・リンク切れの確認方法。</span>
+					</li>
+					<li>
+						<strong><a href="./はじめに/オンボーディング.html">はじめに/オンボーディング.html</a></strong>
+						<span>役割・略号・モジュール境界・ゲート2の定義・FAQ。全体の共通知識。</span>
+					</li>
+					<li>
+						<strong><a href="./開発状況/サーバー開発工程.html">開発状況/サーバー開発工程.html</a></strong>
+						<span>W-01〜W-16、エンジンをオンライン製品にする16工程の現在地・依存関係・コード入口を1枚で。</span>
+					</li>
+					<li>
+						<strong><a href="./説明用/エンジン構成.html">説明用/エンジン構成.html</a></strong>
+						<span>エンジン構成。<code>pf_*</code> 境界・言語配置・ディレクトリ構成・app/web層の関係。</span>
+					</li>
+					<li>
+						<strong><a href="./説明用/サーバ権威モデル.html">説明用/サーバ権威モデル.html</a></strong>
+						<span>サーバ権威モデル。スナップショット補間と戦闘員（人/NPC）統合。オンライン対戦の芯。</span>
+					</li>
+					<li>
+						<strong><a href="./説明用/ビルドと実行.html">説明用/ビルドと実行.html</a></strong>
+						<span>ビルドと実行。3つのビルドターゲット・ループ反転・WASM入門。</span>
+					</li>
+					<li>
+						<strong><a href="./説明用/cubマップ書式.html">説明用/cubマップ書式.html</a></strong>
+						<span>.cub マップ書式。マップ文字・RSP/FPS判定・対戦マップのホワイトリスト。</span>
+					</li>
+					<li>
+						<strong><a href="./説明用/テクニカルリード自己確認.html">説明用/テクニカルリード自己確認.html</a></strong>
+						<span>コードのどこで何をしているかをQ&amp;A形式・file:line付きで即答できるようにする自己確認シート。archive/説明用/から新規移設。</span>
+					</li>
+				</ol>
+				<p class="section-intro" style="margin-top: 16px;">
+					レーンごとの専門用語（<a href="./専門用語/E-専門用語.html">E</a>・
+					<a href="./専門用語/G-専門用語.html">G</a>・
+					<a href="./専門用語/W-専門用語.html">W</a>・
+					<a href="./専門用語/F-専門用語.html">F</a>）は、上の一覧を順に読みながら
+					分からない単語が出たタイミングで都度参照するのがおすすめです。
+				</p>
+			</section>
+
+			<section id="files">
+				<p class="section-kicker">全ファイル</p>
+				<h2>ファイル一覧（種類別ディレクトリ）</h2>
+				<p class="section-intro">
+					書いてある内容の種類ごとにディレクトリを分けています。「その他」的な寄せ集めディレクトリは作っていません——
+					1ディレクトリ＝1種類の内容、という原則です。
+				</p>
+
+				<h3 style="margin-top: 28px;"><code>はじめに/</code> — 初めて読む人向けの全体像</h3>
+				<div class="table-wrap">
+					<table>
+						<thead><tr><th>ファイル</th><th>内容</th></tr></thead>
+						<tbody>
+							<tr><td><a href="./はじめに/プロジェクト概要.html">プロジェクト概要.html</a></td><td>ルートREADME.mdの日本語サマリー。現在の状態・チーム・アーキテクチャ図</td></tr>
+							<tr><td><a href="./はじめに/オンボーディング.html">オンボーディング.html</a></td><td>役割・略号・モジュール境界・ゲート2定義・FAQ（全員共通、個人別導線なし）</td></tr>
+							<tr><td><a href="./はじめに/チーム体制.html">チーム体制.html</a></td><td>役割・レーン構成の枠組み、samatsum単独稼働の体制、4〜5人要件との齟齬（未解決リスク）</td></tr>
+						</tbody>
+					</table>
+				</div>
+
+				<h3 style="margin-top: 28px;"><code>運用/</code> — 作業する上でのルール</h3>
+				<div class="table-wrap">
+					<table>
+						<thead><tr><th>ファイル</th><th>内容</th></tr></thead>
+						<tbody>
+							<tr><td><a href="./運用/Git運用フロー.html">Git運用フロー.html</a></td><td>branch → PR → CI緑確認 → GitHub上でマージ → ローカルpullの運用ルール。コミット前に必読</td></tr>
+							<tr><td><a href="./運用/ドキュメント作法.html">ドキュメント作法.html</a></td><td>docs/配下のページテンプレート・共通CSS・Mermaidの使い所・リンク切れ確認方法。書く前に必読</td></tr>
+						</tbody>
+					</table>
+				</div>
+
+				<h3 style="margin-top: 28px;"><code>開発状況/</code> — 今どこまで進んでいるか</h3>
+				<div class="table-wrap">
+					<table>
+						<thead><tr><th>ファイル</th><th>内容</th></tr></thead>
+						<tbody>
+							<tr><td><a href="./開発状況/サーバー開発工程.html">サーバー開発工程.html</a></td><td>W-01〜W-16、エンジンをオンライン製品にする16工程の現在地・依存・コード入口</td></tr>
+						</tbody>
+					</table>
+				</div>
+
+				<h3 style="margin-top: 28px;"><code>説明用/</code> — 仕組みの「なぜ」を掘り下げる解説</h3>
+				<div class="table-wrap">
+					<table>
+						<thead><tr><th>ファイル</th><th>内容</th></tr></thead>
+						<tbody>
+							<tr><td><a href="./説明用/エンジン構成.html">エンジン構成.html</a></td><td>エンジン構成（pf_*境界・言語配置・ディレクトリ構成・app/web層）</td></tr>
+							<tr><td><a href="./説明用/サーバ権威モデル.html">サーバ権威モデル.html</a></td><td>サーバ権威モデル（スナップショット補間・戦闘員統合）</td></tr>
+							<tr><td><a href="./説明用/ビルドと実行.html">ビルドと実行.html</a></td><td>ビルドと実行（3ビルドターゲット・ループ反転・WASM入門）</td></tr>
+							<tr><td><a href="./説明用/cubマップ書式.html">cubマップ書式.html</a></td><td>.cub マップ書式（マップ文字・RSP/FPS判定・ホワイトリスト）</td></tr>
+							<tr><td><a href="./説明用/テクニカルリード自己確認.html">テクニカルリード自己確認.html</a></td><td>コードのどこで何をしているかのQ&amp;A自己確認シート（file:line付き）。archive/説明用/から新規移設</td></tr>
+						</tbody>
+					</table>
+				</div>
+
+				<h3 style="margin-top: 28px;"><code>専門用語/</code> — レーン別の用語集</h3>
+				<div class="table-wrap">
+					<table>
+						<thead><tr><th>ファイル</th><th>内容</th></tr></thead>
+						<tbody>
+							<tr><td><a href="./専門用語/全体-専門用語.html">全体-専門用語.html</a></td><td>レーン横断の共通語彙（リポジトリ構成・アーキテクチャ・ビルド・Git・42評価用語）</td></tr>
+							<tr><td><a href="./専門用語/E-専門用語.html">E-専門用語.html</a></td><td>Engineレーンの用語（pf_*層・3ビルドターゲット・sim公開API・戦闘員統合）</td></tr>
+							<tr><td><a href="./専門用語/G-専門用語.html">G-専門用語.html</a></td><td>Gameplayレーンの用語（RSP/FPSのルール・マップ文字）</td></tr>
+							<tr><td><a href="./専門用語/W-専門用語.html">W-専門用語.html</a></td><td>Backend・DevOpsレーンの用語（REST/認証・DB/ORM・WebSocket・ロビー・インフラ）</td></tr>
+							<tr><td><a href="./専門用語/F-専門用語.html">F-専門用語.html</a></td><td>Frontendレーンの用語（React・状態管理・GameView）</td></tr>
+						</tbody>
+					</table>
+				</div>
+
+				<h3 style="margin-top: 28px;"><code>プレイヤー向け/</code> — 遊ぶ人・評価者向け</h3>
+				<div class="table-wrap">
+					<table>
+						<thead><tr><th>ファイル</th><th>内容</th></tr></thead>
+						<tbody>
+							<tr><td><a href="./プレイヤー向け/プレイヤーガイド.html">プレイヤーガイド.html</a></td><td>プレイヤー/評価者向け。起動方法・操作・RSPモードの遊び方・.cub記述ルール</td></tr>
+						</tbody>
+					</table>
+				</div>
+			</section>
+
+			<section id="archive">
+				<p class="section-kicker">旧資料</p>
+				<h2>archive/ について</h2>
+				<div class="callout">
+					旧構成（<code>01_課題/</code>・<code>02_設計書/</code>・<code>03_実装レポート/</code>・
+					<code>04_エンジン資料/</code>・<code>説明用/</code>・<code>onboarding_docs/</code>・
+					<code>torinoue/</code>・旧ドキュメント地図）は、このページと <code>docs/ai/</code> に
+					統合・移設した上で、リポジトリルートの <code>archive/</code> へ移動しています。
+					内容の正本は今後 <code>docs/human/</code>（人間向け）と <code>docs/ai/</code>（AI向け）側です。
+					<code>archive/</code> は履歴参照用で、更新はしません。
+				</div>
+			</section>
+		</main>
+	</div>
+
+	<footer class="shell">
+		<p>2026-08-05 のドキュメント再構成で作成。旧資料: <code>md_files/ドキュメント地図(最初にこれ嫁).md</code>（archive/ に移設）。</p>
+	</footer>
+</body>
+</html>

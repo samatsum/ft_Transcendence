@@ -5,7 +5,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="color-scheme" content="dark">
 	<title>W作業全体 — エンジンをオンライン製品にする16工程</title>
-	<link rel="stylesheet" href="./assets/style.css">
+	<link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
 	<header class="hero">
@@ -295,16 +295,16 @@
 				<table>
 					<thead><tr><th>責務</th><th>入口</th><th>見るポイント</th></tr></thead>
 					<tbody>
-						<tr><td>W-01 / 起動</td><td><a href="../../app/backend/src/index.ts"><code>app/backend/src/index.ts</code></a></td><td>Fastify、REST、2本のWS gatewayが1 serverへ載る</td></tr>
-						<tr><td>W-04/05 / 認証境界</td><td><a href="../../app/backend/src/auth/session.ts"><code>auth/session.ts</code></a></td><td>確定済みsignatureと、まだ残る開発用stub</td></tr>
-						<tr><td>W-08 / ロビー</td><td><a href="../../app/backend/src/lobby/ws.ts"><code>lobby/ws.ts</code></a> / <a href="../../app/backend/src/lobby/state.ts"><code>state.ts</code></a></td><td>WS gatewayと1ユーザー1contextの正本</td></tr>
-						<tr><td>W-08 / queue・room</td><td><a href="../../app/backend/src/lobby/queue.ts"><code>queue.ts</code></a> / <a href="../../app/backend/src/lobby/rooms.ts"><code>rooms.ts</code></a></td><td>FIFO、60秒、満員、招待コード、同期claim</td></tr>
-						<tr><td>W-09 / マッチ成立</td><td><a href="../../app/backend/src/lobby/match.ts"><code>lobby/match.ts</code></a></td><td>GameRoom生成、commit/rollback、期限切れ破棄、lifecycle解放</td></tr>
-						<tr><td>W-10 / GameRoom</td><td><a href="../../app/backend/src/game/room.ts"><code>game/room.ts</code></a> / <a href="../../app/backend/src/game/sim.ts"><code>sim.ts</code></a></td><td>状態機械とsim.wasm駆動</td></tr>
-						<tr><td>W-11 / game WS</td><td><a href="../../app/backend/src/game/ws.ts"><code>game/ws.ts</code></a></td><td>join/input、snapshot配信、違反処理</td></tr>
-						<tr><td>W-14 / maps</td><td><a href="../../app/backend/src/game/maps.ts"><code>game/maps.ts</code></a></td><td>4マップのホワイトリストと本文読込</td></tr>
-						<tr><td>W-15 / delivery</td><td><a href="../../infra/README.md"><code>infra/</code></a></td><td>現状はengine-buildの土台。compose/nginx/TLSはこれから</td></tr>
-						<tr><td>共有wire</td><td><a href="../../app/shared/src/ws/"><code>app/shared/src/ws/</code></a></td><td>Frontend/Backendが同じzod契約をimportする</td></tr>
+						<tr><td>W-01 / 起動</td><td><a href="../../../app/backend/src/index.ts"><code>app/backend/src/index.ts</code></a></td><td>Fastify、REST、2本のWS gatewayが1 serverへ載る</td></tr>
+						<tr><td>W-04/05 / 認証境界</td><td><a href="../../../app/backend/src/auth/session.ts"><code>auth/session.ts</code></a></td><td>確定済みsignatureと、まだ残る開発用stub</td></tr>
+						<tr><td>W-08 / ロビー</td><td><a href="../../../app/backend/src/lobby/ws.ts"><code>lobby/ws.ts</code></a> / <a href="../../../app/backend/src/lobby/state.ts"><code>state.ts</code></a></td><td>WS gatewayと1ユーザー1contextの正本</td></tr>
+						<tr><td>W-08 / queue・room</td><td><a href="../../../app/backend/src/lobby/queue.ts"><code>queue.ts</code></a> / <a href="../../../app/backend/src/lobby/rooms.ts"><code>rooms.ts</code></a></td><td>FIFO、60秒、満員、招待コード、同期claim</td></tr>
+						<tr><td>W-09 / マッチ成立</td><td><a href="../../../app/backend/src/lobby/match.ts"><code>lobby/match.ts</code></a></td><td>GameRoom生成、commit/rollback、期限切れ破棄、lifecycle解放</td></tr>
+						<tr><td>W-10 / GameRoom</td><td><a href="../../../app/backend/src/game/room.ts"><code>game/room.ts</code></a> / <a href="../../../app/backend/src/game/sim.ts"><code>sim.ts</code></a></td><td>状態機械とsim.wasm駆動</td></tr>
+						<tr><td>W-11 / game WS</td><td><a href="../../../app/backend/src/game/ws.ts"><code>game/ws.ts</code></a></td><td>join/input、snapshot配信、違反処理</td></tr>
+						<tr><td>W-14 / maps</td><td><a href="../../../app/backend/src/game/maps.ts"><code>game/maps.ts</code></a></td><td>4マップのホワイトリストと本文読込</td></tr>
+						<tr><td>W-15 / delivery</td><td><a href="../../../infra/README.md"><code>infra/</code></a></td><td>現状はengine-buildの土台。compose/nginx/TLSはこれから</td></tr>
+						<tr><td>共有wire</td><td><a href="../../../app/shared/src/ws/"><code>app/shared/src/ws/</code></a></td><td>Frontend/Backendが同じzod契約をimportする</td></tr>
 					</tbody>
 				</table>
 			</div>
@@ -368,23 +368,23 @@
 			<h2>このHTMLは説明用。契約の正本は設計書</h2>
 			<div class="grid grid-3">
 				<article class="card">
-					<h3><a href="../ai/backlog.md">⑤ バックログ</a></h3>
+					<h3><a href="../../ai/backlog.md">⑤ バックログ</a></h3>
 					<p>W-01〜W-16の受入条件・依存・進捗の正本（英語MD。AI向け資料）。</p>
 				</article>
 				<article class="card">
-					<h3><a href="./チーム体制.html">⑥ チーム体制</a></h3>
+					<h3><a href="../はじめに/チーム体制.html">⑥ チーム体制</a></h3>
 					<p>役割・レーンの枠組み。2026-08-05にsamatsum単独稼働の体制へ更新。</p>
 				</article>
 				<article class="card">
-					<h3><a href="../ai/ws-protocol.md">② WSプロトコル設計</a></h3>
+					<h3><a href="../../ai/ws-protocol.md">② WSプロトコル設計</a></h3>
 					<p>W-08〜W-14のwire、状態機械、切断規約（英語MD。AI向け資料）。</p>
 				</article>
 				<article class="card">
-					<h3><a href="../ai/rest-api.md">③ REST API設計</a></h3>
+					<h3><a href="../../ai/rest-api.md">③ REST API設計</a></h3>
 					<p>W-02〜W-07/W-13/W-14のREST・DB契約（英語MD。AI向け資料）。</p>
 				</article>
 				<article class="card">
-					<h3><a href="./explanations/エンジン構成.html">エンジン構成</a></h3>
+					<h3><a href="../説明用/エンジン構成.html">エンジン構成</a></h3>
 					<p>E/Gからappへ移る境界を含む、エンジン構成の説明（旧「appとweb」を統合）。</p>
 				</article>
 			</div>

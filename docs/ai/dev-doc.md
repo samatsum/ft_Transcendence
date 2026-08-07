@@ -56,7 +56,7 @@ Source is split into three lines: **`common` (shared by both modes) / `fps` (FPS
 ```
 ft_transcendence/
 ├── Makefile                          # 4 targets: native / web(render.wasm) / sim(sim.wasm) / test
-├── README.md / docs/                 # Documentation set (AI entry point: docs/ai/README.md; human entry point: docs/ja/index.html)
+├── README.md / docs/                 # Documentation set (AI entry point: docs/ai/README.md; human entry point: docs/human/index.html)
 ├── docker-compose.yml / .env.example / .github/workflows/ci.yml
 ├── codes/
 │   ├── includes/                     # Public headers
