@@ -407,6 +407,23 @@ out[o + 5] = lerpAngle(c.dir, next.dir, alpha);</code></pre>
 				自分のマウス操作は<strong>待たずに即座に反映</strong>します（回転はサーバの許可を
 				待たなくてもズレないため）。これで操作の手応えは保たれます。
 			</p>
+			<div class="callout" style="margin-top: 18px">
+				<strong>参考: 同じ数値が業界標準にも現れる。</strong>
+				Source Engine（Valve社のゲームエンジン、Counter-Strike等で使用）のネットワーキング解説
+				（<a href="https://developer.valvesoftware.com/wiki/Source_Multiplayer_Networking">Source Multiplayer Networking</a>）
+				によると、既定の補間遅延（<code>cl_interp</code>）は<strong>100ms</strong>で、これは
+				既定の配信レート20Hz（50ms間隔）に対して「1枚落ちても2枚使って補間できる」余白として
+				導出されています。このプロジェクトの100ms・15Hzも同じ理屈（15Hzは100ms予算に収まる
+				最軽量のレート）で独立に導かれたもので、値が一致するのは偶然ではなく同じ制約から来ています。
+				<br><br>
+				一方でSource Engineが実装している<strong>クライアント予測（移動も含めた全面予測）</strong>と
+				<strong>ラグ補正（サーバが過去の他プレイヤー位置へ巻き戻して着弾判定する仕組み）</strong>は、
+				このプロジェクトでは採用していません。理由は上の「例外は視点回転だけ」の通りで、RSP/FPSは
+				接触判定・収集判定であって、Source Engineが想定するような「ミリ秒単位のエイム精度を競う
+				着弾判定」を必要としないためです。ラグ補正が無いとサーバは「今の」位置で判定しますが、
+				その代わりサーバがクライアントの申告する当たり判定を一切信用しない、という
+				サーバ権威の原則そのものは共通しています。
+			</div>
 		</section>
 
 		<section id="client">
@@ -722,6 +739,11 @@ typedef enum e_input_source
 				<article class="card">
 					<h3><a href="../../../web/sim_demo/">web/sim_demo/</a></h3>
 					<p><code>record.mjs</code> → <code>replay.html</code>。全経路が動く実例。</p>
+				</article>
+				<article class="card">
+					<h3><a href="https://developer.valvesoftware.com/wiki/Source_Multiplayer_Networking">Source Multiplayer Networking（Valve）</a></h3>
+					<p>業界標準のネットワーキング解説。§04の100ms補間の外部裏付けと、
+						このプロジェクトが採用しないクライアント予測・ラグ補正の元ネタ（外部サイト）。</p>
 				</article>
 			</div>
 		</section>
