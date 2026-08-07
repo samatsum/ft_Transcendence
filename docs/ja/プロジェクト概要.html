@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="ja">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="color-scheme" content="dark">
+	<title>プロジェクト概要 — ft_transcendence</title>
+	<link rel="stylesheet" href="./assets/style.css">
+</head>
+<body>
+	<header class="hero">
+		<div class="shell">
+			<p class="eyebrow">ft_transcendence · Project Overview</p>
+			<h1>cub3Dを、<br>ブラウザ対戦プラットフォームへ。</h1>
+			<p class="hero-lead">
+				42の課題 <code>cub3D</code>（C・レイキャスティング・MiniLibX）のエンジンをそのまま、
+				リアルタイムのWebアプリへ発展させたブラウザ向けオンライン対戦プラットフォームです。
+				同じCのゲームロジックが、ネイティブ実行・ブラウザ描画用WASM・サーバ判定用WASMの
+				3か所で動きます。RSP（じゃんけん鬼ごっこ）チーム戦とFPS収集レースの2モードを搭載。
+			</p>
+			<div class="hero-note">
+				<strong>2026-08-08 時点</strong>
+				<span>ルートの<code>README.md</code>（英語・42提出用正本）の日本語版サマリー</span>
+			</div>
+		</div>
+	</header>
+
+	<nav class="topnav" aria-label="ページ内目次">
+		<div class="shell nav-inner">
+			<a href="#status">現在の状態</a>
+			<a href="#team">チーム</a>
+			<a href="#architecture">アーキテクチャ</a>
+			<a href="#stack">技術スタック</a>
+			<a href="#docs">ドキュメント</a>
+			<button class="print-button" type="button" onclick="window.print()">印刷 / PDF</button>
+		</div>
+	</nav>
+
+	<main class="shell">
+		<section id="status">
+			<p class="section-kicker">01 · Current status</p>
+			<h2>今、何が動いて何が動かないか</h2>
+			<p class="section-intro">
+				Cエンジンは完成しています。その上に載せるオンライン化の層（認証・マッチング・
+				フロント大部分）はまだ部分的です。デモする前にこの表を確認してください。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>領域</th><th>状態</th></tr></thead>
+					<tbody>
+						<tr><td>エンジン（<code>codes/</code> + <code>web/</code>）— 描画・物理・両モード・AI・サーバ権威シム</td><td><span class="tag status-done">完了</span></td></tr>
+						<tr><td>サーバー（<code>app/backend/</code>）— ロビーWS・マッチング・GameRoom・切断復帰・マップ配布</td><td><span class="tag status-partial">コア完了</span>（W-01・W-08コア・W-09〜W-12・W-14）。本認証（W-04/05）待ちで最終結合は未了。永続化（W-13）・Docker配信（W-15）・CI拡張（W-16）は未着手</td></tr>
+						<tr><td>認証・DB・フレンド・アバター（<code>app/backend/</code>）</td><td><span class="tag status-todo">未着手</span>（W-02〜W-07）。開発用ヘッダースタブ（<code>ALLOW_DEV_AUTH</code>）で代用中</td></tr>
+						<tr><td>フロント（<code>app/frontend/</code>）— 雛形・APIクライアント・GameView・HUD</td><td><span class="tag status-done">完了</span>（F-01・F-02・F-06・F-07）</td></tr>
+						<tr><td>フロント — ロビー・認証画面・試合遷移・プロフィール</td><td><span class="tag status-todo">未着手</span>（F-03〜F-05・F-08〜F-12）。<code>/lobby</code>は開発用リンクだけのスタブ</td></tr>
+						<tr><td><strong>通しの体験</strong>：ログイン→マッチング→対戦→結果</td><td><span class="tag status-todo">まだ不可能</span>。マッチングするロビーも、本物のログインも無い</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<div class="callout" style="margin-top: 18px">
+				<strong>今日デモできるもの：</strong>
+				エンジン単体（ネイティブ／ブラウザ、両モード、1人プレイ）と、
+				記録済みsnapshotストリームをブラウザで再生する「サーバ権威デモ」
+				（本物のWebSocketが繋がったときと同じ配線を、ファイル経由で確認できる）。
+				具体的な起動コマンドはルートの
+				<a href="../../README.md">README.md</a>「Quickstart」章を参照してください
+				（コマンド集の正本はそちらです。ここでは重複させません）。
+			</div>
+			<p class="section-intro" style="margin-top: 16px;">
+				Issue単位の詳細は<a href="../ai/backlog.md">ai/backlog.md</a>（英語）、
+				工程全体の依存関係は<a href="./サーバー開発工程.html">サーバー開発工程.html</a>を参照。
+			</p>
+		</section>
+
+		<section id="team">
+			<p class="section-kicker">02 · Team</p>
+			<h2>チーム</h2>
+			<p class="section-intro">
+				課題書は4人グループプロジェクトを前提にしています（第II章）。
+				<strong>2026-08-05時点でチームは解散し、稼働しているのはsamatsum 1人だけ</strong>です。
+				これは課題書の4〜5人要件との**未解決の齟齬**として明示的に記録しています
+				（このページやREADMEで解消したことにはしていません）。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>課題書 II.1.1 の必須役割</th><th>現在の担当</th></tr></thead>
+					<tbody>
+						<tr><td>テクニカルリード / アーキテクト</td><td><strong>samatsum</strong>（固定。エンジンの設計・実装元）</td></tr>
+						<tr><td>プロジェクトマネージャー / スクラムマスター</td><td><strong>samatsum</strong>（空きスロットを兼務）</td></tr>
+						<tr><td>プロダクトオーナー</td><td><strong>samatsum</strong>（空きスロットを兼務）</td></tr>
+						<tr><td>開発者（全員）</td><td><strong>samatsum</strong></td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p class="section-intro" style="margin-top: 16px;">
+				過去の貢献者（2026-08-05以降は非稼働）: <strong>torinoue</strong>（バックエンド基盤の土台）・
+				<strong>mamiyaza</strong>（フロント基盤の計画）・<strong>hminemur</strong>（フロントゲーム画面の計画）。
+				詳細と未解決リスクの全文は<a href="./チーム体制.html">チーム体制.html</a>。
+			</p>
+		</section>
+
+		<section id="architecture">
+			<p class="section-kicker">03 · Architecture</p>
+			<h2>アーキテクチャ</h2>
+			<p class="section-intro">
+				サーバーが唯一の権威です。<code>sim.wasm</code>が30Hzで本当の試合状態を計算し、
+				ブラウザは直近に受け取ったsnapshotを描くだけ——<strong>勝敗を判定するコードはクライアントに
+				1行もありません</strong>。
+			</p>
+			<pre class="mermaid">
+flowchart LR
+    subgraph client["プレイヤーのブラウザ"]
+        FE["React SPA<br/>(app/frontend)"]
+        RW["render.wasm<br/>(Cエンジン → WASM)"]
+        FE -->|"snapshotを渡す"| RW
+    end
+    subgraph server["Node.jsサーバー (app/backend)"]
+        BE["Fastify<br/>REST + WSゲートウェイ"]
+        GR["GameRoom<br/>sim.wasmを30Hzで駆動"]
+        BE --> GR
+    end
+    DB[("SQLite<br/>Prisma経由")]
+
+    client -- "REST: 認証・プロフィール・マップ" --> BE
+    client -- "WebSocket: input →<br/>← snapshot (15Hz)" --> GR
+    BE -.->|"未結線 (W-03)"| DB
+			</pre>
+			<p class="section-intro" style="margin-top: 16px;">
+				図解付きの詳しい説明は<a href="./explanations/サーバ権威モデル.html">サーバ権威モデル.html</a>、
+				プロトコルレベルの正本は<a href="../ai/ws-protocol.md">ai/ws-protocol.md</a>（英語）。
+			</p>
+		</section>
+
+		<section id="stack">
+			<p class="section-kicker">04 · Tech stack</p>
+			<h2>技術スタック</h2>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>層</th><th>選定</th><th>理由</th></tr></thead>
+					<tbody>
+						<tr><td>エンジン</td><td>C・MiniLibX（native限定）・Emscripten→WASM</td><td>cub3Dエンジンを無改造のまま描画とサーバ判定の両方で再利用。ロジックの二重管理ゼロ</td></tr>
+						<tr><td>フロントエンド</td><td>React + Vite + TypeScript + Tailwind CSS</td><td>SSR不要のSPAで十分。TailwindでCSSフレームワーク要件を満たす</td></tr>
+						<tr><td>バックエンド</td><td>Fastify + TypeScript</td><td>Node上で<code>sim.wasm</code>を直接実行できる。公式WSプラグインあり</td></tr>
+						<tr><td>リアルタイム通信</td><td>生WebSocket（<code>@fastify/websocket</code>）</td><td>Socket.IOの抽象化は不要</td></tr>
+						<tr><td>DB</td><td>SQLite + Prisma（<strong>未結線, W-03</strong>）</td><td>単一ホスト評価に適合。ORM要件を満たす</td></tr>
+						<tr><td>認証</td><td>argon2id + opaque httpOnlyセッションCookie（JWTではない）（<strong>未結線, W-04</strong>）</td><td>ステートレスJWTの利点（サーバ側失効不可）がこの規模では不要</td></tr>
+						<tr><td>配信</td><td>nginx + Docker Compose（<strong>未結線, W-15</strong>）</td><td>単一コマンド起動の要件</td></tr>
+						<tr><td>共有契約</td><td><code>app/shared/</code>のzodスキーマ</td><td>1つの定義でFE/BE両方のバリデーションを満たす</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p class="section-intro" style="margin-top: 16px;">
+				比較検討の詳細は<a href="../ai/architecture.md">ai/architecture.md</a>（英語）。
+			</p>
+		</section>
+
+		<section id="docs">
+			<p class="section-kicker">05 · Documentation</p>
+			<h2>ドキュメントへの入口</h2>
+			<div class="grid grid-2">
+				<article class="card">
+					<h3><a href="./index.html">docs/ja/index.html</a></h3>
+					<p>人間向け（日本語HTML）の入口。オンボーディング・専門用語集・各種解説。</p>
+				</article>
+				<article class="card">
+					<h3><a href="../ai/README.md">docs/ai/README.md</a></h3>
+					<p>AI向け（英語Markdown）の入口。設計書・バックログ・コーディング規約・Git運用。</p>
+				</article>
+				<article class="card">
+					<h3><a href="./プレイヤーガイド.html">プレイヤーガイド.html</a></h3>
+					<p>プレイヤー・評価者向け。起動方法・操作・.cub記述ルール。</p>
+				</article>
+				<article class="card">
+					<h3><a href="../../README.md">/README.md</a></h3>
+					<p>42提出用の正本（英語）。このページはその日本語サマリーで、正本ではありません。</p>
+				</article>
+			</div>
+		</section>
+	</main>
+
+	<footer class="shell">
+		<p>2026-08-08 作成。ルート<code>README.md</code>（英語・42提出正本）の日本語サマリー。
+			コマンド・詳細な起動手順はREADME側が正本のため、ここでは重複させていません。</p>
+	</footer>
+
+	<script type="module">
+		import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+		mermaid.initialize({
+			startOnLoad: true,
+			theme: "base",
+			themeVariables: {
+				darkMode: true,
+				background: "#07111f",
+				primaryColor: "#12243a",
+				primaryTextColor: "#edf6ff",
+				primaryBorderColor: "#29415d",
+				lineColor: "#5de4d6",
+				secondaryColor: "#0d1b2d",
+				secondaryTextColor: "#edf6ff",
+				secondaryBorderColor: "#29415d",
+				tertiaryColor: "#0d1b2d",
+				tertiaryTextColor: "#edf6ff",
+				tertiaryBorderColor: "#29415d",
+				fontFamily: "Inter, 'Noto Sans JP', sans-serif",
+				noteBkgColor: "#12243a",
+				noteTextColor: "#c4d4e6",
+				noteBorderColor: "#29415d",
+				actorBkg: "#12243a",
+				actorTextColor: "#edf6ff",
+				actorBorder: "#29415d",
+				signalColor: "#73a7ff",
+				signalTextColor: "#edf6ff"
+			}
+		});
+	</script>
+</body>
+</html>

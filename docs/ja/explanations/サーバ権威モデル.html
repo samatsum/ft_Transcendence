@@ -123,15 +123,15 @@
 				全体像を先に1枚で。<strong>ブラウザは入力を送り、サーバは状態を返し、
 				ブラウザが描く</strong>、の1往復です。
 			</p>
-			<pre><code>[ブラウザ] キー / マウス
-      │  input を送信（30Hz）        ← mv（前後左右の押下ビット）と yaw（視点の絶対角）
-      ▼
-[サーバ] game_step で世界の状態を計算（30Hz）
-        └ 位置・当たり判定・スコア・勝敗を決める（★絵は描かない）
-      │  snapshot を送信（15〜20Hz）  ← 全戦闘員の位置・向き・スコア・生死…
-      ▼
-[ブラウザ] snapshot を貯めて now−100ms で補間
-        └ render.wasm が「自分の画面」を描く（★描画はブラウザの仕事）</code></pre>
+			<pre class="mermaid">
+sequenceDiagram
+    participant B as ブラウザ（キー/マウス）
+    participant S as サーバ
+    B->>S: input を送信（30Hz）<br/>mv（前後左右の押下ビット）と yaw（視点の絶対角）
+    Note over S: game_step で世界の状態を計算（30Hz）<br/>位置・当たり判定・スコア・勝敗を決める<br/>★絵は描かない★
+    S->>B: snapshot を送信（15〜20Hz）<br/>全戦闘員の位置・向き・スコア・生死…
+    Note over B: snapshot を貯めて now−100ms で補間<br/>render.wasm が「自分の画面」を描く<br/>★描画はブラウザの仕事★
+			</pre>
 			<h3 style="margin-top: 26px">混同しやすい2点（実際によくある勘違い）</h3>
 			<div class="table-wrap">
 				<table>
@@ -730,5 +730,36 @@ typedef enum e_input_source
 	<footer class="shell">
 		統合元: md_files/説明用/{スナップショットと補間.md, 戦闘員統合-人もNPCも同じリスト.md}（いずれも archive/ に移設）
 	</footer>
+
+	<script type="module">
+		import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+		mermaid.initialize({
+			startOnLoad: true,
+			theme: "base",
+			themeVariables: {
+				darkMode: true,
+				background: "#07111f",
+				primaryColor: "#12243a",
+				primaryTextColor: "#edf6ff",
+				primaryBorderColor: "#29415d",
+				lineColor: "#5de4d6",
+				secondaryColor: "#0d1b2d",
+				secondaryTextColor: "#edf6ff",
+				secondaryBorderColor: "#29415d",
+				tertiaryColor: "#0d1b2d",
+				tertiaryTextColor: "#edf6ff",
+				tertiaryBorderColor: "#29415d",
+				fontFamily: "Inter, 'Noto Sans JP', sans-serif",
+				noteBkgColor: "#12243a",
+				noteTextColor: "#c4d4e6",
+				noteBorderColor: "#29415d",
+				actorBkg: "#12243a",
+				actorTextColor: "#edf6ff",
+				actorBorder: "#29415d",
+				signalColor: "#73a7ff",
+				signalTextColor: "#edf6ff"
+			}
+		});
+	</script>
 </body>
 </html>
