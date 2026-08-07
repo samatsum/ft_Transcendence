@@ -55,6 +55,7 @@ As of 2026-08-05 the former 4-person team (torinoue / mamiyaza / hminemur, plus 
 | [coding-rules.md](./coding-rules.md) | The canonical C coding-rules document. Every `CRxxx` code that `make check` can print maps 1:1 to a rule here. |
 | [dev-doc.md](./dev-doc.md) | Engine developer reference: module structure, enemy AI / RSP AI internals, data flow, tuning values, lint tooling. |
 | [git-workflow.md](./git-workflow.md) | The mandatory branch → PR → CI → merge-on-GitHub → `pull` procedure. Not a design doc — read this before making any commit in this repo. |
+| [doc-style-guide.md](./doc-style-guide.md) | How to write and wire up a page under `docs/`: page template, the shared CSS classes, when to use Mermaid vs. plain text for diagrams (and how to embed/validate one), the dead-link check, and the status/team-attribution wording rules. Read this before adding or restructuring anything under `docs/`. |
 
 ## Where these came from (old → new filename)
 
