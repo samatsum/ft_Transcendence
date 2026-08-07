@@ -25,7 +25,7 @@
 > - On the web-app side, the skeleton (W-01) is complete.
 >
 > **What remains is the TypeScript server and frontend** (the part that connects online play).
-> For detailed progress, see [5-Backlog §1](./backlog.md); for role assignments, see [6-Team Assignment Plan](../ja/チーム体制.html).
+> For detailed progress, see [5-Backlog §1](./backlog.md); for role assignments, see [6-Team Assignment Plan](../human/はじめに/チーム体制.html).
 >
 > ### Status by module
 >
@@ -150,7 +150,7 @@ Building the entire project is complex, and many problems can arise. Therefore, 
 - [◎] Proper work distribution across the entire team. **At risk**: the team has dissolved to a
   single active contributor (samatsum) as of 2026-08-05; this is an open, unresolved discrepancy
   with the subject's 4–5 person team premise, not something this checkbox can honestly claim is
-  on track — see [`../ja/チーム体制.html`](../ja/チーム体制.html) §04 for the full writeup.
+  on track — see [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html) §04 for the full writeup.
 - [◎] Deployment must use a containerization solution (Docker, Podman, etc.) and run with a single command.
 - [◎] The website must be compatible with the latest stable version of Google Chrome.
 - [◎] No warnings or errors may appear in the browser console.

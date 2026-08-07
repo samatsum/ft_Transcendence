@@ -29,14 +29,14 @@ server-authoritative match rendered in the browser via a recorded/replayed snaps
 Demo B below) — the same wiring that a real WebSocket connection will use once the lobby exists.
 
 Full per-issue detail: [`docs/ai/backlog.md`](./docs/ai/backlog.md) (English). Current team
-capacity and the reason online play isn't finished yet: [`docs/ja/チーム体制.html`](./docs/ja/チーム体制.html)
+capacity and the reason online play isn't finished yet: [`docs/human/チーム体制.html`](./docs/human/はじめに/チーム体制.html)
 (Japanese).
 
 ## Team
 
 ft_transcendence is a 4-person group project per the subject (Chapter II). **As of 2026-08-05 the
 team has dissolved to a single active contributor; this is an open, unresolved gap against the
-subject's 4–5 person requirement** (see [`docs/ja/チーム体制.html`](./docs/ja/チーム体制.html) for
+subject's 4–5 person requirement** (see [`docs/human/チーム体制.html`](./docs/human/はじめに/チーム体制.html) for
 the full writeup — it is not resolved by this README, only accurately reported here).
 
 | Required role (subject II.1.1) | Current holder | Notes |
@@ -75,7 +75,7 @@ flowchart LR
 
 The server is the sole authority: `sim.wasm` computes the real match state at 30Hz, and the
 browser only renders whatever snapshot it last received — there is no win/loss-determination code
-on the client. See [`docs/ja/explanations/サーバ権威モデル.html`](./docs/ja/explanations/サーバ権威モデル.html)
+on the client. See [`docs/human/説明用/サーバ権威モデル.html`](./docs/human/説明用/サーバ権威モデル.html)
 (Japanese, with diagrams) or [`docs/ai/ws-protocol.md`](./docs/ai/ws-protocol.md) (English,
 protocol-level) for the full explanation.
 
@@ -198,13 +198,13 @@ This repo keeps two parallel documentation sets under `docs/`:
 - **`docs/ai/`** — English Markdown, written for an AI coding assistant to consult. Detailed
   design docs, the full issue backlog, coding rules, and the git workflow this repo follows.
   Start at [`docs/ai/README.md`](./docs/ai/README.md).
-- **`docs/ja/`** — Japanese HTML, written for samatsum. Onboarding, a lane-by-lane terminology
-  glossary (`docs/ja/専門用語/`), and conceptual explanations of the engine/server design with
-  diagrams. Start at [`docs/ja/index.html`](./docs/ja/index.html).
+- **`docs/human/`** — Japanese HTML, written for samatsum. Onboarding, a lane-by-lane terminology
+  glossary (`docs/human/専門用語/`), and conceptual explanations of the engine/server design with
+  diagrams. Start at [`docs/human/index.html`](./docs/human/index.html).
 
 Specific pointers:
 
-- 👉 [`docs/ja/プレイヤーガイド.html`](./docs/ja/プレイヤーガイド.html) — for players/evaluators:
+- 👉 [`docs/human/プレイヤーガイド.html`](./docs/human/プレイヤー向け/プレイヤーガイド.html) — for players/evaluators:
   launch instructions, controls, RSP mode rules, `.cub` map format.
 - 👉 [`docs/ai/dev-doc.md`](./docs/ai/dev-doc.md) — for developers: module structure, enemy/RSP
   AI internals, data flow, tuning values, lint tooling.

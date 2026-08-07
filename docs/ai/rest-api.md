@@ -11,7 +11,7 @@ as the source of truth for the REST API contract consumed by the frontend. The f
 (F-01 scaffold, F-02 fetch wrapper) that consumes this contract is **done** (implemented solo by samatsum);
 F-03–F-05 (auth screens, layout, lobby) are not started. This REST work and the original frontend-foundation
 plan were assigned to torinoue and mamiyaza respectively; as of 2026-08-05 neither is active, so W-02–W-07/W-13
-and F-03–F-05 are unassigned — see [`../ja/チーム体制.html`](../ja/チーム体制.html).
+and F-03–F-05 are unassigned — see [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html).
 **Principle**: This document contains no implementation code.
 The implementation source of truth for message schemas is the zod definitions in `shared/api/`; if this document
 and the implementation diverge, this document is revised first and the implementation follows (same operating rule as ②).

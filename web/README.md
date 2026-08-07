@@ -2,7 +2,7 @@
 
 C エンジンを `emcc` で WASM にビルドした成果物（`build/`）と、それをブラウザ / Node
 から動かす JavaScript を置くフォルダです。**ここに TypeScript（`app/`）は含みません。**
-仕組みの背景は [説明用ドキュメント](../docs/ja/explanations/) を参照。
+仕組みの背景は [説明用ドキュメント](../docs/human/説明用/) を参照。
 
 ---
 
@@ -65,8 +65,8 @@ C エンジンを `emcc` で WASM にビルドした成果物（`build/`）と�
 
 つまりオンラインは「`sim_demo/replay.html` の作り（snapshot 駆動）」を TypeScript で
 本番化したもので、`engine_demo`（ローカル単体）とは駆動の仕方が別です
-（[サーバ権威モデル](../docs/ja/explanations/サーバ権威モデル.html) /
-[ビルドと実行](../docs/ja/explanations/ビルドと実行.html)）。
+（[サーバ権威モデル](../docs/human/説明用/サーバ権威モデル.html) /
+[ビルドと実行](../docs/human/説明用/ビルドと実行.html)）。
 
 ---
 

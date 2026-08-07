@@ -3,7 +3,7 @@
 > Source: translated from the Japanese original at md_files/02_設計書/5-バックログ.md (archived).
 
 **Positioning**: This is the authoritative document, at a granularity that can be transcribed directly into GitHub Issues, integrating the W/F-series issues derived from [WS_PROTOCOL_DESIGN.md](./ws-protocol.md) (②), [REST_API_DESIGN.md](./rest-api.md) (③), and [FRONTEND_DESIGN.md](./frontend.md) (④) with the E/G-series issues in §6 of [ENGINE_SEPARATION_DESIGN.md](./engine-separation.md) (①).
-Historically the PM role transcribed this into Issues and tracked progress; as of 2026-08-05 the team has dissolved to a single active contributor (samatsum — see [`../ja/チーム体制.html`](../ja/チーム体制.html)), who now does this directly. Where acceptance-criteria detail exists in the individual design documents, it is referenced rather than repeated.
+Historically the PM role transcribed this into Issues and tracked progress; as of 2026-08-05 the team has dissolved to a single active contributor (samatsum — see [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html)), who now does this directly. Where acceptance-criteria detail exists in the individual design documents, it is referenced rather than repeated.
 **Completion of this document marks the completion of the upstream process (①–⑤).** The former Q-1–Q-3 have been decided as D-16–D-18 (the comparison of options is recorded in §0).
 
 ---
@@ -106,7 +106,7 @@ An input channel that accepts state as input is itself an entry point for cheati
 
 Numbered items in the acceptance-criteria column indicate mapping to acceptance criteria 1–6 in ②§10.
 
-| Issue | Title | Acceptance criteria | Dependency | Day (14-day schedule; for the 5-day schedule see [⑥§5.1](../ja/チーム体制.html)) |
+| Issue | Title | Acceptance criteria | Dependency | Day (14-day schedule; for the 5-day schedule see [⑥§5.1](../human/はじめに/チーム体制.html)) |
 |---|---|---|---|---|
 | W-01 (done) | Add repository skeleton (`app/backend/`, `app/frontend/`, `app/shared/`, `infra/`, TS tooling, `env.example`+`.gitignore`) | backend/frontend start up under D-18's layout (keep current layout + add) → **achieved** (§1) | — | 1 |
 | W-02 | Fastify startup configuration (TS, pino, zod validation pipeline, ③§1 error-envelope/rate-limit middleware) | Invalid input returns 400/429 in the ③§1-A shape | W-01 | 2 |
@@ -132,9 +132,9 @@ Numbered items in the acceptance-criteria column indicate mapping to acceptance 
 > [PR #35](https://github.com/samatsum/ft_Transcendence/pull/35) — its own description notes hminemur was the
 > planned owner but unreachable, so samatsum implemented it instead) — see the per-issue status below.
 > F-03–F-05 and F-08–F-12 remain unassigned and not started (未完成), open for a future team member. See
-> [`../ja/チーム体制.html`](../ja/チーム体制.html).
+> [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html).
 
-| Issue | Title | Acceptance criteria | Dependency | Day (14-day schedule; for the 5-day schedule see [⑥§5.1](../ja/チーム体制.html)) |
+| Issue | Title | Acceptance criteria | Dependency | Day (14-day schedule; for the 5-day schedule see [⑥§5.1](../human/はじめに/チーム体制.html)) |
 |---|---|---|---|---|
 | F-01 (done) | Scaffold (Vite/React/TS/Tailwind/Router/ErrorBoundary/StrictMode) | Foundation for ④§6-1's zero-console-errors policy. Zero build warnings | W-01 | 1 |
 | F-02 (done) | fetch wrapper + shared zod integration (③§1 error-envelope handling, toast integration) | 401 redirects to `/login`; errors appear as toasts | F-01 | 3 |
@@ -159,7 +159,7 @@ development. `GameView`/`HudOverlay` currently have no lobby to be launched from
 | Gate | Content | Issues that converge here | Status |
 |---|---|---|---|
 | Gate 1 (Day 2) | Canvas rendering of a static map | E-01–E-07 | **Passed (go)**, 2026-07-11 |
-| Gate 2 (Day 7 → **Day 3 under the 5-day schedule**) | **A 2v2 RSP match is playable start to finish between 2 browsers** | E-08–E-12 / G-01–G-05 / W-08–W-11 / F-05–F-08 | Not yet (**E, G, W-08 core, W-09–W-12, and F-06/F-07 are done**. What remains on the server side is W-08 integration with W-04/W-05; on the frontend side, F-05 (lobby, not started — F-06/F-07 currently have no lobby to launch from) and F-08 (match transition, not started))<br>**W-12 (disconnect/reconnect/AI takeover) is not counted toward Gate 2 — it was carried out and completed on Day 4 instead** (consistent with [⑥§5.1](../ja/チーム体制.html)). W-12 is ②§10-B №4 and is not something to be dropped |
+| Gate 2 (Day 7 → **Day 3 under the 5-day schedule**) | **A 2v2 RSP match is playable start to finish between 2 browsers** | E-08–E-12 / G-01–G-05 / W-08–W-11 / F-05–F-08 | Not yet (**E, G, W-08 core, W-09–W-12, and F-06/F-07 are done**. What remains on the server side is W-08 integration with W-04/W-05; on the frontend side, F-05 (lobby, not started — F-06/F-07 currently have no lobby to launch from) and F-08 (match transition, not started))<br>**W-12 (disconnect/reconnect/AI takeover) is not counted toward Gate 2 — it was carried out and completed on Day 4 instead** (consistent with [⑥§5.1](../human/はじめに/チーム体制.html)). W-12 is ②§10-B №4 and is not something to be dropped |
 | Gate 3 (Day 11 → **Day 4 under the 5-day schedule**) | Core 14pt fully working in the integrated environment | W-13, W-14, F-09–F-11, G-06–G-09 (FPS-related), and everything else | Not yet (**G-06–G-09 are done**) |
 | Day 12 (→ **Day 5**) | Hardening day (every item per the ARCHITECTURE §9.1 script) | Turned into a single Issue, H-01 (whole team) | Not yet |
 
@@ -204,7 +204,7 @@ development. `GameView`/`HudOverlay` currently have no lobby to be launched from
 In parallel on the frontend side: F-01, F-02, F-06, and F-07 are done. F-05 + F-08 (both not started,
 unassigned) are what's left to converge on Gate 2.
 The C side (E-series, G-series) is entirely Done; only the TypeScript Backend/DevOps and Frontend lanes remain.
-See [チーム体制.html](../ja/チーム体制.html) for current team status — as of 2026-08-05 the original 4-person plan no longer applies; samatsum is the sole active contributor.
+See [チーム体制.html](../human/はじめに/チーム体制.html) for current team status — as of 2026-08-05 the original 4-person plan no longer applies; samatsum is the sole active contributor.
 
 ## 7. Upstream Process Closure Declaration
 

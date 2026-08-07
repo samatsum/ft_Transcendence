@@ -29,7 +29,7 @@ What remains is only the TypeScript server and frontend (W-02–W-16 / F-01–F-
   / [4-エンジンE13E14レポート](../../archive/03_実装レポート/4-エンジンE13E14レポート.md)
 - Handover notes for the next person to use this engine (the W-10 owner):
   the "Handover to W-10" section of [3-エンジンPhase3レポート](../../archive/03_実装レポート/3-エンジンPhase3レポート.md)
-- Overall progress: [5-バックログ](./backlog.md) / ownership: [6-チーム分担計画](../ja/チーム体制.html)
+- Overall progress: [5-バックログ](./backlog.md) / ownership: [6-チーム分担計画](../human/はじめに/チーム体制.html)
 
 ---
 
@@ -191,7 +191,7 @@ Currently, "the camera = the sole player, `t_enemy` list = NPCs." Comparison of 
 All 4 items above are implemented (G-01 through G-04).
 The player became one node in the `world.enemies` list, and the difference between an AI slot and a human slot is now
 just `input_source` (`AI` / `EXTERNAL`). "Ownership: Engine for structure, Gameplay for rules" was the original division of labor
-plan; in practice, samatsum carried out both ([6-チーム分担計画](../ja/チーム体制.html)).
+plan; in practice, samatsum carried out both ([6-チーム分担計画](../human/はじめに/チーム体制.html)).
 
 ### 3-D. Snapshot structure (source data for WS distribution)
 
@@ -309,7 +309,7 @@ the "Acceptance criteria," "Dependencies," and "Estimate" columns reflect the st
 
 - "Engine owner" / "Gameplay owner" reflect the original division-of-labor plan under the initial 4-lane structure.
   In practice, samatsum completed both lanes solo.
-  The currently valid ownership table is [6-チーム分担計画](../ja/チーム体制.html).
+  The currently valid ownership table is [6-チーム分担計画](../human/はじめに/チーム体制.html).
 - The implementation content and verification results for each Issue are summarized across the 4 documents in
   [03_実装レポート](../../archive/03_実装レポート/).
 

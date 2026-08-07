@@ -47,7 +47,7 @@
 						<tr><td>web</td><td>ブラウザのCanvasに描くための実装（<code>platform_web.c</code>）。<code>pf_present</code>は「何もしない」代わりに、JS側がWASMメモリを読んでCanvasに転送する</td></tr>
 						<tr><td>headless（ヘッドレス）</td><td>「画面が無い」実装（<code>platform_headless.c</code>）。描画・入力デバイス・ループを一切持たない。サーバ用の<code>sim.wasm</code>や<code>make test</code>の受入テストがこれを使う</td></tr>
 						<tr><td>framebuffer（<code>t_framebuffer</code>）</td><td>「ピクセルへのポインタ・幅・高さ」だけを持つ構造体。MLXの<code>t_image</code>の代わりに、<code>draw_pixel</code>が直接参照する</td></tr>
-						<tr><td>ループ反転</td><td>元のcub3Dは「MLXが暇なたびにmain_loopを呼ぶ」構造だったのを、「1フレーム分の処理＝<code>game_step</code>という普通の関数」に切り出し、呼ぶ側（MLX/ブラウザ/Node）をどれでも良くした設計変更。詳細は<a href="../explanations/ビルドと実行.html">ビルドと実行.html</a></td></tr>
+						<tr><td>ループ反転</td><td>元のcub3Dは「MLXが暇なたびにmain_loopを呼ぶ」構造だったのを、「1フレーム分の処理＝<code>game_step</code>という普通の関数」に切り出し、呼ぶ側（MLX/ブラウザ/Node）をどれでも良くした設計変更。詳細は<a href="../説明用/ビルドと実行.html">ビルドと実行.html</a></td></tr>
 					</tbody>
 				</table>
 			</div>
@@ -108,7 +108,7 @@
 				</table>
 			</div>
 			<p class="section-intro" style="margin-top: 16px">
-				詳細は<a href="../explanations/サーバ権威モデル.html">サーバ権威モデル.html</a>の「戦闘員統合」章、
+				詳細は<a href="../説明用/サーバ権威モデル.html">サーバ権威モデル.html</a>の「戦闘員統合」章、
 				ゲームルール寄りの用語は<a href="./G-専門用語.html">G-専門用語.html</a>へ。
 			</p>
 		</section>

@@ -7,7 +7,7 @@
 maintainer (samatsum) and any AI agent (Claude Code or otherwise) working in this repo. It is
 process guidance, not a design document — it does not describe the product, only how changes should
 land in `main`. Follow this exactly unless samatsum explicitly asks for a one-off exception. Japanese
-companion: [`../ja/Git運用フロー.html`](../ja/Git運用フロー.html).
+companion: [`../human/運用/Git運用フロー.html`](../human/運用/Git運用フロー.html).
 
 ## The rule, in one sentence
 
@@ -24,7 +24,7 @@ project) invisible to anyone grading the repository. It does not count as "done"
 This repo's `.github/workflows/ci.yml` triggers on both `push: branches: [main]` and
 `pull_request`. That difference in *timing* is the entire reason to keep using PRs even now that
 the team has dissolved to a single active contributor (samatsum — see
-[`../ja/チーム体制.html`](../ja/チーム体制.html)):
+[`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html)):
 
 | Route | When CI runs | Consequence if it fails |
 |---|---|---|
@@ -114,7 +114,7 @@ git push origin --delete feat/xxx       # remote (gh pr merge --delete-branch do
 `gh pr merge --squash --delete-branch` folds step 4 above and this cleanup into one command. Leaving
 merged branches around is how this repo accumulated 7 stale branches that all needed manual
 archaeology (`git branch --merged`, `git diff --stat`, checking PR state via `gh pr list`) to confirm
-they were safe to delete — see [`../ja/チーム体制.html`](../ja/チーム体制.html)'s note on team status
+they were safe to delete — see [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html)'s note on team status
 for why nobody was doing that cleanup as it happened.
 
 ## Anti-patterns — don't do these

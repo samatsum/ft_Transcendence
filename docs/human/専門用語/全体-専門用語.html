@@ -55,7 +55,7 @@
 						<tr><td><code>app/shared/</code></td><td>TypeScript</td><td>backendとfrontendが同じ型定義を使うための共有コード（zodスキーマなど）</td></tr>
 						<tr><td><code>infra/</code></td><td>設定ファイル</td><td>nginx・TLS証明書・Dockerfile。本番起動まわり</td></tr>
 						<tr><td><code>maps/</code> / <code>textures/</code></td><td>データ</td><td>ゲームのステージ定義（<code>.cub</code>ファイル）と画像素材</td></tr>
-						<tr><td><code>docs/</code></td><td>Markdown / HTML</td><td>この用語集を含む、プロジェクトの全ドキュメント。<code>docs/ai/</code>=AI向け英語、<code>docs/ja/</code>=人間向け日本語（このページ）</td></tr>
+						<tr><td><code>docs/</code></td><td>Markdown / HTML</td><td>この用語集を含む、プロジェクトの全ドキュメント。<code>docs/ai/</code>=AI向け英語、<code>docs/human/</code>=人間向け日本語（このページ）</td></tr>
 						<tr><td><code>archive/</code></td><td>—</td><td>更新されなくなった過去の文書置き場。読む必要は基本ない</td></tr>
 					</tbody>
 				</table>
@@ -78,11 +78,11 @@
 					<thead><tr><th>用語</th><th>意味</th></tr></thead>
 					<tbody>
 						<tr><td>クライアント / サーバ</td><td>クライアント＝各プレイヤーのブラウザ。サーバ＝<code>app/backend</code>が動くNodeプロセス1つ。全員のクライアントが同じサーバに繋がる</td></tr>
-						<tr><td>サーバ権威（server-authoritative）</td><td>「本当のゲーム状態」はサーバだけが持ち、クライアントは表示するだけという設計方針。チートとズレを防ぐための一番重要な決定。詳細は<a href="../explanations/サーバ権威モデル.html">サーバ権威モデル.html</a></td></tr>
+						<tr><td>サーバ権威（server-authoritative）</td><td>「本当のゲーム状態」はサーバだけが持ち、クライアントは表示するだけという設計方針。チートとズレを防ぐための一番重要な決定。詳細は<a href="../説明用/サーバ権威モデル.html">サーバ権威モデル.html</a></td></tr>
 						<tr><td>プロトコル</td><td>通信の「言葉の決まり」。このプロジェクトにはREST APIとWebSocketの2種類がある</td></tr>
 						<tr><td>REST API</td><td>ブラウザが「GET /api/users/1」のようにHTTPでサーバへ1回ずつ要求を送る方式。ログイン・プロフィール取得などに使う</td></tr>
 						<tr><td>WebSocket（WS）</td><td>一度繋いだら繋ぎっぱなしで、双方向に小さいメッセージを送り合える通信方式。対戦中の入力・状態配信に使う（RESTだと繋ぎ直しのコストが高すぎる）</td></tr>
-						<tr><td>スナップショット（snapshot）</td><td>サーバが今の試合状態を「写真」のように切り出してクライアントへ送るデータ。詳細は<a href="./W-専門用語.html">W用語集</a>・<a href="../explanations/サーバ権威モデル.html">サーバ権威モデル.html</a></td></tr>
+						<tr><td>スナップショット（snapshot）</td><td>サーバが今の試合状態を「写真」のように切り出してクライアントへ送るデータ。詳細は<a href="./W-専門用語.html">W用語集</a>・<a href="../説明用/サーバ権威モデル.html">サーバ権威モデル.html</a></td></tr>
 						<tr><td>tick</td><td>サーバがゲームを1コマ進める単位（このプロジェクトは30Hz＝1秒に30回）。フレーム（描画の1コマ）とは別の概念</td></tr>
 					</tbody>
 				</table>
@@ -96,7 +96,7 @@
 				<table>
 					<thead><tr><th>用語</th><th>意味</th></tr></thead>
 					<tbody>
-						<tr><td>WASM（WebAssembly）</td><td>Cのコードを、ブラウザやNodeがそのまま高速に実行できる形式へ翻訳したもの。詳細は<a href="../explanations/ビルドと実行.html">ビルドと実行.html</a></td></tr>
+						<tr><td>WASM（WebAssembly）</td><td>Cのコードを、ブラウザやNodeがそのまま高速に実行できる形式へ翻訳したもの。詳細は<a href="../説明用/ビルドと実行.html">ビルドと実行.html</a></td></tr>
 						<tr><td>Emscripten（emcc）</td><td>C → WASMへ翻訳するコンパイラ。<code>gcc</code>の代わりに使う</td></tr>
 						<tr><td>コンテナ / Docker</td><td>「アプリと、それが動くのに必要な環境一式」を1つの箱に詰めて配れるようにする技術。評価は<code>docker compose up</code>という単一コマンドで動く必要がある</td></tr>
 						<tr><td>Docker Compose</td><td>複数のコンテナ（nginx・Node・DBなど）をまとめて起動する仕組み。<code>docker-compose.yml</code>に定義されている</td></tr>
@@ -110,7 +110,7 @@
 			<p class="section-kicker">04 · Git / GitHub</p>
 			<h2>Git・GitHub運用の用語</h2>
 			<p class="section-intro">
-				詳しい手順とルールは<a href="../Git運用フロー.html">Git運用フロー.html</a>にまとまっています。ここでは単語だけ先に。
+				詳しい手順とルールは<a href="../運用/Git運用フロー.html">Git運用フロー.html</a>にまとまっています。ここでは単語だけ先に。
 			</p>
 			<div class="table-wrap">
 				<table>
@@ -156,7 +156,7 @@
 			<a href="./G-専門用語.html">G</a> /
 			<a href="./W-専門用語.html">W</a> /
 			<a href="./F-専門用語.html">F</a> の用語集へ。全体像は
-			<a href="../オンボーディング.html">オンボーディング.html</a>も参照。</p>
+			<a href="../はじめに/オンボーディング.html">オンボーディング.html</a>も参照。</p>
 	</footer>
 </body>
 </html>

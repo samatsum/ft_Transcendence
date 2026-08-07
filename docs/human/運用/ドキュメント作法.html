@@ -5,7 +5,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="color-scheme" content="dark">
 	<title>ドキュメント作法 — ft_transcendence</title>
-	<link rel="stylesheet" href="./assets/style.css">
+	<link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
 	<header class="hero">
@@ -19,7 +19,7 @@
 			</p>
 			<div class="hero-note">
 				<strong>2026-08-07 制定</strong>
-				<span>AI向けの同内容は <a href="../ai/doc-style-guide.md"><code>docs/ai/doc-style-guide.md</code></a></span>
+				<span>AI向けの同内容は <a href="../../ai/doc-style-guide.md"><code>docs/ai/doc-style-guide.md</code></a></span>
 			</div>
 		</div>
 	</header>
@@ -40,10 +40,10 @@
 	<main class="shell">
 		<section id="tracks">
 			<p class="section-kicker">01 · Which track</p>
-			<h2>新しいページは<code>ai/</code>と<code>ja/</code>どちらか</h2>
+			<h2>新しいページは<code>ai/</code>と<code>human/</code>どちらか</h2>
 			<div class="table-wrap">
 				<table>
-					<thead><tr><th></th><th><code>docs/ai/</code></th><th><code>docs/ja/</code></th></tr></thead>
+					<thead><tr><th></th><th><code>docs/ai/</code></th><th><code>docs/human/</code></th></tr></thead>
 					<tbody>
 						<tr><td>言語</td><td>英語</td><td>日本語</td></tr>
 						<tr><td>形式</td><td>Markdown（<code>.md</code>）</td><td>HTML（<code>.html</code>）</td></tr>
@@ -55,7 +55,7 @@
 			<p class="section-intro" style="margin-top: 16px;">
 				実装時にAIが参照する事実（プロトコル仕様・バックログ・コーディング規約・Git運用）は
 				<code>ai/</code>へ。samatsumが読んで理解・学習するもの（オンボーディング・専門用語・
-				「なぜこう作ったか」の解説・プロジェクト概要）は<code>ja/</code>へ。迷ったら
+				「なぜこう作ったか」の解説・プロジェクト概要）は<code>human/</code>へ。迷ったら
 				<strong>両方作る</strong>——コマンドや正確なパスなど機械的な事実は片方だけに正本を置き、
 				もう片方はそこへリンクするだけにします（二重管理で内容がズレるのを防ぐため）。
 				<code>architecture.md</code>と<code>プロジェクト概要.html</code>、
@@ -63,11 +63,43 @@
 			</p>
 		</section>
 
+		<section id="categories">
+			<p class="section-kicker">01.5 · Category directories</p>
+			<h2><code>docs/human/</code>の中はカテゴリ別ディレクトリ</h2>
+			<p class="section-intro">
+				<code>docs/human/</code>は<strong>フラットではありません</strong>。内容の種類が違うファイルは
+				ディレクトリを共有しません。「その他」的な寄せ集めディレクトリも作りません——
+				既存のどれにも当てはまらなければ、新しいカテゴリディレクトリを作ります
+				（samatsum本人の明示的な指示、2026-08-07。もともとは8本の無関係なファイルが
+				<code>docs/human/</code>直下にフラットに並んでいて見通せなくなっていた）。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>ディレクトリ</th><th>内容の種類</th></tr></thead>
+					<tbody>
+						<tr><td><code>はじめに/</code></td><td>初めて読む人向けの全体像（プロジェクト概要・チーム体制・オンボーディング）</td></tr>
+						<tr><td><code>運用/</code></td><td>作業する上でのルール（Git運用フロー、このページ）——製品そのものの話ではない</td></tr>
+						<tr><td><code>開発状況/</code></td><td>更新され続ける進捗ドキュメント（今のところW系列の状況ページのみ）</td></tr>
+						<tr><td><code>説明用/</code></td><td>「なぜこう作ったか」の深掘り解説＋TL自己確認Q&amp;A</td></tr>
+						<tr><td><code>専門用語/</code></td><td>レーン別の専門用語集</td></tr>
+						<tr><td><code>プレイヤー向け/</code></td><td>作る人向けではなく、遊ぶ人（プレイヤー・評価者）向けの製品ドキュメント</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p class="section-intro" style="margin-top: 16px;">
+				<code>docs/human/index.html</code>自体だけはルート直下に残します（<code>README.md</code>が
+				リポジトリルートに残るのと同じ、入口ファイルの慣習）。新しいページを作る前に、
+				既存カテゴリに当てはまらないか確認してください。当てはまらなければ新設して構いません
+				（1ファイルだけのカテゴリでもOK——<code>プレイヤー向け/</code>も最初は1ファイルからでした。
+				それはまだ仲間が増えていないだけです）。
+			</p>
+		</section>
+
 		<section id="template">
 			<p class="section-kicker">02 · HTML template</p>
 			<h2>HTMLページのテンプレート</h2>
 			<p class="section-intro">
-				ゼロから書かず、既存ページ（短い例として<code>チーム体制.html</code>）をコピーしてください。
+				ゼロから書かず、既存ページ（短い例として<code>はじめに/チーム体制.html</code>）をコピーしてください。
 				骨格は共通です。
 			</p>
 			<pre><code>&lt;!doctype html&gt;
@@ -77,7 +109,7 @@
 	&lt;meta name="viewport" content="width=device-width, initial-scale=1"&gt;
 	&lt;meta name="color-scheme" content="dark"&gt;
 	&lt;title&gt;ページ名 — ft_transcendence&lt;/title&gt;
-	&lt;link rel="stylesheet" href="./assets/style.css"&gt;  &lt;!-- 1階層深ければ ../assets/style.css --&gt;
+	&lt;link rel="stylesheet" href="../assets/style.css"&gt;  &lt;!-- カテゴリディレクトリはどれも1階層なので既定はこれ。docs/human/index.html自身は ./assets/style.css --&gt;
 &lt;/head&gt;
 &lt;body&gt;
 	&lt;header class="hero"&gt;…&lt;/header&gt;
@@ -91,15 +123,15 @@
 			<p>
 				<code>nav.topnav</code>（アンカーリンク＋印刷ボタン）は、ページ内目次が要るくらい長い
 				ページだけに付けます。短いページ（セクションが数個だけ）は省略して構いません
-				（<code>チーム体制.html</code>が省略例）。
+				（<code>はじめに/チーム体制.html</code>が省略例）。
 			</p>
 		</section>
 
 		<section id="css">
 			<p class="section-kicker">03 · Shared stylesheet</p>
-			<h2>共通スタイル（<code>docs/ja/assets/style.css</code>）</h2>
+			<h2>共通スタイル（<code>docs/human/assets/style.css</code>）</h2>
 			<p class="section-intro">
-				全<code>docs/ja/*.html</code>が同じ1枚のCSSを参照します。<strong>ページ固有の
+				全<code>docs/human/*.html</code>が同じ1枚のCSSを参照します。<strong>ページ固有の
 				<code>&lt;style&gt;</code>は書かない</strong>——必要なクラスが無ければ共通CSS側に足します。
 			</p>
 			<div class="table-wrap">
@@ -199,7 +231,7 @@ flowchart TD
 				新しいページはどこかからリンクされて初めて見つかります。最低限：
 			</p>
 			<ol class="path-list">
-				<li><div><strong><a href="./index.html">index.html</a>のファイル一覧表に行を追加</strong><span>#files セクション</span></div></li>
+				<li><div><strong><a href="../index.html">index.html</a>のファイル一覧表に行を追加</strong><span>#files セクション</span></div></li>
 				<li><div><strong>初見の人が読むべきなら「読む順」にも追加</strong><span>末尾とは限らない——専門用語集は「これを前提に他ページを読む」ため先頭に挿入した</span></div></li>
 				<li><div><strong>内容が重なる既存ページから相互リンクする</strong><span>孤立したページを作らない</span></div></li>
 			</ol>
@@ -247,7 +279,7 @@ EOF</code></pre>
 			<p class="section-kicker">07 · Status wording</p>
 			<h2>担当・進捗表記のルール</h2>
 			<p class="section-intro">
-				正本は<a href="./チーム体制.html">チーム体制.html</a>。何度も出てくる判断なのでここにも要約します。
+				正本は<a href="../はじめに/チーム体制.html">チーム体制.html</a>。何度も出てくる判断なのでここにも要約します。
 			</p>
 			<ul>
 				<li>旧メンバー（torinoue / mamiyaza / hminemur）を、未完成タスクの<strong>現在の担当者</strong>として書かない。
@@ -265,7 +297,7 @@ EOF</code></pre>
 	</main>
 
 	<footer class="shell">
-		<p>2026-08-07 制定。AI向けの同内容は <a href="../ai/doc-style-guide.md"><code>docs/ai/doc-style-guide.md</code></a>。</p>
+		<p>2026-08-07 制定。AI向けの同内容は <a href="../../ai/doc-style-guide.md"><code>docs/ai/doc-style-guide.md</code></a>。</p>
 	</footer>
 </body>
 </html>

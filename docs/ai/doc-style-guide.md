@@ -8,12 +8,12 @@
 **Position**: This is process/authoring guidance, not a design document — it does not describe the
 product, only how to write and wire up a documentation page. Related to
 [git-workflow.md](./git-workflow.md) (how changes land) and
-[../ja/Git運用フロー.html](../ja/Git運用フロー.html) (its Japanese counterpart). Its own Japanese
-companion is [`../ja/ドキュメント作法.html`](../ja/ドキュメント作法.html).
+[../human/運用/Git運用フロー.html](../human/運用/Git運用フロー.html) (its Japanese counterpart). Its own Japanese
+companion is [`../human/運用/ドキュメント作法.html`](../human/運用/ドキュメント作法.html).
 
 ## The two tracks, and which one a new page belongs in
 
-| | `docs/ai/` | `docs/ja/` |
+| | `docs/ai/` | `docs/human/` |
 |---|---|---|
 | Language | English | Japanese |
 | Format | Markdown (`.md`) | HTML (`.html`) |
@@ -23,18 +23,41 @@ companion is [`../ja/ドキュメント作法.html`](../ja/ドキュメント作
 If content is genuinely reference material an AI would consult while implementing (protocol specs,
 backlog, coding rules, git process) → `docs/ai/`. If it's something samatsum reads to understand
 or learn the project (onboarding, terminology, conceptual "why is it built this way" explanations,
-the project overview) → `docs/ja/`. When in doubt, lean toward writing *both*: an English `.md` for
+the project overview) → `docs/human/`. When in doubt, lean toward writing *both*: an English `.md` for
 the mechanical facts, a Japanese `.html` companion for the narrative/visual version — see how
-[architecture.md](./architecture.md) and [`../ja/プロジェクト概要.html`](../ja/プロジェクト概要.html)
-or [git-workflow.md](./git-workflow.md) and [`../ja/Git運用フロー.html`](../ja/Git運用フロー.html)
+[architecture.md](./architecture.md) and [`../human/はじめに/プロジェクト概要.html`](../human/はじめに/プロジェクト概要.html)
+or [git-workflow.md](./git-workflow.md) and [`../human/運用/Git運用フロー.html`](../human/運用/Git運用フロー.html)
 pair up. When you do pair them, put the authoritative source of anything mechanical (shell
 commands, exact file paths) in **one** of the two and have the other link out to it — don't
 maintain the same command block in two places, they will drift.
 
+## Category directories inside `docs/human/`
+
+`docs/human/` is **not flat**. Files of a different content type never share a directory — and
+never dump something into a catch-all "misc" bucket either; if nothing existing fits, create a new
+category directory (samatsum's explicit instruction, 2026-08-07, after the original flat layout of
+8 unrelated files sitting directly in `docs/human/` became unnavigable). Current categories:
+
+| Directory | Content type |
+|---|---|
+| `はじめに/` | Orientation for a newcomer: project overview, team structure, common-knowledge onboarding |
+| `運用/` | Process rules for contributing (git workflow, this style guide) — not about the product |
+| `開発状況/` | Living progress-tracking documents (currently just the W-series status page) |
+| `説明用/` | Conceptual "why is it built this way" deep-dives, plus the TL self-check Q&A |
+| `専門用語/` | The lane-by-lane terminology glossary |
+| `プレイヤー向け/` | Product documentation for the people who *play* the game (players/evaluators), not the people who build it |
+
+`docs/human/index.html` itself stays at the root (entry-point convention, like `README.md` at the
+repo root) — it is the only file that doesn't live in a category directory. Before adding a new
+page, check whether it fits an existing category; only create a new one if it's a genuinely
+distinct content type (a single-file category directory is fine — `プレイヤー向け/` started that
+way — it just means the type doesn't have a sibling yet).
+
 ## HTML page template
 
-Every `docs/ja/*.html` page follows the same skeleton. Copy an existing page
-(`docs/ja/チーム体制.html` is a good short example) rather than writing one from scratch:
+Every `docs/human/*.html` page follows the same skeleton, living inside one of the category
+directories above. Copy an existing page in the category you're adding to
+(`docs/human/はじめに/チーム体制.html` is a good short example) rather than writing one from scratch:
 
 ```html
 <!doctype html>
@@ -44,7 +67,7 @@ Every `docs/ja/*.html` page follows the same skeleton. Copy an existing page
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="color-scheme" content="dark">
 	<title>ページ名 — ft_transcendence</title>
-	<link rel="stylesheet" href="./assets/style.css">  <!-- or ../assets/style.css if one level deep -->
+	<link rel="stylesheet" href="../assets/style.css">  <!-- every category dir is one level deep; docs/human/index.html itself uses ./assets/style.css -->
 </head>
 <body>
 	<header class="hero">
@@ -80,11 +103,11 @@ Every `docs/ja/*.html` page follows the same skeleton. Copy an existing page
 
 The `nav.topnav` (with anchor links + print button) is only worth including on pages long enough
 to need in-page navigation — short pages (a handful of short sections) can skip it, see
-`チーム体制.html` for an example of a page without one.
+`docs/human/はじめに/チーム体制.html` for an example of a page without one.
 
-## The shared stylesheet (`docs/ja/assets/style.css`)
+## The shared stylesheet (`docs/human/assets/style.css`)
 
-One stylesheet, referenced by every `docs/ja/*.html` page — never write page-specific `<style>`
+One stylesheet, referenced by every `docs/human/*.html` page — never write page-specific `<style>`
 blocks; add a class to the shared sheet instead if you need something new. The classes you'll
 actually use, grouped by purpose:
 
@@ -101,7 +124,7 @@ actually use, grouped by purpose:
 | Long quoted narration | `.script` wrapping a `<blockquote>` |
 | Code | Plain `<pre><code>…</code></pre>` for actual code/commands/terminal output. **Not** for diagrams — see below |
 
-Full source: [`../ja/assets/style.css`](../ja/assets/style.css) — its own header comment says what
+Full source: [`../human/assets/style.css`](../human/assets/style.css) — its own header comment says what
 it's for and where it's referenced from; keep that comment accurate if you move things around
 (caught stale twice already: once pointing at an archived path, once at the pre-rename `md_files/`
 directory name).
@@ -121,18 +144,18 @@ samatsum and confirmed by inspection across four pages that had this problem.
 - **Simple single-column vertical arrow chains** (`A → B → C`, nothing side-by-side) → plain
   `<pre><code>` text is fine and lower-effort; the misalignment risk that motivates Mermaid doesn't
   really apply to a single left-aligned column. Don't convert these reflexively — see
-  `docs/ja/explanations/サーバ権威モデル.html`'s remaining plain-text diagrams for examples that
+  `docs/human/説明用/サーバ権威モデル.html`'s remaining plain-text diagrams for examples that
   were deliberately left alone.
 - **A literal file-format example, directory listing, or code/terminal output** → plain
   `<pre><code>`, never Mermaid — Mermaid renders relationships/flow, not arbitrary text layout.
 
-### How to embed a Mermaid diagram in a `docs/ja/*.html` page
+### How to embed a Mermaid diagram in a `docs/human/*.html` page
 
 These are static files with no build step — Mermaid isn't natively available like it is inside a
 published Claude Artifact. Load it from a CDN and initialize with theme colors matching
 `assets/style.css`'s palette (`--bg #07111f`, `--panel #12243a`, `--line #29415d`,
 `--text #edf6ff`, `--cyan #5de4d6`). Put the diagram in a `<pre class="mermaid">` block, and add
-this script once, right before `</body>` (copy from `docs/ja/explanations/サーバ権威モデル.html`
+this script once, right before `</body>` (copy from `docs/human/説明用/サーバ権威モデル.html`
 or any of the other pages with a diagram — don't retype it, the theme values need to stay
 consistent across pages):
 
@@ -175,7 +198,7 @@ flowchart TD
 ```
 
 This depends on the CDN being reachable when the page is viewed. That's an acceptable trade-off
-for internal dev docs (not part of the graded 42 submission's runtime), but if `docs/ja/` is ever
+for internal dev docs (not part of the graded 42 submission's runtime), but if `docs/human/` is ever
 viewed somewhere offline, the diagrams will show as raw text instead of failing loudly — keep the
 Mermaid source readable as plain text as a fallback, don't rely on the diagram rendering to convey
 information the surrounding prose doesn't already state.
@@ -214,9 +237,9 @@ node mermaid_check.mjs
 
 ## Wiring a new page into navigation
 
-A new `docs/ja/*.html` page is invisible until it's linked from somewhere. At minimum:
+A new `docs/human/*.html` page is invisible until it's linked from somewhere. At minimum:
 
-1. Add a row to [`../ja/index.html`](../ja/index.html)'s file table (`#files` section).
+1. Add a row to [`../human/index.html`](../human/index.html)'s file table (`#files` section).
 2. If it's something newcomers should read, add it to the same page's reading-order list
    (`#reading-order`) in the right position — not necessarily at the end; e.g. the terminology
    glossary was inserted *first* because every later page assumes its vocabulary.
@@ -262,7 +285,7 @@ This only checks that the target *exists on disk* — it can't tell you a link p
 ## Status and team-attribution rules
 
 These come up constantly when editing anything that mentions progress or who did what. Full
-context: [`../ja/チーム体制.html`](../ja/チーム体制.html) is the authoritative source for current
+context: [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html) is the authoritative source for current
 team status.
 
 - Never state a former team member (torinoue / mamiyaza / hminemur) as a **current** owner of

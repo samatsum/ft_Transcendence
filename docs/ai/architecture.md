@@ -5,11 +5,11 @@
 **Project name (tentative)**: `cub3D Arena` — a browser-based multiplayer game platform built on the cub3D engine
 **Team**: 4 members / **Duration**: 5 days / **AI usage**: actively used across all phases (usage is documented in the README)
 **Authoritative requirements**: [ft_トランセンデンス.md](./requirements.md) (this document does not restate requirements)
-**Reference materials**: [DEV_DOC.md](./dev-doc.md) / [USER_DOC.md](../ja/プレイヤーガイド.html) (authoritative for the current cub3D implementation)
+**Reference materials**: [DEV_DOC.md](./dev-doc.md) / [USER_DOC.md](../human/プレイヤー向け/プレイヤーガイド.html) (authoritative for the current cub3D implementation)
 
 > **Team-status caveat (2026-08-05)**: the "Team: 4 members" line above reflects the original design-time plan. The
 > team has since dissolved; **samatsum is now the sole active contributor**. See
-> [`../ja/チーム体制.html`](../ja/チーム体制.html) for the current, authoritative team status.
+> [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html) for the current, authoritative team status.
 
 ---
 
@@ -27,11 +27,11 @@ This document is a record from the design phase. The items below are already com
 | §3.1 | Server-authoritative sim + snapshot distribution | Lobby WS core (W-08), match formation (W-09), GameRoom (W-10), game WS (W-11), and disconnect grace period (W-12) are all complete. What remains is wiring in real authentication (W-04/W-05 → W-08) and W-13 persistence |
 | §3.2 | Repository layout (monorepo) | Complete (W-01) |
 | §4 | Module selection, 19pt | Selection finalized; implementation status varies per module (see the list at [the top of the requirements doc](./requirements.md)) |
-| §6 §7 | Team structure & schedule | Actual operations have since changed. [6-チーム分担計画](../ja/チーム体制.html) is now the authoritative source |
+| §6 §7 | Team structure & schedule | Actual operations have since changed. [6-チーム分担計画](../human/はじめに/チーム体制.html) is now the authoritative source |
 | §8 | Risks | Engine-related risks (porting difficulty, pthread, state inconsistency) have been resolved |
 
 The bulk of the remaining work is on the TypeScript server and frontend.
-For the latest progress see [5-バックログ §1](./backlog.md); for ownership see [6-チーム分担計画](../ja/チーム体制.html).
+For the latest progress see [5-バックログ §1](./backlog.md); for ownership see [6-チーム分担計画](../human/はじめに/チーム体制.html).
 
 ---
 
@@ -303,7 +303,7 @@ Attempted, in priority order, only if the core and bonus are entirely secure. On
 
 ## 6. Team role allocation (4 members)
 
-> **Note: actual operations changed twice.** First on 2026-07-23: this section records the original plan (4 lanes = 4 people). In practice, samatsum completed the Engine (E-01–E-14) and Gameplay (G-01–G-10) lanes single-handedly, so **the remaining Backend and Frontend lanes were reassigned across the 4 people**. Then, more fundamentally, on 2026-08-05: the team dissolved, and **samatsum is now the sole active contributor across every lane** (torinoue / mamiyaza / hminemur are no longer active). The table below is kept as a historical record of who built what; it is not a current assignment. The authoritative current team status is [`../ja/チーム体制.html`](../ja/チーム体制.html).
+> **Note: actual operations changed twice.** First on 2026-07-23: this section records the original plan (4 lanes = 4 people). In practice, samatsum completed the Engine (E-01–E-14) and Gameplay (G-01–G-10) lanes single-handedly, so **the remaining Backend and Frontend lanes were reassigned across the 4 people**. Then, more fundamentally, on 2026-08-05: the team dissolved, and **samatsum is now the sole active contributor across every lane** (torinoue / mamiyaza / hminemur are no longer active). The table below is kept as a historical record of who built what; it is not a current assignment. The authoritative current team status is [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html).
 >
 > The subject's mandatory roles (PO / PM / Tech Lead / Developer) are still assigned as described below.
 
@@ -320,7 +320,7 @@ The subject's mandatory roles (PO / PM / Tech Lead / Developer) are assigned acr
 > | Third | **Frontend** | **mamiyaza** (non-game screens) + **hminemur** (GameView/HUD) | Split between 2 people — the label alone doesn't identify who |
 > | Fourth | **Gameplay** | **samatsum** (G-01–G-10 complete) | Only the PM/scrum-master role moved to torinoue |
 >
-> [6-チーム分担計画 §3](../ja/チーム体制.html) is the sole authoritative source for current ownership.
+> [6-チーム分担計画 §3](../human/はじめに/チーム体制.html) is the sole authoritative source for current ownership.
 
 | Member | Subject role | Development area | Primary modules |
 |---|---|---|---|
@@ -337,7 +337,7 @@ The subject's mandatory roles (PO / PM / Tech Lead / Developer) are assigned acr
 
 ## 7. Schedule (with gates)
 
-> **Note: this schedule is stale.** The 14-day table below reflects the original 2-week plan. The project's actual duration is now 5 days, and this table is no longer an accurate schedule — it is retained purely for historical reference. See [6-チーム分担計画 §5.1「5日間の日割り」](../ja/チーム体制.html) for the schedule that is currently in effect.
+> **Note: this schedule is stale.** The 14-day table below reflects the original 2-week plan. The project's actual duration is now 5 days, and this table is no longer an accurate schedule — it is retained purely for historical reference. See [6-チーム分担計画 §5.1「5日間の日割り」](../human/はじめに/チーム体制.html) for the schedule that is currently in effect.
 >
 > **Progress (2026-08-07)**: of the original plan's 4 parallel lanes, the **entire Engine and Gameplay schedules are complete** (E-01–E-14 / G-01–G-10; Gate 1 passed). Backend/DevOps has completed W-01/W-08 core/W-09/W-10/W-11/W-12/W-14; Frontend has F-01/F-02/F-06/F-07 done (F-07 merged via [PR #35](https://github.com/samatsum/ft_Transcendence/pull/35)). **Gate 2 is not yet met** — what remains server-side is wiring W-04/W-05 into W-08, and frontend-side is F-05 (lobby, not started) and F-08 (match transition, not started).
 
@@ -382,7 +382,7 @@ The subject's mandatory roles (PO / PM / Tech Lead / Developer) are assigned acr
 > §9.1 was written on 2026-07-27 for the then-4-person team; as of 2026-08-05 that team has dissolved and
 > **samatsum is the sole active contributor**, filling every role below. Read every `torinoue` / `mamiyaza` / `hminemur`
 > cell in §9 and §9.1 as "unassigned — samatsum covers it solo until a role is reassigned," not as a live task
-> handout. See [`../ja/チーム体制.html`](../ja/チーム体制.html) for the authoritative current team status.
+> handout. See [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html) for the authoritative current team status.
 
 Ownership and source material for Chapter VI's required README sections. The README is written in English and finalized on **Day 5**.
 
@@ -435,5 +435,5 @@ Mapped 1:1 to the inspection steps on the evaluation sheet (42evalhub / ft_trans
 | Main game | RSP 2v2, first to 10 points (a rock-paper-scissors win = +1 point). Human/AI input is swapped into the existing 4-combatant structure |
 | Second game | FPS 1v1 race (collect → door → first to goal). Enemies act as hazards |
 | Modules | **Mandatory target is core 14pt**. The 3 bonus items (+5pt) count as points and also serve as a fallback for the core. The 4 insurance items (spectator/OAuth/2FA/monitoring) are attempted only if time remains. No custom Major is declared |
-| Team structure (as planned; superseded 2026-08-05) | **samatsum** = Tech Lead / Engine + Gameplay (complete) + game server, **torinoue** = PM / Backend foundation, **mamiyaza** = PO / Frontend foundation, **hminemur** = Developer / Frontend game screens. Critical areas use a two-person model. Task management via GitHub, communication via Discord. **The team has since dissolved; samatsum is now the sole active contributor covering every role** (current authoritative source: [チーム体制.html](../ja/チーム体制.html)) |
-| Quality gates | Day 2 (WASM rendering) / Day 7 (full 2v2 RSP playthrough) / Day 11 (all 19pt working) / Day 12 (disqualification-risk hardening) — **these numbers are from the original 14-day plan. For the current 5-day mapping, see [doc 6 §5.1](../ja/チーム体制.html) (Gate 2 = Day 3 / Gate 3 = Day 4 / hardening = Day 5)** |
+| Team structure (as planned; superseded 2026-08-05) | **samatsum** = Tech Lead / Engine + Gameplay (complete) + game server, **torinoue** = PM / Backend foundation, **mamiyaza** = PO / Frontend foundation, **hminemur** = Developer / Frontend game screens. Critical areas use a two-person model. Task management via GitHub, communication via Discord. **The team has since dissolved; samatsum is now the sole active contributor covering every role** (current authoritative source: [チーム体制.html](../human/はじめに/チーム体制.html)) |
+| Quality gates | Day 2 (WASM rendering) / Day 7 (full 2v2 RSP playthrough) / Day 11 (all 19pt working) / Day 12 (disqualification-risk hardening) — **these numbers are from the original 14-day plan. For the current 5-day mapping, see [doc 6 §5.1](../human/はじめに/チーム体制.html) (Gate 2 = Day 3 / Gate 3 = Day 4 / hardening = Day 5)** |
