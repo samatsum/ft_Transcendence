@@ -1,16 +1,32 @@
-// GameView（/game/:roomId）— F-06 の統合先。
-// ② §5 のゲーム WS + render.wasm + snapshot 補間 + 30Hz 入力送信を組む。
-// HUD（スコア・countdown・切断バッジ）は F-07 の担当なので、ここでは
-// 読み込み進捗・接続状態・切断バナー・fps のみを最小オーバーレイで出す。
-// マッチ遷移フロー（match_end → /lobby）は F-08 の担当。
+// GameView（/game/:roomId）— F-06 + F-07 の統合先。
+// ② §5 のゲーム WS + render.wasm + snapshot 補間 + 30Hz 入力送信 + HUD 8要素を組む。
+// マッチ遷移フロー（match_end → /lobby ボタン → auto navigate）は F-08 の担当
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { WS_CLOSE } from '@ft/shared';
+import { z } from 'zod';
 
-import { useGameSocket } from '../game/useGameSocket.js';
-import { useGameInput } from '../game/useGameInput.js';
+import { useApi } from '../api/useApi.js';
+import { HudOverlay } from '../game/hud/HudOverlay.js';
+import type { MatchDetailsView } from '../game/hud/MatchEndModal.js';
 import { useEngineRenderer } from '../game/useEngineRenderer.js';
+import { useGameInput } from '../game/useGameInput.js';
+import { useGameSocket } from '../game/useGameSocket.js';
+
+// F-07 推奨決定#4: match_end で /api/matches/:id を toast:false で取り試合詳細を表示。
+// shared/api/matches.ts の正式スキーマは W-13 で確定するため、暫定 schema をここに置く
+const matchDetailsSchema = z.object({
+	players: z.array(
+		z.object({
+			display_name: z.string(),
+			is_ai: z.boolean(),
+			team: z.number(),
+			slot: z.number(),
+			result: z.enum(['win', 'lose', 'draw', 'abandon']),
+		}),
+	),
+});
 
 export default function GameView() {
 	const { roomId = '' } = useParams();
@@ -51,8 +67,34 @@ export default function GameView() {
 		localYawRef,
 	});
 
-	// close 1000（正常）や 4002（ルーム消滅）でロビーへ戻す。
-	// match_end 後の60秒待ちは Backend が保持するので、ここでは close を待ってから遷移。
+	// match_end の match_id で試合詳細取得(F-07 推奨決定#4)。
+	// W-13 未実装期間は失敗する前提なので toast:false + error state で握る
+	const api = useApi();
+	const [matchDetails, setMatchDetails] = useState<MatchDetailsView | null>(null);
+	const [matchDetailsError, setMatchDetailsError] = useState(false);
+	useEffect(() => {
+		if (!lastEvent || lastEvent.kind !== 'match_end') return;
+		const matchId = lastEvent.match_id;
+		if (matchId === null) return;
+		let cancelled = false;
+		api
+			.get<MatchDetailsView>(`/api/matches/${matchId}`, {
+				schema: matchDetailsSchema,
+				toast: false,
+			})
+			.then((details) => {
+				if (!cancelled) setMatchDetails(details);
+			})
+			.catch(() => {
+				if (!cancelled) setMatchDetailsError(true);
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, [lastEvent, api]);
+
+	// close 1000/4002 でロビーへ戻す(F-08 で match_end モーダル → 明示遷移が主。
+	// ここは close 到達時の自動フォールバック)
 	useEffect(() => {
 		if (closeCode === WS_CLOSE.normal || closeCode === WS_CLOSE.roomNotFound) {
 			const id = setTimeout(() => navigate('/'), 800);
@@ -61,7 +103,7 @@ export default function GameView() {
 		return undefined;
 	}, [closeCode, navigate]);
 
-	const showBanner = status === 'reconnecting' || status === 'connecting';
+	const onReturnToLobby = useCallback(() => navigate('/lobby'), [navigate]);
 
 	return (
 		<main className="flex min-h-screen flex-col items-center justify-center gap-2 bg-slate-950 p-2 text-slate-100">
@@ -74,7 +116,7 @@ export default function GameView() {
 					aria-label="game view"
 				/>
 
-				{/* 読み込み・エラー・キャプチャ案内の最小オーバーレイ（HUD は F-07） */}
+				{/* 読み込み中と描画エラーは HUD 前に出す(HUD は welcome 後にしか描かない) */}
 				<div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 text-center">
 					{rendererStatus === 'loading-glue' && (
 						<p className="rounded bg-black/60 px-4 py-2 text-sm">
@@ -91,38 +133,35 @@ export default function GameView() {
 							描画エラー: {errorMessage}
 						</p>
 					)}
-					{rendererStatus === 'ready' && !captured && (
+					{rendererStatus === 'ready' && !captured && !isSpectator && (
 						<p className="rounded bg-black/60 px-4 py-2 text-sm">
-							{isSpectator
-								? '観戦中(視点切替は F-12)'
-								: 'クリックで操作開始 / Esc で解除'}
+							クリック / Enter でキャプチャ開始、Esc で解除
 						</p>
 					)}
-					{showBanner && (
-						<p className="rounded bg-amber-900/80 px-4 py-2 text-sm">
-							{status === 'connecting' ? '接続中…' : '再接続中…'}
-						</p>
-					)}
-					{closeCode !== null && closeCode !== WS_CLOSE.normal && (
-						<p className="rounded bg-rose-900/80 px-4 py-2 text-sm">
-							切断されました (code={closeCode})
+					{rendererStatus === 'ready' && isSpectator && (
+						<p className="rounded bg-black/60 px-4 py-2 text-sm">
+							観戦中(視点切替は F-12)
 						</p>
 					)}
 				</div>
+
+				{/* F-07 HUD 8要素 */}
+				<HudOverlay
+					welcome={welcome}
+					snapshotBufferRef={snapshotBufferRef}
+					lastEvent={lastEvent}
+					playerStatus={playerStatus}
+					connectionStatus={status}
+					closeCode={closeCode}
+					matchDetails={matchDetails}
+					matchDetailsError={matchDetailsError}
+					onReturnToLobby={onReturnToLobby}
+				/>
 			</div>
 
 			<footer className="flex w-full max-w-[1280px] items-center justify-between text-xs text-slate-400">
 				<span>
-					room={roomId} · ws={status} · view={welcome?.combatant_id ?? '-'}
-					{playerStatus.size > 0 && (
-						<span> · players=[
-							{Array.from(playerStatus.entries())
-								.map(([slot, state]) => `${slot}:${state}`)
-								.join(', ')}
-							]
-						</span>
-					)}
-					{lastEvent && <span> · last={lastEvent.kind}</span>}
+					room={roomId} · view={welcome?.combatant_id ?? '-'} · slot={welcome?.slot ?? '-'}
 				</span>
 				<span>{fps} fps</span>
 			</footer>
