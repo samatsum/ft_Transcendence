@@ -38,11 +38,11 @@
 				<table>
 					<thead><tr><th>用語</th><th>意味</th></tr></thead>
 					<tbody>
-						<tr><td>TypeScript</td><td>JavaScriptに型（変数の種類のチェック）を足した言語。ブラウザは実行できないので、必ずビルドでJavaScriptに変換してから配る</td></tr>
-						<tr><td>React</td><td>画面を「部品（コンポーネント）の組み合わせ」として作るためのライブラリ。このプロジェクトの画面はすべてReactで書かれている</td></tr>
-						<tr><td>Vite</td><td>TypeScript/ReactのコードをJavaScriptへ変換し、開発中はブラウザへ即座に反映してくれるビルドツール</td></tr>
-						<tr><td>Tailwind CSS</td><td>あらかじめ用意されたクラス名（<code>text-sm</code>や<code>flex</code>など）をHTMLに直接並べて見た目を作る手法。別ファイルにCSSを書く量を減らせる</td></tr>
-						<tr><td>SPA（Single Page Application）</td><td>ページ遷移のたびにサーバーから新しいHTMLを取得するのではなく、1枚のHTMLの中でJavaScriptが画面を書き換え続ける方式。<code>/lobby</code>や<code>/game/:id</code>のようなURLの切り替えもJS側（ルーター）が担う</td></tr>
+						<tr><td>TypeScript</td><td>JavaScriptに型（変数の種類のチェック）を足した言語。ブラウザは実行できないので、必ずビルドでJavaScriptに変換してから配る（<a href="https://typescriptbook.jp/">解説: サバイバルTypeScript</a>、公式ハンドブックは英語のみ）</td></tr>
+						<tr><td>React</td><td>画面を「部品（コンポーネント）の組み合わせ」として作るためのライブラリ。このプロジェクトの画面はすべてReactで書かれている（<a href="https://ja.react.dev/">公式: React公式ドキュメント（日本語）</a>）</td></tr>
+						<tr><td>Vite</td><td>TypeScript/ReactのコードをJavaScriptへ変換し、開発中はブラウザへ即座に反映してくれるビルドツール（<a href="https://ja.vite.dev/guide/">公式: Vite公式ドキュメント（日本語）</a>）</td></tr>
+						<tr><td>Tailwind CSS</td><td>あらかじめ用意されたクラス名（<code>text-sm</code>や<code>flex</code>など）をHTMLに直接並べて見た目を作る手法。別ファイルにCSSを書く量を減らせる（<a href="https://gihyo.jp/article/2023/07/tailwindcss-practice-02">解説: gihyo.jp「Tailwind CSS実践入門」</a>、公式ドキュメントは英語のみ）</td></tr>
+						<tr><td>SPA（Single Page Application）</td><td>ページ遷移のたびにサーバーから新しいHTMLを取得するのではなく、1枚のHTMLの中でJavaScriptが画面を書き換え続ける方式。<code>/lobby</code>や<code>/game/:id</code>のようなURLの切り替えもJS側（ルーター）が担う（<a href="https://developer.mozilla.org/ja/docs/Glossary/SPA">公式: MDN用語集「SPA」</a>）</td></tr>
 					</tbody>
 				</table>
 			</div>
@@ -56,12 +56,12 @@
 					<thead><tr><th>用語</th><th>意味</th></tr></thead>
 					<tbody>
 						<tr><td>コンポーネント</td><td>画面の部品を表す関数（例:<code>ScoreBar</code>・<code>Button</code>）。組み合わせて画面全体を作る</td></tr>
-						<tr><td>JSX</td><td>TypeScriptの中にHTMLのようなタグを直接書ける記法。<code>&lt;div&gt;{score}&lt;/div&gt;</code>のように書く</td></tr>
+						<tr><td>JSX</td><td>TypeScriptの中にHTMLのようなタグを直接書ける記法。<code>&lt;div&gt;{score}&lt;/div&gt;</code>のように書く（<a href="https://ja.react.dev/learn/writing-markup-with-jsx">公式: React公式ドキュメント「JSXでマークアップを記述する」</a>）</td></tr>
 						<tr><td>props</td><td>コンポーネントに渡す引数。C関数の引数と同じ発想</td></tr>
 						<tr><td>state（状態）</td><td>コンポーネントが内部で持つ、変化する値。変わると画面が自動で再描画される</td></tr>
-						<tr><td>Hook（フック）</td><td><code>use</code>で始まる特別な関数。<code>useState</code>（状態を持つ）・<code>useEffect</code>（副作用を実行する）などReactの標準機能と、プロジェクト独自の<code>useLobbySocket</code>・<code>useGameSocket</code>のような「カスタムフック」がある</td></tr>
-						<tr><td>Context</td><td>props を各階層に渡さなくても、遠くのコンポーネントへ値を届ける仕組み。<code>AuthContext</code>（ログイン状態）などで使う</td></tr>
-						<tr><td>ルーター（React Router）</td><td>URL（<code>/lobby</code>など）と表示するコンポーネントを対応付ける仕組み</td></tr>
+						<tr><td>Hook（フック）</td><td><code>use</code>で始まる特別な関数。<code>useState</code>（状態を持つ）・<code>useEffect</code>（副作用を実行する）などReactの標準機能と、プロジェクト独自の<code>useLobbySocket</code>・<code>useGameSocket</code>のような「カスタムフック」がある（<a href="https://ja.react.dev/reference/react/hooks">公式: React公式ドキュメント「フック」</a>）</td></tr>
+						<tr><td>Context</td><td>props を各階層に渡さなくても、遠くのコンポーネントへ値を届ける仕組み。<code>AuthContext</code>（ログイン状態）などで使う（<a href="https://ja.react.dev/learn/passing-data-deeply-with-context">公式: React公式ドキュメント「Contextで深くデータを受け渡す」</a>）</td></tr>
+						<tr><td>ルーター（React Router）</td><td>URL（<code>/lobby</code>など）と表示するコンポーネントを対応付ける仕組み（<a href="https://qiita.com/shunii/items/105f842ef6b39710fffa">解説: Qiita「公式ドキュメントでつかんだReactの核心 ~React Router編~」</a>、公式ドキュメントは英語のみ）</td></tr>
 						<tr><td>route guard</td><td>ログインしていないユーザーを保護されたページから<code>/login</code>へ弾く仕組み</td></tr>
 					</tbody>
 				</table>
@@ -91,7 +91,7 @@
 				<table>
 					<thead><tr><th>用語</th><th>意味</th></tr></thead>
 					<tbody>
-						<tr><td>Canvas</td><td>HTMLの中で絵を描ける領域。<code>render.wasm</code>が計算したピクセルをここに転送する</td></tr>
+						<tr><td>Canvas</td><td>HTMLの中で絵を描ける領域。<code>render.wasm</code>が計算したピクセルをここに転送する（<a href="https://developer.mozilla.org/ja/docs/Web/API/Canvas_API">公式: MDN Canvas API</a>）</td></tr>
 						<tr><td>useGameSocket</td><td>ゲーム用WebSocketへの接続・自動再接続を管理するカスタムフック</td></tr>
 						<tr><td>補間（interpolation）</td><td>サーバーから届く間引かれたsnapshot同士の「あいだ」を計算で滑らかに埋める処理。詳しくは<a href="../説明用/サーバ権威モデル.html">サーバ権威モデル.html</a></td></tr>
 						<tr><td>HUD</td><td>スコア・カウントダウン・接続状態など、3D画面の上に重ねて表示する情報レイヤー</td></tr>

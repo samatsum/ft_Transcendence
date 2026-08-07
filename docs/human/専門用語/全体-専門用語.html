@@ -80,8 +80,8 @@
 						<tr><td>クライアント / サーバ</td><td>クライアント＝各プレイヤーのブラウザ。サーバ＝<code>app/backend</code>が動くNodeプロセス1つ。全員のクライアントが同じサーバに繋がる</td></tr>
 						<tr><td>サーバ権威（server-authoritative）</td><td>「本当のゲーム状態」はサーバだけが持ち、クライアントは表示するだけという設計方針。チートとズレを防ぐための一番重要な決定。詳細は<a href="../説明用/サーバ権威モデル.html">サーバ権威モデル.html</a></td></tr>
 						<tr><td>プロトコル</td><td>通信の「言葉の決まり」。このプロジェクトにはREST APIとWebSocketの2種類がある</td></tr>
-						<tr><td>REST API</td><td>ブラウザが「GET /api/users/1」のようにHTTPでサーバへ1回ずつ要求を送る方式。ログイン・プロフィール取得などに使う</td></tr>
-						<tr><td>WebSocket（WS）</td><td>一度繋いだら繋ぎっぱなしで、双方向に小さいメッセージを送り合える通信方式。対戦中の入力・状態配信に使う（RESTだと繋ぎ直しのコストが高すぎる）</td></tr>
+						<tr><td>REST API</td><td>ブラウザが「GET /api/users/1」のようにHTTPでサーバへ1回ずつ要求を送る方式。ログイン・プロフィール取得などに使う（<a href="https://aws.amazon.com/jp/what-is/restful-api/">解説: AWS「RESTful API とは」</a>）</td></tr>
+						<tr><td>WebSocket（WS）</td><td>一度繋いだら繋ぎっぱなしで、双方向に小さいメッセージを送り合える通信方式。対戦中の入力・状態配信に使う（RESTだと繋ぎ直しのコストが高すぎる）（<a href="https://developer.mozilla.org/ja/docs/Web/API/WebSockets_API">公式: MDN WebSocket API</a>）</td></tr>
 						<tr><td>スナップショット（snapshot）</td><td>サーバが今の試合状態を「写真」のように切り出してクライアントへ送るデータ。詳細は<a href="./W-専門用語.html">W用語集</a>・<a href="../説明用/サーバ権威モデル.html">サーバ権威モデル.html</a></td></tr>
 						<tr><td>tick</td><td>サーバがゲームを1コマ進める単位（このプロジェクトは30Hz＝1秒に30回）。フレーム（描画の1コマ）とは別の概念</td></tr>
 					</tbody>
@@ -96,13 +96,25 @@
 				<table>
 					<thead><tr><th>用語</th><th>意味</th></tr></thead>
 					<tbody>
-						<tr><td>WASM（WebAssembly）</td><td>Cのコードを、ブラウザやNodeがそのまま高速に実行できる形式へ翻訳したもの。詳細は<a href="../説明用/ビルドと実行.html">ビルドと実行.html</a></td></tr>
-						<tr><td>Emscripten（emcc）</td><td>C → WASMへ翻訳するコンパイラ。<code>gcc</code>の代わりに使う</td></tr>
-						<tr><td>コンテナ / Docker</td><td>「アプリと、それが動くのに必要な環境一式」を1つの箱に詰めて配れるようにする技術。評価は<code>docker compose up</code>という単一コマンドで動く必要がある</td></tr>
-						<tr><td>Docker Compose</td><td>複数のコンテナ（nginx・Node・DBなど）をまとめて起動する仕組み。<code>docker-compose.yml</code>に定義されている</td></tr>
-						<tr><td>CI（継続的インテグレーション）</td><td>コードをpushするたびに自動でビルド・テストを走らせる仕組み。このリポジトリでは<code>.github/workflows/ci.yml</code>がGitHub Actions上で実行される</td></tr>
+						<tr><td>WASM（WebAssembly）</td><td>Cのコードを、ブラウザやNodeがそのまま高速に実行できる形式へ翻訳したもの。詳細は<a href="../説明用/ビルドと実行.html">ビルドと実行.html</a>（<a href="https://developer.mozilla.org/ja/docs/WebAssembly">公式: MDN WebAssembly</a>）</td></tr>
+						<tr><td>Emscripten（emcc）</td><td>C → WASMへ翻訳するコンパイラ。<code>gcc</code>の代わりに使う（<a href="https://www.weblio.jp/content/Emscripten">解説: Weblio辞書「Emscriptenとは」</a>）</td></tr>
+						<tr><td>コンテナ / Docker</td><td>「アプリと、それが動くのに必要な環境一式」を1つの箱に詰めて配れるようにする技術。評価は<code>docker compose up</code>という単一コマンドで動く必要がある（<a href="https://aws.amazon.com/jp/docker/">解説: AWS「Docker とは」</a>）</td></tr>
+						<tr><td>Docker Compose</td><td>複数のコンテナ（nginx・Node・DBなど）をまとめて起動する仕組み。<code>docker-compose.yml</code>に定義されている（<a href="https://docs.docker.jp/compose/index.html">解説: Docker ドキュメント日本語化プロジェクト「Docker Compose 概要」</a>）</td></tr>
+						<tr><td>CI（継続的インテグレーション）</td><td>コードをpushするたびに自動でビルド・テストを走らせる仕組み（<a href="https://github.com/resources/articles/ci-cd?locale=ja">解説: GitHub「CI/CDとは」</a>）。このリポジトリでは<code>.github/workflows/ci.yml</code>1本の中に3つのジョブが定義されていて、毎push・毎PRで並行して走る</td></tr>
 					</tbody>
 				</table>
+			</div>
+			<div class="callout" style="margin-top: 18px">
+				<strong>このリポジトリのCIは3ジョブ構成（2026-08-07時点、3つとも green）：</strong>
+				<ul style="margin: 10px 0 0 20px; padding: 0;">
+					<li><code>native</code> — Cエンジンを<code>make</code>でLinux実行ファイルとしてビルドし、<code>make check</code>（lint）・<code>make test</code>（sim受入テスト85件）・5枚のマップでの起動スモークまで通す</li>
+					<li><code>wasm</code> — <code>make web sim</code>で<code>render.wasm</code>と<code>sim.wasm</code>をビルドし、Node上で<code>record.mjs</code>によるsim通し実行まで確認する</li>
+					<li><code>web-app</code> — <code>app/</code>のTSモノレポ（shared/backend/frontend）を<code>npm ci</code>・型検査・ビルドし、backendを実際に起動して<code>/api/health</code>が返るか確認する</li>
+				</ul>
+				<span style="display: block; margin-top: 8px;">
+					3つとも独立したジョブなので、どれか1つが赤くても他は影響を受けない（例: <code>web-app</code>だけ落ちていても<code>native</code>と<code>wasm</code>は個別に緑になる）。
+					PRを出すと3つ全部が自動で走り、全部緑にならないとマージしてはいけない、というのが<a href="#git"><code>CIゲート</code></a>のルール。
+				</span>
 			</div>
 		</section>
 
@@ -116,11 +128,11 @@
 				<table>
 					<thead><tr><th>用語</th><th>意味</th></tr></thead>
 					<tbody>
-						<tr><td>ブランチ（branch）</td><td>作業内容を<code>main</code>から分岐させた、独立した作業スペース</td></tr>
-						<tr><td>コミット（commit）</td><td>変更内容に付ける「セーブポイント」</td></tr>
-						<tr><td>PR（プルリクエスト）</td><td>「このブランチの変更をmainに取り込んでください」というGitHub上の提案。CIがここで走る</td></tr>
-						<tr><td>マージ（merge）</td><td>ブランチの内容をmainに取り込むこと</td></tr>
-						<tr><td>squash</td><td>ブランチ内の複数コミットを1個にまとめてからマージする方式。このリポジトリの既定</td></tr>
+						<tr><td>ブランチ（branch）</td><td>作業内容を<code>main</code>から分岐させた、独立した作業スペース（<a href="https://git-scm.com/book/ja/v2">公式: Pro Git 日本語版 3章</a>）</td></tr>
+						<tr><td>コミット（commit）</td><td>変更内容に付ける「セーブポイント」（<a href="https://git-scm.com/book/ja/v2">公式: Pro Git 日本語版 2章</a>）</td></tr>
+						<tr><td>PR（プルリクエスト）</td><td>「このブランチの変更をmainに取り込んでください」というGitHub上の提案。CIがここで走る（<a href="https://docs.github.com/ja/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests">公式: GitHub Docs「プルリクエストについて」</a>）</td></tr>
+						<tr><td>マージ（merge）</td><td>ブランチの内容をmainに取り込むこと（<a href="https://docs.github.com/ja/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/about-pull-request-merges">公式: GitHub Docs「プル要求のマージ」</a>）</td></tr>
+						<tr><td>squash</td><td>ブランチ内の複数コミットを1個にまとめてからマージする方式。このリポジトリの既定（<a href="https://docs.github.com/ja/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/about-pull-request-merges">公式: GitHub Docs「プル要求のマージ」</a>の同ページ内）</td></tr>
 						<tr><td>CIゲート</td><td>「CIが緑（成功）にならないとマージできない・してはいけない」という運用上の関所</td></tr>
 					</tbody>
 				</table>
