@@ -49,8 +49,8 @@
 				<table>
 					<thead><tr><th>用語</th><th>意味</th></tr></thead>
 					<tbody>
-						<tr><td>Node.js</td><td>JavaScript/TypeScriptをブラウザの外（サーバー上）で動かすための実行環境。<code>sim.wasm</code>もこの中で動く</td></tr>
-						<tr><td>Fastify</td><td>Node上でHTTP・WebSocketサーバーを組み立てるための土台（フレームワーク）。ルーティング・バリデーション・エラー処理を提供する。Express等の同系統ツールの中でも軽量・高速な選択肢</td></tr>
+						<tr><td>Node.js</td><td>JavaScript/TypeScriptをブラウザの外（サーバー上）で動かすための実行環境。<code>sim.wasm</code>もこの中で動く（<a href="https://nodejs.org/ja">公式: Node.js公式サイト（日本語）</a>）</td></tr>
+						<tr><td>Fastify</td><td>Node上でHTTP・WebSocketサーバーを組み立てるための土台（フレームワーク）。ルーティング・バリデーション・エラー処理を提供する。Express等の同系統ツールの中でも軽量・高速な選択肢（<a href="https://zenn.dev/joo_hashi/articles/0ebf7d1b2a1721">解説: Zenn「fastifyに入門してみた」</a>、公式ドキュメントは英語のみ）</td></tr>
 						<tr><td>ミドルウェア</td><td>すべてのリクエストに共通で挟まる処理（ログ出力、認証チェックなど）</td></tr>
 					</tbody>
 				</table>
@@ -64,18 +64,18 @@
 				<table>
 					<thead><tr><th>用語</th><th>意味</th></tr></thead>
 					<tbody>
-						<tr><td>REST API</td><td><code>GET /api/users/1</code>のように、URLとHTTPメソッド（GET/POST/PATCH/DELETE）の組み合わせでサーバー機能を呼ぶ設計方式</td></tr>
+						<tr><td>REST API</td><td><code>GET /api/users/1</code>のように、URLとHTTPメソッド（GET/POST/PATCH/DELETE）の組み合わせでサーバー機能を呼ぶ設計方式（<a href="https://aws.amazon.com/jp/what-is/restful-api/">解説: AWS「RESTful API とは」</a>）</td></tr>
 						<tr><td>エンドポイント</td><td>個々のURL＋メソッドの組（例:<code>POST /api/auth/login</code>）</td></tr>
 						<tr><td>認証（Authentication）</td><td>「あなたは誰か」を確認すること。ログイン処理がこれ</td></tr>
 						<tr><td>認可（Authorization）</td><td>「あなたはこの操作をして良いか」を確認すること。認証の後に行う</td></tr>
-						<tr><td>argon2id</td><td>パスワードのハッシュ化アルゴリズム。生パスワードは保存せず、これで不可逆変換した値だけをDBに置く（漏洩しても元のパスワードは分からない）</td></tr>
-						<tr><td>ソルト（salt）</td><td>ハッシュ化前にパスワードへ混ぜるランダムな値。同じパスワードでも毎回違うハッシュ値になるようにし、辞書攻撃を防ぐ。argon2idには組み込み済み</td></tr>
+						<tr><td>argon2id</td><td>パスワードのハッシュ化アルゴリズム。生パスワードは保存せず、これで不可逆変換した値だけをDBに置く（漏洩しても元のパスワードは分からない）（<a href="https://zenn.dev/naokirin/articles/2cf316a46827fb">解説: Zenn「現代標準のパスワードハッシュ - Argon2とは」</a>）</td></tr>
+						<tr><td>ソルト（salt）</td><td>ハッシュ化前にパスワードへ混ぜるランダムな値。同じパスワードでも毎回違うハッシュ値になるようにし、辞書攻撃を防ぐ。argon2idには組み込み済み（<a href="https://developer.mozilla.org/ja/docs/Glossary/Salt">公式: MDN用語集「Salt」</a>）</td></tr>
 						<tr><td>Session（セッション）</td><td>ログイン状態そのもの。サーバーのDBに「このユーザーはログイン中」という行として記録される</td></tr>
-						<tr><td>Cookie</td><td>ブラウザに保存される小さなデータ。ここにはセッションを指す不透明なトークンだけを入れ、リクエストのたびに自動送信させることでログイン状態を維持する（<code>httpOnly</code>＝JSからは読めない設定）</td></tr>
-						<tr><td>Origin検証</td><td>リクエストが「自分のサイトから」来たものかをチェックする仕組み。異なるサイトからの不正な変更リクエストを弾く（CSRF対策の一種）</td></tr>
+						<tr><td>Cookie</td><td>ブラウザに保存される小さなデータ。ここにはセッションを指す不透明なトークンだけを入れ、リクエストのたびに自動送信させることでログイン状態を維持する（<code>httpOnly</code>＝JSからは読めない設定）（<a href="https://developer.mozilla.org/ja/docs/Glossary/Cookie">公式: MDN用語集「Cookie」</a>）</td></tr>
+						<tr><td>Origin検証</td><td>リクエストが「自分のサイトから」来たものかをチェックする仕組み。異なるサイトからの不正な変更リクエストを弾く（CSRF対策の一種）（<a href="https://developer.mozilla.org/ja/docs/Glossary/CSRF">公式: MDN用語集「CSRF」</a>）</td></tr>
 						<tr><td>エラーエンベロープ</td><td>失敗レスポンスの形式を全エンドポイントで統一するルール（<code>{"error":{"code":...,"msg":...}}</code>）</td></tr>
-						<tr><td>zod</td><td>TypeScriptでデータの形をチェックする（バリデーションする）ためのライブラリ。フロントとバックが同じ定義を共有し「二重に検証する」要件を1つの定義で満たす</td></tr>
-						<tr><td>レート制限（rate limit）</td><td>短時間に大量アクセスされたら拒否する仕組み。ログイン試行の総当たり攻撃などを防ぐ</td></tr>
+						<tr><td>zod</td><td>TypeScriptでデータの形をチェックする（バリデーションする）ためのライブラリ。フロントとバックが同じ定義を共有し「二重に検証する」要件を1つの定義で満たす（<a href="https://zenn.dev/pocopota/articles/zod-introduction">解説: Zenn「Zod 入門」</a>、公式ドキュメントは英語のみ）</td></tr>
+						<tr><td>レート制限（rate limit）</td><td>短時間に大量アクセスされたら拒否する仕組み。ログイン試行の総当たり攻撃などを防ぐ（<a href="https://developer.mozilla.org/ja/docs/Glossary/Rate_limit">公式: MDN用語集「Rate limit」</a>）</td></tr>
 					</tbody>
 				</table>
 			</div>
@@ -89,9 +89,9 @@
 					<thead><tr><th>用語</th><th>意味</th></tr></thead>
 					<tbody>
 						<tr><td>DB（データベース）</td><td>ユーザー・試合結果などを永続的に保存する場所。ファイルが消えない限りデータが残る（メモリ上の変数と違う）</td></tr>
-						<tr><td>SQLite</td><td>このプロジェクトが使うDBの種類。サーバー独立プロセスを別途立てず、1個のファイルとして動くのが特徴。評価環境（単一マシン）に向いている</td></tr>
-						<tr><td>ORM（Object-Relational Mapping）</td><td>DBのテーブルをTypeScriptのオブジェクトのように扱えるようにする層。生のSQL文を書かずに済む</td></tr>
-						<tr><td>Prisma</td><td>このプロジェクトが使うORM。<code>schema.prisma</code>でテーブル定義を書き、TypeScriptの型を自動生成する</td></tr>
+						<tr><td>SQLite</td><td>このプロジェクトが使うDBの種類。サーバー独立プロセスを別途立てず、1個のファイルとして動くのが特徴。評価環境（単一マシン）に向いている（<a href="https://www.javadrive.jp/sqlite/">解説: JavaDrive「SQLite入門」</a>、公式ドキュメントは英語のみ）</td></tr>
+						<tr><td>ORM（Object-Relational Mapping）</td><td>DBのテーブルをTypeScriptのオブジェクトのように扱えるようにする層。生のSQL文を書かずに済む（<a href="https://ja.wikipedia.org/wiki/%E3%82%AA%E3%83%96%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88%E9%96%A2%E4%BF%82%E3%83%9E%E3%83%83%E3%83%94%E3%83%B3%E3%82%B0">解説: Wikipedia「オブジェクト関係マッピング」</a>）</td></tr>
+						<tr><td>Prisma</td><td>このプロジェクトが使うORM。<code>schema.prisma</code>でテーブル定義を書き、TypeScriptの型を自動生成する（<a href="https://qiita.com/umanari145/items/435113a3a99cf58e21a5">解説: Qiita「Prisma 入門」</a>、公式ドキュメントは英語のみ）</td></tr>
 						<tr><td>マイグレーション（migration）</td><td>「DBの構造をこう変えてください」という手順書。<code>prisma migrate</code>で適用する。初回起動時に自動で走る設計</td></tr>
 						<tr><td>スキーマ（schema）</td><td>テーブルの構造定義（どんな列があるか、型は何か）</td></tr>
 					</tbody>
@@ -148,11 +148,11 @@
 				<table>
 					<thead><tr><th>用語</th><th>意味</th></tr></thead>
 					<tbody>
-						<tr><td>nginx</td><td>Webサーバー/リバースプロキシ。TLS（HTTPS化）と、リクエストをFastifyへ橋渡しする役目</td></tr>
+						<tr><td>nginx</td><td>Webサーバー/リバースプロキシ。TLS（HTTPS化）と、リクエストをFastifyへ橋渡しする役目（<a href="https://zenn.dev/teasy/articles/nginx-reverse-proxy">解説: Zenn「NGINXのリバースプロキシ機能を使う」</a>、公式ドキュメントは英語のみ）</td></tr>
 						<tr><td>リバースプロキシ</td><td>外部からのアクセスを一旦受け取り、内部の別サーバーへ転送する仕組み</td></tr>
-						<tr><td>TLS / HTTPS</td><td>通信を暗号化する仕組み。評価要件で全接続がHTTPSであることが必須</td></tr>
+						<tr><td>TLS / HTTPS</td><td>通信を暗号化する仕組み。評価要件で全接続がHTTPSであることが必須（<a href="https://developer.mozilla.org/ja/docs/Glossary/HTTPS">公式: MDN用語集「HTTPS」</a>）</td></tr>
 						<tr><td>自己署名証明書（mkcert等）</td><td>正式な認証局を通さず自分で作るTLS証明書。ローカル評価環境ではこれで済ませる</td></tr>
-						<tr><td>Docker Compose</td><td>nginx・Node（backend）・DB用ボリュームなど複数コンテナを1コマンドでまとめて起動する定義（<code>docker-compose.yml</code>）</td></tr>
+						<tr><td>Docker Compose</td><td>nginx・Node（backend）・DB用ボリュームなど複数コンテナを1コマンドでまとめて起動する定義（<code>docker-compose.yml</code>）（<a href="https://docs.docker.jp/compose/index.html">解説: Docker ドキュメント日本語化プロジェクト「Docker Compose 概要」</a>）</td></tr>
 						<tr><td>env / .env</td><td>パスワードやポート番号など、環境ごとに変える設定値。Gitには含めず（<code>.gitignore</code>）、<code>.env.example</code>にひな形だけ置く</td></tr>
 					</tbody>
 				</table>
