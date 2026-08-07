@@ -428,6 +428,8 @@ What distribution rate actually changes is **not smoothness, but these two thing
 
 Note that §2.3's "15-20Hz" wording refers to this range in general, and since **distributing only on even ticks = exactly 15Hz** is the most straightforward implementation of §6-A, that is what's adopted.
 
+**External validation**: the 100ms interpolation delay was derived independently (from the 100ms/15Hz budget above), but it happens to match the Source engine's own default `cl_interp` of 100ms, which is likewise derived from covering one dropped snapshot at its default 20Hz update rate — see [Source Multiplayer Networking](https://developer.valvesoftware.com/wiki/Source_Multiplayer_Networking) (Valve Developer Community). That reference also documents two techniques this project deliberately does **not** adopt — full client-side movement prediction and server-side lag compensation (rewinding other players' positions for hit detection) — because RSP/FPS use contact/collection-based hit tests, not the millisecond-precision aim registration those techniques exist to fix (see the yaw-only-prediction note in §5-A above).
+
 Also note that `web/snapshot_interp.js` **never interpolates discrete values (`state` / `score` / `hand` / `alive` / `team`); it uses the older snapshot's value as-is**, so the score can never land at a fractional 0.5 — the same "the browser never makes a judgment call" principle as elsewhere in this section.
 
 ### 5-D. event types
