@@ -55,10 +55,13 @@ As of 2026-08-05 the former 4-person team (torinoue / mamiyaza / hminemur, plus 
 | [coding-rules.md](./coding-rules.md) | The canonical C coding-rules document. Every `CRxxx` code that `make check` can print maps 1:1 to a rule here. |
 | [dev-doc.md](./dev-doc.md) | Engine developer reference: module structure, enemy AI / RSP AI internals, data flow, tuning values, lint tooling. |
 | [git-workflow.md](./git-workflow.md) | The mandatory branch → PR → CI → merge-on-GitHub → `pull` procedure. Not a design doc — read this before making any commit in this repo. |
+| [doc-style-guide.md](./doc-style-guide.md) | How to write and wire up a page under `docs/`: page template, the shared CSS classes, when to use Mermaid vs. plain text for diagrams (and how to embed/validate one), the dead-link check, and the status/team-attribution wording rules. Read this before adding or restructuring anything under `docs/`. |
 
 ## Where these came from (old → new filename)
 
-All nine files above are English translations of documents that used to live under
+The nine documents translated from the original Japanese design docs — `requirements.md` through
+`dev-doc.md` in the table above (i.e. everything except `git-workflow.md` and
+`doc-style-guide.md`, which are new and were never translated from anything) — used to live under
 `md_files/02_設計書/`, `md_files/04_エンジン資料/`, and `md_files/01_課題/`. The old Japanese
 originals are archived, not deleted — each translated file has a one-line source note near the
 top pointing at its original path. Old numbering (⓪①②③④⑤⑥) and legacy English filenames

@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="ja">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="color-scheme" content="dark">
+	<title>ドキュメント作法 — ft_transcendence</title>
+	<link rel="stylesheet" href="./assets/style.css">
+</head>
+<body>
+	<header class="hero">
+		<div class="shell">
+			<p class="eyebrow">Operating Rule · Docs authoring</p>
+			<h1>新しいページを書く前に、<br>ここを読む。</h1>
+			<p class="hero-lead">
+				ページテンプレート・いつMermaidを使うか・リンク切れの確認方法・ナビゲーションへの
+				組み込み方——docsのPRを重ねるたびに同じ判断をゼロから導き出していたので、
+				一箇所にまとめました。<code>docs/</code>配下に何か追加・変更する前にこれを読んでください。
+			</p>
+			<div class="hero-note">
+				<strong>2026-08-07 制定</strong>
+				<span>AI向けの同内容は <a href="../ai/doc-style-guide.md"><code>docs/ai/doc-style-guide.md</code></a></span>
+			</div>
+		</div>
+	</header>
+
+	<nav class="topnav" aria-label="ページ内目次">
+		<div class="shell nav-inner">
+			<a href="#tracks">どちらの系統か</a>
+			<a href="#template">HTMLテンプレート</a>
+			<a href="#css">共通CSS</a>
+			<a href="#mermaid">図：Mermaid vs テキスト</a>
+			<a href="#nav">ナビゲーション組み込み</a>
+			<a href="#links">リンク切れ確認</a>
+			<a href="#status">担当・進捗表記</a>
+			<button class="print-button" type="button" onclick="window.print()">印刷 / PDF</button>
+		</div>
+	</nav>
+
+	<main class="shell">
+		<section id="tracks">
+			<p class="section-kicker">01 · Which track</p>
+			<h2>新しいページは<code>ai/</code>と<code>ja/</code>どちらか</h2>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th></th><th><code>docs/ai/</code></th><th><code>docs/ja/</code></th></tr></thead>
+					<tbody>
+						<tr><td>言語</td><td>英語</td><td>日本語</td></tr>
+						<tr><td>形式</td><td>Markdown（<code>.md</code>）</td><td>HTML（<code>.html</code>）</td></tr>
+						<tr><td>読者</td><td>AIコーディングアシスタント</td><td>samatsum</td></tr>
+						<tr><td>ファイル名</td><td>英語kebab-case（<code>ws-protocol.md</code>）</td><td>内容が分かる日本語（直訳・ローマ字は不可。例: <code>チーム体制.html</code>であって<code>team-plan.html</code>ではない）</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p class="section-intro" style="margin-top: 16px;">
+				実装時にAIが参照する事実（プロトコル仕様・バックログ・コーディング規約・Git運用）は
+				<code>ai/</code>へ。samatsumが読んで理解・学習するもの（オンボーディング・専門用語・
+				「なぜこう作ったか」の解説・プロジェクト概要）は<code>ja/</code>へ。迷ったら
+				<strong>両方作る</strong>——コマンドや正確なパスなど機械的な事実は片方だけに正本を置き、
+				もう片方はそこへリンクするだけにします（二重管理で内容がズレるのを防ぐため）。
+				<code>architecture.md</code>と<code>プロジェクト概要.html</code>、
+				<code>git-workflow.md</code>と<code>Git運用フロー.html</code>の対がその実例です。
+			</p>
+		</section>
+
+		<section id="template">
+			<p class="section-kicker">02 · HTML template</p>
+			<h2>HTMLページのテンプレート</h2>
+			<p class="section-intro">
+				ゼロから書かず、既存ページ（短い例として<code>チーム体制.html</code>）をコピーしてください。
+				骨格は共通です。
+			</p>
+			<pre><code>&lt;!doctype html&gt;
+&lt;html lang="ja"&gt;
+&lt;head&gt;
+	&lt;meta charset="utf-8"&gt;
+	&lt;meta name="viewport" content="width=device-width, initial-scale=1"&gt;
+	&lt;meta name="color-scheme" content="dark"&gt;
+	&lt;title&gt;ページ名 — ft_transcendence&lt;/title&gt;
+	&lt;link rel="stylesheet" href="./assets/style.css"&gt;  &lt;!-- 1階層深ければ ../assets/style.css --&gt;
+&lt;/head&gt;
+&lt;body&gt;
+	&lt;header class="hero"&gt;…&lt;/header&gt;
+	&lt;nav class="topnav"&gt;…&lt;/nav&gt;   &lt;!-- 短いページなら省略可 --&gt;
+	&lt;main class="shell"&gt;
+		&lt;section id="..."&gt;…&lt;/section&gt;
+	&lt;/main&gt;
+	&lt;footer class="shell"&gt;…&lt;/footer&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+			<p>
+				<code>nav.topnav</code>（アンカーリンク＋印刷ボタン）は、ページ内目次が要るくらい長い
+				ページだけに付けます。短いページ（セクションが数個だけ）は省略して構いません
+				（<code>チーム体制.html</code>が省略例）。
+			</p>
+		</section>
+
+		<section id="css">
+			<p class="section-kicker">03 · Shared stylesheet</p>
+			<h2>共通スタイル（<code>docs/ja/assets/style.css</code>）</h2>
+			<p class="section-intro">
+				全<code>docs/ja/*.html</code>が同じ1枚のCSSを参照します。<strong>ページ固有の
+				<code>&lt;style&gt;</code>は書かない</strong>——必要なクラスが無ければ共通CSS側に足します。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>用途</th><th>クラス</th></tr></thead>
+					<tbody>
+						<tr><td>ページ構造</td><td><code>.shell</code>・<code>.hero</code>・<code>.topnav</code>/<code>.nav-inner</code></td></tr>
+						<tr><td>セクション見出し</td><td><code>.section-kicker</code>（h2の上の小さいラベル）・<code>.section-intro</code></td></tr>
+						<tr><td>カード・グリッド</td><td><code>.card</code>・<code>.card-label</code>・<code>.grid.grid-2/3/4</code></td></tr>
+						<tr><td>コールアウト</td><td><code>.callout</code>（水色・情報）・<code>.callout.warning</code>（黄色・注意）</td></tr>
+						<tr><td>表</td><td><code>.table-wrap</code>で<code>&lt;table&gt;</code>を包む</td></tr>
+						<tr><td>状態タグ</td><td><code>.tag.status-done</code>（緑）/ <code>-partial</code>（黄）/ <code>-todo</code>（灰）</td></tr>
+						<tr><td>手順</td><td><code>&lt;ol class="path-list"&gt;</code> — 自動採番の丸バッジ</td></tr>
+						<tr><td>大きな数値</td><td><code>.metric</code> — <strong>本当に「数」を表すときだけ</strong>。Issue番号（例:W-13）をこの大きさで出すと数値に見えてしまう（CodeRabbitに実際に指摘された）ので<code>W-</code>を付けて曖昧さを消す</td></tr>
+						<tr><td>コード</td><td>普通の<code>&lt;pre&gt;&lt;code&gt;</code>。ただし<strong>図には使わない</strong>（次章）</td></tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+
+		<section id="mermaid">
+			<p class="section-kicker">04 · Diagrams</p>
+			<h2>図：Mermaid か、プレーンテキストか</h2>
+			<div class="callout warning">
+				<strong>box-drawing文字（┌│└▼→等）と日本語を同じ行に混ぜて手描きしない。</strong>
+				CJK文字は「monospace」フォントでもASCII文字の約2倍の幅で描画されるため、
+				box-drawingの桁合わせ計算が実際のブラウザ表示ではズレます。samatsum本人から
+				指摘が入り、実際に4ページで確認されました。
+			</div>
+			<div class="grid grid-2" style="margin-top: 18px;">
+				<article class="card">
+					<p class="card-label">Mermaidを使う</p>
+					<h3>多段組み・分岐・二者間のやり取り</h3>
+					<p>箱が横に並ぶ図、1つのノードから複数の矢印が分岐する図は必ずMermaid。
+						ブラウザ⇄サーバのような二者間のやり取りは<code>sequenceDiagram</code>が
+						手描き矢印より圧倒的に読みやすい。</p>
+				</article>
+				<article class="card">
+					<p class="card-label">プレーンテキストのままで良い</p>
+					<h3>単純な縦一直線・実際のコード</h3>
+					<p><code>A → B → C</code>のような横並びの無い単純な流れは、ズレのリスクが
+						低いのでそのままで構わない（機械的に全部変換しない）。ファイル形式の例・
+						ディレクトリ一覧・実際のコード/ターミナル出力は図ではないのでMermaid化しない。</p>
+				</article>
+			</div>
+
+			<h3 style="margin-top: 30px;">埋め込み方</h3>
+			<p class="section-intro">
+				静的ファイルなのでMermaid本体をCDNから読み込み、<code>assets/style.css</code>の配色に
+				合わせて初期化します。既存ページ（<code>サーバ権威モデル.html</code>など）から
+				コピーしてください（配色を都度打ち直すとページ間でズレます）。
+			</p>
+			<pre><code>&lt;pre class="mermaid"&gt;
+flowchart TD
+    a["ノードA"] --&gt; b["ノードB"]
+&lt;/pre&gt;
+
+&lt;script type="module"&gt;
+	import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+	mermaid.initialize({
+		startOnLoad: true,
+		theme: "base",
+		themeVariables: {
+			darkMode: true,
+			background: "#07111f",
+			primaryColor: "#12243a",
+			primaryTextColor: "#edf6ff",
+			primaryBorderColor: "#29415d",
+			lineColor: "#5de4d6",
+			/* 以下省略。既存ページからそのままコピーする */
+		}
+	});
+&lt;/script&gt;</code></pre>
+			<p>
+				CDNへの到達性に依存します（オフラインでは図が生のテキストとして表示される）。
+				評価対象のアプリ本体ではなく開発用ドキュメントなので許容していますが、
+				図が描けなくても文章だけで意味が伝わるように書いてください。
+			</p>
+			<p style="margin-top: 12px;">
+				ルート直下の<code>README.md</code>など、GitHub上で見るプレーンMarkdownでは
+				<code>```mermaid</code>フェンスを使います（GitHubがネイティブ描画するのでスクリプト不要）。
+			</p>
+
+			<h3 style="margin-top: 30px;">コミット前に構文検証する</h3>
+			<p class="section-intro">
+				目視だけに頼らないこと。括弧の閉じ忘れ・ラベル内の引用符の衝突などは
+				<code>mermaid.parse()</code>で機械的に検出できます。使い捨てで構いません。
+			</p>
+			<pre><code>cd /tmp &amp;&amp; npm install mermaid@11 jsdom --no-save
+# mermaid_check.mjs を作成して node で実行（詳細は docs/ai/doc-style-guide.md）</code></pre>
+		</section>
+
+		<section id="nav">
+			<p class="section-kicker">05 · Navigation</p>
+			<h2>ナビゲーションへの組み込み</h2>
+			<p class="section-intro">
+				新しいページはどこかからリンクされて初めて見つかります。最低限：
+			</p>
+			<ol class="path-list">
+				<li><div><strong><a href="./index.html">index.html</a>のファイル一覧表に行を追加</strong><span>#files セクション</span></div></li>
+				<li><div><strong>初見の人が読むべきなら「読む順」にも追加</strong><span>末尾とは限らない——専門用語集は「これを前提に他ページを読む」ため先頭に挿入した</span></div></li>
+				<li><div><strong>内容が重なる既存ページから相互リンクする</strong><span>孤立したページを作らない</span></div></li>
+			</ol>
+			<p>
+				<code>docs/ai/*.md</code>を追加した場合は<code>docs/ai/README.md</code>のDocuments表に行を足します。
+			</p>
+		</section>
+
+		<section id="links">
+			<p class="section-kicker">06 · Dead links</p>
+			<h2>コミット前にリンク切れを確認する</h2>
+			<p class="section-intro">
+				これまで複数のdocs PRで実際にリンク切れを検出してきたチェック方法です。
+				リンクに触れる変更・ファイルのリネーム・新規ページ追加のあとは必ず実行してください。
+			</p>
+			<pre><code>python3 - &lt;&lt;'EOF'
+import re, os, html
+repo = os.path.abspath('.')
+targets = ['README.md', 'infra/README.md', 'web/README.md']
+for dirpath, dirs, files in os.walk('docs'):
+    for fn in files:
+        if fn.endswith('.html') or fn.endswith('.md'):
+            targets.append(os.path.join(dirpath, fn))
+def check(path):
+    text = open(path, encoding='utf-8').read()
+    d = os.path.dirname(os.path.abspath(path))
+    for pat in [r'href="([^"]+)"', r'\]\(([^)]+)\)', r'src="([^"]+)"']:
+        for m in re.finditer(pat, text):
+            target = html.unescape(m.group(1))
+            if target.startswith(('http', 'mailto:', '#')) or not target:
+                continue
+            resolved = os.path.normpath(os.path.join(d, target.split('#')[0]))
+            if not os.path.exists(resolved):
+                print(f"BROKEN in {os.path.relpath(path, repo)}: {target}")
+for t in targets:
+    check(t)
+EOF</code></pre>
+			<p>
+				ファイルが<strong>存在するか</strong>しか見ていません。存在する別ファイルを
+				間違って指している場合は検出できないので、diffの読み込みは省略しないこと。
+			</p>
+		</section>
+
+		<section id="status">
+			<p class="section-kicker">07 · Status wording</p>
+			<h2>担当・進捗表記のルール</h2>
+			<p class="section-intro">
+				正本は<a href="./チーム体制.html">チーム体制.html</a>。何度も出てくる判断なのでここにも要約します。
+			</p>
+			<ul>
+				<li>旧メンバー（torinoue / mamiyaza / hminemur）を、未完成タスクの<strong>現在の担当者</strong>として書かない。
+					名前の代わりに<strong>完了 / 未完成 / 担当未定</strong>を使う。</li>
+				<li>過去の経緯（実際に誰が作ったか、いつ決まったか）としての言及は問題ない
+					——「過去の事実」か「現在進行中に見えるか」を見分ける。誤読されそうなら
+					削除ではなく注記を足す（<code>architecture.md</code> §6/§9のパターン: 元の表は残しつつ、
+					「これは過去の計画で現在は無効」という注記を上に足す）。</li>
+				<li>進捗を書く前に<code>docs/ai/backlog.md</code>、疑わしければ
+					<code>git log origin/main</code>で裏取りする。記憶だけで書かない
+					——このリポジトリは過去に何度も「ドキュメントが未実装と書いていたのに
+					originでは実装済みだった（逆もあり）」を踏んでいる。</li>
+			</ul>
+		</section>
+	</main>
+
+	<footer class="shell">
+		<p>2026-08-07 制定。AI向けの同内容は <a href="../ai/doc-style-guide.md"><code>docs/ai/doc-style-guide.md</code></a>。</p>
+	</footer>
+</body>
+</html>
