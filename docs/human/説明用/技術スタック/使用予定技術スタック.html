@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>使用予定技術スタック（未実装） — ft_transcendence</title>
+<link rel="stylesheet" href="./印刷用.css">
+</head>
+<body>
+	<div class="no-print">
+		<button class="print-button" type="button" onclick="window.print()">印刷 / PDF</button>
+	</div>
+
+	<h1>技術スタック — 使用予定</h1>
+	<p class="lede">
+		選定は完了しているが、<span class="accent">まだ1行もコードに入っていない</span>技術。
+		評価当日に「これは動きますか」と聞かれたら<strong>未実装だと答える</strong>もので、
+		採用済みのものは <a href="./技術スタック.html">技術スタック.html</a> にある。
+		各行の「未着手 W-xx」は、それを実装するバックログ番号。
+	</p>
+
+	<section class="section">
+		<div class="section-head"><span class="section-num">1</span><span class="section-title">データベース — 未着手 W-03</span></div>
+		<table>
+			<thead><tr><th>技術</th><th>どのようなものか</th><th>なぜ選んだか（比較対象）</th></tr></thead>
+			<tbody>
+				<tr>
+					<td class="tech">SQLite</td>
+					<td class="what">1個のファイルとして動くデータベース。独立したサーバープロセスを別途立てる必要がない。</td>
+					<td class="why">
+						比較対象は PostgreSQL。評価は<span class="accent">単一のローカルマシン</span>で行われる前提なので、
+						コンテナを1つ減らせる・バックアップがファイルのコピーで済む、という利点がそのまま効く。
+						将来 PostgreSQL へ移す場合も、ORM を挟んでいるので移行は容易。
+					</td>
+				</tr>
+				<tr>
+					<td class="tech">Prisma</td>
+					<td class="what">DB のテーブルを TypeScript のオブジェクトとして扱えるようにする ORM。生 SQL を書かずに済む。</td>
+					<td class="why">
+						比較対象は生 SQL（<code>better-sqlite3</code> 等）と TypeORM。
+						課題書の<span class="accent">ORM モジュール（1pt）</span>の要件をそのまま満たせること、
+						<code>schema.prisma</code> からテーブル定義と TypeScript の型を同時に生成でき、
+						スキーマとコードがズレないことが理由。
+					</td>
+				</tr>
+			</tbody>
+		</table>
+	</section>
+
+	<section class="section">
+		<div class="section-head"><span class="section-num">2</span><span class="section-title">認証 — 未着手 W-04 / W-05</span></div>
+		<table>
+			<thead><tr><th>技術</th><th>どのようなものか</th><th>なぜ選んだか（比較対象）</th></tr></thead>
+			<tbody>
+				<tr>
+					<td class="tech">argon2id</td>
+					<td class="what">パスワードのハッシュ化アルゴリズム。生パスワードは保存せず、不可逆変換した値だけを DB に置く。</td>
+					<td class="why">
+						比較対象は bcrypt・PBKDF2。argon2id は<span class="accent">メモリハード</span>——
+						専用ハードウェアによる総当たり攻撃に対して、計算力だけでなくメモリ量も要求するため強い。
+						ソルトが組み込みで、実装者が付け忘れる余地がない。2015 年のコンペ優勝、RFC 9106 で標準化済み。
+					</td>
+				</tr>
+				<tr>
+					<td class="tech">不透明トークン<br>＋ httpOnly Cookie</td>
+					<td class="what">ログイン状態を、DB の <code>Session</code> 行を指すランダム文字列で管理する方式。Cookie は JS から読めない設定にする。</td>
+					<td class="why">
+						比較対象は <span class="accent">JWT</span>（採用せず）。JWT の利点はサーバー側に状態を持たない点だが、
+						このプロジェクトは再接続時の本人確認とログアウト即時無効化のために<strong>結局 DB を引く</strong>ので、
+						ステートレスにする利点が消える。DB にはトークンのハッシュのみを保存する。
+					</td>
+				</tr>
+				<tr>
+					<td class="tech">SameSite=Lax<br>＋ Origin 検証</td>
+					<td class="what">別サイトからの不正なリクエスト（CSRF）を防ぐ仕組み。変更系メソッドで送信元を検証する。</td>
+					<td class="why">
+						比較対象は CSRF トークン方式。WebSocket 側で既に Origin 検証を採用しているため、
+						<span class="accent">同じ方式に統一</span>して二重の仕組みを作らない、という判断。
+					</td>
+				</tr>
+			</tbody>
+		</table>
+	</section>
+
+	<section class="section">
+		<div class="section-head"><span class="section-num">3</span><span class="section-title">配信・起動 — 未着手 W-15</span></div>
+		<table>
+			<thead><tr><th>技術</th><th>どのようなものか</th><th>なぜ選んだか（比較対象）</th></tr></thead>
+			<tbody>
+				<tr>
+					<td class="tech">nginx</td>
+					<td class="what">Web サーバー / リバースプロキシ。HTTPS を終端し、リクエストを内部の Fastify へ転送する。</td>
+					<td class="why">
+						比較対象は Caddy（自動 TLS が売り）。実績と<span class="accent">日本語も含む情報量</span>で nginx を採用。
+						評価要件は外部接続が HTTPS であることなので、内部の backend への転送は平文でよい。
+					</td>
+				</tr>
+				<tr>
+					<td class="tech">Docker Compose</td>
+					<td class="what">複数コンテナ（nginx・app・ボリューム）を1コマンドでまとめて起動する定義。</td>
+					<td class="why">
+						比較対象は無い——課題書が<span class="accent">単一コマンドでの起動を必須</span>としている。
+						現状 <code>docker-compose.yml</code> には Emscripten ビルド用の <code>engine-build</code> サービスしかなく、
+						nginx・app・証明書生成・マイグレーションを起動経路に組み込むのが W-15。
+					</td>
+				</tr>
+				<tr>
+					<td class="tech">自己署名証明書<br>（mkcert 等）</td>
+					<td class="what">正式な認証局を通さず自分で発行する TLS 証明書。</td>
+					<td class="why">
+						ローカル評価環境には正式なドメインが無いため、これ以外の選択肢がない。
+						評価当日は<span class="accent">接続する全マシンに CA を事前導入</span>しないと
+						ブラウザの警告でデモが止まる、という注意点が設計書に記録されている。
+					</td>
+				</tr>
+			</tbody>
+		</table>
+		<p class="note">
+			<strong>ここが評価上いちばん危ない。</strong>
+			W-15 が未着手なので、現状は <code>git clone</code> → <code>docker compose up</code> をしても
+			アプリは起動せず、アドレスバーで HTTPS を確認することもできない。
+			これは課題書の必須要件（単一コマンド起動・全接続 HTTPS）に直接かかる。
+		</p>
+	</section>
+
+	<section class="section">
+		<div class="section-head"><span class="section-num">4</span><span class="section-title">予備 — 未選択・着手予定なし</span></div>
+		<table>
+			<thead><tr><th>技術</th><th>どのようなものか</th><th>位置づけ</th></tr></thead>
+			<tbody>
+				<tr>
+					<td class="tech">OAuth 2.0<br>（Google）</td>
+					<td class="what">外部サービスのアカウントでログインできるようにする仕組み。</td>
+					<td class="why">予備モジュール（Minor 1pt）。Fastify に成熟したプラグインがあり、<code>User</code> に <code>OAuthAccount</code> を足すだけで済むため候補に入れている。</td>
+				</tr>
+				<tr>
+					<td class="tech">2FA<br>（TOTP）</td>
+					<td class="what">パスワードに加えて、時間で変わる6桁コードを要求する二要素認証。</td>
+					<td class="why">予備モジュール（Minor 1pt）。ライブラリと QR 表示、認証画面1枚の追加で済む見込み。</td>
+				</tr>
+				<tr>
+					<td class="tech">Prometheus<br>＋ Grafana</td>
+					<td class="what">サーバーの状態を数値として収集し（Prometheus）、グラフとして可視化する（Grafana）監視ツール。</td>
+					<td class="why">予備モジュール（Major 2pt）。compose にコンテナを2つ足し、Fastify に計測用エンドポイントを生やす形。ゲーム本体と独立しているので着手が遅くても成立する。</td>
+				</tr>
+			</tbody>
+		</table>
+		<p class="note">
+			<strong>この4つ目の節だけ性質が違う。</strong>
+			上の1〜3は「やると決まっているがまだ書いていない」もの。この節は<strong>そもそも採用を決めていない</strong>。
+			必須 14pt ＋ ボーナス 5pt が確実になるまで着手しない方針で、
+			動かないモジュールを申告すると 0pt になるため、完成したものだけを評価当日に申告する。
+		</p>
+	</section>
+
+	<footer>
+		正本: <a href="../../../ai/architecture.md">architecture.md §2.4 / §4.3</a>（技術選定とモジュール選択）、
+		<a href="../../../ai/rest-api.md">rest-api.md §0</a>（認証まわりの決定 D-4〜D-8）。
+		各 W 番号の進捗は <a href="../../開発状況/サーバー開発工程.html">サーバー開発工程.html</a>、
+		評価項目との対応は <a href="../../評価対応/42モジュール対応表.html">42モジュール対応表.html</a>。
+		作成 2026-08-08。
+	</footer>
+</body>
+</html>

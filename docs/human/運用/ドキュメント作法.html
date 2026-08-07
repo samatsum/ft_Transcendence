@@ -134,6 +134,16 @@
 				<code>docs/human/</code>配下の全カテゴリディレクトリのHTMLページが同じ1枚のCSSを参照します。<strong>ページ固有の
 				<code>&lt;style&gt;</code>は書かない</strong>——必要なクラスが無ければ共通CSS側に足します。
 			</p>
+			<div class="callout warning" style="margin-bottom: 18px">
+				<strong>唯一の例外: 印刷前提のページ。</strong>
+				<code>説明用/技術スタック/</code>の2ページだけは、共通CSSではなく同階層の
+				<code>印刷用.css</code>を使います（samatsumの指定、2026-08-08）。
+				カラー印刷を前提に「白地・白/黒/赤の3色のみ・角丸なし・グラデーションと影は禁止・
+				ウェイトは900/700/500のみ」という別のデザイン体系で作る必要があり、
+				画面用のダーク配色と両立しないためです。<strong>ページ固有スタイルを許す前例ではありません</strong>——
+				例外の範囲はこの2ページだけで、印刷用ページを増やす場合も新しいCSSを書かず
+				<code>印刷用.css</code>を使い回します。
+			</div>
 			<div class="table-wrap">
 				<table>
 					<thead><tr><th>用途</th><th>クラス</th></tr></thead>

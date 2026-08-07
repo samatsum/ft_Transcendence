@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>技術スタック（採用済み） — ft_transcendence</title>
+<link rel="stylesheet" href="./印刷用.css">
+</head>
+<body>
+	<div class="no-print">
+		<button class="print-button" type="button" onclick="window.print()">印刷 / PDF</button>
+	</div>
+
+	<h1>技術スタック — 採用済み</h1>
+	<p class="lede">
+		「なぜその技術を選んだか」への回答用。エンジン層（C・minilibx・Emscripten）は対象外で、
+		Web アプリ側のうち<span class="accent">実際にコードが入っている</span>技術だけを載せる。
+		設計は決まっているが実装がまだゼロの技術（SQLite・Prisma・argon2id・nginx）は
+		<a href="./使用予定技術スタック.html">使用予定技術スタック.html</a> に分けてある。
+	</p>
+
+	<section class="section">
+		<div class="section-head"><span class="section-num">1</span><span class="section-title">実行形式</span></div>
+		<table>
+			<thead><tr><th>技術</th><th>どのようなものか</th><th>なぜ選んだか（比較対象）</th></tr></thead>
+			<tbody>
+				<tr>
+					<td class="tech">WebAssembly</td>
+					<td class="what">C/C++ 等のコードを、ブラウザ・Node.js がほぼネイティブ速度で実行できるバイナリ形式へ変換する技術。</td>
+					<td class="why">
+						比較対象は「TS/JS でレンダラーを一から書き直す」案。それだと完成済みの C エンジンを捨て、
+						当たり判定・AI・衝突を2言語で二重にメンテすることになる。WebAssembly なら
+						<span class="accent">同じ C ソース</span>からネイティブ・ブラウザ用（<code>render.wasm</code>）・
+						サーバー用（<code>sim.wasm</code>）の3種を作り分けられ、ロジックの正本は C 側1つで済む。
+						このプロジェクトで最もリスクが高い選定だったため、Gate 1 として最初に検証した。
+					</td>
+				</tr>
+			</tbody>
+		</table>
+	</section>
+
+	<section class="section">
+		<div class="section-head"><span class="section-num">2</span><span class="section-title">Backend</span></div>
+		<table>
+			<thead><tr><th>技術</th><th>どのようなものか</th><th>なぜ選んだか（比較対象）</th></tr></thead>
+			<tbody>
+				<tr>
+					<td class="tech">Node.js</td>
+					<td class="what">JavaScript / TypeScript をサーバー上で動かす実行環境。</td>
+					<td class="why">
+						比較対象は Python・Go・Java。決定打は<span class="accent">sim.wasm を直接実行できる</span>こと。
+						WebAssembly はブラウザ発の技術なので JS 系ランタイムと相性がよく、
+						判定エンジンを動かすための橋渡し層が要らない。
+					</td>
+				</tr>
+				<tr>
+					<td class="tech">Fastify</td>
+					<td class="what">Node 上で HTTP・WebSocket サーバーを組み立てる土台。ルーティング・検証・エラー処理を提供する。</td>
+					<td class="why">
+						比較対象は Express（定番だが低機能・低速）と NestJS（DI コンテナ等を備えた重量級）。
+						公式 WS プラグインがあり REST とリアルタイムを1つのサーバーに同居させやすい。
+						NestJS はこの規模・期間には<span class="accent">過剰投資</span>と判断した。
+					</td>
+				</tr>
+			</tbody>
+		</table>
+	</section>
+
+	<section class="section">
+		<div class="section-head"><span class="section-num">3</span><span class="section-title">FE / BE 共有</span></div>
+		<table>
+			<thead><tr><th>技術</th><th>どのようなものか</th><th>なぜ選んだか（比較対象）</th></tr></thead>
+			<tbody>
+				<tr>
+					<td class="tech">TypeScript</td>
+					<td class="what">JavaScript に型（変数の種類のチェック）を足した言語。ビルドで JS へ変換してから配る。</td>
+					<td class="why">
+						比較対象は素の JavaScript。FE/BE を同じ言語にすることで
+						<span class="accent">型定義を1箇所に書いて両方で使い回せる</span>。
+						42 が要求する「入力検証を FE/BE 両方で行う」を、二重実装ではなく1つの定義で満たす。
+					</td>
+				</tr>
+				<tr>
+					<td class="tech">zod</td>
+					<td class="what">データの形をスキーマとして定義し、実行時にも検証できるライブラリ。</td>
+					<td class="why">
+						比較対象は Joi・Yup。zod は<span class="accent">スキーマから型を自動導出できる</span>のが決め手で、
+						1つ書けば型と検証の両方が手に入る。<code>app/shared/</code> に1箇所だけ置き、
+						FE/BE が同じ定義を import する。
+					</td>
+				</tr>
+				<tr>
+					<td class="tech">npm workspaces</td>
+					<td class="what">1つのリポジトリで複数パッケージ（shared / backend / frontend）を管理する仕組み。</td>
+					<td class="why">
+						比較対象はリポジトリ分割と、Turborepo・Nx といった専用ツール。
+						共有 zod スキーマを<span class="accent">パッケージ公開なしで</span>直接 import したいので
+						単一リポジトリが前提。その上で、追加ツールを入れずに npm 標準機能だけで足りる規模だった。
+					</td>
+				</tr>
+			</tbody>
+		</table>
+	</section>
+
+	<section class="section">
+		<div class="section-head"><span class="section-num">4</span><span class="section-title">リアルタイム通信</span></div>
+		<table>
+			<thead><tr><th>技術</th><th>どのようなものか</th><th>なぜ選んだか（比較対象）</th></tr></thead>
+			<tbody>
+				<tr>
+					<td class="tech">WebSocket</td>
+					<td class="what">一度繋いだら接続を維持し、双方向に小さいメッセージを送り合える通信方式。<code>@fastify/websocket</code> を使用。</td>
+					<td class="why">
+						比較対象は Socket.IO。独自プロトコル層を挟むぶんオーバーヘッドがあり、
+						素の WebSocket クライアントと直接話せなくなる。対戦の入力送信とスナップショット配信という
+						単純な用途では、その抽象化が<span class="accent">不要な複雑さ</span>になると判断した。
+					</td>
+				</tr>
+			</tbody>
+		</table>
+	</section>
+
+	<section class="section">
+		<div class="section-head"><span class="section-num">5</span><span class="section-title">Frontend</span></div>
+		<table>
+			<thead><tr><th>技術</th><th>どのようなものか</th><th>なぜ選んだか（比較対象）</th></tr></thead>
+			<tbody>
+				<tr>
+					<td class="tech">React</td>
+					<td class="what">画面を部品（コンポーネント）の組み合わせとして作る UI ライブラリ。</td>
+					<td class="why">
+						比較対象は Next.js・SvelteKit。SSR モジュールを採用しないので SSR は不要で、
+						Next.js の機能の大半が過剰になる。<span class="accent">SPA が最も単純</span>で、
+						かつ React は課題書の言う「フレームワーク」の要件を満たす。
+						AI によるコード生成の品質が最も高い部類なのも採用理由として記録されている。
+					</td>
+				</tr>
+				<tr>
+					<td class="tech">Vite</td>
+					<td class="what">TS/React のコードを JS へ変換し、開発中はブラウザへ即座に反映するビルドツール。</td>
+					<td class="why">
+						比較対象は Webpack ベースの旧来構成。ネイティブ ES モジュールを活用するため
+						開発サーバーの起動と変更反映が<span class="accent">桁違いに速い</span>。
+						現在の React エコシステムでの標準的な選択でもある。
+					</td>
+				</tr>
+				<tr>
+					<td class="tech">Tailwind CSS</td>
+					<td class="what">用意されたクラス名（<code>text-sm</code>・<code>flex</code> など）を HTML に直接並べて見た目を作る手法。</td>
+					<td class="why">
+						比較対象は Bootstrap（既製 UI 部品が強い代わりに見た目を変えにくい）。
+						課題書が「CSS フレームワークを使うこと」自体を要求しており、それを満たしつつ
+						<span class="accent">コンポーネント志向の React と相性がよい</span>。
+					</td>
+				</tr>
+				<tr>
+					<td class="tech">Vitest</td>
+					<td class="what">フロントエンド用のテストランナー。<code>apiFetch</code>・補間・HUD 状態のテストで使用中。</td>
+					<td class="why">
+						比較対象は Jest（定番だが設定が重め）。Vite と同じビルド基盤を共有するため
+						<span class="accent">設定がほぼ要らない</span>。Vite を採用している以上、自然な組み合わせ。
+					</td>
+				</tr>
+			</tbody>
+		</table>
+		<p class="note">
+			<strong>正確を期すための注記。</strong>
+			Vitest はローカルでは動くが、<strong>CI では実行していない</strong>。
+			CI の web-app ジョブがやっているのは <code>npm ci</code>・型検査・ビルド・
+			<code>/api/health</code> の起動確認まで。テスト実行の追加は W-16 の範囲。
+		</p>
+	</section>
+
+	<footer>
+		正本: <a href="../../../ai/architecture.md">architecture.md §2.4</a>（Web stack トレードオフ表）。
+		用語そのものの解説は <a href="../../専門用語/W-専門用語.html">W-専門用語.html</a>・
+		<a href="../../専門用語/F-専門用語.html">F-専門用語.html</a>。
+		未実装の技術は <a href="./使用予定技術スタック.html">使用予定技術スタック.html</a>。
+		このページは印刷前提の専用デザイン（白地・3色限定）のため、
+		<code>docs/human/assets/style.css</code> ではなく同階層の <code>印刷用.css</code> を使う。
+		作成 2026-08-08。
+	</footer>
+</body>
+</html>

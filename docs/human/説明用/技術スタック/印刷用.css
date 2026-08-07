@@ -1,0 +1,172 @@
+/*
+ * 技術スタック解説（カラー印刷用）の共通スタイル。
+ *
+ * docs/human/ の他ページが使う ../assets/style.css（ダーク配色の画面用テーマ）とは
+ * 別物です。これは samatsum の指定による「印刷したときにこう見えること」を目的にした
+ * 専用のデザインシステムで、白地・黒/白/赤の3色限定・角丸なし、という前提が
+ * 画面用テーマと両立しないため、意図的に分離しています（2026-08-08）。
+ * この2ファイル（技術スタック.html / 使用予定技術スタック.html）以外からは参照しません。
+ *
+ * 守っているルール:
+ *   - 色は白 #FFFFFF / 黒 #111114 / 赤 #E23E14 の3色のみ。4色目を足さない
+ *   - 赤は番号・記号・強調1語のみ。広い面のベタ塗りに使わない（帯は必ず黒）
+ *   - 角丸を使わない。グラデーション・影・光彩・半透明ぼかしを使わない
+ *   - ウェイトは 900 / 700 / 500 の3段階だけ。400以下を使わない
+ *   - font-feature-settings: "palt" 1（約物を詰める）
+ *   - 字間は見出し -0.02em、小さいラベル +0.10〜0.16em
+ *   - 線は最後の手段（表の行区切りのみ。他は余白で分ける）
+ */
+
+:root {
+	--white: #FFFFFF;
+	--black: #111114;
+	--red: #E23E14;
+	--body: #2A2C30;
+	--aux: #6E6E6A;
+	--rule: #DEDEDA;
+}
+
+* { box-sizing: border-box; }
+
+/* 角は立てる（写真・箱・ボタンすべて角丸不可） */
+*, *::before, *::after { border-radius: 0 !important; }
+
+html { background: var(--white); }
+
+body {
+	margin: 0 auto;
+	max-width: 900px;
+	padding: 56px 64px 40px;
+	background: var(--white);
+	color: var(--body);
+	font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans JP",
+		-apple-system, "Segoe UI", sans-serif;
+	font-weight: 500;
+	font-feature-settings: "palt" 1;
+	-webkit-print-color-adjust: exact;
+	print-color-adjust: exact;
+}
+
+h1 {
+	margin: 0 0 10px;
+	color: var(--black);
+	font-weight: 900;
+	font-size: 34px;
+	letter-spacing: -0.02em;
+}
+
+.lede {
+	margin: 0 0 44px;
+	max-width: 660px;
+	font-weight: 500;
+	font-size: 13px;
+	line-height: 1.85;
+	color: var(--body);
+}
+
+.section { margin: 0 0 36px; }
+
+/* 帯は必ず黒。赤帯は作らない */
+.section-head {
+	display: flex;
+	align-items: baseline;
+	gap: 14px;
+	padding: 11px 18px;
+	background: var(--black);
+}
+
+.section-num {
+	color: var(--red);
+	font-weight: 900;
+	font-size: 20px;
+	line-height: 1;
+}
+
+.section-title {
+	color: var(--white);
+	font-weight: 700;
+	font-size: 17px;
+	letter-spacing: -0.02em;
+}
+
+table { width: 100%; border-collapse: collapse; }
+
+thead th {
+	padding: 14px 14px 8px;
+	border-bottom: 1px solid var(--rule);
+	text-align: left;
+	color: var(--aux);
+	font-weight: 700;
+	font-size: 10px;
+	letter-spacing: 0.14em;
+}
+
+td {
+	padding: 14px;
+	border-bottom: 1px solid var(--rule);
+	vertical-align: top;
+	font-weight: 500;
+	font-size: 13px;
+	line-height: 1.75;
+}
+
+td.tech {
+	width: 17%;
+	color: var(--black);
+	font-weight: 900;
+	font-size: 14px;
+}
+
+td.what { width: 33%; }
+
+/* 赤は強調1語まで。文全体を赤くしない */
+.accent { color: var(--red); font-weight: 700; }
+
+code {
+	font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+	font-size: 0.92em;
+}
+
+.note {
+	margin: 18px 0 0;
+	padding: 14px 18px;
+	background: var(--black);
+	color: var(--white);
+	font-weight: 500;
+	font-size: 12px;
+	line-height: 1.8;
+}
+
+.note strong { font-weight: 900; }
+
+footer {
+	margin-top: 48px;
+	padding-top: 16px;
+	border-top: 1px solid var(--rule);
+	color: var(--aux);
+	font-weight: 500;
+	font-size: 10px;
+	letter-spacing: 0.12em;
+	line-height: 1.9;
+}
+
+footer a { color: var(--aux); }
+
+.no-print { margin: 0 0 40px; }
+
+.print-button {
+	padding: 10px 20px;
+	border: none;
+	background: var(--black);
+	color: var(--white);
+	font-weight: 700;
+	font-size: 12px;
+	letter-spacing: 0.1em;
+	cursor: pointer;
+}
+
+@media print {
+	body { padding: 20px 28px; max-width: none; }
+	.no-print { display: none; }
+	.section { break-inside: avoid; }
+}
