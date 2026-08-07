@@ -129,6 +129,17 @@ it's for and where it's referenced from; keep that comment accurate if you move 
 (caught stale twice already: once pointing at an archived path, once at the pre-rename `md_files/`
 directory name).
 
+### The one sanctioned exception: print-first pages
+
+`docs/human/説明用/技術スタック/` uses its own `印刷用.css` instead of the shared sheet. This is
+deliberate, requested by samatsum on 2026-08-08, and is **not** a precedent for page-specific styling
+in general. The reason it can't share: those pages are designed to be *printed in color*, under a
+mandated design system — white base, only white/black/red, no rounded corners, no gradients or
+shadows, weights limited to 900/700/500. That is fundamentally incompatible with the dark on-screen
+theme in `assets/style.css`, so overriding it page-by-page would have been messier than a separate
+sheet. The exception's scope is exactly those two pages; the CSS file's own header comment states
+this. If you add another print-first page there, reuse `印刷用.css` rather than writing a third one.
+
 ## Diagrams: Mermaid vs. plain text
 
 **Never hand-draw a multi-column box-and-arrow diagram with box-drawing characters
