@@ -55,7 +55,7 @@ Following this inheritance, lobby implementation lives at `app/backend/src/lobby
 
 Every message is exactly one JSON text frame = one message.
 
-```
+```json
 { "t": "<message type>", "d": { ...payload } }
 ```
 
@@ -382,7 +382,7 @@ The client passes `map_text` to the render side's `game_create` (for display) (t
 
 ### 5-C. snapshot payload (1:1 with §3-D)
 
-```
+```json
 { "t":"snapshot", "d":{
   "tick": 12345,
   "match": { "state":"waiting|playing|finished", "mode":"rsp|fps",
@@ -462,7 +462,7 @@ Events are **presentation/notification triggers**; the source of truth for game 
 
 ### 6-A. State machine
 
-```
+```text
 created ──all humans join, or 10s──► countdown(3s) ──► playing ──decided──► finished ──60s──► closed
    │                                               │(all human seats grace-expired/abandoned)
    └── 10s with zero humans ──► closed (no record)     └──► finished(abandon)
@@ -539,7 +539,7 @@ W-09 hands GameRoom a persistence closure that captures the MatchPlan. Since the
 
 ### 7-A. Flow (RSP example)
 
-```
+```text
 [disconnect detected] game WS close / 2 consecutive ping non-responses
    │ player_status(slot, grace) + event(player_disconnected, grace_ms=30000)
    │ the seat's input is immediately taken over by AI … game_set_input_source(id, AI)
@@ -666,7 +666,7 @@ W-08's completion is not "the match runs" — it's the above, plus **exactly one
 
 These are retained implementation-detail notes carried over from the original Phase 3 report; W-10 itself is complete.
 
-1. **Authoritative call order**: `createCub3DSimModule()` → `sim_create(cub_text_ptr, is_rsp, target_score, seed)` → `game_add_combatant(game, slot, is_ai)` × capacity (RSP=4 / FPS=2) → (on join) `game_set_input_source(game, slot, EXTERNAL=1)` → every tick `sim_set_input` → `game_step(game, 1/30)` (return value 1 means transition to finished) → on even ticks `game_snapshot` → JSON-encoded and tick-stamped on the Node side → distributed → `game_destroy` at closed.
+1. **Authoritative call order**: `createCub3DSimModule()` → `sim_create(cub_text_ptr, is_rsp, target_score, seed)` → `game_add_combatant(game, slot, is_ai)` × capacity (RSP=4 / FPS=2, **returns a `combatant_id`, distinct from `slot`**) → (on join) `game_set_input_source(game, combatant_id, EXTERNAL=1)` **using the id returned by `game_add_combatant`, not the raw seat `slot`** → every tick `sim_set_input` → `game_step(game, 1/30)` (return value 1 means transition to finished) → on even ticks `game_snapshot` → JSON-encoded and tick-stamped on the Node side → distributed → `game_destroy` at closed.
 2. **The flat-array layout is authoritatively defined in `codes/includes/platform/sim.h`** (5 header fields + 9 per combatant, all f64). `record.mjs`'s `takeSnapshot()` is the reference implementation for JSON encoding, as-is.
 3. **The seat-to-team mapping is fixed**: RSP slot 0,1 = red / 2,3 = blue. The map must have 2 red spawns (N/W) and 2 blue spawns (S/E); if not, `sim_create` returns NULL (must align with W-14's map-whitelist validation).
 4. **`combatant_id` has no relation to snapshot array order** (the internal list is in reverse creation order). Both client and server must always match by id. Map-derived enemy hazards use id=8 and up.

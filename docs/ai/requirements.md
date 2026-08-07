@@ -147,7 +147,10 @@ Building the entire project is complex, and many problems can arise. Therefore, 
 - [◎] You must use Git with clear, meaningful commit messages. The repository must show:
     - [◎] Commits from all team members.
     - [◎] Clear commit messages describing the changes made.
-- [◎] Proper work distribution across the entire team.
+- [◎] Proper work distribution across the entire team. **At risk**: the team has dissolved to a
+  single active contributor (samatsum) as of 2026-08-05; this is an open, unresolved discrepancy
+  with the subject's 4–5 person team premise, not something this checkbox can honestly claim is
+  on track — see [`../ja/チーム体制.html`](../ja/チーム体制.html) §04 for the full writeup.
 - [◎] Deployment must use a containerization solution (Docker, Podman, etc.) and run with a single command.
 - [◎] The website must be compatible with the latest stable version of Google Chrome.
 - [◎] No warnings or errors may appear in the browser console.
@@ -158,6 +161,7 @@ Building the entire project is complex, and many problems can arise. Therefore, 
 > - Must be easily accessible from the application (e.g., a footer link).
 > - Must contain content appropriate to the project.
 > - Must not be placeholder or empty pages.
+
 
 > **⚠️ Note: multi-user support (mandatory core requirement)**
 > The website must support multiple users simultaneously.
@@ -218,7 +222,7 @@ Also, in case some modules are not validated during evaluation, **it is a good i
 > - **During evaluation**: you will be asked to demo each declared module. Only fully functional, properly implemented modules count toward the final score.
 >   Non-functional or incomplete modules score 0 points.
 
-### IV.1 Web
+## IV.1 Web
 - [◎] **Major (2pt)**: use a framework on both the frontend and the backend.
     - If you use both the frontend and backend features of a full-stack framework
       (Next.js, Nuxt.js, SvelteKit), it counts as both.
@@ -237,14 +241,14 @@ Also, in case some modules are not validated during evaluation, **it is a good i
 - [ ] **Minor (1pt)**: advanced search functionality (filters, sorting, pagination).
 - [ ] **Minor (1pt)**: a file upload and management system (multiple types, validation, secure storage, preview, progress, deletion).
 
-### IV.2 Accessibility and internationalization
+## IV.2 Accessibility and internationalization
 - [ ] **Major (2pt)**: full accessibility compliance (WCAG 2.1 AA), including screen readers, keyboard navigation, and assistive technologies.
 - [ ] **Minor (1pt)**: support for multiple languages (at least 3 languages, i18n, UI switcher).
 - [ ] **Minor (1pt)**: right-to-left (RTL) language support
   (at least one RTL language, layout mirroring, seamless switching).
 - [ ] **Minor (1pt)**: support for additional browsers (full compatibility with at least 2 additional browsers, consistent UI/UX).
 
-### IV.3 User management
+## IV.3 User management
 - [◎] **Major (2pt)**: standard user management and authentication
   (profile updates, avatar upload, adding friends and checking online status, profile page).
 - [◎] **Minor (1pt)**: game statistics and match history (**requires a game module**).
@@ -254,7 +258,7 @@ Also, in case some modules are not validated during evaluation, **it is a good i
 - [〇] **Minor (1pt)**: complete two-factor authentication (2FA) system.
 - [ ] **Minor (1pt)**: user-activity analytics and insights dashboard.
 
-### IV.4 Artificial intelligence
+## IV.4 Artificial intelligence
 - [◎] **Major (2pt)**: introduce an AI opponent to the game (human-like behavior, supports customization. **requires a game module**).
 - [ ] **Major (2pt)**: implement a full RAG (Retrieval-Augmented Generation) system.
 - [ ] **Major (2pt)**: implement a full LLM system interface (text/image generation, streaming, error/rate-limit handling).
@@ -264,10 +268,10 @@ Also, in case some modules are not validated during evaluation, **it is a good i
 - [ ] **Minor (1pt)**: sentiment analysis of user-generated content.
 - [ ] **Minor (1pt)**: image recognition and tagging system.
 
-### IV.5 Cybersecurity
+## IV.5 Cybersecurity
 - [ ] **Major (2pt)**: implement a hardened WAF/ModSecurity + HashiCorp Vault for secrets.
 
-### IV.6 Gaming and user experience
+## IV.6 Gaming and user experience
 - [◎] **Major (2pt)**: implement a complete web-based game (real-time play, clear rules, 2D/3D allowed).
 - [◎] **Major (2pt)**: remote players (real-time play across separate PCs, latency/disconnect/reconnect handling).
 - [◎] **Major (2pt)**: multiplayer game (3+ players) (**requires at least one game implementation**).
@@ -280,23 +284,23 @@ Also, in case some modules are not validated during evaluation, **it is a good i
 - [ ] **Minor (1pt)**: gamification system (3 or more of achievements, badges, leaderboards, etc. Must be stored in the database. Quality over quantity).
 - [〇] **Minor (1pt)**: implement a spectator mode for games (**requires a game implementation**).
 
-### IV.7 DevOps
+## IV.7 DevOps
 - [ ] **Major (2pt)**: log-management infrastructure using ELK (Elasticsearch, Logstash, Kibana).
 - [〇] **Major (2pt)**: monitoring system using Prometheus and Grafana.
 - [ ] **Major (2pt)**: backend as microservices (clear interfaces, REST API/message queue, single responsibility).
 - [ ] **Minor (1pt)**: a health-check and status-page system with automated backups and disaster-recovery procedures.
 
-### IV.8 Data and analytics
+## IV.8 Data and analytics
 - [ ] **Major (2pt)**: an advanced analytics dashboard with data visualization (interactive charts, real-time updates, export functionality).
 - [ ] **Minor (1pt)**: data export and import functionality (multiple formats, validation, bulk operations).
 - [ ] **Minor (1pt)**: GDPR compliance features (data requests, deletion with confirmation, export in readable format, confirmation emails).
 
-### IV.9 Blockchain
+## IV.9 Blockchain
 - [ ] **Major (2pt)**: store tournament scores on a blockchain (using Avalanche/Solidity on a testnet).
 - [ ] **Minor (1pt)**: use ICP (Internet Computer Protocol) for the backend
   (not compatible with the SSR module).
 
-### IV.10 Modules of choice
+## IV.10 Modules of choice
 - [ ] **Major (2pt)**: implement a custom module not on the list (must be substantial and demonstrate technical complexity. Must be justified in the README.
   Trivial features will be rejected).
 - [ ] **Minor (1pt)**: the same as a Major module, but with smaller scope and less complexity (must be justified in the README).
@@ -316,7 +320,7 @@ These are only suggestions — you are free to come up with your own ideas.
 > - Can realistically be completed within the project timeline.
 > - Has a coherent combination of modules that work well together.
 
-### V.1 Example: building a Pong game
+## V.1 Example: building a Pong game
 Example of reaching 14 points when building a Pong game:
 - Gaming (Web based + Remote + Tournament + Customize) = 6pts
 - User Management (Standard + OAuth) = 3pts
@@ -324,7 +328,7 @@ Example of reaching 14 points when building a Pong game:
 - AI (AI Opponent) = 2pts
 **Total: 14 points**
 
-### List of other ideas
+## List of other ideas
 - **V.2 Games**: multiplayer Pong, online chess, card-game arena, battle royale, trivia/quiz.
 - **V.3 Social/collaboration**: social network, collaboration workspace, forum, event management, learning-management system.
 - **V.4 Creative/media**: music streaming, video sharing, art gallery, blog, recipe sharing.

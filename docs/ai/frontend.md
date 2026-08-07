@@ -68,7 +68,7 @@ Data sources: REST (initial render) + Lobby WS (deltas). Maps 1:1 to the message
 
 Layer structure (bottom to top):
 
-```
+```text
 [Canvas 960x540 internal resolution, CSS letterbox-scaled]   ← rendered by render.wasm (world + own hand)
 [HUD overlay (DOM, pointer-events: none)]                    ← score, status, effects
 [Modal layer (countdown / match_end / disconnect banner)]    ← has interaction

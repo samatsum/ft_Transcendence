@@ -69,7 +69,7 @@ What remains is only the TypeScript server and frontend (W-02–W-16 / F-01–F-
 
 ## 1. Target structure (3 layers × 3 build targets)
 
-```
+```text
                     ┌───────────────────────────────────────┐
                     │  sim layer (platform-independent, t_game core) │
                     │  .cub parsing / movement & collision / enemy AI /  │

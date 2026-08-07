@@ -480,6 +480,11 @@ EH 5                                        # 敵のHP       (任意, 0 より�
 			<p class="section-kicker">07 · Screenshot</p>
 			<h2>結果スクリーンショット</h2>
 			<p>
+				<strong>この自動保存は native 実行（<code>./cub3D</code>）のときだけ動作します。</strong>
+				web（ブラウザ）・server（<code>sim.wasm</code>）向けのビルドではBMP保存の経路自体が
+				含まれておらず、無効です。
+			</p>
+			<p>
 				結果画面は自動で BMP 保存されます。
 				FPS は <code>./screenshot/fps_screen/fps_YYYYMMDD_HHMMSS_usec.bmp</code>、
 				RSP は <code>./screenshot/rsp_screen/rsp_YYYYMMDD_HHMMSS_usec.bmp</code> に出力します。
