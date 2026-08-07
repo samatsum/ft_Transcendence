@@ -32,6 +32,7 @@
 			<a href="#naming">命名規約</a>
 			<a href="#merge">マージ戦略</a>
 			<a href="#cleanup">後片付け</a>
+			<a href="#issues">Issue併用</a>
 			<a href="#donts">やってはいけないこと</a>
 			<button class="print-button" type="button" onclick="window.print()">印刷 / PDF</button>
 		</div>
@@ -199,8 +200,34 @@ git push origin --delete feat/xxx       # リモート（gh pr merge --delete-br
 			</div>
 		</section>
 
+		<section id="issues">
+			<p class="section-kicker">06 · Issue tracking</p>
+			<h2><code>backlog.md</code>＋GitHub Issueの併用（2026-08-08〜）</h2>
+			<p class="section-intro">
+				各E-/G-/W-/F-番号の受入条件・依存・進捗の正本は、引き続き<code>docs/ai/backlog.md</code>です。
+				2026-08-08から、新しく見つかった課題は<strong>GitHub Issueにも同時に記録</strong>するようにしました
+				——「何が問題で、今解決しているか否か」をIssueタブでopen/closedとして視覚的に一目で見られるようにするためです。
+				<strong>2026-08-08より前のbacklog.mdの行は遡及登録していません</strong>——今後の新規項目だけが対象です
+				（最初の例が
+				<a href="https://github.com/samatsum/ft_Transcendence/issues/46">Issue #46</a>（G-11）・
+				<a href="https://github.com/samatsum/ft_Transcendence/issues/47">Issue #47</a>（G-12））。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>項目</th><th>ルール</th></tr></thead>
+					<tbody>
+						<tr><td>タイトル</td><td><code>&lt;Issue番号&gt;: &lt;短い説明&gt;</code>（例:「G-11: FPSの射撃機構がプレイヤー同士を排除できてしまう」）</td></tr>
+						<tr><td>ラベル</td><td>E/G/W/Fに対応する<code>lane:engine</code>／<code>lane:gameplay</code>／<code>lane:backend</code>／<code>lane:frontend</code>のいずれか1つ＋<code>backlog-tracked</code>＋<code>bug</code>か<code>enhancement</code></td></tr>
+						<tr><td>本文中のコード引用</td><td><strong>絶対URL</strong>（<code>https://github.com/samatsum/ft_Transcendence/blob/main/...</code>）を使う。<code>../../</code>のような相対パスは、Issue本文がリポジトリのファイルツリーの外にあるため<strong>静かに解決しません</strong>（docs/内では同じ書き方が問題なく動くので特に注意）</td></tr>
+						<tr><td>相互リンク</td><td>backlog.mdの行からIssue番号へ、Issue本文からbacklog.mdの節へ、両方向にリンクする</td></tr>
+						<tr><td>クローズのタイミング</td><td>対応するbacklog.mdの行がマージ済みPRで完了マークされた時だけ閉じる（両者がズレないように）</td></tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+
 		<section id="donts">
-			<p class="section-kicker">06 · Anti-patterns</p>
+			<p class="section-kicker">07 · Anti-patterns</p>
 			<h2>やってはいけないこと</h2>
 			<ol class="path-list">
 				<li>

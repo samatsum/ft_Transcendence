@@ -117,6 +117,31 @@ archaeology (`git branch --merged`, `git diff --stat`, checking PR state via `gh
 they were safe to delete — see [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html)'s note on team status
 for why nobody was doing that cleanup as it happened.
 
+## Tracking work: backlog.md + GitHub Issues (added 2026-08-08)
+
+`docs/ai/backlog.md` remains the authoritative source of truth for every E-/G-/W-/F- item —
+acceptance criteria, dependencies, and status live there first. As of 2026-08-08, samatsum also
+wants newly discovered gaps mirrored as real GitHub Issues, for the visual open/closed tracking the
+Issues tab gives (backlog.md's git-log-buried rows don't show that at a glance). By agreement,
+**pre-2026-08-08 backlog rows were not backfilled** — this applies going forward only, starting with
+G-11/G-12 ([#46](https://github.com/samatsum/ft_Transcendence/issues/46),
+[#47](https://github.com/samatsum/ft_Transcendence/issues/47)).
+
+When filing one:
+
+- **Title**: `<Issue-ID>: <short description>` (e.g. "G-11: FPS's shoot mechanic can eliminate the
+  other seat").
+- **Labels**: one `lane:engine` / `lane:gameplay` / `lane:backend` / `lane:frontend` matching the
+  E/G/W/F prefix, plus `backlog-tracked`, plus `bug` or `enhancement` as fits.
+- **Body**: cite file:line with **absolute GitHub URLs**
+  (`https://github.com/samatsum/ft_Transcendence/blob/main/...`), never repo-relative paths — an
+  Issue body isn't part of the file tree, so `../../` links silently fail to resolve there even
+  though the identical pattern works fine inside `docs/`.
+- **Cross-link both directions**: the backlog.md row should link back to the Issue number, and the
+  Issue body should link back to the backlog.md section, so either one is findable from the other.
+- **Close the Issue only when the matching backlog.md row is marked done in a merged PR** — the two
+  must not drift out of sync.
+
 ## Anti-patterns — don't do these
 
 - **Committing directly on `main`** (local or pushed). Always branch first, even for a one-line docs
