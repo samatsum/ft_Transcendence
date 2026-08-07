@@ -2,7 +2,7 @@
 
 > Source: translated from the Japanese originals at md_files/02_設計書/2-WSプロトコル設計.md and md_files/03_実装レポート/3-エンジンPhase3レポート.md (both archived).
 
-**Position**: A detailing of [ARCHITECTURE_DESIGN.md](./0-全体アーキテクチャ設計.md) §2.3 / §3.1. Aligned with [ENGINE_SEPARATION_DESIGN.md](./1-エンジン分離設計.md) §3-B (sim public API) and §3-D (snapshot structure). This is the authoritative work order for the Backend/DevOps lane's **samatsum** (WS / GameRoom / matchmaking, W-09). **hminemur** (GameView) references this document as a consumer of the client implementation contract.
+**Position**: A detailing of [ARCHITECTURE_DESIGN.md](./architecture.md) §2.3 / §3.1. Aligned with [ENGINE_SEPARATION_DESIGN.md](./engine-separation.md) §3-B (sim public API) and §3-D (snapshot structure). This is the authoritative work order for the Backend/DevOps lane's WS / GameRoom / matchmaking work (W-09, implemented by samatsum). The GameView work (F-06, **done**) and HUD work (F-07, implemented but unmerged — [PR #35](https://github.com/samatsum/ft_Transcendence/pull/35)) consume this document as the client implementation contract; both were also implemented by samatsum.
 **Principle**: This document contains no implementation code (wire format, state machines, and acceptance criteria only). The implementation source of truth for message schemas is the zod definitions in `shared/`; if implementation diverges from this document, revise this document first, then implement.
 
 ---
@@ -354,7 +354,7 @@ The formalization of the 5 message families `join / input / snapshot / event / s
 | `mv` | uint4 bitmask | bit0=forward / bit1=backward / bit2=strafe-left / bit3=strafe-right (rotation keys are not included; rotation is folded entirely into `yaw`, and the client's key→yaw integration reuses the existing render-side logic) |
 | `act` | uint4 bitmask (optional) | Reserved for compatibility with the existing engine's weapon/fire state. Fixed at 0 for both modes in this project |
 
-> **Revision (2026-07-11)**: the originally-present `hand` field (RSP's chosen hand-sign) has been **removed** (⑤ [BACKLOG.md](./5-バックログ.md) D-17). Hand is state the server changes authoritatively on respawn / entering one's own zone; under the current rules there is no concept of a player choosing a hand. Exposing it in the input surface would only open a door to cheating and inconsistency.
+> **Revision (2026-07-11)**: the originally-present `hand` field (RSP's chosen hand-sign) has been **removed** (⑤ [BACKLOG.md](./backlog.md) D-17). Hand is state the server changes authoritatively on respawn / entering one's own zone; under the current rules there is no concept of a player choosing a hand. Exposing it in the input surface would only open a door to cheating and inconsistency.
 
 - **Send convention**: the client thins its display-frame rate down to **30Hz and sends the full state each time** (state-driven, not event-driven). Even under packet loss (which, apart from the WS closing, doesn't otherwise occur), the next message carries full state, so it self-heals. The server keeps the latest `input` per seat and **applies it via `game_set_input` on every tick** (§3-B).
 - Input is accepted only during `playing` (silently discarded during waiting/countdown/finished).
@@ -511,7 +511,7 @@ created ──all humans join, or 10s──► countdown(3s) ──► playing �
 
 > **§3-B addendum request (the sole engine-API addition originating from this document)**: the design in §3-C for AI substitute ⇔ restore on disconnect is "just a swap of input source," but §3-B's public API table has no matching function. **`game_set_input_source(game, combatant_id, AI|EXTERNAL)` must be added to the public API.** Include this function in the acceptance criteria for E-10 (sim public API) and G-02 (input source abstraction) (reflected in the ⑤ backlog).
 >
-> **Resolved (2026-07-23)**. This addendum request has been implemented on the engine side and is exposed as `game_set_input_source` in [`codes/includes/platform/sim.h`](../../codes/includes/platform/sim.h). **No remaining work on the engine side.** All six sim APIs in the table above are implemented; the concrete call-order procedure is written up in the "handoff to W-10" section of [3-エンジンPhase3レポート](../03_実装レポート/3-エンジンPhase3レポート.md).
+> **Resolved (2026-07-23)**. This addendum request has been implemented on the engine side and is exposed as `game_set_input_source` in [`codes/includes/platform/sim.h`](../../codes/includes/platform/sim.h). **No remaining work on the engine side.** All six sim APIs in the table above are implemented; the concrete call-order procedure is written up in the "handoff to W-10" section of [3-エンジンPhase3レポート](../../archive/03_実装レポート/3-エンジンPhase3レポート.md).
 
 ### 6-C. Persistence and result delivery at match end
 
@@ -654,7 +654,7 @@ W-08's completion is not "the match runs" — it's the above, plus **exactly one
 
 | date | content |
 |---|---|
-| 2026-07-11 | §5-A/§9: removed `input.hand` (⑤ [BACKLOG.md](./5-バックログ.md) D-17; alternatives comparison in ⑤ §0) |
+| 2026-07-11 | §5-A/§9: removed `input.hand` (⑤ [BACKLOG.md](./backlog.md) D-17; alternatives comparison in ⑤ §0) |
 | 2026-07-23 | §6-B: noted that the "§3-B addendum request" is **implemented** (`game_set_input_source`). Corrected the leftover `hand` reference in that table (already removed per D-17) to `act`, and added the implemented wrapper `sim_set_input`'s arguments. Reflowed long lines for readability |
 | 2026-07-29 | Resolved 4 design gaps (filling holes before the W-08-W-13 implementations): added addenda for room-code issuance atomicity, freezing expected human seats, snapshot's mode, and firing match_end after persistence. Reflected in `room.ts` and `game.ts` |
 | 2026-07-30 | **W-08 design complete**: fixed the W-01/W-10/W-11/W-14 implementation patterns into §0-A. Added the full lobby wire type set, UserContextRegistry, friend-restricted presence, 10-second replacement/room reconnect, heartbeat/session expiry, FIFO deadline, LobbyRoom canonical rules, synchronous claim + token rollback, the immutable-MatchPlan-based W-09 boundary, implementation layout, and the 10-item W-08 acceptance list. Removed the unimplemented speed multipliers/AI strength from the wire. Corrected the old "restoration allowed after grace expiry" note and the impossible old note about "rescuing a persistence failure via match_result" |

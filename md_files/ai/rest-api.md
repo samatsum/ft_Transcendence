@@ -2,11 +2,16 @@
 
 > Source: translated from the Japanese original at md_files/02_設計書/3-REST_API設計.md (archived).
 
-**Position**: A detailing of [ARCHITECTURE_DESIGN.md](./0-全体アーキテクチャ設計.md) §2.4 / §3.3.
-Includes the definitions of the three items that [WS_PROTOCOL_DESIGN.md](./2-WSプロトコル設計.md) (②)
+**Position**: A detailing of [ARCHITECTURE_DESIGN.md](./architecture.md) §2.4 / §3.3.
+Includes the definitions of the three items that [WS_PROTOCOL_DESIGN.md](./ws-protocol.md) (②)
 delegated to REST (presence initial list / `GET /api/maps` / match detail).
-Of the Backend/DevOps lanes, this corresponds to the work order for **torinoue** (Auth / REST / DB),
-and also serves as the source of truth for the API contract for **mamiyaza** (frontend foundation).
+Of the Backend/DevOps lanes, this is the Auth / REST / DB work order — most of it (W-02–W-07, W-13) is
+**未完成 (not yet started/not done)**; see [backlog.md](./backlog.md) for per-issue status. It also serves
+as the source of truth for the REST API contract consumed by the frontend. The frontend-foundation work
+(F-01 scaffold, F-02 fetch wrapper) that consumes this contract is **done** (implemented solo by samatsum);
+F-03–F-05 (auth screens, layout, lobby) are not started. This REST work and the original frontend-foundation
+plan were assigned to torinoue and mamiyaza respectively; as of 2026-08-05 neither is active, so W-02–W-07/W-13
+and F-03–F-05 are unassigned — see [`../ja/チーム体制.html`](../ja/チーム体制.html).
 **Principle**: This document contains no implementation code.
 The implementation source of truth for message schemas is the zod definitions in `shared/api/`; if this document
 and the implementation diverge, this document is revised first and the implementation follows (same operating rule as ②).

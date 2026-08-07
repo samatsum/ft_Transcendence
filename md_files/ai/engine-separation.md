@@ -2,7 +2,7 @@
 
 > Source: translated from the Japanese original at md_files/02_設計書/1-エンジン分離設計.md (archived).
 
-**Position**: A detailed elaboration of [ARCHITECTURE_DESIGN.md](./0-全体アーキテクチャ設計.md) §2.1–2.2.
+**Position**: A detailed elaboration of [ARCHITECTURE_DESIGN.md](./architecture.md) §2.1–2.2.
 Corresponds to the work order for the Engine lane's Day 1–5 and the Gameplay lane's Day 4–9 (**both lanes were carried out and completed by samatsum**).
 **Principle**: Separate the engine in stages while **always keeping the native build (MiniLibX/X11) working**.
 This document contains no implementation code (interface specifications and acceptance criteria only).
@@ -25,11 +25,11 @@ All work described in this document has been completed. It is written in the for
 **No work remains on the engine (C) side.**
 What remains is only the TypeScript server and frontend (W-02–W-16 / F-01–F-12).
 
-- Detailed implementation records: [3-エンジンPhase3レポート](../03_実装レポート/3-エンジンPhase3レポート.md)
-  / [4-エンジンE13E14レポート](../03_実装レポート/4-エンジンE13E14レポート.md)
+- Detailed implementation records: [3-エンジンPhase3レポート](../../archive/03_実装レポート/3-エンジンPhase3レポート.md)
+  / [4-エンジンE13E14レポート](../../archive/03_実装レポート/4-エンジンE13E14レポート.md)
 - Handover notes for the next person to use this engine (the W-10 owner):
-  the "Handover to W-10" section of [3-エンジンPhase3レポート](../03_実装レポート/3-エンジンPhase3レポート.md)
-- Overall progress: [5-バックログ](./5-バックログ.md) / ownership: [6-チーム分担計画](./6-チーム分担計画.md)
+  the "Handover to W-10" section of [3-エンジンPhase3レポート](../../archive/03_実装レポート/3-エンジンPhase3レポート.md)
+- Overall progress: [5-バックログ](./backlog.md) / ownership: [6-チーム分担計画](../ja/チーム体制.html)
 
 ---
 
@@ -191,7 +191,7 @@ Currently, "the camera = the sole player, `t_enemy` list = NPCs." Comparison of 
 All 4 items above are implemented (G-01 through G-04).
 The player became one node in the `world.enemies` list, and the difference between an AI slot and a human slot is now
 just `input_source` (`AI` / `EXTERNAL`). "Ownership: Engine for structure, Gameplay for rules" was the original division of labor
-plan; in practice, samatsum carried out both ([6-チーム分担計画](./6-チーム分担計画.md)).
+plan; in practice, samatsum carried out both ([6-チーム分担計画](../ja/チーム体制.html)).
 
 ### 3-D. Snapshot structure (source data for WS distribution)
 
@@ -214,7 +214,7 @@ plan; in practice, samatsum carried out both ([6-チーム分担計画](./6-チ�
 - **Only `world_delta` is unimplemented** (the sole intentional deferral).
   It was skipped because it is not needed for the Gate 2 RSP 2v2 milestone. It will be added when FPS goes online (W-14), via
   "accumulating the list of collected coordinates + sending the full set on the initial message"
-  (handover item #2 in [3-エンジンPhase3レポート](../03_実装レポート/3-エンジンPhase3レポート.md)).
+  (handover item #2 in [3-エンジンPhase3レポート](../../archive/03_実装レポート/3-エンジンPhase3レポート.md)).
 - "Under 1KB per message" and "no win/loss judgment code on the client" have both been achieved.
 
 ---
@@ -228,7 +228,7 @@ plan; in practice, samatsum carried out both ([6-チーム分担計画](./6-チ�
 | Conversion | At build time, batch-convert XPM → raw RGBA (a custom `.tex` binary with a width/height header). The conversion script reuses the existing XPM-processing assets in `PythonCodes/` |
 | native | Uses `mlx_xpm_file_to_image` as before (unchanged) |
 | web | fetches the converted `.tex` files, writes them into WASM memory, and `pf_load_texture` returns them |
-| Texture contract key | **The texture path string as it comes from `.cub`** is adopted as the formal contract (⑤ [BACKLOG.md](./5-バックログ.md) D-16. The original idea of turning `t_texture_id` into an ID space was not adopted). web matches against the path keys in the `manifest.json` generated at conversion time, with `./` normalization; native reads `t_tex.path` directly as before |
+| Texture contract key | **The texture path string as it comes from `.cub`** is adopted as the formal contract (⑤ [BACKLOG.md](./backlog.md) D-16. The original idea of turning `t_texture_id` into an ID space was not adopted). web matches against the path keys in the `manifest.json` generated at conversion time, with `./` normalization; native reads `t_tex.path` directly as before |
 
 ### 4-B. `.cub` input path
 
@@ -309,9 +309,9 @@ the "Acceptance criteria," "Dependencies," and "Estimate" columns reflect the st
 
 - "Engine owner" / "Gameplay owner" reflect the original division-of-labor plan under the initial 4-lane structure.
   In practice, samatsum completed both lanes solo.
-  The currently valid ownership table is [6-チーム分担計画](./6-チーム分担計画.md).
+  The currently valid ownership table is [6-チーム分担計画](../ja/チーム体制.html).
 - The implementation content and verification results for each Issue are summarized across the 4 documents in
-  [03_実装レポート](../03_実装レポート/).
+  [03_実装レポート](../../archive/03_実装レポート/).
 
 ### Engine lane (in practice: samatsum)
 
@@ -360,5 +360,5 @@ the final item, E-13, was completed on 2026-07-23.
 
 | Date | Content |
 |---|---|
-| 2026-07-11 | §2, §4-A: revised `pf_load_texture` from an ID contract to a **path contract** (⑤ [BACKLOG.md](./5-バックログ.md) D-16. Formalizes the GATE1 implementation. Options comparison is in ⑤ §0) |
+| 2026-07-11 | §2, §4-A: revised `pf_load_texture` from an ID contract to a **path contract** (⑤ [BACKLOG.md](./backlog.md) D-16. Formalizes the GATE1 implementation. Options comparison is in ⑤ §0) |
 | 2026-07-23 | With the completion of all 24 Issues (E-01–E-14 / G-01–G-10), **implementation status made explicit in each section**. Added to §3-B a diff table against the implementation (addition of `game_set_input_source`, the flat f64 snapshot, `seed`); noted in §3-D that `world_delta` is unimplemented; added to §4-C the `target_score` lower bound and the non-adoption of map character `G`. Wrapped long lines for readability |

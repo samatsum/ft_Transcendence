@@ -2,7 +2,7 @@
 
 > Source: translated from the Japanese original at md_files/02_設計書/4-フロントエンド設計.md (archived).
 
-**Positioning**: This document translates the API contracts from [ARCHITECTURE_DESIGN.md](./0-全体アーキテクチャ設計.md) §2.4/§3.1, [WS_PROTOCOL_DESIGN.md](./2-WSプロトコル設計.md) (②) §3/§5/§7-B, and [REST_API_DESIGN.md](./3-REST_API設計.md) (③) into screen specifications. It corresponds to the work instructions for the Frontend lane (**mamiyaza** = non-game screens / **hminemur** = GameView / HUD).
+**Positioning**: This document translates the API contracts from [ARCHITECTURE_DESIGN.md](./architecture.md) §2.4/§3.1, [WS_PROTOCOL_DESIGN.md](./ws-protocol.md) (②) §3/§5/§7-B, and [REST_API_DESIGN.md](./rest-api.md) (③) into screen specifications. It corresponds to the Frontend lane's work instructions, structurally split into non-game screens and GameView/HUD — originally planned across mamiyaza (non-game) and hminemur (GameView/HUD), neither active as of 2026-08-05. **F-01, F-02, and F-06 are nonetheless done (implemented solo by samatsum), and F-07 is implemented but sits as an unmerged PR** ([#35](https://github.com/samatsum/ft_Transcendence/pull/35)); see [backlog.md](./backlog.md) §5 for per-issue status. F-03, F-04, F-05, F-08–F-12 remain **未完成 (not started)** and unassigned (see [`../ja/チーム体制.html`](../ja/チーム体制.html)).
 **Principle**: This document contains no implementation code (only screen composition, state, data sources, and acceptance criteria).
 
 ---
@@ -125,7 +125,7 @@ Translates the connection rules in ② into implementation contracts on the UI s
   On close code `4002` (room gone) → shows a toast + navigates to `/lobby`.
 - Incoming messages are validated with zod; **validation failures do not emit a console error** and instead go to a dev-log function (a no-op in production) (zero-console operation).
 - Interpolation follows the contract in ② §5-C (100ms delay, linear interpolation between 2 snapshots, own yaw takes local priority).
-  Implementation is shared with the E-08 receiving-end JS (division of ownership: **Engine = wasm calls and interpolation computation, already implemented by samatsum; hminemur = hooks, lifecycle, HUD reflection**).
+  Implementation is shared with the E-08 receiving-end JS (division of responsibility: **Engine = wasm calls and interpolation computation; hooks/lifecycle/HUD reflection = F-06/F-07 — both implemented by samatsum, F-07 still pending merge as PR #35**).
 
 ## 5. Common components (minimal set)
 

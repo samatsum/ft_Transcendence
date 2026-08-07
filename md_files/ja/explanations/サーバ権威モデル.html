@@ -432,17 +432,20 @@ int game_apply_snapshot(t_game* game, const double* snap, int len, int view_id)
 
 			<h3 style="margin-top: 30px">これが動く実例</h3>
 			<p class="section-intro">
-				本番のNodeサーバ（W-10）はまだ未実装でも、<strong>一方通行の全経路が動くデモ</strong>があります。
+				本番のNodeサーバ（W-10）・GameView（F-06）は<strong>どちらも完了済み</strong>です。
+				以下は開発初期に作った、一方通行の全経路だけを確認するための単体デモで、
+				W-10/F-06完了後も参照実装として残しています。
 			</p>
 			<pre><code>web/sim_demo/record.mjs    sim.wasm を回して写真を撮り、snapshots.json に保存
-        │  （＝サーバ役）
+        │  （＝サーバ役のデモ）
         ▼
-web/sim_demo/replay.html   snapshots.json を読み、補間して描画（＝ブラウザ役）</code></pre>
+web/sim_demo/replay.html   snapshots.json を読み、補間して描画（＝ブラウザ役のデモ）</code></pre>
 			<div class="callout" style="margin-top: 18px">
 				<strong>F-06は、この <code>replay.html</code> の「<code>snapshots.json</code> を読む」
-				ところを「WSで受信する」に差し替えるだけ</strong>でGameViewになります。
+				ところを「WSで受信する」に差し替える形で実装済み</strong>です（<code>GameView.tsx</code>）。
 				補間（<code>snapshot_interp.js</code>）と受け口（<code>game_apply_snapshot</code>）は
-				そのまま流用できます。
+				そのまま流用されています。HUD（F-07）は実装済みですが未マージのままです
+				（<a href="https://github.com/samatsum/ft_Transcendence/pull/35">PR #35</a>）。
 			</div>
 		</section>
 
@@ -624,7 +627,7 @@ typedef enum e_input_source
 			<p class="section-kicker">10 · FAQ</p>
 			<h2>テクニカルリード自己確認 — サーバ権威と戦闘員統合の抜粋</h2>
 			<p class="section-intro">
-				<a href="../../説明用/コード想定Q&amp;A-テクニカルリード自己確認.md">コード想定Q&amp;A</a>
+				<a href="../../../archive/説明用/コード想定Q&amp;A-テクニカルリード自己確認.md">旧・コード想定Q&amp;A（archive、学習用）</a>
 				から、このページのテーマ（サーバ権威・スナップショット・補間・戦闘員/席の統合）に
 				関わる項目だけを抜粋しています。他のテーマ（engine/pf_*構造、buildターゲット、
 				WASM、ディレクトリ構成、.cubマップ）の項目は他のページに分けています。
@@ -697,11 +700,11 @@ typedef enum e_input_source
 			<h2>このHTMLは説明用。契約の正本は設計書</h2>
 			<div class="grid grid-3">
 				<article class="card">
-					<h3><a href="../../02_設計書/1-エンジン分離設計.md">① エンジン分離設計 §3-C/D</a></h3>
+					<h3><a href="../../ai/engine-separation.md">① エンジン分離設計 §3-C/D</a></h3>
 					<p>マルチプレイヤー一般化とスナップショット構造の正本。</p>
 				</article>
 				<article class="card">
-					<h3><a href="../../02_設計書/2-WSプロトコル設計.md">② WSプロトコル設計 §5-C</a></h3>
+					<h3><a href="../../ai/ws-protocol.md">② WSプロトコル設計 §5-C</a></h3>
 					<p>配信・JSON形・tickなど、W-11の正本。「なぜ配信は15Hzなのか」もここ。</p>
 				</article>
 				<article class="card">

@@ -12,7 +12,7 @@ cub3D is a first-person 3D renderer built on MiniLibX (X11), with game logic lay
 
 Rendering uses raycasting (DDA), scanning the screen column by column to draw walls, floor, ceiling, and sprites — a classic technique.
 
-**Important change after the ft_transcendence migration**: the engine no longer talks to MiniLibX directly; it now runs **through the platform layer `pf_*` (`includes/platform/platform.h`)**. From the same sim/render code, three targets are built: **native (MiniLibX) / web (`render.wasm`) / headless (`sim.wasm`, the server-authoritative sim)** (see [1-エンジン分離設計](../02_設計書/1-エンジン分離設計.md)). Also, the player is not a special case — it is **one node in the combatant list** (the only difference is whether the input source is AI or external. See §5).
+**Important change after the ft_transcendence migration**: the engine no longer talks to MiniLibX directly; it now runs **through the platform layer `pf_*` (`includes/platform/platform.h`)**. From the same sim/render code, three targets are built: **native (MiniLibX) / web (`render.wasm`) / headless (`sim.wasm`, the server-authoritative sim)** (see [1-エンジン分離設計](./engine-separation.md)). Also, the player is not a special case — it is **one node in the combatant list** (the only difference is whether the input source is AI or external. See §5).
 
 The lifecycle is as follows (`codes/srcs/common/main.c`, for native):
 
@@ -303,7 +303,7 @@ game_set_input / sim_set_input ──► per-seat t_input (headless = server)
                        └── pf_present + write_ui_text
 ```
 
-**In server-authoritative mode (`sim.wasm`), the rendering side of the diagram above does not exist at all.** The server runs `game_step` at 30Hz, and distributes the state returned by `game_snapshot` to clients. The client (`render.wasm`) writes the received snapshot into the display-side `t_game` via `game_apply_snapshot`, and simply draws it with `web_render_frame` (**there is no win/loss-judging code on the client**). For details, see [3-エンジンPhase3レポート](../03_実装レポート/3-エンジンPhase3レポート.md).
+**In server-authoritative mode (`sim.wasm`), the rendering side of the diagram above does not exist at all.** The server runs `game_step` at 30Hz, and distributes the state returned by `game_snapshot` to clients. The client (`render.wasm`) writes the received snapshot into the display-side `t_game` via `game_apply_snapshot`, and simply draws it with `web_render_frame` (**there is no win/loss-judging code on the client**). For details, see [3-エンジンPhase3レポート](../../archive/03_実装レポート/3-エンジンPhase3レポート.md).
 
 Rendering options are controlled by flags on `t_game.options` (`types.h`).
 
@@ -384,7 +384,7 @@ By default, Compose runs the container as root to avoid bind-mount permission er
 
 ### Coding Standards
 
-The authoritative source for the C coding rules is [CODING_RULES.md](./コーディング規約.md). The `CRxxx` identifiers shown in `make check` output correspond to rule IDs in that document.
+The authoritative source for the C coding rules is [CODING_RULES.md](./coding-rules.md). The `CRxxx` identifiers shown in `make check` output correspond to rule IDs in that document.
 
 Review covers not just formatting but also granularity, high cohesion/low coupling, complexity, resource cleanup, and risk of undefined behavior. The 42 cub3D allowed-function constraints also apply (`open/close/read/write/printf/malloc/free/perror/strerror/exit/gettimeofday`, math functions, MiniLibX, and hand-written functions). The `pthread` family used by the parallel renderer is a deliberate exception.
 
@@ -397,7 +397,7 @@ python3 codes/PythonCodes/lint.py --list     # list of available checks
 python3 codes/PythonCodes/lint.py --fix      # inserts missing separators / comment templates
 ```
 
-`make check` checks the mechanically-verifiable gate items from [CODING_RULES.md](./コーディング規約.md). `make audit` additionally shows advisory items such as magic numbers.
+`make check` checks the mechanically-verifiable gate items from [CODING_RULES.md](./coding-rules.md). `make audit` additionally shows advisory items such as magic numbers.
 
 ## 9. Result Screenshots
 

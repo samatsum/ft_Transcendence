@@ -25,7 +25,7 @@
 > - On the web-app side, the skeleton (W-01) is complete.
 >
 > **What remains is the TypeScript server and frontend** (the part that connects online play).
-> For detailed progress, see [5-Backlog §1](../02_設計書/5-バックログ.md); for role assignments, see [6-Team Assignment Plan](../02_設計書/6-チーム分担計画.md).
+> For detailed progress, see [5-Backlog §1](./backlog.md); for role assignments, see [6-Team Assignment Plan](../ja/チーム体制.html).
 >
 > ### Status by module
 >
@@ -51,7 +51,7 @@
 > During evaluation, **a demo is requested for each declared module, and an incomplete one scores 0pt** (Chapter IV).
 > For this reason, ◎ items are those the team "will definitely finish and declare," while 〇 items are "declared only if working."
 >
-> The rationale for adoption decisions is in [0-Overall Architecture Design §4](../02_設計書/0-全体アーキテクチャ設計.md) (module selection and point calculation); the authoritative breakdown of mandatory requirements is in the same document's §5.
+> The rationale for adoption decisions is in [0-Overall Architecture Design §4](./architecture.md) (module selection and point calculation); the authoritative breakdown of mandatory requirements is in the same document's §5.
 
 ---
 

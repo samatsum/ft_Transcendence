@@ -65,8 +65,8 @@ C エンジンを `emcc` で WASM にビルドした成果物（`build/`）と�
 
 つまりオンラインは「`sim_demo/replay.html` の作り（snapshot 駆動）」を TypeScript で
 本番化したもので、`engine_demo`（ローカル単体）とは駆動の仕方が別です
-（[サーバ権威モデル](../md_files/ja/explanations/server-authority-model.html) /
-[ビルドと実行](../md_files/ja/explanations/build-and-run.html)）。
+（[サーバ権威モデル](../md_files/ja/explanations/サーバ権威モデル.html) /
+[ビルドと実行](../md_files/ja/explanations/ビルドと実行.html)）。
 
 ---
 

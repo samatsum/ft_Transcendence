@@ -103,7 +103,7 @@
 				<article class="card">
 					<p class="card-label">最大の上流ブロッカー</p>
 					<p class="metric">04/05</p>
-					<p class="metric-note">torinoueの本認証とOrigin共通化。W-08の最終受入に必要</p>
+					<p class="metric-note">本認証とOrigin共通化（W-04/05、未完成・担当未定）。W-08の最終受入に必要</p>
 				</article>
 			</div>
 			<div class="callout warning" style="margin-top: 18px">
@@ -180,8 +180,7 @@
 				<button class="filter-button" type="button" data-filter="done" aria-pressed="false">完了</button>
 				<button class="filter-button" type="button" data-filter="partial" aria-pressed="false">部分完了</button>
 				<button class="filter-button" type="button" data-filter="todo" aria-pressed="false">未完</button>
-				<button class="filter-button" type="button" data-filter="torinoue" aria-pressed="false">torinoue</button>
-				<button class="filter-button" type="button" data-filter="samatsum" aria-pressed="false">samatsum</button>
+				<button class="filter-button" type="button" data-filter="samatsum" aria-pressed="false">samatsum担当</button>
 			</div>
 
 			<div class="issue-grid">
@@ -189,29 +188,29 @@
 					<div class="issue-id">W-01</div>
 					<div><h3>Webアプリの骨格</h3><p><code>app/backend</code>・<code>frontend</code>・<code>shared</code>・<code>infra</code>を作り、全員が並行着手できる床を用意。</p><div class="issue-meta"><span class="tag owner">samatsum</span><span class="tag status-done">完了</span></div></div>
 				</article>
-				<article class="issue-card" data-status="todo" data-owner="torinoue">
+				<article class="issue-card" data-status="todo">
 					<div class="issue-id">W-02</div>
-					<div><h3>Fastify共通処理</h3><p>ログ、zod検証、RESTエラー形式、レート制限を全APIで同じにする。W-01の起動骨格はあるが受入は未完。</p><div class="issue-meta"><span class="tag owner">torinoue</span><span class="tag status-todo">未完</span></div></div>
+					<div><h3>Fastify共通処理</h3><p>ログ、zod検証、RESTエラー形式、レート制限を全APIで同じにする。W-01の起動骨格はあるが受入は未完。</p><div class="issue-meta"><span class="tag status-todo">未完成（担当未定）</span></div></div>
 				</article>
-				<article class="issue-card" data-status="todo" data-owner="torinoue">
+				<article class="issue-card" data-status="todo">
 					<div class="issue-id">W-03</div>
-					<div><h3>Prisma + SQLite</h3><p>User・Session・Friendship・Match・MatchPlayerの正本を作り、migrationで再現可能にする。</p><div class="issue-meta"><span class="tag owner">torinoue</span><span class="tag status-todo">未完</span></div></div>
+					<div><h3>Prisma + SQLite</h3><p>User・Session・Friendship・Match・MatchPlayerの正本を作り、migrationで再現可能にする。</p><div class="issue-meta"><span class="tag status-todo">未完成（担当未定）</span></div></div>
 				</article>
-				<article class="issue-card" data-status="todo" data-owner="torinoue">
+				<article class="issue-card" data-status="todo">
 					<div class="issue-id">W-04</div>
-					<div><h3>認証</h3><p>signup/login/logout/me、argon2id、Session Cookieを実装し、RESTとWSの「誰か」を確定する。</p><div class="issue-meta"><span class="tag owner">torinoue</span><span class="tag status-todo">開発用スタブのみ</span></div></div>
+					<div><h3>認証</h3><p>signup/login/logout/me、argon2id、Session Cookieを実装し、RESTとWSの「誰か」を確定する。</p><div class="issue-meta"><span class="tag status-todo">未完成（開発用スタブのみ・担当未定）</span></div></div>
 				</article>
-				<article class="issue-card" data-status="todo" data-owner="torinoue">
+				<article class="issue-card" data-status="todo">
 					<div class="issue-id">W-05</div>
-					<div><h3>OriginとCookie認可</h3><p>異Originの変更系RESTとWSを拒否し、認証判定をロビー/ゲーム双方で共用する。</p><div class="issue-meta"><span class="tag owner">torinoue</span><span class="tag status-todo">開発用判定のみ</span></div></div>
+					<div><h3>OriginとCookie認可</h3><p>異Originの変更系RESTとWSを拒否し、認証判定をロビー/ゲーム双方で共用する。</p><div class="issue-meta"><span class="tag status-todo">未完成（開発用判定のみ・担当未定）</span></div></div>
 				</article>
-				<article class="issue-card" data-status="todo" data-owner="torinoue">
+				<article class="issue-card" data-status="todo">
 					<div class="issue-id">W-06</div>
-					<div><h3>アバター</h3><p>2MB上限、MIMEとマジックバイト検査、nginx静的配信までを安全に通す。</p><div class="issue-meta"><span class="tag owner">torinoue</span><span class="tag status-todo">未完・切り捨て候補</span></div></div>
+					<div><h3>アバター</h3><p>2MB上限、MIMEとマジックバイト検査、nginx静的配信までを安全に通す。</p><div class="issue-meta"><span class="tag status-todo">未完成・切り捨て候補（担当未定）</span></div></div>
 				</article>
-				<article class="issue-card" data-status="todo" data-owner="torinoue">
+				<article class="issue-card" data-status="todo">
 					<div class="issue-id">W-07</div>
-					<div><h3>フレンドAPI</h3><p>申請・承認・削除とpresence合成を持つ。W-08はfriend resolverの差込口まで準備済み。</p><div class="issue-meta"><span class="tag owner">torinoue</span><span class="tag status-todo">未完・切り捨て候補</span></div></div>
+					<div><h3>フレンドAPI</h3><p>申請・承認・削除とpresence合成を持つ。W-08はfriend resolverの差込口まで準備済み。</p><div class="issue-meta"><span class="tag status-todo">未完成・切り捨て候補（担当未定）</span></div></div>
 				</article>
 				<article class="issue-card" data-status="partial" data-owner="samatsum">
 					<div class="issue-id">W-08</div>
@@ -233,21 +232,21 @@
 					<div class="issue-id">W-12</div>
 					<div><h3>切断・復帰・AI代替</h3><p>30秒grace、人間→AI、復帰時AI→人間、RSP全員離脱、FPS放置/明示leaveの不戦勝まで実WebSocketで検証済み。</p><div class="issue-meta"><span class="tag owner">samatsum</span><span class="tag status-done">完了</span></div></div>
 				</article>
-				<article class="issue-card" data-status="todo" data-owner="torinoue">
+				<article class="issue-card" data-status="todo" data-owner="samatsum">
 					<div class="issue-id">W-13</div>
-					<div><h3>試合永続化と統計</h3><p>match_endをDBのMatch/MatchPlayerへ1回だけ保存し、履歴・統計APIとロビーmatch_resultへ展開。</p><div class="issue-meta"><span class="tag owner">torinoue + samatsum連携</span><span class="tag status-todo">未完</span></div></div>
+					<div><h3>試合永続化と統計</h3><p>match_endをDBのMatch/MatchPlayerへ1回だけ保存し、履歴・統計APIとロビーmatch_resultへ展開。</p><div class="issue-meta"><span class="tag owner">samatsum（結合支援）</span><span class="tag status-todo">未完成（担当未定・W-03待ち）</span></div></div>
 				</article>
 				<article class="issue-card" data-status="done" data-owner="samatsum">
 					<div class="issue-id">W-14</div>
 					<div><h3>マップ配布</h3><p><code>GET /api/maps</code>と<code>welcome.map_text</code>を同じホワイトリストへ結び、サーバーが読む本文と一致させる。</p><div class="issue-meta"><span class="tag owner">samatsum</span><span class="tag status-done">完了</span></div></div>
 				</article>
-				<article class="issue-card" data-status="todo" data-owner="torinoue">
+				<article class="issue-card" data-status="todo">
 					<div class="issue-id">W-15</div>
-					<div><h3>Docker / nginx / TLS</h3><p>空cloneから<code>docker compose up</code>だけでWASM生成、migration、HTTPS、WS proxyまで起動する。</p><div class="issue-meta"><span class="tag owner">torinoue</span><span class="tag status-todo">engine-build土台のみ</span></div></div>
+					<div><h3>Docker / nginx / TLS</h3><p>空cloneから<code>docker compose up</code>だけでWASM生成、migration、HTTPS、WS proxyまで起動する。</p><div class="issue-meta"><span class="tag status-todo">未完成（engine-build土台のみ・担当未定）</span></div></div>
 				</article>
-				<article class="issue-card" data-status="todo" data-owner="mamiyaza">
+				<article class="issue-card" data-status="todo">
 					<div class="issue-id">W-16</div>
-					<div><h3>CIの製品層拡張</h3><p>E-14のC/WASM検査を守りつつ、Frontend lint・型検査・buildを毎PRの必須検査へ追加。</p><div class="issue-meta"><span class="tag owner">mamiyaza / samatsum review</span><span class="tag status-todo">既存CI土台あり</span></div></div>
+					<div><h3>CIの製品層拡張</h3><p>E-14のC/WASM検査を守りつつ、Frontend lint・型検査・buildを毎PRの必須検査へ追加。</p><div class="issue-meta"><span class="tag status-todo">未完成（既存CI土台あり・担当未定）</span></div></div>
 				</article>
 			</div>
 		</section>
@@ -256,11 +255,12 @@
 			<p class="section-kicker">05 · Dependencies</p>
 			<h2>次に進む順番は、番号順ではない</h2>
 			<p class="section-intro">
-				W-12まで接続済みです。現在は本認証をW-08へ結合するレーンと、W-13の試合永続化を進めます。
+				W-12まで接続済みです。W-02〜W-07・W-13・W-15・W-16は現在担当未定で未完成のまま残っています。
+				samatsumが単独稼働のなかで、本認証をW-08へ結合するレーンと、W-13の試合永続化支援を進めます。
 			</p>
 			<div class="grid grid-2">
 				<article class="card">
-					<p class="card-label">torinoue · Backend foundation</p>
+					<p class="card-label">Backend foundation（未完成・担当未定）</p>
 					<ol class="path-list">
 						<li><div><strong>W-02 → W-03</strong><span>共通Fastify処理とDB正本を置く</span></div></li>
 						<li><div><strong>W-04 → W-05</strong><span>本Cookie認証とOrigin共通化を閉じる</span></div></li>
@@ -372,7 +372,7 @@
 					<p>W-01〜W-16の受入条件・依存・進捗の正本（英語MD。AI向け資料）。</p>
 				</article>
 				<article class="card">
-					<h3><a href="./team-plan.html">⑥ チーム体制</a></h3>
+					<h3><a href="./チーム体制.html">⑥ チーム体制</a></h3>
 					<p>役割・レーンの枠組み。2026-08-05にsamatsum単独稼働の体制へ更新。</p>
 				</article>
 				<article class="card">
@@ -384,7 +384,7 @@
 					<p>W-02〜W-07/W-13/W-14のREST・DB契約（英語MD。AI向け資料）。</p>
 				</article>
 				<article class="card">
-					<h3><a href="../explanations/engine-architecture.html">エンジン構成</a></h3>
+					<h3><a href="./explanations/エンジン構成.html">エンジン構成</a></h3>
 					<p>E/Gからappへ移る境界を含む、エンジン構成の説明（旧「appとweb」を統合）。</p>
 				</article>
 			</div>
