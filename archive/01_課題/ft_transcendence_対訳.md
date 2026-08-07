@@ -791,7 +791,7 @@ This module requires you to have implemented at least one game (see "Gaming and 
   - Visual feedback for users (notifications, progress bars, etc.)
   - Clear rules and progression mechanics
 
-- Minor: ユーザーの行動を報酬するゲーミフィケーションシステム。
+- Minor: ユーザーの行動に応じて報酬を与えるゲーミフィケーションシステム。
   - 以下のうち少なくとも3つを実装する: 実績、バッジ、リーダーボード、XP/レベルシステム、デイリーチャレンジ、報酬
   - システムは永続的でなければならない（データベースに保存）
   - ユーザーへの視覚的フィードバック（通知、プログレスバーなど）
@@ -952,14 +952,14 @@ Pongゲーム（元のプロジェクトのようなもの）を作成する場�
 - Web: Use frameworks (frontend + backend = 2pts) + ORM (1pt) = 3 points
 - Artificial Intelligence: AI Opponent (2pts) = 2 points
 
-- Gaming and user experience: Web-based game（2pts）+ Remote players（2pts）+ Tournament system（1pt）+ Game customization（1pt）= 6 points
-- User Management: Standard user management（2pts）+ OAuth（1pt）= 3 points
-- Web: Use frameworks（frontend + backend = 2pts）+ ORM（1pt）= 3 points
-- Artificial Intelligence: AI Opponent（2pts）= 2 points
+- Gaming and user experience: Web-based game（2ポイント）+ Remote players（2ポイント）+ Tournament system（1ポイント）+ Game customization（1ポイント）= 6ポイント
+- User Management: Standard user management（2ポイント）+ OAuth（1ポイント）= 3ポイント
+- Web: Use frameworks（frontend + backend = 2ポイント）+ ORM（1ポイント）= 3ポイント
+- Artificial Intelligence: AI Opponent（2ポイント）= 2ポイント
 
 Total: 14 points
 
-合計: 14 points
+合計: 14ポイント
 
 This is just one example. You can mix and match modules from different categories to create your own unique project. The key is to ensure that your modules work together coherently and add value to your application.
 
@@ -1107,7 +1107,7 @@ These projects help users organize and manage their work:
 - Code Collaboration Platform: コードスニペット共有、共同コーディング、バージョン管理、議論。
   - 推奨モジュール: User interaction、Real-time collaborative features、Public API、Advanced search、Custom design system
   - ポイント見込み: 14+ points
-- Booking System: リソース（部屋、機材、予約）の予約、カレンダー、通知。
+- Booking System: 部屋、機材、予約枠などの予約、カレンダー、通知。
   - 推奨モジュール: User interaction、Organization system、Notification system、Public API、Advanced search
   - ポイント見込み: 14+ points
 - Marketplace Platform: 商品の売買、ユーザー評価、メッセージング、決済連携、検索機能。
