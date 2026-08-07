@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="ja">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="color-scheme" content="dark">
+	<title>42モジュール対応表 — ft_transcendence</title>
+	<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+	<header class="hero">
+		<div class="shell">
+			<p class="eyebrow">42評価 · Module ↔ Code 対応表</p>
+			<h1>「このモジュールは<br>どこで確認できますか」に、即答する。</h1>
+			<p class="hero-lead">
+				評価当日、審査員に加点モジュールや必須要件を1つずつ聞かれたときに開く一枚です。
+				どのモジュールが・何ptで・今どこまで実装済みで・コードのどこを見せればよいかを、
+				このページだけで確認できるようにします。モジュール選定の根拠そのものは
+				<a href="../../ai/architecture.md">architecture.md §4</a>が正本、ここはその「今の実装状況」版です。
+			</p>
+			<div class="hero-note">
+				<strong>2026-08-07時点</strong>
+				申告予定は必須14pt＋ボーナス5pt＝19pt。ただし<strong>下の「重要な注意」を必ず先に読んでください</strong>
+				——多くのモジュールが、正規のログインを迂回する開発用フラグ経由でしか動作確認できていません。
+			</div>
+		</div>
+	</header>
+
+	<nav class="topnav" aria-label="ページ内目次">
+		<div class="shell nav-inner">
+			<a href="#summary">重要な注意</a>
+			<a href="#core">必須14pt</a>
+			<a href="#bonus">ボーナス+5pt</a>
+			<a href="#insurance">予備モジュール</a>
+			<a href="#mandatory">必須要件（第III章）</a>
+			<a href="#demo">評価当日の動線</a>
+			<a href="#references">正本</a>
+			<button class="print-button" type="button" onclick="window.print()">印刷 / PDF</button>
+		</div>
+	</nav>
+
+	<main class="shell">
+		<section id="summary">
+			<p class="section-kicker">01 · Read this first</p>
+			<h2>重要な注意: 「動く」と「評価当日にそのまま見せられる」は別</h2>
+			<p class="section-intro">
+				W-08〜W-12・F-06/F-07で実証済みの機能の多くは、<code>ALLOW_DEV_AUTH=true</code>という
+				開発専用フラグで本認証（W-04）を迂回して動かしています（<a href="../../../app/backend/src/auth/session.ts"><code>auth/session.ts</code></a>）。
+				エンジン・WS・対戦ループそのものは実機で証明済みですが、<strong>「ログイン→ロビー→対戦」という
+				評価当日に審査員へ見せる正規の導線は、W-04（本認証）が閉じるまで存在しません</strong>。
+				下の表の「部分完了」は、この意味で「コードはあるが正規フローでは未実証」を含みます。
+			</p>
+			<div class="grid grid-4">
+				<article class="card">
+					<p class="card-label">必須14pt</p>
+					<p class="metric">1<small> 完了 / 8</small></p>
+					<p class="metric-note">完了1・部分完了4・未着手3（詳細は<a href="#core">§03</a>）</p>
+				</article>
+				<article class="card">
+					<p class="card-label">ボーナス+5pt</p>
+					<p class="metric">1<small> 完了 / 3</small></p>
+					<p class="metric-note">完了1・部分完了2（詳細は<a href="#bonus">§04</a>）</p>
+				</article>
+				<article class="card">
+					<p class="card-label">予備モジュール</p>
+					<p class="metric">0<small> / 4</small></p>
+					<p class="metric-note">未選択・未着手。時間が余れば挑戦（詳細は<a href="#insurance">§05</a>）</p>
+				</article>
+				<article class="card">
+					<p class="card-label">最大の上流ブロッカー</p>
+					<p class="metric">W-04</p>
+					<p class="metric-note">本認証が無いと大半のモジュールが正規導線で見せられない</p>
+				</article>
+			</div>
+			<div class="callout warning" style="margin-top: 18px">
+				<strong>特に注意（評価で0ptになりやすい2点）:</strong>
+				<ul style="margin: 10px 0 0 20px; padding: 0;">
+					<li><strong>Privacy/ToS（必須要件）</strong>: <a href="../../../app/frontend/src/pages/PrivacyPage.tsx"><code>PrivacyPage.tsx</code></a>は現状「本文はF-04で書く」という断り書きが表示されるプレースホルダーです。42の評価は<strong>プレースホルダー厳禁</strong>と明記しており、このままだと該当項目は0pt扱いになり得ます</li>
+					<li><strong>HTTPS（必須要件）</strong>: nginx/TLS（W-15）が未着手のため、現状は評価環境で要求される「アドレスバーでHTTPS確認」ができません</li>
+				</ul>
+			</div>
+		</section>
+
+		<section id="core">
+			<p class="section-kicker">02 · Core 14pt</p>
+			<h2>必須加点モジュール（申告予定・14pt）</h2>
+			<p class="section-intro">
+				モジュール選定の根拠は<a href="../../ai/architecture.md">architecture.md §4.1</a>。ここでは各モジュールの
+				「今どこまで実装済みか」と「見せるべきコード」だけに絞ります。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>#</th><th>モジュール</th><th>pt</th><th>状態</th><th>コード入口</th><th>備考</th></tr></thead>
+					<tbody>
+						<tr><td>1</td><td>完全にWebベースのゲーム実装（RSP）</td><td>2</td><td><span class="tag status-partial">部分完了</span></td><td><a href="../../../codes/"><code>codes/</code></a>（RSPエンジン）・<a href="../../../app/frontend/src/pages/GameView.tsx"><code>GameView.tsx</code></a></td><td>エンジン+対戦ループは2ブラウザで実証済み。正規ログイン導線はF-05/W-04待ち</td></tr>
+						<tr><td>2</td><td>リモートプレイヤー</td><td>2</td><td><span class="tag status-partial">部分完了</span></td><td><a href="../../../app/backend/src/game/room.ts"><code>game/room.ts</code></a>・<a href="../../../app/frontend/src/game/useGameSocket.ts"><code>useGameSocket.ts</code></a></td><td>サーバー権威+補間+30秒切断復帰（W-12）まで実証済み。ALLOW_DEV_AUTH経由</td></tr>
+						<tr><td>3</td><td>マルチプレイヤー（3人以上）</td><td>2</td><td><span class="tag status-partial">部分完了</span></td><td><a href="../../../app/backend/src/lobby/rooms.ts"><code>lobby/rooms.ts</code></a></td><td>RSP 2v2＝4人はエンジン・ロビーコアとも対応済み。ロビーUI（F-05）が無く画面から到達不可</td></tr>
+						<tr><td>4</td><td>FE/BE双方でフレームワーク使用</td><td>2</td><td><span class="tag status-done">完了</span></td><td><a href="../../../app/frontend/"><code>app/frontend/</code></a>（React）・<a href="../../../app/backend/"><code>app/backend/</code></a>（Fastify）</td><td>F-01/W-01。両方起動しビルド警告ゼロを確認済み</td></tr>
+						<tr><td>5</td><td>WebSocketsによるリアルタイム機能</td><td>2</td><td><span class="tag status-partial">部分完了</span></td><td><a href="../../../app/backend/src/game/ws.ts"><code>game/ws.ts</code></a>（完了）・<a href="../../../app/backend/src/lobby/ws.ts"><code>lobby/ws.ts</code></a>（コアのみ）</td><td>ゲームWSは完了（W-11）。ロビーWSは本認証・Origin結合待ち（W-08最終）</td></tr>
+						<tr><td>6</td><td>標準的なユーザー管理・認証</td><td>2</td><td><span class="tag status-todo">未着手</span></td><td><a href="../../../app/backend/src/auth/session.ts"><code>auth/session.ts</code></a></td><td>開発用スタブのみ。signup/login/argon2id/Cookieは未実装（W-04）</td></tr>
+						<tr><td>7</td><td>ORMの使用（Prisma）</td><td>1</td><td><span class="tag status-todo">未着手</span></td><td>—（<code>schema.prisma</code>が存在しない）</td><td>DB接続そのものが無い（W-03）</td></tr>
+						<tr><td>8</td><td>ゲーム統計・対戦履歴</td><td>1</td><td><span class="tag status-todo">未着手</span></td><td>—</td><td>match_result永続化（W-13）が無いため集計元データが無い</td></tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+
+		<section id="bonus">
+			<p class="section-kicker">03 · Bonus +5pt</p>
+			<h2>ボーナスモジュール（申告予定・+5pt上限）</h2>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>#</th><th>モジュール</th><th>pt</th><th>状態</th><th>コード入口</th><th>備考</th></tr></thead>
+					<tbody>
+						<tr><td>9</td><td>AI対戦相手</td><td>2</td><td><span class="tag status-done">完了</span></td><td><a href="../../../codes/"><code>codes/</code></a>（G系列、AI判定ロジック）</td><td>RSP/FPS双方のAI完成。<code>game_set_input_source</code>でAI⇔人間の切替も実証済み</td></tr>
+						<tr><td>10</td><td>もう1つのゲーム（履歴+マッチメイキング付き、FPS）</td><td>2</td><td><span class="tag status-partial">部分完了</span></td><td><a href="../../../codes/"><code>codes/</code></a>（FPSエンジン）</td><td>エンジンは完成。履歴（W-13）・マッチメイキング（W-08最終結合）が共通基盤未完のため接続できていない</td></tr>
+						<tr><td>11</td><td>ゲームカスタマイズオプション</td><td>1</td><td><span class="tag status-partial">部分完了</span></td><td><a href="../../../codes/"><code>codes/</code></a>（<code>target_score</code>・マップ選択パラメータ）</td><td>エンジン側パラメータは対応済み。選択UI（F-05/F-08相当）が無い</td></tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+
+		<section id="insurance">
+			<p class="section-kicker">04 · Insurance modules</p>
+			<h2>予備モジュール（未選択・時間が余れば挑戦）</h2>
+			<p class="section-intro">
+				必須14pt＋ボーナス5pt＝19ptが確定するまでは着手しません。4つとも現状<span class="tag status-todo">未着手</span>です。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>優先度</th><th>モジュール</th><th>pt</th></tr></thead>
+					<tbody>
+						<tr><td>1</td><td>観戦モード</td><td>Minor 1</td></tr>
+						<tr><td>2</td><td>OAuth 2.0リモート認証（Google）</td><td>Minor 1</td></tr>
+						<tr><td>3</td><td>2FA（二要素認証）</td><td>Minor 1</td></tr>
+						<tr><td>4</td><td>Prometheus + Grafana監視</td><td>Major 2</td></tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+
+		<section id="mandatory">
+			<p class="section-kicker">05 · Mandatory requirements</p>
+			<h2>必須要件（第III章）のカバレッジ</h2>
+			<p class="section-intro">
+				モジュールとは別に、42の課題書 第III章が全チーム共通で要求する項目です。
+				根拠は<a href="../../ai/architecture.md">architecture.md §5</a>。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>必須要件</th><th>状態</th><th>コード入口 / 備考</th></tr></thead>
+					<tbody>
+						<tr><td>FE+BE+DBのWebアプリ</td><td><span class="tag status-partial">部分完了</span></td><td>FE/BEの骨格は起動する。DB接続（Prisma、W-03）が無い</td></tr>
+						<tr><td>全員からの明確なコミット</td><td><span class="tag status-done">完了（運用ルールとして）</span></td><td><a href="../../ai/git-workflow.md">git-workflow.md</a>のConventional Commits + PRレビュー運用を継続中。単独稼働という別リスクは<a href="../はじめに/チーム体制.html">チーム体制.html</a>参照</td></tr>
+						<tr><td>1コマンドでのコンテナ起動</td><td><span class="tag status-todo">未着手</span></td><td><code>docker compose up</code>で証明書生成・migration・WASM生成まで通す必要（W-15）。<a href="../../../infra/README.md">infra/README.md</a></td></tr>
+						<tr><td>最新安定版Chromeでの動作</td><td><span class="tag status-todo">未検証</span></td><td>専用の動作確認手順が未整備</td></tr>
+						<tr><td>コンソールに警告・エラーを出さない</td><td><span class="tag status-partial">部分完了</span></td><td>F-01でビルド警告ゼロは達成済み。全画面通しでの確認（ハードニング日）は未実施</td></tr>
+						<tr><td>Privacy Policy / 利用規約ページ</td><td><span class="tag status-todo">未着手</span></td><td><a href="../../../app/frontend/src/pages/PrivacyPage.tsx"><code>PrivacyPage.tsx</code></a>は現状プレースホルダー（F-04）。<strong>上の「重要な注意」参照</strong></td></tr>
+						<tr><td>複数ユーザーの同時利用</td><td><span class="tag status-partial">部分完了</span></td><td>複数GameRoomの同時稼働はサーバー側で実証済み（W-10）。正規ログインでの通し確認は未実施</td></tr>
+						<tr><td>レスポンシブ・アクセシブルなFE</td><td><span class="tag status-todo">未着手</span></td><td>F-11。375px幅・キーボード操作の確認が必要</td></tr>
+						<tr><td>envをGit管理外に + env.example</td><td><span class="tag status-done">完了</span></td><td><a href="../../../.env.example"><code>.env.example</code></a> / <a href="../../../.gitignore"><code>.gitignore</code></a></td></tr>
+						<tr><td>明確なスキーマとリレーション</td><td><span class="tag status-partial">部分完了</span></td><td>概念設計は<a href="../../ai/architecture.md">architecture.md §3.3</a>にある。実際の<code>schema.prisma</code>・ER図は未作成（W-03）</td></tr>
+						<tr><td>メール+パスワード認証（ハッシュ+ソルト）</td><td><span class="tag status-todo">未着手</span></td><td>argon2id採用は設計決定済みだが未実装（W-04）</td></tr>
+						<tr><td>FE/BE双方での入力検証</td><td><span class="tag status-partial">部分完了</span></td><td>WS側は<a href="../../../app/shared/src/ws/"><code>app/shared/src/ws/</code></a>の共有zodスキーマで運用中。REST側検証（W-02）は未着手</td></tr>
+						<tr><td>外部接続はすべてHTTPS</td><td><span class="tag status-todo">未着手</span></td><td>nginx TLS終端が未構築（W-15）</td></tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+
+		<section id="demo">
+			<p class="section-kicker">06 · Evaluation-day flow</p>
+			<h2>評価当日の想定デモ動線（要約）</h2>
+			<p class="section-intro">
+				フルの評価チェックリスト（4人チーム時に書かれた台本。**内容は今も有効、担当者名だけ
+				samatsum単独稼働に読み替える**）は<a href="../../ai/architecture.md">architecture.md §9.1</a>にあります。
+				ここでは骨子だけ書きます。
+			</p>
+			<div class="grid grid-2">
+				<article class="card">
+					<p class="card-label">デモA</p>
+					<h3>1ルーム・4人間・0AI</h3>
+					<p>core #3（3人以上のマルチプレイヤー、2pt）を人間だけで証明する。</p>
+				</article>
+				<article class="card">
+					<p class="card-label">デモB</p>
+					<h3>2ルーム・各「2人間+2AI」＝4窓</h3>
+					<p>複数ルーム同時稼働で競合が無いことを示す（第III.2章の要件）。</p>
+				</article>
+			</div>
+			<p class="section-intro" style="margin-top: 16px;">
+				台本の原則は「必須14pt→完了→その後ボーナス」の順。途中でcoreに問題が出たら、
+				ボーナスのデモは中止してcoreの修正を優先する、という判断ルールも決まっています（§9.1参照）。
+			</p>
+		</section>
+
+		<section id="references">
+			<p class="section-kicker">07 · Sources of truth</p>
+			<h2>このHTMLは説明用。数字と根拠の正本は設計書</h2>
+			<div class="grid grid-3">
+				<article class="card">
+					<h3><a href="../../ai/architecture.md">① 全体アーキテクチャ設計 §4/§5/§9</a></h3>
+					<p>モジュール選定の根拠・必須要件カバレッジ・評価当日チェックリスト（英語MD。AI向け資料）。</p>
+				</article>
+				<article class="card">
+					<h3><a href="../../ai/requirements.md">42課題書</a></h3>
+					<p>42配布の原文とこのチームの採否記号（◎/〇）（英語MD。AI向け資料）。</p>
+				</article>
+				<article class="card">
+					<h3><a href="../../ai/backlog.md">⑤ バックログ</a></h3>
+					<p>各モジュールを支えるE/G/W/F Issueの受入条件・進捗の正本（英語MD。AI向け資料）。</p>
+				</article>
+				<article class="card">
+					<h3><a href="../開発状況/サーバー開発工程.html">サーバー開発工程</a></h3>
+					<p>W-01〜W-16の詳細な進捗（このページの「未着手・部分完了」の裏付け）。</p>
+				</article>
+				<article class="card">
+					<h3><a href="../開発状況/フロントエンド開発工程.html">フロントエンド開発工程</a></h3>
+					<p>F-01〜F-12の詳細な進捗（このページの「未着手・部分完了」の裏付け）。</p>
+				</article>
+				<article class="card">
+					<h3><a href="../はじめに/チーム体制.html">⑥ チーム体制</a></h3>
+					<p>4〜5人要件との齟齬という、モジュール実装状況とは別の未解決リスク。</p>
+				</article>
+			</div>
+		</section>
+	</main>
+
+	<footer>
+		<div class="shell">
+			説明用資料 · 2026-08-07時点。
+			モジュールの状態が変わったら、まずバックログ（⑤）とarchitecture.md（①）を更新し、その後このHTMLを追従させてください。
+			<p>samatsumからの依頼（2026-08-07）を受けて新規作成。<code>docs/human/評価対応/</code>を新設し、他の「進捗」系ドキュメント（開発状況/）とは
+			内容の種類が違う（実装Issueの進捗ではなく、42の採点項目への対応状況）ため独立したカテゴリにしています。</p>
+		</div>
+	</footer>
+</body>
+</html>
