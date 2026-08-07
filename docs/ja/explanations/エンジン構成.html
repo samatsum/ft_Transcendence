@@ -77,17 +77,21 @@
 				MLXなのかCanvasなのか、何もしないのかは知らないし、知る必要もありません。
 			</div>
 
-			<pre><code>        ゲームのロジック（移動・衝突・敵AI・じゃんけん・スコア）
-                    ↑ ここは1つだけ。3か所で共通 ↑
-                             │
-                    pf_* を呼ぶ（ここが境界）
-                             │
-        ┌────────────────────┼────────────────────┐
-        ▼                    ▼                    ▼
-   pf_* の実装A          pf_* の実装B          pf_* の実装C
-   （MLX を使う）      （Canvas を使う）      （何もしない）
-        ▼                    ▼                    ▼
-   Linux アプリ           ブラウザ            Node サーバ</code></pre>
+			<pre class="mermaid">
+flowchart TD
+    logic["ゲームのロジック（移動・衝突・敵AI・じゃんけん・スコア）<br/>★3か所で共通、1つだけ★"]
+    boundary["pf_* を呼ぶ（ここが境界）"]
+    implA["pf_* の実装A<br/>（MLX を使う）"]
+    implB["pf_* の実装B<br/>（Canvas を使う）"]
+    implC["pf_* の実装C<br/>（何もしない）"]
+    native["Linux アプリ"]
+    browser["ブラウザ"]
+    server["Node サーバ"]
+    logic --> boundary
+    boundary --> implA --> native
+    boundary --> implB --> browser
+    boundary --> implC --> server
+			</pre>
 
 			<h3>10個の関数</h3>
 			<p>
@@ -379,15 +383,22 @@ void pf_present(t_window* w) { (void)w; }                        // 何もしな
 
 			<h3>実行時、各場所で動いているもの</h3>
 			<p>ブラウザとサーバ、<strong>どちらも中身は「JavaScript＋WASM」の2層</strong>です。</p>
-			<pre><code>┌─ プレイヤーのブラウザ ─────────────┐        ┌─ あなたのサーバ（Node）─────────┐
-│                                     │  通信   │                                 │
-│  JavaScript  ← フロントの TS から   │  (WS)   │  JavaScript  ← バックの TS から │
-│  （画面・入力・通信の"手"）         │◀──────▶│  （通信・DB・タイミングの"手"） │
-│      │ 呼ぶ                         │        │      │ 呼ぶ                     │
-│      ▼                              │        │      ▼                          │
-│  render.wasm ← C エンジンから       │        │  sim.wasm  ← C エンジンから     │
-│  （絵を計算する"脳"）               │        │  （勝敗を計算する"脳"）         │
-└─────────────────────────────────────┘        └─────────────────────────────────┘</code></pre>
+			<pre class="mermaid">
+flowchart LR
+    subgraph client["プレイヤーのブラウザ"]
+        direction TB
+        cjs["JavaScript（フロントのTSから）<br/>画面・入力・通信の「手」"]
+        cwasm["render.wasm（Cエンジンから）<br/>絵を計算する「脳」"]
+        cjs -->|"呼ぶ"| cwasm
+    end
+    subgraph srv["あなたのサーバ（Node）"]
+        direction TB
+        sjs["JavaScript（バックのTSから）<br/>通信・DB・タイミングの「手」"]
+        swasm["sim.wasm（Cエンジンから）<br/>勝敗を計算する「脳」"]
+        sjs -->|"呼ぶ"| swasm
+    end
+    client <-->|"通信 (WS)"| srv
+			</pre>
 			<p>「脳（WASM）と手（JavaScript）」のペアが、<strong>両方の場所にいる</strong>イメージです。</p>
 			<div class="table-wrap">
 				<table>
@@ -847,5 +858,36 @@ Cross-Origin-Embedder-Policy: require-corp</code></pre>
 		どの言語がどこで動くのか.md, appとweb-完成したエンジンとこれから作る層.md}
 		（いずれも archive/ に移設）
 	</footer>
+
+	<script type="module">
+		import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+		mermaid.initialize({
+			startOnLoad: true,
+			theme: "base",
+			themeVariables: {
+				darkMode: true,
+				background: "#07111f",
+				primaryColor: "#12243a",
+				primaryTextColor: "#edf6ff",
+				primaryBorderColor: "#29415d",
+				lineColor: "#5de4d6",
+				secondaryColor: "#0d1b2d",
+				secondaryTextColor: "#edf6ff",
+				secondaryBorderColor: "#29415d",
+				tertiaryColor: "#0d1b2d",
+				tertiaryTextColor: "#edf6ff",
+				tertiaryBorderColor: "#29415d",
+				fontFamily: "Inter, 'Noto Sans JP', sans-serif",
+				noteBkgColor: "#12243a",
+				noteTextColor: "#c4d4e6",
+				noteBorderColor: "#29415d",
+				actorBkg: "#12243a",
+				actorTextColor: "#edf6ff",
+				actorBorder: "#29415d",
+				signalColor: "#73a7ff",
+				signalTextColor: "#edf6ff"
+			}
+		});
+	</script>
 </body>
 </html>
