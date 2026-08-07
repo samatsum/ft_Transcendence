@@ -149,9 +149,10 @@ maps/fps_map/  に置いたマップ  →  FPS モード（1vs1 レース）</co
   </div>
 
   <p>
-    だから RSP マップは、赤 2 席・青 2 席が別マスに立つように
-    <code>N</code> <code>W</code> <code>S</code> <code>E</code> を配置します
-    （下の <code>rsp.cub</code> の例では各文字が 2 つずつありました）。
+    だから RSP マップは、赤チーム（<code>N</code>+<code>W</code>）・青チーム（<code>S</code>+<code>E</code>）
+    それぞれの<strong>合計が 2 マス以上</strong>になるように配置します。文字ごとに均等である必要はありません
+    ——下の <code>rsp.cub</code> の例では <code>N</code>×2・<code>S</code>×2・<code>W</code>×1・<code>E</code>×1で、
+    赤3マス・青3マスという配分です。
   </p>
 
   <div class="callout warning" style="margin-top: 20px;">
@@ -223,7 +224,7 @@ RS 0.05
         <tr><th>id</th><th>名前</th><th>モード</th><th>ファイル</th></tr>
       </thead>
       <tbody>
-        <tr><td><code>rsp</code></td><td>（RSP 標準）</td><td>rsp</td><td><code>maps/rsp_map/rsp.cub</code></td></tr>
+        <tr><td><code>rsp</code></td><td>Open Field</td><td>rsp</td><td><code>maps/rsp_map/rsp.cub</code></td></tr>
         <tr><td><code>rsp_pillars</code></td><td>Pillars</td><td>rsp</td><td><code>maps/rsp_map/rsp_pillars.cub</code></td></tr>
         <tr><td><code>21x21_arena</code></td><td>Arena 21</td><td>fps</td><td><code>maps/fps_map/21x21_arena.cub</code></td></tr>
         <tr><td><code>fps_duel</code></td><td>Duel Run</td><td>fps</td><td><code>maps/fps_map/fps_duel.cub</code></td></tr>

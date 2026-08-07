@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="ja">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="color-scheme" content="dark">
+	<title>全体・専門用語 — ft_transcendence</title>
+	<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+	<header class="hero">
+		<div class="shell">
+			<p class="eyebrow">専門用語集 · 全体編</p>
+			<h1>まず、全体で<br>共通の言葉から。</h1>
+			<p class="hero-lead">
+				このページは「コードは<code>codes/</code>くらいしか分からない」人が、他の用語集
+				（<a href="./E-専門用語.html">E</a>・<a href="./G-専門用語.html">G</a>・
+				<a href="./W-専門用語.html">W</a>・<a href="./F-専門用語.html">F</a>）を読む前に
+				知っておくと迷わない、レーン横断の共通語彙です。
+			</p>
+			<div class="hero-note">
+				<strong>読む目安 15分</strong>
+				<span>知ってる単語は飛ばして構いません</span>
+			</div>
+		</div>
+	</header>
+
+	<nav class="topnav" aria-label="ページ内目次">
+		<div class="shell nav-inner">
+			<a href="#repo">リポジトリ構成</a>
+			<a href="#arch">アーキテクチャ</a>
+			<a href="#build">ビルド・実行</a>
+			<a href="#git">Git / GitHub</a>
+			<a href="#eval">42評価用語</a>
+			<button class="print-button" type="button" onclick="window.print()">印刷 / PDF</button>
+		</div>
+	</nav>
+
+	<main class="shell">
+		<section id="repo">
+			<p class="section-kicker">01 · Repository</p>
+			<h2>リポジトリ構成 — 何がどこにあるか</h2>
+			<p class="section-intro">
+				トップレベルの各ディレクトリが「何の言語で書かれた、何を担当する部分か」を表にしました。
+				<code>codes/</code>だけ知っている状態から見ると、これが一番効きます。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>ディレクトリ</th><th>言語</th><th>これは何か</th></tr></thead>
+					<tbody>
+						<tr><td><code>codes/</code></td><td>C</td><td>ゲームエンジン本体。あなたが知っている部分。native / web / sim の3ターゲットに化ける元になるソース</td></tr>
+						<tr><td><code>web/</code></td><td>C由来のWASM + 少量のJS</td><td><code>codes/</code>をブラウザ/Node向けに翻訳した成果物（<code>render.wasm</code>・<code>sim.wasm</code>）と、それを動かすための最小限のJS（<code>engine_demo.js</code>など）。<strong>フロント画面（React）とは別物</strong> — 詳しくは下の「よくある勘違い」参照</td></tr>
+						<tr><td><code>app/backend/</code></td><td>TypeScript</td><td>Node上で動くサーバー。認証・DB・WebSocket・<code>sim.wasm</code>の実行を担当。詳細は<a href="./W-専門用語.html">W用語集</a></td></tr>
+						<tr><td><code>app/frontend/</code></td><td>TypeScript（React）</td><td>ブラウザで動く画面。ロビー・対戦画面・プロフィールなど。詳細は<a href="./F-専門用語.html">F用語集</a></td></tr>
+						<tr><td><code>app/shared/</code></td><td>TypeScript</td><td>backendとfrontendが同じ型定義を使うための共有コード（zodスキーマなど）</td></tr>
+						<tr><td><code>infra/</code></td><td>設定ファイル</td><td>nginx・TLS証明書・Dockerfile。本番起動まわり</td></tr>
+						<tr><td><code>maps/</code> / <code>textures/</code></td><td>データ</td><td>ゲームのステージ定義（<code>.cub</code>ファイル）と画像素材</td></tr>
+						<tr><td><code>docs/</code></td><td>Markdown / HTML</td><td>この用語集を含む、プロジェクトの全ドキュメント。<code>docs/ai/</code>=AI向け英語、<code>docs/ja/</code>=人間向け日本語（このページ）</td></tr>
+						<tr><td><code>archive/</code></td><td>—</td><td>更新されなくなった過去の文書置き場。読む必要は基本ない</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<div class="callout warning" style="margin-top: 18px">
+				<strong>よくある勘違い：<code>web/</code> ＝ フロントエンド、ではない。</strong>
+				<code>web/</code>は「Cのエンジンをブラウザで動かすためのWASM変換結果」を置く場所で、
+				<strong>エンジンのレーン（E）の一部</strong>です。プレイヤーが実際に見るReact画面は
+				<code>app/frontend/</code>で、こちらは完全に別のレーン（F）です。あなたが「web/は
+				何をしているか分かる」と言うとき、それは正しくエンジン側の話をしています——
+				<code>app/frontend/</code>はまた別に理解する必要があります。
+			</div>
+		</section>
+
+		<section id="arch">
+			<p class="section-kicker">02 · Architecture</p>
+			<h2>アーキテクチャの基本用語</h2>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>用語</th><th>意味</th></tr></thead>
+					<tbody>
+						<tr><td>クライアント / サーバ</td><td>クライアント＝各プレイヤーのブラウザ。サーバ＝<code>app/backend</code>が動くNodeプロセス1つ。全員のクライアントが同じサーバに繋がる</td></tr>
+						<tr><td>サーバ権威（server-authoritative）</td><td>「本当のゲーム状態」はサーバだけが持ち、クライアントは表示するだけという設計方針。チートとズレを防ぐための一番重要な決定。詳細は<a href="../explanations/サーバ権威モデル.html">サーバ権威モデル.html</a></td></tr>
+						<tr><td>プロトコル</td><td>通信の「言葉の決まり」。このプロジェクトにはREST APIとWebSocketの2種類がある</td></tr>
+						<tr><td>REST API</td><td>ブラウザが「GET /api/users/1」のようにHTTPでサーバへ1回ずつ要求を送る方式。ログイン・プロフィール取得などに使う</td></tr>
+						<tr><td>WebSocket（WS）</td><td>一度繋いだら繋ぎっぱなしで、双方向に小さいメッセージを送り合える通信方式。対戦中の入力・状態配信に使う（RESTだと繋ぎ直しのコストが高すぎる）</td></tr>
+						<tr><td>スナップショット（snapshot）</td><td>サーバが今の試合状態を「写真」のように切り出してクライアントへ送るデータ。詳細は<a href="./W-専門用語.html">W用語集</a>・<a href="../explanations/サーバ権威モデル.html">サーバ権威モデル.html</a></td></tr>
+						<tr><td>tick</td><td>サーバがゲームを1コマ進める単位（このプロジェクトは30Hz＝1秒に30回）。フレーム（描画の1コマ）とは別の概念</td></tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+
+		<section id="build">
+			<p class="section-kicker">03 · Build &amp; Run</p>
+			<h2>ビルド・実行系の用語</h2>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>用語</th><th>意味</th></tr></thead>
+					<tbody>
+						<tr><td>WASM（WebAssembly）</td><td>Cのコードを、ブラウザやNodeがそのまま高速に実行できる形式へ翻訳したもの。詳細は<a href="../explanations/ビルドと実行.html">ビルドと実行.html</a></td></tr>
+						<tr><td>Emscripten（emcc）</td><td>C → WASMへ翻訳するコンパイラ。<code>gcc</code>の代わりに使う</td></tr>
+						<tr><td>コンテナ / Docker</td><td>「アプリと、それが動くのに必要な環境一式」を1つの箱に詰めて配れるようにする技術。評価は<code>docker compose up</code>という単一コマンドで動く必要がある</td></tr>
+						<tr><td>Docker Compose</td><td>複数のコンテナ（nginx・Node・DBなど）をまとめて起動する仕組み。<code>docker-compose.yml</code>に定義されている</td></tr>
+						<tr><td>CI（継続的インテグレーション）</td><td>コードをpushするたびに自動でビルド・テストを走らせる仕組み。このリポジトリでは<code>.github/workflows/ci.yml</code>がGitHub Actions上で実行される</td></tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+
+		<section id="git">
+			<p class="section-kicker">04 · Git / GitHub</p>
+			<h2>Git・GitHub運用の用語</h2>
+			<p class="section-intro">
+				詳しい手順とルールは<a href="../Git運用フロー.html">Git運用フロー.html</a>にまとまっています。ここでは単語だけ先に。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>用語</th><th>意味</th></tr></thead>
+					<tbody>
+						<tr><td>ブランチ（branch）</td><td>作業内容を<code>main</code>から分岐させた、独立した作業スペース</td></tr>
+						<tr><td>コミット（commit）</td><td>変更内容に付ける「セーブポイント」</td></tr>
+						<tr><td>PR（プルリクエスト）</td><td>「このブランチの変更をmainに取り込んでください」というGitHub上の提案。CIがここで走る</td></tr>
+						<tr><td>マージ（merge）</td><td>ブランチの内容をmainに取り込むこと</td></tr>
+						<tr><td>squash</td><td>ブランチ内の複数コミットを1個にまとめてからマージする方式。このリポジトリの既定</td></tr>
+						<tr><td>CIゲート</td><td>「CIが緑（成功）にならないとマージできない・してはいけない」という運用上の関所</td></tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+
+		<section id="eval">
+			<p class="section-kicker">05 · 42 evaluation</p>
+			<h2>42の課題・評価に関する用語</h2>
+			<p class="section-intro">
+				TLとして評価当日に必ず聞かれる語彙です。詳しくは<a href="../../ai/requirements.md">requirements.md</a>（英語）。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>用語</th><th>意味</th></tr></thead>
+					<tbody>
+						<tr><td>TL（テクニカルリード）</td><td>技術的な意思決定とアーキテクチャに責任を持つ役割。課題書 II.1.1 の必須役割の1つ。samatsumが担当</td></tr>
+						<tr><td>PM / スクラムマスター</td><td>進捗・期限・ブロッカーの管理役</td></tr>
+						<tr><td>PO（プロダクトオーナー）</td><td>機能の優先順位と完了判定の役</td></tr>
+						<tr><td>Developer</td><td>全員が兼ねる役割。実装・レビュー・自分の実装のテストをする人</td></tr>
+						<tr><td>Module（モジュール）</td><td>42が定義する加点項目（Major=2pt / Minor=1pt）。合計14pt必須、+5ptまでボーナス</td></tr>
+						<tr><td>Gate（関門）</td><td>このプロジェクト独自の内部マイルストーン（Gate 1〜3）。42の課題番号とは無関係。詳細は<a href="../../ai/backlog.md">backlog.md</a></td></tr>
+						<tr><td>E / G / W / F</td><td>Issue番号の接頭辞＝どのレーンの作業か。Engine / Gameplay / Backend·DevOps(Web) / Frontendにそれぞれ対応。詳しい用語はこの用語集の各レーン別ページへ</td></tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+	</main>
+
+	<footer class="shell">
+		<p>2026-08-07 作成。次に読む: 自分の担当・興味に応じて
+			<a href="./E-専門用語.html">E</a> /
+			<a href="./G-専門用語.html">G</a> /
+			<a href="./W-専門用語.html">W</a> /
+			<a href="./F-専門用語.html">F</a> の用語集へ。全体像は
+			<a href="../オンボーディング.html">オンボーディング.html</a>も参照。</p>
+	</footer>
+</body>
+</html>

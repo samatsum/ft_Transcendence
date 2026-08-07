@@ -42,7 +42,7 @@ No public API module (API key / rate-limit documentation) has been selected, so 
 Failure responses share the following shape across all endpoints. `code` uses the same machine-readable snake_case
 namespace as ② §2-C.
 
-```
+```json
 { "error": { "code": "validation_failed", "msg": "human readable", "details": { "field": "reason" } } }
 ```
 

@@ -1,7 +1,7 @@
 /*
  * ft_transcendence 人間向けドキュメント 共通スタイル
  * md_files/説明用/W作業全体-エンジンをオンライン製品にする16工程.html のデザインシステムを
- * 2026-08 のドキュメント再構成で共通化したもの。md_files/ja/ 配下の全 HTML から参照する。
+ * 2026-08 のドキュメント再構成で共通化したもの。docs/ja/ 配下の全 HTML から参照する。
  */
 :root {
 	--bg: #07111f;
@@ -42,7 +42,7 @@ code {
 	background: rgb(7 17 31 / 74%);
 	padding: 0.1em 0.35em;
 	color: #c7ddff;
-	font-family: "SFMono-Regular", Consolas, monospace;
+	font-family: SFMono-Regular, Consolas, monospace;
 	font-size: 0.92em;
 }
 pre {

@@ -140,7 +140,7 @@ No binary encoding initially — starts as JSON, moving to ArrayBuffer only if b
 > | AI takeover of disconnected seats ⇔ handback | Mechanism complete (`game_set_input_source`). When to switch is a room-layer (W-12) operational concern |
 > | One-way connectivity check | Established via [`web/sim_demo/`](../../web/sim_demo/) (`record.mjs` records, `replay.html` replays) |
 > | **Sending/receiving the 5 WS message kinds** | Game WS done in W-11; lobby presence/queue/LobbyRoom done in the W-08 core. The lobby is still waiting on real Cookie authentication from W-04/W-05. Spec: [2-WSプロトコル設計](./ws-protocol.md) §3–§5 |
-> | **Reconnect grace period / forfeit determination** | Not yet started (W-12) — a room-layer responsibility |
+> | **Reconnect grace period / forfeit determination** | **Complete (W-12)**. 30-second grace, AI takeover ⇔ human handback, RSP abandon, FPS forfeit all verified via real WebSocket tests |
 >
 > Note: in the finalized spec, `input(seq, keys, yaw)`'s `keys` field is `mv` (a 4-bit bitmask) (see design doc 2, §5-A). `hand` was removed in D-17 (the server-side engine determines the hand).
 
@@ -155,7 +155,7 @@ All 9 layers have finalized selections. The table below includes an "Integrated"
 | Backend | **Fastify + TypeScript** | NestJS / Express / Django | With Node, `sim.wasm` can be executed directly (the deciding factor). Fastify has an official WS plugin and is lightweight. NestJS would be overkill for this schedule | W-01 |
 | DB | **SQLite + Prisma (ORM)** | PostgreSQL | Evaluation is a single local host (A1). One fewer container; backups = a file copy. Prisma satisfies the ORM Minor requirement, and migrating to Postgres later remains easy | Pending — W-03 |
 | Realtime | **WebSocket (@fastify/websocket)** | Socket.IO | Raw WS is sufficient; Socket.IO's abstraction isn't needed here | Integrated in W-11 (originally planned for W-08, but the game WS landed first) |
-| Auth | Email + password (argon2id) + **JWT/session via httpOnly cookie** | — | Ensures the required minimum baseline. OAuth/2FA are insurance modules (§5) | Pending — W-04 |
+| Auth | Email + password (argon2id) + **opaque session token via httpOnly cookie** (not JWT — see [rest-api.md](./rest-api.md) D-4) | — | Ensures the required minimum baseline. OAuth/2FA are insurance modules (§5) | Pending — W-04 |
 | Input validation | **zod schema shared between FE and BE** | — | Satisfies the "validate on both frontend and backend" requirement with a single schema definition | W-01 |
 | Reverse proxy / TLS | **nginx** (HTTPS termination via self-signed cert, static file serving, WS proxy) | Caddy | Track record and available documentation. Internal backend traffic can be plaintext (allowed by the subject) | Pending — W-15 |
 | Container | **Docker Compose** (`docker compose up` as a single command) | — | Required. Composition: `nginx` + `app` (Fastify + sim.wasm) + a volume (SQLite/avatars) | Pending — W-15 |
@@ -172,7 +172,7 @@ All 9 layers have finalized selections. The table below includes an "Integrated"
 
 ### 3.1 Overall composition
 
-```
+```text
 [Chrome]                          [Docker Compose]
 ┌────────────────────────┐   HTTPS   ┌─────────┐      ┌──────────────────────────┐
 │ React SPA               │◄─────────►│  nginx   │─────►│ Fastify (Node/TS)        │
@@ -195,11 +195,11 @@ All 9 layers have finalized selections. The table below includes an "Integrated"
 
 > **Revision (2026-07-11)**: The original plan of reorganizing cub3D under an `engine/` subtree was **not adopted**. Instead, the existing cub3D layout is kept at the repository root, and Web directories are added alongside it (see [BACKLOG.md](./backlog.md) D-18). This avoids any changes to git history, the Makefile, lint, CI, or Gate 1 deliverables. Option comparison is in that doc's §0.
 
-```
+```text
 ft_transcendence/
 ├── docker-compose.yml / .env.example
 ├── README.md (English, per chapter VI requirements)
-├── Makefile           # Existing: native / render.wasm (sim.wasm to be added) — 3 targets
+├── Makefile           # Existing: native / render.wasm / sim.wasm — all 3 targets complete
 ├── codes/             # Existing cub3D: includes / srcs(common・fps・rsp・platform) / PythonCodes
 ├── maps/  textures/   # Existing assets (.cub and XPM)
 ├── web/               # HTML/JS for the web target (build/ assets/ are generated, not tracked by git)
@@ -429,7 +429,7 @@ Mapped 1:1 to the inspection steps on the evaluation sheet (42evalhub / ft_trans
 
 | Topic | Decision |
 |---|---|
-| Engine strategy | **C → Emscripten/WASM, 2 targets** (server-authoritative `sim.wasm` + client-rendering `render.wasm`). Day 2 go/no-go; fallback is a TS rewrite |
+| Engine strategy | **C → Emscripten/WASM, 2 targets** (server-authoritative `sim.wasm` + client-rendering `render.wasm`). Day 2 go/no-go **passed 2026-07-11 (go)**; the TS-rewrite fallback was never needed and is no longer relevant |
 | Networking | **Server-authoritative + JSON snapshots** (30Hz sim / 15–20Hz distribution / 100ms interpolation). Only view rotation is predicted client-side. Disconnected seats are taken over by AI |
 | Stack | React+Vite+Tailwind / Fastify+TS / Prisma+SQLite / nginx TLS / Docker Compose |
 | Main game | RSP 2v2, first to 10 points (a rock-paper-scissors win = +1 point). Human/AI input is swapped into the existing 4-combatant structure |

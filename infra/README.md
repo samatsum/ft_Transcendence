@@ -13,8 +13,8 @@
 
 ## 設計の根拠
 
-- 構成（nginx + app + ボリューム）と TLS 方針は [architecture.md](../md_files/ai/architecture.md) §2.4・§3.1。
-- 受入条件「空フォルダ `git clone` → `docker compose up` → Chrome で HTTPS 接続」は [backlog.md](../md_files/ai/backlog.md) W-15。
+- 構成（nginx + app + ボリューム）と TLS 方針は [architecture.md](../docs/ai/architecture.md) §2.4・§3.1。
+- 受入条件「空フォルダ `git clone` → `docker compose up` → Chrome で HTTPS 接続」は [backlog.md](../docs/ai/backlog.md) W-15。
 - 既存の `docker-compose.yml` は現状 **Emscripten ビルド用サービス（engine-build）**のみ。W-15 で `nginx` / `app` サービスを追加する。
 
 ## ⚠ W-15 で落としやすい点（2026-07-27・TL 追記）

@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="ja">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="color-scheme" content="dark">
+	<title>W・専門用語 — ft_transcendence</title>
+	<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+	<header class="hero">
+		<div class="shell">
+			<p class="eyebrow">専門用語集 · Backend / DevOps (W)</p>
+			<h1>サーバーは、<br>何をしているのか。</h1>
+			<p class="hero-lead">
+				<strong>ここが「全く分からない」と言っていた部分の本命です。</strong>
+				完成したCエンジンを、ログイン・対戦マッチング・通信・保存が付いた
+				「オンライン製品」にする層の用語を、初めて聞く前提でまとめます。
+			</p>
+			<div class="hero-note">
+				<strong>読む目安 25分</strong>
+				<span>一度に全部覚えなくて良い。困ったときに引く辞書として使う</span>
+			</div>
+		</div>
+	</header>
+
+	<nav class="topnav" aria-label="ページ内目次">
+		<div class="shell nav-inner">
+			<a href="#server">サーバーとは</a>
+			<a href="#rest">REST / 認証</a>
+			<a href="#db">DB / ORM</a>
+			<a href="#ws">WebSocket周り</a>
+			<a href="#lobby">ロビー / マッチメイキング</a>
+			<a href="#infra">インフラ</a>
+			<button class="print-button" type="button" onclick="window.print()">印刷 / PDF</button>
+		</div>
+	</nav>
+
+	<main class="shell">
+		<section id="server">
+			<p class="section-kicker">01 · What is "the server"</p>
+			<h2>「サーバー」とは具体的に何か</h2>
+			<p class="section-intro">
+				<code>app/backend/</code>にあるTypeScriptプログラムが、Node.js上で1個のプロセスとして
+				動き続けているもの。全プレイヤーのブラウザが、この1つのサーバーに接続します。
+				入口は<code>app/backend/src/index.ts</code>。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>用語</th><th>意味</th></tr></thead>
+					<tbody>
+						<tr><td>Node.js</td><td>JavaScript/TypeScriptをブラウザの外（サーバー上）で動かすための実行環境。<code>sim.wasm</code>もこの中で動く</td></tr>
+						<tr><td>Fastify</td><td>Node上でHTTP・WebSocketサーバーを組み立てるための土台（フレームワーク）。ルーティング・バリデーション・エラー処理を提供する。Express等の同系統ツールの中でも軽量・高速な選択肢</td></tr>
+						<tr><td>ミドルウェア</td><td>すべてのリクエストに共通で挟まる処理（ログ出力、認証チェックなど）</td></tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+
+		<section id="rest">
+			<p class="section-kicker">02 · REST / Auth</p>
+			<h2>REST APIと認証</h2>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>用語</th><th>意味</th></tr></thead>
+					<tbody>
+						<tr><td>REST API</td><td><code>GET /api/users/1</code>のように、URLとHTTPメソッド（GET/POST/PATCH/DELETE）の組み合わせでサーバー機能を呼ぶ設計方式</td></tr>
+						<tr><td>エンドポイント</td><td>個々のURL＋メソッドの組（例:<code>POST /api/auth/login</code>）</td></tr>
+						<tr><td>認証（Authentication）</td><td>「あなたは誰か」を確認すること。ログイン処理がこれ</td></tr>
+						<tr><td>認可（Authorization）</td><td>「あなたはこの操作をして良いか」を確認すること。認証の後に行う</td></tr>
+						<tr><td>argon2id</td><td>パスワードのハッシュ化アルゴリズム。生パスワードは保存せず、これで不可逆変換した値だけをDBに置く（漏洩しても元のパスワードは分からない）</td></tr>
+						<tr><td>ソルト（salt）</td><td>ハッシュ化前にパスワードへ混ぜるランダムな値。同じパスワードでも毎回違うハッシュ値になるようにし、辞書攻撃を防ぐ。argon2idには組み込み済み</td></tr>
+						<tr><td>Session（セッション）</td><td>ログイン状態そのもの。サーバーのDBに「このユーザーはログイン中」という行として記録される</td></tr>
+						<tr><td>Cookie</td><td>ブラウザに保存される小さなデータ。ここにはセッションを指す不透明なトークンだけを入れ、リクエストのたびに自動送信させることでログイン状態を維持する（<code>httpOnly</code>＝JSからは読めない設定）</td></tr>
+						<tr><td>Origin検証</td><td>リクエストが「自分のサイトから」来たものかをチェックする仕組み。異なるサイトからの不正な変更リクエストを弾く（CSRF対策の一種）</td></tr>
+						<tr><td>エラーエンベロープ</td><td>失敗レスポンスの形式を全エンドポイントで統一するルール（<code>{"error":{"code":...,"msg":...}}</code>）</td></tr>
+						<tr><td>zod</td><td>TypeScriptでデータの形をチェックする（バリデーションする）ためのライブラリ。フロントとバックが同じ定義を共有し「二重に検証する」要件を1つの定義で満たす</td></tr>
+						<tr><td>レート制限（rate limit）</td><td>短時間に大量アクセスされたら拒否する仕組み。ログイン試行の総当たり攻撃などを防ぐ</td></tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+
+		<section id="db">
+			<p class="section-kicker">03 · Database</p>
+			<h2>データベースとORM</h2>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>用語</th><th>意味</th></tr></thead>
+					<tbody>
+						<tr><td>DB（データベース）</td><td>ユーザー・試合結果などを永続的に保存する場所。ファイルが消えない限りデータが残る（メモリ上の変数と違う）</td></tr>
+						<tr><td>SQLite</td><td>このプロジェクトが使うDBの種類。サーバー独立プロセスを別途立てず、1個のファイルとして動くのが特徴。評価環境（単一マシン）に向いている</td></tr>
+						<tr><td>ORM（Object-Relational Mapping）</td><td>DBのテーブルをTypeScriptのオブジェクトのように扱えるようにする層。生のSQL文を書かずに済む</td></tr>
+						<tr><td>Prisma</td><td>このプロジェクトが使うORM。<code>schema.prisma</code>でテーブル定義を書き、TypeScriptの型を自動生成する</td></tr>
+						<tr><td>マイグレーション（migration）</td><td>「DBの構造をこう変えてください」という手順書。<code>prisma migrate</code>で適用する。初回起動時に自動で走る設計</td></tr>
+						<tr><td>スキーマ（schema）</td><td>テーブルの構造定義（どんな列があるか、型は何か）</td></tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+
+		<section id="ws">
+			<p class="section-kicker">04 · WebSocket</p>
+			<h2>WebSocketまわり — 対戦の心臓部</h2>
+			<p class="section-intro">
+				ここが「オンライン対戦」を実際に動かしている部分です。REST APIとは別の通信経路として、
+				ゲーム中はずっと繋ぎっぱなしにします。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>用語</th><th>意味</th></tr></thead>
+					<tbody>
+						<tr><td>WS Gateway（WSゲートウェイ）</td><td>WebSocket接続を受け付ける入口。ロビー用とゲーム用の2種類がある</td></tr>
+						<tr><td>GameRoom</td><td>1試合＝1インスタンス。中で<code>sim.wasm</code>を30Hzで回し続け、参加者へsnapshotを配信する。複数の試合が同時に走るとGameRoomも複数存在する</td></tr>
+						<tr><td>tick</td><td>サーバーがゲームを1コマ進める周期。このプロジェクトは30Hz（1秒に30回）</td></tr>
+						<tr><td>snapshot配信</td><td>tickより粗い頻度（15Hz）で、全戦闘員の位置・向き・スコアなどをクライアントへ送ること。通信量を抑えるための間引き</td></tr>
+						<tr><td>入力（input）</td><td>クライアント→サーバへ送る、プレイヤーの操作（移動方向・視点）。<code>seq</code>という連番を付けて、古い入力が新しい入力を上書きしないようにする</td></tr>
+						<tr><td>join / welcome</td><td>ゲームWSに繋いだ直後のやり取り。<code>join</code>で入室を要求し、<code>welcome</code>でサーバーが初期状態（マップ本文など）を返す</td></tr>
+						<tr><td>切断猶予（grace period）</td><td>接続が切れてもすぐ負けにせず、一定時間（30秒）は再接続を待つ仕組み。その間は席がAIに自動で代替される</td></tr>
+						<tr><td>再接続（reconnect）</td><td>猶予時間内にブラウザが繋ぎ直すこと。サーバーはその席をAIから人間へ戻す</td></tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+
+		<section id="lobby">
+			<p class="section-kicker">05 · Lobby / Matchmaking</p>
+			<h2>ロビーとマッチメイキング</h2>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>用語</th><th>意味</th></tr></thead>
+					<tbody>
+						<tr><td>ロビー（Lobby）</td><td>対戦が始まる前に、プレイヤーが待機・マッチング相手を探す場所（画面としてもWSの状態管理としても存在する）</td></tr>
+						<tr><td>マッチメイキング</td><td>複数プレイヤーを1つの試合に組み合わせる処理</td></tr>
+						<tr><td>キュー（queue）</td><td>「対戦相手待ち」の列。FIFO（先入れ先出し）で処理される</td></tr>
+						<tr><td>カスタムルーム</td><td>招待コードで友達だけを集めて始める部屋（自動マッチングと別経路）</td></tr>
+						<tr><td>MatchPlan</td><td>ロビー側が「この参加者たちで試合を始める」と確定させた計画データ。これを元にGameRoomが作られる</td></tr>
+						<tr><td>presence（プレゼンス）</td><td>「オンライン中」「マッチング中」「対戦中」などのユーザーの状態。フレンドのオンライン表示に使う</td></tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+
+		<section id="infra">
+			<p class="section-kicker">06 · Infra</p>
+			<h2>インフラ（配布・起動まわり）</h2>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>用語</th><th>意味</th></tr></thead>
+					<tbody>
+						<tr><td>nginx</td><td>Webサーバー/リバースプロキシ。TLS（HTTPS化）と、リクエストをFastifyへ橋渡しする役目</td></tr>
+						<tr><td>リバースプロキシ</td><td>外部からのアクセスを一旦受け取り、内部の別サーバーへ転送する仕組み</td></tr>
+						<tr><td>TLS / HTTPS</td><td>通信を暗号化する仕組み。評価要件で全接続がHTTPSであることが必須</td></tr>
+						<tr><td>自己署名証明書（mkcert等）</td><td>正式な認証局を通さず自分で作るTLS証明書。ローカル評価環境ではこれで済ませる</td></tr>
+						<tr><td>Docker Compose</td><td>nginx・Node（backend）・DB用ボリュームなど複数コンテナを1コマンドでまとめて起動する定義（<code>docker-compose.yml</code>）</td></tr>
+						<tr><td>env / .env</td><td>パスワードやポート番号など、環境ごとに変える設定値。Gitには含めず（<code>.gitignore</code>）、<code>.env.example</code>にひな形だけ置く</td></tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+	</main>
+
+	<footer class="shell">
+		<p>2026-08-07 作成。仕組みそのものの解説（なぜこうなっているか）は
+			<a href="../explanations/サーバ権威モデル.html">サーバ権威モデル.html</a>、
+			各Issueの現状は<a href="../サーバー開発工程.html">サーバー開発工程.html</a>へ。
+			次は<a href="./F-専門用語.html">F-専門用語.html</a>（画面側）。</p>
+	</footer>
+</body>
+</html>

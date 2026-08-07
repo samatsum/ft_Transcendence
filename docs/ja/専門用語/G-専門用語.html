@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="ja">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="color-scheme" content="dark">
+	<title>G・専門用語 — ft_transcendence</title>
+	<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+	<header class="hero">
+		<div class="shell">
+			<p class="eyebrow">専門用語集 · Gameplay (G)</p>
+			<h1>2つのゲームの<br>ルール用語。</h1>
+			<p class="hero-lead">
+				RSP（じゃんけん鬼ごっこ）とFPS（収集レース）、2つのゲームモードのルールに関する用語です。
+				エンジンの仕組み（<a href="./E-専門用語.html">E</a>）とは分けて、
+				「何が起きたら勝ちか・何が起きたら死ぬか」というルール側だけをまとめます。
+			</p>
+		</div>
+	</header>
+
+	<nav class="topnav" aria-label="ページ内目次">
+		<div class="shell nav-inner">
+			<a href="#modes">2つのモード</a>
+			<a href="#rsp">RSP用語</a>
+			<a href="#fps">FPS用語</a>
+			<a href="#map">マップ用語</a>
+			<button class="print-button" type="button" onclick="window.print()">印刷 / PDF</button>
+		</div>
+	</nav>
+
+	<main class="shell">
+		<section id="modes">
+			<p class="section-kicker">01 · Two modes</p>
+			<h2>RSPとFPS、それぞれ何のゲームか</h2>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>モード</th><th>正式名称</th><th>何をするゲームか</th></tr></thead>
+					<tbody>
+						<tr><td>RSP</td><td>Rock-Paper-Scissors（じゃんけん鬼ごっこ）</td><td>赤チーム vs 青チーム、接触したらじゃんけんで勝敗、先に規定点で勝利。メインゲーム</td></tr>
+						<tr><td>FPS</td><td>そのまま（一人称視点）</td><td>アイテム収集 → 扉が開く → ゴールへ、のレース。2人目のゲーム（別ゲームモジュール用）</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p class="section-intro" style="margin-top: 16px">
+				どちらのモードで動くかは、マップファイルの<strong>置き場所</strong>（<code>maps/rsp_map/</code> か
+				<code>maps/fps_map/</code>）で決まります。<code>.cub</code>の中身に「これはRSPです」とは書きません。
+			</p>
+		</section>
+
+		<section id="rsp">
+			<p class="section-kicker">02 · RSP terms</p>
+			<h2>RSP用語</h2>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>用語</th><th>意味</th></tr></thead>
+					<tbody>
+						<tr><td>チーム（赤/青）</td><td><code>N</code>/<code>W</code>スポーン＝赤チーム、<code>S</code>/<code>E</code>スポーン＝青チーム</td></tr>
+						<tr><td>手（hand）</td><td>グー・チョキ・パーのいずれか。<strong>サーバが自動で決める</strong>——プレイヤーが選ぶ操作は無い（旧設計にあった手動選択は仕様から削除済み）</td></tr>
+						<tr><td>手の変化</td><td>自陣のスポーンマスに新しく踏み込んだ瞬間、または復帰時にランダムに変わる</td></tr>
+						<tr><td>接触判定</td><td>異チームの戦闘員同士が触れた瞬間、その場でじゃんけん判定。勝った側+1点、負けた側は即リスポーン</td></tr>
+						<tr><td><code>target_score</code></td><td>先取点（勝利に必要な点数）。既定10。<code>match_rules</code>の一部として試合ごとに設定可能（3〜21の範囲チェックはWS層の責務）</td></tr>
+						<tr><td>NPCのAI</td><td>最寄りの異チーム戦闘員を見て「勝てる手なら追跡・負ける手なら逃走・あいこや不在なら徘徊」</td></tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+
+		<section id="fps">
+			<p class="section-kicker">03 · FPS terms</p>
+			<h2>FPS用語</h2>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>用語</th><th>意味</th></tr></thead>
+					<tbody>
+						<tr><td>収集アイテム</td><td>マップ文字<code>k</code>〜<code>o</code>。全部集めると扉が開く</td></tr>
+						<tr><td>扉（Door, <code>D</code>）</td><td>収集が完了するまでは壁として振る舞い、完了すると床に変わって開放される</td></tr>
+						<tr><td>敵（Enemy, <code>M</code>）</td><td>マップ上のハザード。視界に戦闘員が入ると追跡、見失うと一定時間後に巡回へ戻る。接触＝死亡ペナルティ（ゲームオーバーにはならない）</td></tr>
+						<tr><td>巡回路（Patrol, <code>P</code>）</td><td>敵が周回する通路。ループ状に置くと安定して巡回する</td></tr>
+						<tr><td>ゴール（Goal, <code>G</code>）</td><td>先に踏んだ戦闘員が勝ち。扉と組み合わせて「収集→開放→ゴール」の関門レースを作る</td></tr>
+						<tr><td>不戦勝</td><td>相手が30秒放置または明示的にleaveした場合の勝利判定（W-12の範囲）</td></tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+
+		<section id="map">
+			<p class="section-kicker">04 · Map</p>
+			<h2>マップ関連の用語（.cub）</h2>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>用語</th><th>意味</th></tr></thead>
+					<tbody>
+						<tr><td><code>.cub</code></td><td>マップ定義ファイル。上半分＝設定ヘッダ、下半分＝文字で描いた見取り図</td></tr>
+						<tr><td>スポーン（<code>N</code>/<code>S</code>/<code>E</code>/<code>W</code>）</td><td>戦闘員の初期位置と向き。オンライン対戦用マップは複数必要（RSPは各チーム2地点以上）</td></tr>
+						<tr><td>ホワイトリスト</td><td>オンライン対戦で使える4枚だけを登録したサーバ側の一覧。任意のファイルパスを受け付けない安全設計</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p class="section-intro" style="margin-top: 16px">
+				1文字ずつの厳密な仕様は<a href="../プレイヤーガイド.html">プレイヤーガイド.html</a>、
+				なぜこの書式なのかの解説は<a href="../explanations/cubマップ書式.html">cubマップ書式.html</a>。
+			</p>
+		</section>
+	</main>
+
+	<footer class="shell">
+		<p>2026-08-07 作成。次は<a href="./W-専門用語.html">W-専門用語.html</a>（サーバ側）か
+			<a href="./F-専門用語.html">F-専門用語.html</a>（画面側）。</p>
+	</footer>
+</body>
+</html>
