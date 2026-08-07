@@ -2,7 +2,7 @@
 
 > Source: translated from the Japanese originals at md_files/02_設計書/2-WSプロトコル設計.md and md_files/03_実装レポート/3-エンジンPhase3レポート.md (both archived).
 
-**Position**: A detailing of [ARCHITECTURE_DESIGN.md](./architecture.md) §2.3 / §3.1. Aligned with [ENGINE_SEPARATION_DESIGN.md](./engine-separation.md) §3-B (sim public API) and §3-D (snapshot structure). This is the authoritative work order for the Backend/DevOps lane's WS / GameRoom / matchmaking work (W-09, implemented by samatsum). The GameView work (F-06, **done**) and HUD work (F-07, implemented but unmerged — [PR #35](https://github.com/samatsum/ft_Transcendence/pull/35)) consume this document as the client implementation contract; both were also implemented by samatsum.
+**Position**: A detailing of [ARCHITECTURE_DESIGN.md](./architecture.md) §2.3 / §3.1. Aligned with [ENGINE_SEPARATION_DESIGN.md](./engine-separation.md) §3-B (sim public API) and §3-D (snapshot structure). This is the authoritative work order for the Backend/DevOps lane's WS / GameRoom / matchmaking work (W-09, implemented by samatsum). The GameView work (F-06) and HUD work (F-07, merged via [PR #35](https://github.com/samatsum/ft_Transcendence/pull/35)) consume this document as the client implementation contract; both are **done**, also implemented by samatsum.
 **Principle**: This document contains no implementation code (wire format, state machines, and acceptance criteria only). The implementation source of truth for message schemas is the zod definitions in `shared/`; if implementation diverges from this document, revise this document first, then implement.
 
 ---
