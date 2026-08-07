@@ -20,6 +20,9 @@ __pycache__/
 /web/assets/
 /web/build/
 
+# F-06: `make frontend-engine-assets` の配布先（Vite/nginx が /engine/ で配信）
+/app/frontend/public/engine/
+
 # E-12 デモの記録（record.mjs が生成）
 /web/sim_demo/snapshots.json
 

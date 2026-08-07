@@ -1,4 +1,33 @@
 /* Tailwind v4 は設定ファイルではなく CSS の @import で読み込む
-   （@tailwindcss/vite プラグインが処理する）。テーマ拡張が要るときは
-   ここに @theme ブロックを足す。デザイン方針は ④ フロントエンド設計 に従う */
+   （@tailwindcss/vite プラグインが処理する）。テーマ拡張は @theme ブロックで書く。
+   デザイン方針は ④ フロントエンド設計 D-15: ダーク基調1テーマ固定 */
 @import 'tailwindcss';
+
+@theme {
+	/* ダーク基調のブランドカラー（palette は Tailwind 既定の slate/sky/emerald/amber/rose を利用しつつ、
+	   セマンティック名でも参照できるように CSS 変数を1本立てる）。
+	   D-15「テーマ切替は工数対効果が低い」ため、light 対応は入れない */
+	--color-bg: oklch(0.14 0.02 265);           /* slate-950 相当 */
+	--color-bg-elevated: oklch(0.22 0.02 265);  /* slate-800 相当（カード背景） */
+	--color-bg-hover: oklch(0.28 0.02 265);     /* slate-700 相当 */
+	--color-border: oklch(0.32 0.02 265);       /* slate-600 相当 */
+	--color-fg: oklch(0.96 0.01 265);           /* slate-50 */
+	--color-fg-muted: oklch(0.65 0.03 265);     /* slate-400 */
+	--color-accent: oklch(0.72 0.15 240);       /* sky-400 */
+	--color-accent-hover: oklch(0.62 0.19 240); /* sky-500 */
+	--color-danger: oklch(0.65 0.22 25);        /* rose-500 */
+	--color-success: oklch(0.72 0.19 155);      /* emerald-500 */
+	--color-warning: oklch(0.75 0.15 80);       /* amber-500 */
+}
+
+/* body 既定色（layout 未マウントの ErrorBoundary fallback 等でも白背景にならない保険） */
+html, body {
+	background: var(--color-bg);
+	color: var(--color-fg);
+}
+
+/* フォーカスリング統一（④ §5「一貫性: 色・余白・フォーカスリング」） */
+:focus-visible {
+	outline: 2px solid var(--color-accent);
+	outline-offset: 2px;
+}
