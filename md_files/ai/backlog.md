@@ -127,12 +127,12 @@ Numbered items in the acceptance-criteria column indicate mapping to acceptance 
 
 ## 5. Frontend lane F-01–F-12 — new
 
-> Originally planned as a mamiyaza + hminemur lane. As of 2026-08-05 neither is active. **F-01, F-02, and F-06
-> were nonetheless completed by samatsum solo** (2026-07-30–31, before/around the dissolution date) — see the
-> per-issue status below. **F-07 is implemented and CI-green but sits as an unreviewed, unmerged PR**
-> ([#35](https://github.com/samatsum/ft_Transcendence/pull/35); its own description notes hminemur was the
-> planned owner but unreachable, so samatsum implemented it instead). F-03–F-05 and F-08–F-12 remain
-> unassigned and not started (未完成), open for a future team member. See [`../ja/チーム体制.html`](../ja/チーム体制.html).
+> Originally planned as a mamiyaza + hminemur lane. As of 2026-08-05 neither is active. **F-01, F-02, F-06, and
+> F-07 were nonetheless completed by samatsum solo** (2026-07-30–31; F-07 merged 2026-08-07 via
+> [PR #35](https://github.com/samatsum/ft_Transcendence/pull/35) — its own description notes hminemur was the
+> planned owner but unreachable, so samatsum implemented it instead) — see the per-issue status below.
+> F-03–F-05 and F-08–F-12 remain unassigned and not started (未完成), open for a future team member. See
+> [`../ja/チーム体制.html`](../ja/チーム体制.html).
 
 | Issue | Title | Acceptance criteria | Dependency | Day (14-day schedule; for the 5-day schedule see [⑥§5.1](../ja/チーム体制.html)) |
 |---|---|---|---|---|
@@ -142,7 +142,7 @@ Numbered items in the acceptance-criteria column indicate mapping to acceptance 
 | F-04 | Common layout + **actual Privacy/ToS copy** (④§2, §3.5) | ④§6-4. Zero placeholder text | F-01 | 3–4 |
 | F-05 | Full lobby suite (④§3.2's 5 regions + `useLobbySocket` per ④§4) | ④§6-5 (match feed reflects live updates) | F-03, W-08, W-09 | 5–7 |
 | F-06 (done) | GameView integration (render.wasm loading, Canvas, interpolation receiver, input sending; wired to E-08/E-12) | A match works between 2 browsers and the spectator view doesn't break | F-05, E-12, W-11 | 6–7 |
-| F-07 (implemented, unmerged) | Full HUD overlay suite (④§3.3's 8 elements) | ④§6-6 (grace→AI transition is displayed) | F-06 | 7–8 |
+| F-07 (done) | Full HUD overlay suite (④§3.3's 8 elements) | ④§6-6 (grace→AI transition is displayed) | F-06 | 7–8 |
 | F-08 | Match transition flow (match_found auto-transition → countdown → match_end modal → back to lobby) | No console errors while the WS connection is re-established mid-transition | F-05, F-07 | 7–8 |
 | F-09 | Profile/stats/history + self-editing + avatar (④§3.4) | Files over 2MB show an immediate error. win_rate matches ③§2-D | F-02, W-13, W-06 | 9–10 |
 | F-10 | Friends UI (④§3.2 friends region + ④§3.4 buttons) | Presence badge updates in real time | F-05, W-07 | 10 |
@@ -159,7 +159,7 @@ development. `GameView`/`HudOverlay` currently have no lobby to be launched from
 | Gate | Content | Issues that converge here | Status |
 |---|---|---|---|
 | Gate 1 (Day 2) | Canvas rendering of a static map | E-01–E-07 | **Passed (go)**, 2026-07-11 |
-| Gate 2 (Day 7 → **Day 3 under the 5-day schedule**) | **A 2v2 RSP match is playable start to finish between 2 browsers** | E-08–E-12 / G-01–G-05 / W-08–W-11 / F-05–F-08 | Not yet (**E, G, W-08 core, W-09–W-12, and F-06/F-07 (unmerged) are done**. What remains on the server side is W-08 integration with W-04/W-05; on the frontend side, F-05 (lobby, not started — F-06/F-07 currently have no lobby to launch from) and F-08 (match transition, not started). Merging PR #35 (F-07) is a prerequisite step but not sufficient by itself)<br>**W-12 (disconnect/reconnect/AI takeover) is not counted toward Gate 2 — it was carried out and completed on Day 4 instead** (consistent with [⑥§5.1](../ja/チーム体制.html)). W-12 is ②§10-B №4 and is not something to be dropped |
+| Gate 2 (Day 7 → **Day 3 under the 5-day schedule**) | **A 2v2 RSP match is playable start to finish between 2 browsers** | E-08–E-12 / G-01–G-05 / W-08–W-11 / F-05–F-08 | Not yet (**E, G, W-08 core, W-09–W-12, and F-06/F-07 are done**. What remains on the server side is W-08 integration with W-04/W-05; on the frontend side, F-05 (lobby, not started — F-06/F-07 currently have no lobby to launch from) and F-08 (match transition, not started))<br>**W-12 (disconnect/reconnect/AI takeover) is not counted toward Gate 2 — it was carried out and completed on Day 4 instead** (consistent with [⑥§5.1](../ja/チーム体制.html)). W-12 is ②§10-B №4 and is not something to be dropped |
 | Gate 3 (Day 11 → **Day 4 under the 5-day schedule**) | Core 14pt fully working in the integrated environment | W-13, W-14, F-09–F-11, G-06–G-09 (FPS-related), and everything else | Not yet (**G-06–G-09 are done**) |
 | Day 12 (→ **Day 5**) | Hardening day (every item per the ARCHITECTURE §9.1 script) | Turned into a single Issue, H-01 (whole team) | Not yet |
 
@@ -201,8 +201,8 @@ development. `GameView`/`HudOverlay` currently have no lobby to be launched from
 **Critical path (updated 2026-07-30)**: the original core chain, E-08/E-09 → E-10 → E-11, is complete, and
 **W-01/W-09/W-10/W-11/W-12/W-14 are done**, so the remaining work on the game-server side is now
 **W-13 persistence-integration support** after W-03 (plus the final W-08 integration of auth/Origin via W-02→W-05→W-08).
-In parallel on the frontend side: F-01, F-02, and F-06 are done, F-07 is implemented but unmerged (PR #35), and
-F-05 + F-08 (both not started, unassigned) are what's left to converge on Gate 2.
+In parallel on the frontend side: F-01, F-02, F-06, and F-07 are done. F-05 + F-08 (both not started,
+unassigned) are what's left to converge on Gate 2.
 The C side (E-series, G-series) is entirely Done; only the TypeScript Backend/DevOps and Frontend lanes remain.
 See [チーム体制.html](../ja/チーム体制.html) for current team status — as of 2026-08-05 the original 4-person plan no longer applies; samatsum is the sole active contributor.
 

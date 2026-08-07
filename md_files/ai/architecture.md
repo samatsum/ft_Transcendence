@@ -339,7 +339,7 @@ The subject's mandatory roles (PO / PM / Tech Lead / Developer) are assigned acr
 
 > **Note: this schedule is stale.** The 14-day table below reflects the original 2-week plan. The project's actual duration is now 5 days, and this table is no longer an accurate schedule — it is retained purely for historical reference. See [6-チーム分担計画 §5.1「5日間の日割り」](../ja/チーム体制.html) for the schedule that is currently in effect.
 >
-> **Progress (2026-08-07)**: of the original plan's 4 parallel lanes, the **entire Engine and Gameplay schedules are complete** (E-01–E-14 / G-01–G-10; Gate 1 passed). Backend/DevOps has completed W-01/W-08 core/W-09/W-10/W-11/W-12/W-14; Frontend has F-01/F-02/F-06 done and F-07 implemented but unmerged ([PR #35](https://github.com/samatsum/ft_Transcendence/pull/35)). **Gate 2 is not yet met** — what remains server-side is wiring W-04/W-05 into W-08, and frontend-side is F-05 (lobby, not started), merging F-07, and F-08 (not started).
+> **Progress (2026-08-07)**: of the original plan's 4 parallel lanes, the **entire Engine and Gameplay schedules are complete** (E-01–E-14 / G-01–G-10; Gate 1 passed). Backend/DevOps has completed W-01/W-08 core/W-09/W-10/W-11/W-12/W-14; Frontend has F-01/F-02/F-06/F-07 done (F-07 merged via [PR #35](https://github.com/samatsum/ft_Transcendence/pull/35)). **Gate 2 is not yet met** — what remains server-side is wiring W-04/W-05 into W-08, and frontend-side is F-05 (lobby, not started) and F-08 (match transition, not started).
 
 (The following is the original 2-week plan.) 4 parallel lanes. **Bold marks a gate** (if not cleared, the fallback for that gate triggers).
 
