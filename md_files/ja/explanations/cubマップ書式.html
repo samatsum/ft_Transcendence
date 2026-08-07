@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>.cubマップ書式 — ft_transcendence</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<header class="topnav">
+  <nav class="shell nav-inner">
+    <a href="#structure">1. 2段構成</a>
+    <a href="#characters">2. マップ文字</a>
+    <a href="#mode">3. RSP / FPS</a>
+    <a href="#gate">4. 関門レース</a>
+    <a href="#whitelist">5. ホワイトリスト</a>
+    <a href="#summary">6. まとめ</a>
+    <a href="#faq">FAQ</a>
+    <button class="print-button" onclick="window.print()">印刷 / PDF</button>
+  </nav>
+</header>
+
+<div class="shell hero">
+  <p class="eyebrow">Explanations — .cub map format</p>
+  <h1>.cubマップ書式</h1>
+  <p class="hero-lead">
+    ゲームのステージを 1 枚のテキストファイルで表したものが <code>.cub</code> です。
+    上半分が「設定」、下半分が「地図（文字で描いた見取り図）」という構成になっています。
+    このページは全体像をつかむための解説で、対象はチームメンバー全員
+    （とくにマップを触る人）です。
+  </p>
+  <p class="hero-note">
+    <strong>正本はこちら</strong> — 1 文字ずつの厳密な仕様は
+    ユーザードキュメント §4（<code>.cub</code> 記述ルール）が正本です。
+    実際にマップを書く・直すときはそちらを参照してください。このページは
+    「なぜそうなっているか」を理解するための補助教材です。
+  </p>
+</div>
+
+<main class="shell">
+
+<section id="structure">
+  <p class="section-kicker">01 / Structure</p>
+  <h2><code>.cub</code> は 2 段構成</h2>
+  <p class="section-intro">
+    <code>.cub</code> ファイルは、上半分の「設定ヘッダ」と下半分の「マップ本体」から
+    できています。
+  </p>
+
+  <pre><code>┌─ 設定ヘッダ ────────────────┐
+│ R 1920 1080                 │  解像度
+│ NO ./textures/wall/...xpm   │  壁テクスチャ（北）
+│ F 184,113,39                │  床の色
+│ ...                         │
+├─ マップ本体 ────────────────┤
+│ 1 1 1 1 1 1 1               │  1 = 壁
+│ 1 0 0 0 N 0 1               │  0 = 床、N = スポーン地点
+│ 1 1 1 1 1 1 1               │
+└─────────────────────────────┘</code></pre>
+
+  <div class="grid grid-2" style="margin-top: 20px;">
+    <div class="card">
+      <p class="card-label">上：設定ヘッダ</p>
+      <p>
+        解像度・テクスチャのファイル名・色・敵の速度などを <code>キー 値</code> の形で
+        並べる。
+      </p>
+    </div>
+    <div class="card">
+      <p class="card-label">下：マップ本体</p>
+      <p>
+        <code>1</code>（壁）や <code>0</code>（床）などの文字を並べて、上から見た
+        ステージの見取り図を描く。
+      </p>
+    </div>
+  </div>
+</section>
+
+<section id="characters">
+  <p class="section-kicker">02 / Map characters</p>
+  <h2>マップ本体で使う主な文字</h2>
+  <p class="section-intro">
+    <code>.cub</code> のマップ部分は、決まった文字だけで構成されます
+    （C 側の許可集合 <code>VALID_MAP_CHARACTERS</code>＝<code>config.h</code>）。
+    よく使うものだけ抜き出すと次の表のとおりです。
+  </p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>文字</th><th>意味</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>1</code></td><td>壁（通れない）</td></tr>
+        <tr><td><code>0</code></td><td>床（通れる）</td></tr>
+        <tr><td><code>N</code> <code>S</code> <code>E</code> <code>W</code></td><td>スポーン地点（戦闘員の初期位置。向きも表す）</td></tr>
+        <tr><td><code>M</code></td><td>敵（ハザード）。巡回し、見つけると追跡してくる</td></tr>
+        <tr><td><code>P</code></td><td>敵の巡回路</td></tr>
+        <tr><td><code>k</code>〜<code>o</code></td><td>収集アイテム（星）</td></tr>
+        <tr><td><code>D</code></td><td>扉（全部集めるまでは壁、集め終わると開く）</td></tr>
+        <tr><td><code>G</code></td><td>ゴール（先に踏んだ戦闘員が勝ち。FPS のレース用）</td></tr>
+        <tr><td><code>a</code>〜<code>e</code> / <code>f</code>〜<code>j</code></td><td>障害物オブジェクト（通行不可 / 通行可）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout" style="margin-top: 20px;">
+    <strong>重要</strong> — マップ文字 <code>G</code>・<code>D</code>・<code>M</code> は
+    新設したものではなく、元の cub3D に既にありました。オンライン対戦化
+    （G-06〜G-08）でやったのは「勝者を席に帰属させる」等のルール調整で、
+    マップ書式そのものは足していません。
+  </div>
+</section>
+
+<section id="mode">
+  <p class="section-kicker">03 / RSP vs FPS</p>
+  <h2>RSP と FPS の区別は「置き場所」で決まる</h2>
+  <p class="section-intro">
+    同じ <code>.cub</code> でも、どのフォルダに置くかでモードが決まります。
+  </p>
+
+  <pre><code>maps/rsp_map/  に置いたマップ  →  RSP モード（2vs2 じゃんけん）
+maps/fps_map/  に置いたマップ  →  FPS モード（1vs1 レース）</code></pre>
+
+  <p>
+    これは native も web も同じルールです。<code>main.c</code>（native）も
+    <code>web_init</code> の呼び出し側（JS）も、パスに <code>rsp_map/</code> が
+    含まれるかを見てモードを切り替えます。ファイルの中身に「これは RSP です」とは
+    書きません。置き場所がモードの宣言です。
+  </p>
+
+  <h3 style="margin-top: 32px;">スポーン文字とチームの対応（RSP）</h3>
+  <p class="section-intro">
+    RSP では、スポーン文字がそのままチーム分けになります。
+  </p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>文字</th><th>チーム</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>N</code> <code>W</code></td><td>赤</td></tr>
+        <tr><td><code>S</code> <code>E</code></td><td>青</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>
+    だから RSP マップは、赤 2 席・青 2 席が別マスに立つように
+    <code>N</code> <code>W</code> <code>S</code> <code>E</code> を配置します
+    （下の <code>rsp.cub</code> の例では各文字が 2 つずつありました）。
+  </p>
+
+  <div class="callout warning" style="margin-top: 20px;">
+    <strong>ハマりどころ</strong> — RSP は 1 チーム 2 席（<code>RSP_TEAM_SPAWNS = 2</code>）
+    使う設計です。赤は <code>N</code>/<code>W</code> の合計、青は <code>S</code>/<code>E</code>
+    の合計で、それぞれ最低 2 マスのスポーン地点が必要です。マップに置く数が
+    足りないと、席を割り当てられずにセットアップに失敗します。
+  </div>
+
+  <h3 style="margin-top: 32px;">サンプル: <code>maps/rsp_map/rsp.cub</code>（抜粋）</h3>
+  <pre><code>R 1920 1080
+NO ./textures/wall/Wall_1.xpm
+SO ./textures/wall/Wall_2.xpm
+WE ./textures/wall/Wall_3.xpm
+EA ./textures/wall/Wall_4.xpm
+ST ./textures/wall/Wall_mossy.xpm
+FT ./textures/wall/Wall_tile.xpm
+F 184,113,39
+C 51,198,227
+ES 0.05
+EH 3
+MS 0.05
+RS 0.05
+
+1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1
+1 0 0 S 0 0 0 0 0 0 0 0 0 0 0 0 0 S 0 0 1
+1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1
+1 0 0 0 0 E 0 0 0 0 f 0 0 0 0 W 0 0 0 0 1
+1 0 0 N 0 0 0 0 0 0 0 0 0 0 0 0 0 N 0 0 1
+1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1</code></pre>
+</section>
+
+<section id="gate">
+  <p class="section-kicker">04 / Gated race</p>
+  <h2>FPS の「関門レース」の作り方</h2>
+  <p class="section-intro">
+    FPS のオンライン対戦マップ（例 <code>fps_duel.cub</code>）は、<code>D</code> と
+    <code>G</code> を組み合わせて関門付きのレースを作ります。
+  </p>
+
+  <pre><code>収集アイテム(k〜o)を全部集める → 扉(D)が開く → ゴール(G)へ走る → 先に踏んだ方が勝ち</code></pre>
+
+  <ul>
+    <li><code>G</code> を置かないマップは、「全部集めて扉を開ける」ところまでが目的
+      （従来の cub3D 的な遊び）。</li>
+    <li><code>M</code>（敵ハザード）を通り道に置くと、接触＝数秒リスポーン待ちの
+      妨害になります（G-08）。</li>
+  </ul>
+
+  <div class="callout" style="margin-top: 20px;">
+    <strong>自動確認あり</strong> — この「収集 → 扉 → ゴール」の関門が最後まで
+    通れることは、<code>make test</code> の G-09 検査が自動で確認しています。
+  </div>
+</section>
+
+<section id="whitelist">
+  <p class="section-kicker">05 / Whitelist</p>
+  <h2>オンライン対戦では「ホワイトリスト」しか使わない</h2>
+  <p class="section-intro">
+    <code>maps/</code> には開発・テスト用の <code>.cub</code> がたくさんありますが
+    （<code>door_test.cub</code> など）、オンライン対戦で使えるのは、サーバに
+    登録された 4 枚だけです。
+  </p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>id</th><th>名前</th><th>モード</th><th>ファイル</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>rsp</code></td><td>（RSP 標準）</td><td>rsp</td><td><code>maps/rsp_map/rsp.cub</code></td></tr>
+        <tr><td><code>rsp_pillars</code></td><td>Pillars</td><td>rsp</td><td><code>maps/rsp_map/rsp_pillars.cub</code></td></tr>
+        <tr><td><code>21x21_arena</code></td><td>Arena 21</td><td>fps</td><td><code>maps/fps_map/21x21_arena.cub</code></td></tr>
+        <tr><td><code>fps_duel</code></td><td>Duel Run</td><td>fps</td><td><code>maps/fps_map/fps_duel.cub</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p style="margin-top: 20px;">
+    これをホワイトリストと呼びます（③§2-E）。理由は 2 つあります。
+  </p>
+  <ol>
+    <li><strong>安全</strong>: 利用者が任意のファイルパスを送ってサーバのファイルを
+      読ませる、といった攻撃を防ぐ。サーバは「登録済みの id」しか受け付けない。</li>
+    <li><strong>品質</strong>: 対戦バランスをテストプレイで確認したマップだけを出す。</li>
+  </ol>
+
+  <h3 style="margin-top: 32px;">流れ（W-14 の仕事）</h3>
+  <pre><code>クライアント「マップ id = fps_duel で対戦したい」
+        │
+サーバがホワイトリスト表で id → ファイルパスを解決
+        │
+サーバが .cub を読み、その中身（テキスト）を welcome.map_text として配布
+        │
+各ブラウザは受け取ったテキストで render.wasm を初期化して描く</code></pre>
+
+  <div class="callout" style="margin-top: 20px;">
+    <strong>ポイント</strong> — サーバがマップの中身そのものを配ります。クライアントに
+    ファイルパスを渡してファイルを読ませたりはしません（②§5-B）。
+  </div>
+</section>
+
+<section id="summary">
+  <p class="section-kicker">06 / Summary</p>
+  <h2>まとめ</h2>
+  <div class="table-wrap">
+    <table>
+      <tbody>
+        <tr><td>1</td><td><code>.cub</code> は<strong>上＝設定ヘッダ / 下＝文字で描いた地図</strong>の 2 段構成。</td></tr>
+        <tr><td>2</td><td>マップは決まった文字だけで描く（<code>1</code>壁 <code>0</code>床 <code>N/S/E/W</code>スポーン <code>M</code>敵 <code>D</code>扉 <code>G</code>ゴール…）。</td></tr>
+        <tr><td>3</td><td><code>G</code> <code>D</code> <code>M</code> は元からある文字。オンライン化で新設していない。</td></tr>
+        <tr><td>4</td><td>RSP か FPS かは、置くフォルダ（<code>rsp_map/</code> / <code>fps_map/</code>）で決まる。</td></tr>
+        <tr><td>5</td><td>RSP はスポーン文字がチーム分け（<code>N</code>/<code>W</code>=赤、<code>S</code>/<code>E</code>=青）。</td></tr>
+        <tr><td>6</td><td>オンラインではホワイトリスト登録の 4 枚だけ。サーバが中身を配る（W-14）。</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="faq">
+  <p class="section-kicker">FAQ</p>
+  <h2>コード想定 Q&amp;A から（<code>.cub</code> 関連のみ）</h2>
+  <p class="section-intro">
+    テクニカルリード自己確認シートのうち、マップ書式・解析に関する項目だけを
+    ここに集約しています。
+  </p>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <p class="card-label">Q. RSP か FPS かはどう決まる？</p>
+      <p>
+        A. マップの<strong>置き場所</strong>。<code>maps/rsp_map/</code> なら RSP、
+        <code>maps/fps_map/</code> なら FPS。<code>.cub</code> の中身では宣言しない。
+        RSP のスポーンは <code>N/W</code>=赤・<code>S/E</code>=青。
+      </p>
+      <p style="margin-top: 12px; font-size: 0.86rem;">
+        確認: <code>common/main.c:97</code>（<code>set_mode_from_path</code>）
+      </p>
+    </div>
+    <div class="card">
+      <p class="card-label">Q. マップ文字 <code>G</code>（ゴール）は新設した？</p>
+      <p>
+        A. していない。<code>IS_GOAL</code> セル + <code>goal_tex</code> は元から
+        実装済み。G-06 は「勝者を席 id に帰属させる」だけ。<code>D</code>（扉）
+        <code>M</code>（敵）も元からある。
+      </p>
+      <p style="margin-top: 12px; font-size: 0.86rem;">
+        確認: <code>config/config.h</code>（<code>IS_GOAL</code> /
+        <code>DOOR_CHAR</code> / <code>VALID_MAP_CHARACTERS</code>）
+      </p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="shell">
+  統合元: md_files/説明用/cubマップの読み方.md（archive/ に移設）
+</footer>
+
+</body>
+</html>

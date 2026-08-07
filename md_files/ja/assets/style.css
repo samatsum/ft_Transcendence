@@ -1,0 +1,481 @@
+/*
+ * ft_transcendence 人間向けドキュメント 共通スタイル
+ * md_files/説明用/W作業全体-エンジンをオンライン製品にする16工程.html のデザインシステムを
+ * 2026-08 のドキュメント再構成で共通化したもの。md_files/ja/ 配下の全 HTML から参照する。
+ */
+:root {
+	--bg: #07111f;
+	--panel: #0d1b2d;
+	--panel-2: #12243a;
+	--line: #29415d;
+	--text: #edf6ff;
+	--muted: #9fb2c8;
+	--cyan: #5de4d6;
+	--blue: #73a7ff;
+	--yellow: #ffd166;
+	--green: #7ee787;
+	--red: #ff8c8c;
+	--radius: 18px;
+	--shadow: 0 24px 70px rgb(0 0 0 / 28%);
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+	margin: 0;
+	background:
+		radial-gradient(circle at 12% 4%, rgb(93 228 214 / 13%), transparent 28rem),
+		radial-gradient(circle at 88% 16%, rgb(115 167 255 / 11%), transparent 30rem),
+		var(--bg);
+	color: var(--text);
+	font-family:
+		Inter, "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic",
+		system-ui, sans-serif;
+	line-height: 1.75;
+}
+
+a { color: var(--cyan); text-underline-offset: 0.22em; }
+a:hover { color: white; }
+code {
+	border: 1px solid rgb(115 167 255 / 24%);
+	border-radius: 0.4em;
+	background: rgb(7 17 31 / 74%);
+	padding: 0.1em 0.35em;
+	color: #c7ddff;
+	font-family: "SFMono-Regular", Consolas, monospace;
+	font-size: 0.92em;
+}
+pre {
+	overflow-x: auto;
+	border: 1px solid var(--line);
+	border-radius: 14px;
+	background: rgb(7 17 31 / 74%);
+	padding: 16px 18px;
+}
+pre code { border: 0; background: none; padding: 0; }
+
+.shell {
+	width: min(1180px, calc(100% - 36px));
+	margin: 0 auto;
+}
+
+.hero { padding: 72px 0 42px; }
+.eyebrow {
+	margin: 0 0 12px;
+	color: var(--cyan);
+	font-size: 0.78rem;
+	font-weight: 800;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+}
+h1 {
+	max-width: 980px;
+	margin: 0;
+	font-size: clamp(2.2rem, 6vw, 5.3rem);
+	line-height: 1.04;
+	letter-spacing: -0.055em;
+	overflow-wrap: anywhere;
+}
+.hero-lead {
+	max-width: 780px;
+	margin: 24px 0 0;
+	color: #c4d4e6;
+	font-size: clamp(1rem, 2vw, 1.24rem);
+	overflow-wrap: anywhere;
+}
+.hero-note {
+	display: inline-flex;
+	gap: 0.65rem;
+	align-items: center;
+	flex-wrap: wrap;
+	max-width: 100%;
+	margin-top: 24px;
+	border: 1px solid var(--line);
+	border-radius: 999px;
+	background: rgb(13 27 45 / 72%);
+	padding: 8px 14px;
+	color: var(--muted);
+	font-size: 0.86rem;
+}
+.hero-note strong { color: var(--text); }
+
+.topnav {
+	position: sticky;
+	z-index: 10;
+	top: 0;
+	border-block: 1px solid rgb(41 65 93 / 78%);
+	background: rgb(7 17 31 / 86%);
+	backdrop-filter: blur(16px);
+}
+.nav-inner {
+	display: flex;
+	gap: 0.35rem;
+	align-items: center;
+	overflow-x: auto;
+	padding: 10px 0;
+	scrollbar-width: none;
+}
+.nav-inner a,
+.print-button {
+	flex: 0 0 auto;
+	border: 1px solid transparent;
+	border-radius: 999px;
+	background: transparent;
+	padding: 7px 11px;
+	color: var(--muted);
+	font: inherit;
+	font-size: 0.82rem;
+	text-decoration: none;
+	cursor: pointer;
+}
+.nav-inner a:hover,
+.print-button:hover {
+	border-color: var(--line);
+	background: var(--panel);
+	color: white;
+}
+.print-button { margin-left: auto; }
+
+main { padding: 34px 0 80px; }
+section {
+	scroll-margin-top: 74px;
+	margin-top: 72px;
+}
+section:first-child { margin-top: 0; }
+.section-kicker {
+	margin: 0 0 5px;
+	color: var(--blue);
+	font-size: 0.76rem;
+	font-weight: 800;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+}
+h2 {
+	margin: 0 0 12px;
+	font-size: clamp(1.7rem, 4vw, 2.7rem);
+	line-height: 1.2;
+	letter-spacing: -0.035em;
+	overflow-wrap: anywhere;
+}
+h3 {
+	margin: 0 0 8px;
+	font-size: 1.08rem;
+	line-height: 1.35;
+}
+.section-intro {
+	max-width: 820px;
+	margin: 0 0 26px;
+	color: var(--muted);
+}
+
+.grid { display: grid; gap: 16px; }
+.grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+.card {
+	border: 1px solid var(--line);
+	border-radius: var(--radius);
+	background: linear-gradient(145deg, rgb(18 36 58 / 90%), rgb(13 27 45 / 90%));
+	padding: 22px;
+	box-shadow: var(--shadow);
+}
+.card p:last-child { margin-bottom: 0; }
+.card-label {
+	margin: 0 0 9px;
+	color: var(--muted);
+	font-size: 0.76rem;
+	font-weight: 800;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+.metric {
+	margin: 0;
+	font-size: clamp(2rem, 4vw, 3.15rem);
+	font-weight: 850;
+	line-height: 1;
+	letter-spacing: -0.055em;
+}
+.metric small {
+	color: var(--muted);
+	font-size: 0.85rem;
+	letter-spacing: normal;
+}
+.metric-note {
+	margin: 12px 0 0;
+	color: var(--muted);
+	font-size: 0.86rem;
+	line-height: 1.5;
+}
+
+.progress {
+	height: 10px;
+	margin-top: 16px;
+	overflow: hidden;
+	border-radius: 999px;
+	background: #07111f;
+}
+.progress > span {
+	display: block;
+	width: 37.5%;
+	height: 100%;
+	border-radius: inherit;
+	background: linear-gradient(90deg, var(--cyan), var(--blue));
+}
+
+.callout {
+	border: 1px solid rgb(93 228 214 / 32%);
+	border-left: 5px solid var(--cyan);
+	border-radius: 14px;
+	background: rgb(93 228 214 / 7%);
+	padding: 18px 20px;
+}
+.callout strong { color: var(--cyan); }
+.callout.warning {
+	border-color: rgb(255 209 102 / 35%);
+	border-left-color: var(--yellow);
+	background: rgb(255 209 102 / 7%);
+}
+.callout.warning strong { color: var(--yellow); }
+
+.lifecycle {
+	display: grid;
+	grid-template-columns: repeat(7, minmax(125px, 1fr));
+	gap: 24px;
+	margin-top: 28px;
+	overflow-x: auto;
+	padding: 4px 3px 18px;
+}
+.stage {
+	position: relative;
+	min-width: 125px;
+	border: 1px solid var(--line);
+	border-radius: 15px;
+	background: var(--panel);
+	padding: 16px;
+}
+.stage:not(:last-child)::after {
+	position: absolute;
+	top: 50%;
+	right: -20px;
+	color: var(--blue);
+	content: "→";
+	font-weight: 900;
+	transform: translateY(-50%);
+}
+.stage .step {
+	color: var(--blue);
+	font-size: 0.72rem;
+	font-weight: 800;
+}
+.stage strong { display: block; margin-top: 4px; }
+.stage p {
+	margin: 7px 0 0;
+	color: var(--muted);
+	font-size: 0.78rem;
+	line-height: 1.5;
+}
+
+.legend,
+.filters {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+}
+.legend { margin: 0 0 18px; }
+.pill,
+.filter-button {
+	border: 1px solid var(--line);
+	border-radius: 999px;
+	background: var(--panel);
+	padding: 6px 10px;
+	color: var(--muted);
+	font-size: 0.78rem;
+}
+.filter-button {
+	font: inherit;
+	font-size: 0.78rem;
+	cursor: pointer;
+}
+.filter-button[aria-pressed="true"] {
+	border-color: var(--cyan);
+	background: rgb(93 228 214 / 12%);
+	color: white;
+}
+.dot {
+	display: inline-block;
+	width: 0.62rem;
+	height: 0.62rem;
+	margin-right: 0.35rem;
+	border-radius: 50%;
+	vertical-align: -0.02rem;
+}
+.dot.done { background: var(--green); }
+.dot.partial { background: var(--yellow); }
+.dot.todo { background: #71859d; }
+
+.issue-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 12px;
+	margin-top: 18px;
+}
+.issue-card {
+	display: grid;
+	grid-template-columns: 74px 1fr;
+	gap: 14px;
+	border: 1px solid var(--line);
+	border-radius: 15px;
+	background: rgb(13 27 45 / 80%);
+	padding: 17px;
+}
+.issue-card[hidden] { display: none; }
+.issue-id {
+	color: var(--cyan);
+	font-weight: 850;
+	letter-spacing: -0.02em;
+}
+.issue-meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 7px;
+	margin-top: 10px;
+}
+.issue-card p {
+	margin: 6px 0 0;
+	color: var(--muted);
+	font-size: 0.88rem;
+	line-height: 1.55;
+}
+.tag {
+	border-radius: 6px;
+	background: rgb(115 167 255 / 13%);
+	padding: 3px 7px;
+	color: #bcd4ff;
+	font-size: 0.7rem;
+	font-weight: 750;
+}
+.tag.owner { background: rgb(93 228 214 / 11%); color: #a7f2ea; }
+.tag.status-done { background: rgb(126 231 135 / 13%); color: var(--green); }
+.tag.status-partial { background: rgb(255 209 102 / 13%); color: var(--yellow); }
+.tag.status-todo { background: rgb(159 178 200 / 12%); color: #bac8d8; }
+
+.table-wrap {
+	overflow-x: auto;
+	border: 1px solid var(--line);
+	border-radius: var(--radius);
+}
+table {
+	width: 100%;
+	border-collapse: collapse;
+	background: rgb(13 27 45 / 78%);
+	font-size: 0.88rem;
+}
+th, td {
+	border-bottom: 1px solid var(--line);
+	padding: 13px 15px;
+	text-align: left;
+	vertical-align: top;
+}
+th {
+	background: #12243a;
+	color: #dceaff;
+	font-size: 0.76rem;
+	letter-spacing: 0.04em;
+}
+tr:last-child td { border-bottom: 0; }
+td:first-child { white-space: nowrap; }
+
+.path-list {
+	display: grid;
+	gap: 10px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	counter-reset: path;
+}
+.path-list li {
+	display: grid;
+	grid-template-columns: 38px 1fr;
+	gap: 12px;
+	align-items: start;
+	border-bottom: 1px solid var(--line);
+	padding: 0 0 14px;
+	counter-increment: path;
+}
+.path-list li::before {
+	display: grid;
+	width: 32px;
+	height: 32px;
+	border: 1px solid var(--line);
+	border-radius: 50%;
+	place-items: center;
+	color: var(--cyan);
+	content: counter(path);
+	font-size: 0.8rem;
+	font-weight: 800;
+}
+.path-list strong { display: block; }
+.path-list span {
+	display: block;
+	margin-top: 3px;
+	color: var(--muted);
+	font-size: 0.88rem;
+}
+
+.script {
+	border: 1px solid rgb(115 167 255 / 35%);
+	border-radius: var(--radius);
+	background:
+		linear-gradient(135deg, rgb(115 167 255 / 9%), rgb(93 228 214 / 5%)),
+		var(--panel);
+	padding: clamp(22px, 4vw, 38px);
+}
+.script blockquote {
+	margin: 0;
+	color: #d7e7fa;
+	font-size: clamp(1rem, 2vw, 1.15rem);
+}
+.script blockquote p { margin: 0 0 1em; }
+.script blockquote p:last-child { margin-bottom: 0; }
+
+footer {
+	border-top: 1px solid var(--line);
+	padding: 28px 0 50px;
+	color: var(--muted);
+	font-size: 0.82rem;
+}
+
+@media (max-width: 920px) {
+	.grid-4, .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+	.issue-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 620px) {
+	.shell { width: min(calc(100% - 24px), 1180px); }
+	.hero { padding-top: 46px; }
+	.grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; }
+	.issue-card { grid-template-columns: 58px 1fr; }
+	.hero-note { border-radius: 18px; }
+	.print-button { display: none; }
+}
+
+@media print {
+	:root {
+		--bg: white;
+		--panel: white;
+		--panel-2: #f4f7fa;
+		--line: #cbd5df;
+		--text: #122033;
+		--muted: #526477;
+	}
+	body { background: white; }
+	.topnav, .filters { display: none; }
+	.hero { padding: 24px 0; }
+	main { padding-top: 0; }
+	section { margin-top: 38px; break-inside: avoid; }
+	.card, .issue-card, .script { box-shadow: none; break-inside: avoid; }
+	.lifecycle { overflow: visible; }
+	a { color: #155e75; }
+	code { background: #f3f6f8; color: #17324d; }
+}

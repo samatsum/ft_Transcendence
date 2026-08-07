@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="ja">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="color-scheme" content="dark">
+	<title>USER DOC — cub3D プレイヤー／評価者向けマニュアル</title>
+	<link rel="stylesheet" href="./assets/style.css">
+</head>
+<body>
+	<header class="hero">
+		<div class="shell">
+			<p class="eyebrow">User Doc · Player / Evaluator Guide</p>
+			<h1>cub3D の遊び方と、<br>自作マップの作り方。</h1>
+			<p class="hero-lead">
+				cub3D の起動方法・操作方法・RSP モード（じゃんけん鬼ごっこ）の遊び方、
+				そして自作マップ（<code>.cub</code> ファイル）を作るためのルールをまとめたマニュアルです。
+				実装と一致する内容のみを記載しています。
+			</p>
+			<p class="hero-note">
+				<span aria-hidden="true">●</span>
+				<strong>対象読者</strong>
+				<span>プレイヤー・評価者。オンライン対戦用マップの遊び方もここに含みます</span>
+			</p>
+		</div>
+	</header>
+
+	<nav class="topnav" aria-label="ページ内目次">
+		<div class="shell nav-inner">
+			<a href="#launch">起動</a>
+			<a href="#controls">操作</a>
+			<a href="#fps">FPSモードの要素</a>
+			<a href="#cub-format">.cub の書き方</a>
+			<a href="#rsp">RSPモード</a>
+			<a href="#troubleshoot">うまく動かないとき</a>
+			<a href="#screenshot">結果スクリーンショット</a>
+			<button class="print-button" type="button" onclick="window.print()">印刷 / PDF</button>
+		</div>
+	</nav>
+
+	<main class="shell">
+		<section id="launch">
+			<p class="section-kicker">01 · Launch</p>
+			<h2>起動</h2>
+			<p class="section-intro">
+				第 2 引数は指定しません。<code>maps/fps_map/</code> 配下のマップは FPS モード、
+				<code>maps/rsp_map/</code> 配下のマップは RSP モードとして自動判定されます。
+			</p>
+			<pre><code>make
+./cub3D maps/fps_map/&lt;map.cub&gt;      # FPS モード
+./cub3D maps/rsp_map/&lt;map.cub&gt;      # RSP モード（じゃんけん鬼ごっこ）</code></pre>
+			<pre><code>./cub3D maps/fps_map/1.cub             # FPS
+./cub3D maps/fps_map/enemy_line.cub    # FPS（敵の挙動確認用）
+./cub3D maps/fps_map/door_test.cub     # FPS（扉の確認用）
+./cub3D maps/rsp_map/rsp.cub           # RSP（じゃんけん鬼ごっこ）</code></pre>
+
+			<h3 style="margin-top: 28px;">オンライン対戦用マップ（各モード 2 枚）</h3>
+			<p class="section-intro" style="margin-bottom: 14px;">
+				1 人プレイでも同じコマンドで遊べます。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead>
+						<tr><th>マップ</th><th>モード</th><th>特徴</th></tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td><code>maps/rsp_map/rsp.cub</code></td>
+							<td>RSP</td>
+							<td>開けた広場。読み合いより走り勝負</td>
+						</tr>
+						<tr>
+							<td><code>maps/rsp_map/rsp_pillars.cub</code></td>
+							<td>RSP</td>
+							<td>中央に遮蔽（柱と樽）。追跡・逃走の読み合いが増える</td>
+						</tr>
+						<tr>
+							<td><code>maps/fps_map/21x21_arena.cub</code></td>
+							<td>FPS</td>
+							<td>収集 → 扉 → ゴールの関門を備えたアリーナ</td>
+						</tr>
+						<tr>
+							<td><code>maps/fps_map/fps_duel.cub</code></td>
+							<td>FPS</td>
+							<td>左右対称のレース。中央のハザード巡回リング内外に星 5 個</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+
+		<section id="controls">
+			<p class="section-kicker">02 · Controls</p>
+			<h2>操作</h2>
+			<div class="table-wrap">
+				<table>
+					<thead>
+						<tr><th>キー</th><th>動作</th></tr>
+					</thead>
+					<tbody>
+						<tr><td><code>W</code> / <code>S</code></td><td>前進 / 後退</td></tr>
+						<tr><td><code>A</code> / <code>D</code></td><td>左右への平行移動（ストレイフ）</td></tr>
+						<tr><td>← / →</td><td>視点を左右に回転</td></tr>
+						<tr><td><code>1</code></td><td>ピストルを装備（<strong>FPS モード専用</strong>）</td></tr>
+						<tr><td><code>2</code></td><td>フラッシュライト（懐中電灯）を装備（<strong>FPS モード専用</strong>）</td></tr>
+						<tr><td><code>3</code></td><td>素手（移動が 1.5 倍速くなる。<strong>FPS モード専用</strong>）</td></tr>
+						<tr><td><code>Space</code></td><td>射撃（ピストル装備時のみ。クールダウンあり。<strong>FPS モード専用</strong>）</td></tr>
+						<tr><td><code>I</code></td><td>UI（ミニマップ・収集進捗）の表示切替</td></tr>
+						<tr><td><code>O</code></td><td>クロスヘアの表示切替</td></tr>
+						<tr><td><code>L</code></td><td>距離による陰影（シェード）の切替</td></tr>
+						<tr><td><code>Esc</code> / ウィンドウの ×</td><td>終了</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<div class="callout warning" style="margin-top: 18px;">
+				<strong>注意：</strong> 移動は WASD、回転は左右矢印のみです（上下矢印・Q・E は未割り当て）。
+				<strong>RSP モードでは <code>1</code> / <code>2</code> / <code>3</code> / <code>Space</code> は無効</strong>で、
+				武器切り替え・射撃はできません（じゃんけんは接触時に自動判定。詳細は「RSPモード」章）。
+			</div>
+		</section>
+
+		<section id="fps">
+			<p class="section-kicker">03 · FPS Mode</p>
+			<h2>ゲーム要素（FPS モード）</h2>
+			<div class="grid grid-2">
+				<article class="card">
+					<p class="card-label">Collect</p>
+					<h3>収集アイテム</h3>
+					<p>
+						マップ文字 <code>k</code>〜<code>o</code>（<code>.cub</code> の <code>OC*</code> テクスチャ）に触れると獲得され、
+						UI に進捗（<code>Collect: x / y</code>）が表示されます。
+						すべて集めると <code>GG !</code> の表示になります。
+						収集対象が 1 つもないマップでは <code>Nothing to collect !</code> と表示されます。
+					</p>
+				</article>
+				<article class="card">
+					<p class="card-label">Door</p>
+					<h3>扉</h3>
+					<p>
+						マップ文字 <code>D</code>。<strong>収集アイテムをすべて集めるまでは壁</strong>として振る舞い、
+						集め終わると床に変わって<strong>開放</strong>されます。
+						収集対象が無いマップでは扉は閉じたままです。
+					</p>
+				</article>
+				<article class="card">
+					<p class="card-label">Enemy</p>
+					<h3>敵</h3>
+					<p>
+						マップ文字 <code>M</code>。見る側の方角に応じた 8 方向スプライトで描画されます。
+						普段は巡回し、<strong>正面の一定範囲（視界）に戦闘員が入り、間に遮蔽物（壁・通行不可オブジェクト・閉じた扉）がない</strong>と検知して追跡へ切り替わります。
+						見失っても一定時間（既定 5 秒、<code>.cub</code> の <code>ET</code> で変更可）は追跡を続け、時間切れで巡回へ戻ります。
+						ピストルで撃って既定 5 ヒット（<code>.cub</code> の <code>EH</code> で変更可）させると倒せます。
+						移動速度は <code>.cub</code> の <code>ES</code> で調整できます（プレイヤーの移動速度とは独立）。
+					</p>
+				</article>
+				<article class="card">
+					<p class="card-label">On Contact</p>
+					<h3>敵に触れるとどうなるか</h3>
+					<p>
+						接触すると死亡演出（全画面表示）に入り、<strong>約 5 秒後に自分のスタート地点へ復帰して続行</strong>します。
+						ゲームオーバーにはなりません（ペナルティ扱い）。
+						復帰待ちの間は自分だけが止まり、敵や他の戦闘員は動き続けます。
+					</p>
+				</article>
+				<article class="card">
+					<p class="card-label">Goal</p>
+					<h3>ゴール</h3>
+					<p>
+						マップ文字 <code>G</code>。置いたマップでは、<strong>先に踏んだ戦闘員が勝者</strong>になり試合が終わります。
+						扉 <code>D</code> と組み合わせると「全部集める → 扉が開く → ゴールへ走る」という関門付きのレースになります
+						（<code>maps/fps_map/fps_duel.cub</code> が例）。
+						<code>G</code> を置かないマップは、収集して扉を開けるところまでが目的になります。
+					</p>
+				</article>
+				<article class="card">
+					<p class="card-label">Patrol</p>
+					<h3>巡回路</h3>
+					<p>
+						マップ文字 <code>P</code>。敵が巡回するための通路です。<code>P</code> セルをループ状に並べておくと、敵はその上を周回します。
+						敵が <code>P</code> 上にいないときは、最も近い <code>P</code> へ自動で復帰します。
+						<code>P</code> を 1 つも置かなければ、敵は検知時のみ動き、それ以外は待機します。
+					</p>
+				</article>
+			</div>
+			<div class="grid grid-2" style="margin-top: 16px;">
+				<article class="card">
+					<p class="card-label">Impassable</p>
+					<h3>通行不可オブジェクト</h3>
+					<p><code>a</code>〜<code>e</code>（<code>OI*</code>）は壁と同様に進行を妨げます。</p>
+				</article>
+				<article class="card">
+					<p class="card-label">Passable</p>
+					<h3>通行可オブジェクト</h3>
+					<p><code>f</code>〜<code>j</code>（<code>OP*</code>）は装飾として描画されますが、通り抜けられます。周囲をわずかに明るくするスポットライト効果があります。</p>
+				</article>
+			</div>
+		</section>
+
+		<section id="cub-format">
+			<p class="section-kicker">04 · Map Format</p>
+			<h2><code>.cub</code> ファイルの記述ルール</h2>
+
+			<h3>設定ヘッダ</h3>
+			<p class="section-intro">
+				ファイル前半に、解像度・テクスチャ・色・各種パラメータを記述します。
+				同じキーは<strong>1 度だけ</strong>記述できます。記述順は自由ですが、<strong>マップ本体より前</strong>に置く必要があります。
+			</p>
+			<pre><code>R 1920 1080                                # 解像度 (幅 高さ)
+
+NO ./textures/wall/Wall_1.xpm              # 北向きの壁テクスチャ
+SO ./textures/wall/Wall_2.xpm              # 南向きの壁テクスチャ
+WE ./textures/wall/Wall_3.xpm              # 西向きの壁テクスチャ
+EA ./textures/wall/Wall_4.xpm              # 東向きの壁テクスチャ
+
+ST ./textures/wall/Wall_mossy.xpm          # 天井テクスチャ (任意)
+FT ./textures/wall/Wall_tile.xpm           # 床テクスチャ (任意)
+
+F 184,113,39                               # 床の色 R,G,B (テクスチャ未指定時のフォールバック)
+C 51,198,227                               # 天井の色 R,G,B (テクスチャ未指定時のフォールバック)
+
+OI1 ./textures/object/Object_barrel.xpm    # 通行不可オブジェクト 1種目 (マップ文字 'a')
+OP1 ./textures/object/Object_Green_Light.xpm  # 通行可オブジェクト 1種目 (マップ文字 'f')
+OC1 ./textures/object/Object_star.xpm      # 収集アイテム         1種目 (マップ文字 'k')
+
+MS 0.05                                     # 移動速度     (任意, 0 より大。既定 0.05)
+RS 0.05                                     # 回転速度     (任意, 0 より大。既定 0.05)
+FOV 0.66                                    # 視野角       (任意, 大きいほど広角。既定 0.66)
+ET 5.0                                      # 敵の追跡秒数 (任意, 見失うまでの秒数。既定 5.0)
+ES 0.1                                      # 敵の移動速度 (任意, 0 より大。既定 0.1, 移動速度と独立)
+EH 5                                        # 敵のHP       (任意, 0 より大の整数。撃破に要するヒット数。既定 5)</code></pre>
+			<p>サポートされる画像形式は <code>.xpm</code> のみです。</p>
+
+			<h3 style="margin-top: 28px;">設定キー一覧</h3>
+			<div class="table-wrap">
+				<table>
+					<thead>
+						<tr><th>キー</th><th>内容</th><th>必須</th></tr>
+					</thead>
+					<tbody>
+						<tr><td><code>R</code></td><td>解像度（幅 高さ）</td><td>必須</td></tr>
+						<tr><td><code>NO</code> / <code>SO</code> / <code>WE</code> / <code>EA</code></td><td>各方角の壁テクスチャ</td><td>必須</td></tr>
+						<tr><td><code>ST</code></td><td>天井テクスチャ</td><td>任意（未指定時は <code>C</code> の色）</td></tr>
+						<tr><td><code>FT</code></td><td>床テクスチャ</td><td>任意（未指定時は <code>F</code> の色）</td></tr>
+						<tr><td><code>F</code> / <code>C</code></td><td>床 / 天井のフォールバック色 <code>R,G,B</code></td><td>テクスチャ未指定時に使用</td></tr>
+						<tr><td><code>OI1</code>〜<code>OI5</code></td><td>通行不可オブジェクトのテクスチャ（最大 5 種）</td><td>任意</td></tr>
+						<tr><td><code>OP1</code>〜<code>OP5</code></td><td>通行可オブジェクトのテクスチャ（最大 5 種）</td><td>任意</td></tr>
+						<tr><td><code>OC1</code>〜<code>OC5</code></td><td>収集アイテムのテクスチャ（最大 5 種）</td><td>任意</td></tr>
+						<tr><td><code>MS</code> / <code>RS</code> / <code>FOV</code></td><td>移動速度 / 回転速度 / 視野角</td><td>任意（既定値で動作）</td></tr>
+						<tr><td><code>ET</code> / <code>ES</code> / <code>EH</code></td><td>敵の追跡秒数 / 移動速度 / HP</td><td>任意（既定値で動作）</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<div class="callout warning" style="margin-top: 16px;">
+				<strong>注：</strong> オブジェクトのキーは<strong>番号付き</strong>の <code>OI1</code>〜<code>OI5</code> / <code>OP1</code>〜<code>OP5</code> / <code>OC1</code>〜<code>OC5</code> を使用します
+				（番号なしの裸キー <code>OI</code> / <code>OP</code> / <code>OC</code> はサポートされていません）。
+			</div>
+
+			<h3 style="margin-top: 34px;">マップ本体</h3>
+			<p class="section-intro">
+				ヘッダの後にマップを記述します。マップは <code>.cub</code> の<strong>最後</strong>に置く必要があります。
+				各セルはスペースで区切ります（例: <code>1 0 0 1</code>）。
+			</p>
+			<p>使用可能な文字は以下のとおりです。</p>
+			<div class="table-wrap">
+				<table>
+					<thead>
+						<tr><th>文字</th><th>意味</th><th>対応テクスチャ</th></tr>
+					</thead>
+					<tbody>
+						<tr><td><code>0</code></td><td>通行可能な床</td><td>—</td></tr>
+						<tr><td><code>1</code></td><td>壁（通行不可）</td><td><code>NO</code>/<code>SO</code>/<code>WE</code>/<code>EA</code></td></tr>
+						<tr><td><code>a</code>〜<code>e</code></td><td>通行不可オブジェクト（5 種）</td><td><code>OI1</code>〜<code>OI5</code></td></tr>
+						<tr><td><code>f</code>〜<code>j</code></td><td>通行可オブジェクト（5 種, 通り抜け可）</td><td><code>OP1</code>〜<code>OP5</code></td></tr>
+						<tr><td><code>k</code>〜<code>o</code></td><td>収集アイテム（5 種, 触れると獲得）</td><td><code>OC1</code>〜<code>OC5</code></td></tr>
+						<tr><td><code>D</code></td><td>扉（収集完了で床に変わり開放。それまでは壁）</td><td><code>NO</code>/<code>SO</code>/<code>WE</code>/<code>EA</code> で描画</td></tr>
+						<tr><td><code>M</code></td><td>敵の出現地点（接触＝死亡ペナルティ。試合は続行）</td><td>敵テクスチャ（8 方向, 内蔵）</td></tr>
+						<tr><td><code>P</code></td><td>巡回路（敵が周回する通路。床として通行可能）</td><td>—（描画は床扱い）</td></tr>
+						<tr><td><code>G</code></td><td>ゴール（<strong>FPS 専用</strong>。先に踏んだ戦闘員が勝者。通行可能）</td><td><code>textures/Goal.xpm</code>（内蔵）</td></tr>
+						<tr><td><code>N</code> / <code>S</code> / <code>E</code> / <code>W</code></td><td>スタート地点と向き（RSP ではチームスポーン）</td><td>—</td></tr>
+						<tr><td>空白</td><td>描画されない領域</td><td>—</td></tr>
+					</tbody>
+				</table>
+			</div>
+
+			<p style="margin-top: 20px;">オブジェクトの文字とテクスチャ番号の対応:</p>
+			<ul>
+				<li>通行不可: <code>a</code>→<code>OI1</code>, <code>b</code>→<code>OI2</code>, <code>c</code>→<code>OI3</code>, <code>d</code>→<code>OI4</code>, <code>e</code>→<code>OI5</code></li>
+				<li>通行可　: <code>f</code>→<code>OP1</code>, <code>g</code>→<code>OP2</code>, <code>h</code>→<code>OP3</code>, <code>i</code>→<code>OP4</code>, <code>j</code>→<code>OP5</code></li>
+				<li>収集　　: <code>k</code>→<code>OC1</code>, <code>l</code>→<code>OC2</code>, <code>m</code>→<code>OC3</code>, <code>n</code>→<code>OC4</code>, <code>o</code>→<code>OC5</code></li>
+			</ul>
+
+			<h3 style="margin-top: 28px;">ルール</h3>
+			<ol class="path-list">
+				<li>
+					<div>
+						<strong>スタート地点の数</strong>
+						<span>
+							<code>N</code> / <code>S</code> / <code>E</code> / <code>W</code> は<strong>FPS の 1 人プレイでは 1 つ</strong>で足ります（RSP モードの要件は「RSPモード」章）。
+							<strong>オンラインの FPS 1vs1 に使うマップは 2 つ以上</strong>必要です（2 人が別々の地点から同時に始めるため。足りないとルーム生成に失敗します）。
+							各戦闘員は自分の開始地点を覚えていて、死亡後はそこへ戻ります。
+						</span>
+					</div>
+				</li>
+				<li>
+					<div>
+						<strong>壁で囲む</strong>
+						<span>マップは壁 <code>1</code> で囲まれている必要があります。隙間や開いた境界はパースエラーになります。</span>
+					</div>
+				</li>
+				<li>
+					<div>
+						<strong>列数の一致</strong>
+						<span>字句解析後、すべての行の有効列数（空白を除く）が一致している必要があります。</span>
+					</div>
+				</li>
+				<li>
+					<div>
+						<strong>テクスチャキーの対応</strong>
+						<span>使用したオブジェクト文字に対応するテクスチャキー（例: <code>b</code> を使うなら <code>OI2</code>）を定義してください。</span>
+					</div>
+				</li>
+				<li>
+					<div>
+						<strong>使用可能な文字</strong>
+						<span>使用できる文字は上表のもののみです（<code>2</code> / <code>3</code> / <code>4</code> などはサポートされません）。</span>
+					</div>
+				</li>
+			</ol>
+
+			<div class="callout" style="margin-top: 20px;">
+				<strong>巡回路の設計ヒント：</strong>
+				<code>P</code> セルを<strong>閉じたループ状</strong>に並べると、敵が安定して周回します。
+				敵（<code>M</code>）は <code>P</code> の上、または <code>P</code> に隣接させて配置すると、巡回にスムーズに乗ります。
+				分岐や行き止まりのある <code>P</code> でも動作しますが、ループ状が最も意図どおりになります。
+				<code>P</code> を置かないマップでは、敵は検知時のみプレイヤーを追跡し、それ以外は待機します。
+			</div>
+
+			<h3 style="margin-top: 34px;">解像度の制約</h3>
+			<p>実行時、要求された解像度は内部で次の範囲にクリップされます。</p>
+			<ul>
+				<li>最小: 848 × 480</li>
+				<li>最大: 1920 × 1080</li>
+			</ul>
+			<p>これより大きな値を書いても、自動的に 1920 × 1080 まで縮められます。アスペクト比に応じて FOV が内部補正されます。</p>
+		</section>
+
+		<section id="rsp">
+			<p class="section-kicker">05 · RSP Mode</p>
+			<h2>RSP モード（じゃんけん鬼ごっこ）</h2>
+			<p class="section-intro">
+				<code>./cub3D maps/rsp_map/&lt;map.cub&gt;</code> で起動する対戦的なモードです。
+				プレイヤーと NPC が<strong>赤チーム</strong>と<strong>青チーム</strong>に分かれ、接触したときの<strong>じゃんけん</strong>で勝敗を決めます。
+			</p>
+
+			<h3>ルール</h3>
+			<div class="grid grid-2">
+				<article class="card">
+					<p class="card-label">Team &amp; Spawn</p>
+					<h3>チームとスポーン</h3>
+					<p>
+						<code>N</code> / <code>W</code> のスポーンが<strong>赤チーム</strong>、<code>S</code> / <code>E</code> のスポーンが<strong>青チーム</strong>です。
+						起動時に各チームから 2 地点ずつ（計 4 地点）が選ばれ、1 人プレイではそのうち 1 つがプレイヤー、残り 3 つが NPC になります
+						（オンラインでは 4 席が人間と AI の混在になります）。
+					</p>
+				</article>
+				<article class="card">
+					<p class="card-label">Hand</p>
+					<h3>手</h3>
+					<p>各戦闘員はグー / チョキ / パーのいずれかを持ちます。手は頭上のスプライトで表示されます（赤／青のハンド画像）。</p>
+				</article>
+				<article class="card">
+					<p class="card-label">Win / Lose</p>
+					<h3>勝敗</h3>
+					<p>
+						異なるチームの戦闘員どうしが接触すると、その場でじゃんけん判定が行われ、
+						<strong>勝った側のチームに 1 点</strong>入り、<strong>負けた側が即リスポーン</strong>します（あいこ・味方どうしは何も起きません）。
+					</p>
+				</article>
+				<article class="card">
+					<p class="card-label">Match End</p>
+					<h3>決着</h3>
+					<p>
+						先に<strong>10 点</strong>取ったチームの勝ちで、画面に <code>VICTORY</code> / <code>DEFEAT</code> と最終スコアが出ます。
+						画面上部には常に <code>Red x/10  VS  Blue y/10</code> が表示されます。
+						※この先取点はオンライン対戦では試合設定で変更できます（1 人プレイは常に 10）。
+					</p>
+				</article>
+				<article class="card">
+					<p class="card-label">Hand Change</p>
+					<h3>手の変化</h3>
+					<p>
+						自陣のスポーンマス（赤なら <code>N</code>/<code>W</code>、青なら <code>S</code>/<code>E</code>）に<strong>新たに踏み込んだ瞬間</strong>に、
+						手が今と違うものへランダムに変わります。リスポーン時も手が変わります。
+					</p>
+				</article>
+				<article class="card">
+					<p class="card-label">NPC AI</p>
+					<h3>NPC の AI</h3>
+					<p>
+						最寄りの異チーム戦闘員を見て、<strong>勝てる手なら追跡・負ける手なら逃走・あいこや相手不在なら徘徊</strong>します。
+						NPC の移動速度はプレイヤーが追える／逃げられるよう抑えられています。
+					</p>
+				</article>
+			</div>
+			<p style="margin-top: 16px;">
+				<strong>操作：</strong>プレイヤーのゲーム内操作は移動のみです（<code>1</code> / <code>2</code> / <code>3</code> の武器切り替えと射撃はできません）。
+				UI表示切替・終了操作は共通です。
+			</p>
+
+			<h3 style="margin-top: 34px;">RSP マップの作り方</h3>
+			<ul>
+				<li>
+					赤チーム用の <code>N</code> または <code>W</code> のスポーンを<strong>2 地点以上</strong>、
+					青チーム用の <code>S</code> または <code>E</code> のスポーンを<strong>2 地点以上</strong>配置します
+					（各チーム 2 地点に満たないと戦闘員を生成できず起動に失敗します）。
+				</li>
+				<li>
+					スポーンマスには任意でマーカー（スポットライト）が描画されます。
+					通行可オブジェクトの <code>OP2</code> に赤チーム用、<code>OP3</code> に青チーム用のテクスチャを指定すると、
+					各スポーンにその色のマーカーが表示されます（<code>maps/rsp_map/rsp.cub</code> を参照）。
+				</li>
+				<li>
+					ハンド画像（<code>textures/hand/Hand_&lt;Red|Blue&gt;_&lt;Rock|Scissors|Paper&gt;.xpm</code>）はエンジンが内蔵で読み込むため、
+					<code>.cub</code> での指定は不要です。
+				</li>
+			</ul>
+		</section>
+
+		<section id="troubleshoot">
+			<p class="section-kicker">06 · Troubleshooting</p>
+			<h2>うまく動かないとき</h2>
+			<div class="table-wrap">
+				<table>
+					<thead>
+						<tr><th>メッセージ</th><th>対処</th></tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td><code>Error: map must be in maps/fps_map/ or maps/rsp_map/.</code></td>
+							<td>マップは <code>maps/fps_map/</code> または <code>maps/rsp_map/</code> 配下に置いてください。</td>
+						</tr>
+						<tr>
+							<td><code>Error: too many arguments.</code></td>
+							<td>引数は <code>./cub3D &lt;map.cub&gt;</code> の 1 つだけ指定してください。第 2 引数の <code>FPS</code> / <code>RSP</code> は使いません。</td>
+						</tr>
+						<tr>
+							<td><code>Error: map file must end with .cub.</code></td>
+							<td>マップファイルの拡張子が <code>.cub</code> ではありません。</td>
+						</tr>
+						<tr>
+							<td><code>Error: failed to open map file.</code></td>
+							<td>指定したマップファイルが存在しない、または読み取り権限がありません。</td>
+						</tr>
+						<tr>
+							<td><code>Error: invalid map content. check syntax, walls, characters, and spawns.</code></td>
+							<td><code>.cub</code> の構文、壁閉じ、使用文字、スポーン指定のいずれかが不正です。</td>
+						</tr>
+						<tr>
+							<td><code>Error: failed to create RSP combatants. need 2 red spawns (N/W) and 2 blue spawns (S/E).</code></td>
+							<td>RSP マップには赤 <code>N</code>/<code>W</code> を 2 地点以上、青 <code>S</code>/<code>E</code> を 2 地点以上置いてください。</td>
+						</tr>
+						<tr>
+							<td><code>Error: failed to load map texture(s). check the texture path printed above.</code></td>
+							<td><code>.cub</code> のテクスチャパスが読めません。直前に表示される <code>Failed to load texture: ...</code> のパスを確認してください。</td>
+						</tr>
+						<tr>
+							<td>画面が真っ黒</td>
+							<td>テクスチャパスが間違っている、または XPM 以外の画像形式を指定している可能性があります。</td>
+						</tr>
+						<tr>
+							<td>敵が巡回しない／その場で止まる</td>
+							<td>マップに <code>P</code>（巡回路）が無い、または敵が <code>P</code> から離れすぎている可能性があります。<code>P</code> をループ状に配置し、敵をその近くに置いてください。</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+
+		<section id="screenshot">
+			<p class="section-kicker">07 · Screenshot</p>
+			<h2>結果スクリーンショット</h2>
+			<p>
+				結果画面は自動で BMP 保存されます。
+				FPS は <code>./screenshot/fps_screen/fps_YYYYMMDD_HHMMSS_usec.bmp</code>、
+				RSP は <code>./screenshot/rsp_screen/rsp_YYYYMMDD_HHMMSS_usec.bmp</code> に出力します。
+				手動保存用のキーバインドやコマンドラインオプションはありません。
+			</p>
+		</section>
+	</main>
+
+	<footer class="shell">
+		<p>元資料: md_files/04_エンジン資料/ユーザードキュメント.md（archive/ に移設） · 2026-08-05</p>
+	</footer>
+</body>
+</html>

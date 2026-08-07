@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="ja">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="color-scheme" content="dark">
+	<title>Git運用フロー — ft_transcendence</title>
+	<link rel="stylesheet" href="./assets/style.css">
+</head>
+<body>
+	<header class="hero">
+		<div class="shell">
+			<p class="eyebrow">Operating Rule · Git / GitHub</p>
+			<h1>ローカルでマージして<br>終わり、にしない。</h1>
+			<p class="hero-lead">
+				<strong>origin/main（GitHub側）が唯一の正本。統合はそこで行い、ローカルの
+				<code>main</code> は <code>pull</code> で追従させるだけ</strong>にする。
+				これがこのリポジトリのGit運用ルールです。samatsum本人にも、Claude Codeなどの
+				AIエージェントにも、同じルールを適用します。
+			</p>
+			<div class="hero-note">
+				<strong>2026-08-07 制定</strong>
+				<span>ローカルmainが31コミット遅れていた事故を受けて明文化</span>
+			</div>
+		</div>
+	</header>
+
+	<nav class="topnav" aria-label="ページ内目次">
+		<div class="shell nav-inner">
+			<a href="#why">なぜPR経由か</a>
+			<a href="#flow">5ステップ</a>
+			<a href="#naming">命名規約</a>
+			<a href="#merge">マージ戦略</a>
+			<a href="#cleanup">後片付け</a>
+			<a href="#donts">やってはいけないこと</a>
+			<button class="print-button" type="button" onclick="window.print()">印刷 / PDF</button>
+		</div>
+	</nav>
+
+	<main class="shell">
+		<section id="why">
+			<p class="section-kicker">01 · Why</p>
+			<h2>ローカルマージではなく、PR経由が良い理由</h2>
+			<p class="section-intro">
+				チームが解散し、いまはsamatsum単独稼働です（詳細は
+				<a href="./チーム体制.html">チーム体制.html</a>）。レビュアーはもういません。
+				それでもPRを経由する意味は残っています。理由はレビューではなく
+				<strong>CIがいつ走るか</strong>です。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead>
+						<tr><th>やり方</th><th>CIが走るタイミング</th><th>失敗したときどうなるか</th></tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>ローカルで <code>main</code> にマージ →<br><code>git push origin main</code></td>
+							<td>push<strong>した後</strong></td>
+							<td><code>main</code> に壊れたコミットが乗った状態になる。その間に
+								<code>git clone</code> した人（評価者含む）は壊れたビルドを引く</td>
+						</tr>
+						<tr>
+							<td>ブランチをpush → PR作成 →<br>CI緑を確認してからGitHub上でマージ</td>
+							<td>マージ<strong>する前</strong>（PR上）</td>
+							<td><code>main</code> には触れない。revertする必要すら発生しない</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			<div class="callout" style="margin-top: 18px">
+				<strong>PR＝レビューゲートではなく、CIゲート。</strong>
+				CIが緑になった自分のPRを自分でマージ（self-merge）するのは正常な運用です。
+				大事なのは「<code>main</code>に触れる前に、そのコミットに対してCIを走らせているか」
+				だけです。
+			</div>
+		</section>
+
+		<section id="flow">
+			<p class="section-kicker">02 · The flow</p>
+			<h2>標準の5ステップ</h2>
+			<p class="section-intro">
+				すべての変更（1行のdocs修正でも）はこの流れに乗せます。<code>main</code> へ直接
+				コミットすることはありません。
+			</p>
+			<pre><code># 1. 作業前に最新化
+git checkout main
+git pull
+
+# 2. ブランチを切って作業
+git checkout -b feat/xxx
+# ...実装・コミット...
+
+# 3. ブランチをpushしてPRを作る
+git push -u origin feat/xxx
+gh pr create --fill
+
+# 4. CIが緑になったらGitHub上でマージ（gh pr merge でも、Web UIでも可）
+gh pr merge --squash    # お好みで --merge や --rebase も選べる
+
+# 5. ローカルのmainを追従させる
+git checkout main
+git pull</code></pre>
+			<div class="callout warning" style="margin-top: 18px">
+				<strong>ステップ5は省略しない。</strong>
+				今回、ローカル <code>main</code> が <code>origin/main</code> より31コミットも
+				遅れていた原因はまさにこれで、しばらく<code>git pull</code>していなかったせいで
+				古い<code>main</code>を土台にした作業ブランチが1本まるごと発生し、後から手作業で
+				<code>origin/main</code>と突き合わせる羽目になりました。
+			</div>
+		</section>
+
+		<section id="naming">
+			<p class="section-kicker">03 · Naming</p>
+			<h2>ブランチ名・コミットメッセージの規約</h2>
+			<p class="section-intro">
+				このリポジトリの過去35件以上のPRですでに使われている規約に揃えます。新規に決めるものではありません。
+			</p>
+			<h3>ブランチ名: <code>&lt;種別&gt;/&lt;短い説明&gt;</code></h3>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>接頭辞</th><th>用途</th><th>例</th></tr></thead>
+					<tbody>
+						<tr><td><code>feat/</code></td><td>新機能</td><td><code>feat/f-01-scaffold</code></td></tr>
+						<tr><td><code>fix/</code></td><td>バグ修正・レビュー指摘対応</td><td><code>fix/design-gaps-3-6</code></td></tr>
+						<tr><td><code>docs/</code></td><td><code>md_files/</code>・<code>README.md</code>のみの変更</td><td><code>docs/w-08-design-complete</code></td></tr>
+						<tr><td><code>chore/</code></td><td>製品挙動を変えないツール・依存関係の変更</td><td><code>chore/deps-bump</code></td></tr>
+						<tr><td><code>ci/</code></td><td>CIワークフローの変更</td><td><code>ci/add-lint-job</code></td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p class="section-intro" style="margin-top: 16px;">
+				<code>claude/...</code> や <code>samatsum/...</code>
+				のような個人名プレフィックスの新規作成は今後避けます。何を含むブランチかが
+				名前から分からず、関連する作業の隣にソートもされないため。AIが作るブランチも
+				<code>&lt;種別&gt;/&lt;説明&gt;</code>に揃えてください。
+			</p>
+			<h3 style="margin-top: 28px;">コミットメッセージ: Conventional Commits</h3>
+			<p>
+				<code>feat:</code> / <code>fix:</code> / <code>docs:</code> / <code>chore:</code> /
+				<code>ci:</code> / <code>build:</code> / <code>lint:</code>。
+				スコープ付きも可（<code>fix(F-01): address CodeRabbit review feedback</code>）。
+				1行目の要約は日本語・英語どちらでも構いませんが、同じブランチ内で言語を混ぜないこと。
+			</p>
+		</section>
+
+		<section id="merge">
+			<p class="section-kicker">04 · Merge strategy</p>
+			<h2>マージ方式の選び方</h2>
+			<div class="grid grid-2">
+				<article class="card">
+					<p class="card-label">既定</p>
+					<h3><code>--squash</code></h3>
+					<p>
+						1 PR = 1 コミットに畳む。作業中の修正コミット・CodeRabbit指摘対応コミットなどが
+						ブランチ内でどれだけ雑に積まれていても、<code>main</code>のログは
+						「出荷単位の一覧」として綺麗に保たれる。<strong>迷ったらこれ。</strong>
+					</p>
+				</article>
+				<article class="card">
+					<p class="card-label">例外1</p>
+					<h3><code>--merge</code></h3>
+					<p>
+						ブランチ内の個々のコミットにそれぞれ独立した意味があり、後から個別に参照したい
+						場合のみ。頻度は低い。
+					</p>
+				</article>
+				<article class="card">
+					<p class="card-label">例外2</p>
+					<h3><code>--rebase</code></h3>
+					<p>
+						短く・すでに綺麗で・単一目的のブランチで、マージコミット自体がノイズになる場合のみ。
+					</p>
+				</article>
+				<article class="card">
+					<p class="card-label">禁止</p>
+					<h3>ローカルで<code>--ff-only</code>してpush</h3>
+					<p>
+						上の「01 なぜPR経由か」の理由により、必ずGitHub側でマージし、CIをその
+						マージ結果に対して走らせること。
+					</p>
+				</article>
+			</div>
+		</section>
+
+		<section id="cleanup">
+			<p class="section-kicker">05 · Cleanup</p>
+			<h2>マージ後は、ブランチを消す</h2>
+			<p class="section-intro">
+				マージされたブランチはもう役目を終えています。ローカルとリモート両方から削除します。
+			</p>
+			<pre><code>git branch -d feat/xxx                  # ローカル
+git push origin --delete feat/xxx       # リモート（gh pr merge --delete-branch なら両方まとめて）</code></pre>
+			<div class="callout" style="margin-top: 18px">
+				<strong>放置するとどうなるか</strong> — 実際にこのリポジトリでは、マージ済みの
+				ブランチが7本放置され、どれが安全に消せるか
+				（<code>git branch --merged</code>・<code>git diff --stat</code>・
+				<code>gh pr list</code>でのPR状態確認）を後から1本ずつ手作業で調べる羽目になりました。
+				マージした直後に消せば、この調査は不要です。
+			</div>
+		</section>
+
+		<section id="donts">
+			<p class="section-kicker">06 · Anti-patterns</p>
+			<h2>やってはいけないこと</h2>
+			<ol class="path-list">
+				<li>
+					<div>
+						<strong><code>main</code>への直接コミット</strong>
+						<span>ローカルでもpush後でも禁止。1行のdocs修正でも必ずブランチを切る。</span>
+					</div>
+				</li>
+				<li>
+					<div>
+						<strong>ブランチをローカル<code>main</code>にマージして終わりにする</strong>
+						<span><code>origin/main</code>に乗り、ローカル<code>main</code>がそれを
+							<code>pull</code>で追従するまでは「完了」ではない。</span>
+					</div>
+				</li>
+				<li>
+					<div>
+						<strong><code>main</code>のforce-push</strong>
+						<span>いかなる理由でも行わない。履歴を書き換える必要があるなら、それは
+							マージ前のブランチ単位で行う話であって、共有履歴に対して事後にやることではない。</span>
+					</div>
+				</li>
+				<li>
+					<div>
+						<strong>ローカル<code>main</code>を放置する</strong>
+						<span>新しいブランチを切る前は毎回<code>git checkout main && git pull</code>。
+							不安なら<code>git fetch && git rev-parse main origin/main</code>で
+							一致を確認してから始める。</span>
+					</div>
+				</li>
+				<li>
+					<div>
+						<strong>他のfeatureブランチから枝分かれする</strong>
+						<span>意図的にPRを積み重ねる場合を除き、必ず<code>main</code>から切る。
+							積む場合はPRの説明にその旨を明記する
+							（<a href="https://github.com/samatsum/ft_Transcendence/pull/35">PR #35</a>の
+							「積む形」のように）。</span>
+					</div>
+				</li>
+			</ol>
+		</section>
+	</main>
+
+	<footer class="shell">
+		<p>2026-08-07 制定。AI向けの同内容は <code>md_files/ai/git-workflow.md</code>。samatsumとの会話で
+			「ローカルmainへのマージだけで終える運用は事故のもと」と確認した内容を明文化したもので、旧資料からの翻訳ではない。</p>
+	</footer>
+</body>
+</html>

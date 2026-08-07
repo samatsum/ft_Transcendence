@@ -1,0 +1,734 @@
+<!doctype html>
+<html lang="ja">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="color-scheme" content="dark">
+	<title>サーバ権威モデル — ft_transcendence</title>
+	<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+	<header class="hero">
+		<div class="shell">
+			<p class="eyebrow">Concept · Server-Authoritative Model</p>
+			<h1>本当のゲームは、<br>サーバの中だけで進む。</h1>
+			<p class="hero-lead">
+				ブラウザは勝敗を一切決めません。サーバが計算した状態の「写真」を受け取って、
+				すきまを補間しながら描くだけです。そしてこの「写真」に写る出演者は、
+				人間もAIも区別しない、たった1種類の「戦闘員」です。
+				この2つの決めごとが、Multiplayer・Remote players・AI opponent・切断復帰という
+				4つの要件を1つの仕組みで成立させています。
+			</p>
+			<p class="hero-note">
+				<span aria-hidden="true">●</span>
+				<strong>対象</strong>
+				<span>チームメンバー全員</span>
+				<span aria-hidden="true">·</span>
+				<span>関連: F-06 GameView / W-10 GameRoom / W-12 切断・AI代替</span>
+			</p>
+		</div>
+	</header>
+
+	<nav class="topnav" aria-label="ページ内目次">
+		<div class="shell nav-inner">
+			<a href="#why">なぜサーバ権威か</a>
+			<a href="#flow">データの流れ</a>
+			<a href="#snapshot">スナップショット</a>
+			<a href="#interpolation">補間</a>
+			<a href="#client">受け口と実例</a>
+			<a href="#combatant">戦闘員統合</a>
+			<a href="#modules">3モジュール</a>
+			<a href="#fields">戦闘員の中身</a>
+			<a href="#summary">まとめ</a>
+			<a href="#faq">FAQ</a>
+			<a href="#references">関連資料</a>
+			<button class="print-button" type="button" onclick="window.print()">印刷 / PDF</button>
+		</div>
+	</nav>
+
+	<main class="shell">
+		<section id="why">
+			<p class="section-kicker">01 · Why server authority</p>
+			<h2>なぜ「サーバだけが正しい」必要があるのか</h2>
+			<p class="section-intro">
+				4人でオンライン対戦をするとき、素朴に作ると「各プレイヤーのブラウザが、
+				それぞれ自分でゲームを計算する」形になります。これは<strong>必ず破綻します</strong>。
+				理由は2つです。
+			</p>
+			<div class="grid grid-2">
+				<article class="card">
+					<p class="card-label">理由1</p>
+					<h3>チート</h3>
+					<p>
+						ブラウザのコードは利用者が書き換えられます。「自分は無敵」「相手に勝った」と
+						自分のPCが言い張れてしまう。<strong>評価で必ず突かれる</strong>弱点です。
+					</p>
+				</article>
+				<article class="card">
+					<p class="card-label">理由2</p>
+					<h3>ズレ</h3>
+					<p>
+						通信には遅延があり、各自の計算が少しずつズレます。「Aの画面では勝ち、
+						Bの画面では負け」が起き、どちらが本当か決められません。
+					</p>
+				</article>
+			</div>
+			<div class="callout" style="margin-top: 18px">
+				<strong>サーバ権威（server-authoritative）:</strong>
+				ゲームの本当の状態は<strong>サーバの中だけ</strong>に存在し、勝敗・スコア・位置は
+				サーバが決める。ブラウザはそれを<strong>表示するだけ</strong>。この方式にすると、
+				チートは「サーバが認めないので無効」、ズレは「全員が同じサーバの状態を見るので
+				起きない」と、両方が原理的に消えます。
+			</div>
+			<p class="section-intro" style="margin-top: 18px">
+				<strong>最重要の帰結: ブラウザ側（クライアント）に勝敗を決めるコードは1行も無い。</strong>
+				これは設計の建前ではなく、実際に <code>game_apply_snapshot</code> のコメントにも
+				「勝敗・スコアの正本はサーバであり、ここでは一切判定しない」と明記して守っています。
+			</p>
+
+			<h3 style="margin-top: 30px">誰のCPUが計算するのか — 判定は集中、描画は分散</h3>
+			<p class="section-intro">
+				Webページを開くと、そのJavaScript / WASMは<strong>「あなたのPC」</strong>で動きます。
+				サーバのCPUは使いません。サーバからは<strong>データ（スナップショット）を受け取るだけ</strong>で、
+				描画は<strong>あなた自身のPCのCPU</strong>がやります。ブラウザは計算をサーバに
+				肩代わりさせる仕組みではありません。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>計算</th><th>どのCPUが実行するか</th></tr></thead>
+					<tbody>
+						<tr><td>ゲームの判定（<code>sim.wasm</code> / <code>game_step</code>）</td><td><strong>サーバマシン1台</strong>（全員ぶんを1回だけ計算）</td></tr>
+						<tr><td>画面の描画（<code>render.wasm</code>）</td><td><strong>各プレイヤーのPC</strong>（各自が自分の画面を描く）</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p class="section-intro" style="margin-top: 14px">
+				<strong>判定は1か所に集中</strong>（サーバ）→ チートもズレも消える。
+				<strong>描画は各自に分散</strong>（各ブラウザ）→ サーバは絵を描かないので軽い。
+				4人対戦なら<strong>描画は4台のPCが1画面ずつ分担</strong>し、サーバは判定だけです。
+			</p>
+			<div class="callout warning" style="margin-top: 18px">
+				<strong>評価時だけの注意:</strong>
+				この課題の評価は <code>docker compose up</code> で<strong>1台のマシン</strong>上で
+				行うため、Nodeサーバも確認用ブラウザも<strong>同じ物理マシンに同居</strong>します
+				（ローカル評価の特殊ケース）。役割としては別で、2人が別々のPCで対戦すれば
+				<strong>Aの描画はAのPC、Bの描画はBのPC、判定はサーバのPC</strong>と物理的に分かれます。
+			</div>
+		</section>
+
+		<section id="flow">
+			<p class="section-kicker">02 · Data flow</p>
+			<h2>データの流れ（1往復）</h2>
+			<p class="section-intro">
+				全体像を先に1枚で。<strong>ブラウザは入力を送り、サーバは状態を返し、
+				ブラウザが描く</strong>、の1往復です。
+			</p>
+			<pre><code>[ブラウザ] キー / マウス
+      │  input を送信（30Hz）        ← mv（前後左右の押下ビット）と yaw（視点の絶対角）
+      ▼
+[サーバ] game_step で世界の状態を計算（30Hz）
+        └ 位置・当たり判定・スコア・勝敗を決める（★絵は描かない）
+      │  snapshot を送信（15〜20Hz）  ← 全戦闘員の位置・向き・スコア・生死…
+      ▼
+[ブラウザ] snapshot を貯めて now−100ms で補間
+        └ render.wasm が「自分の画面」を描く（★描画はブラウザの仕事）</code></pre>
+			<h3 style="margin-top: 26px">混同しやすい2点（実際によくある勘違い）</h3>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>勘違い</th><th>正しくは</th></tr></thead>
+					<tbody>
+						<tr>
+							<td>ブラウザは「スナップショット」を送る</td>
+							<td>ブラウザが送るのは<strong>input</strong>。<strong>snapshotはサーバ→ブラウザの向き</strong>の言葉</td>
+						</tr>
+						<tr>
+							<td>サーバが「画面をどう描くか」を決める</td>
+							<td>サーバが決めるのは<strong>世界の状態（位置・勝敗）だけ</strong>。<strong>描き方は各ブラウザが決めて自分で描く</strong>（サーバはheadlessで絵を持たない）</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			<p class="section-intro" style="margin-top: 14px">
+				つまり、<strong>送る/返るデータは <code>input</code> と <code>snapshot</code> で別物</strong>、
+				そして<strong>「描く」のはサーバではなくブラウザ</strong>。サーバは「ボールはここ、
+				得点は2-1」と<strong>言うだけの審判</strong>で、各プレイヤーの画面映像そのものは
+				作りません。
+			</p>
+			<div class="callout" style="margin-top: 18px">
+				<strong>例外は視点回転（yaw）だけ。</strong>
+				自分の見回しは、サーバの返事を待たずブラウザが即座に反映します（手応えを保つための
+				唯一の予測）。移動や勝敗は予測せず snapshot を待ちます。
+			</div>
+		</section>
+
+		<section id="snapshot">
+			<p class="section-kicker">03 · Snapshot</p>
+			<h2>スナップショット＝ゲームの「写真」</h2>
+			<p class="section-intro">
+				サーバは1秒間に30回（30Hz）ゲームを進めます（<code>game_step</code>）。
+				その途中の状態を、定期的に<strong>写真</strong>に撮ってブラウザへ送ります。
+				これがスナップショットです。写真に写っているのは、<strong>表示に必要な最小限</strong>だけです。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>中身</th><th>例</th></tr></thead>
+					<tbody>
+						<tr><td>試合の状態</td><td>playing / finished、勝者、スコア</td></tr>
+						<tr><td>各戦闘員</td><td>id・チーム・手・<strong>位置(x,y)</strong>・<strong>向き</strong>・生存・AIか・復帰までの秒</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p class="section-intro" style="margin-top: 14px">
+				1回分で<strong>1KB未満</strong>に収まります（4人+数体なのでJSONで十分。実測で確認済み）。
+				正本のレイアウトは <code>codes/includes/platform/sim.h</code> です。
+			</p>
+			<h3 style="margin-top: 26px">誰が何を担当するか（ここがW-10とF-06の境界）</h3>
+			<pre><code>サーバ（Node）                            ブラウザ
+─────────────                            ─────────
+game_snapshot()                          受信
+  → フラットな数値の配列 ──JSON化──▶ WS ──▶ JSON
+                                            → 補間（§04）
+                                            → game_apply_snapshot()
+                                            → 画面に描画</code></pre>
+			<p class="section-intro" style="margin-top: 14px">
+				<strong>数値をJSONの文字列にするのはNodeの仕事</strong>（sim.wasmはしない）。
+				<strong>tick番号（何枚目の写真か）を振るのもNode</strong>。simは番号を持ちません。
+				この2点は「サーバ側の責務」として設計で切ってあります。
+			</p>
+		</section>
+
+		<section id="interpolation">
+			<p class="section-kicker">04 · Interpolation</p>
+			<h2>補間（interpolation）＝ 写真と写真の「あいだ」を作る</h2>
+			<p class="section-intro">
+				ここで問題が起きます。サーバは1秒に30回進むが、配信はもっと粗い（例: 15〜20回/秒）。
+				一方ブラウザは1秒に60回描きます。つまり<strong>写真の枚数より、描く回数のほうが多い</strong>。
+				写真をそのまま出すと、<strong>キャラクターがカクカク</strong>（写真が届いた瞬間だけワープする）動きます。
+			</p>
+
+			<h3 style="margin-top: 26px">「描画FPS」と「更新tick」は別物</h3>
+			<p class="section-intro">
+				<strong>FPS（1秒に何回"描く"か）は、絵を描く側だけの指標</strong>です。
+				<strong>サーバは絵を描かない</strong>のでFPSを持たず、代わりに「1秒に何回"世界を更新"するか」＝
+				<strong>tickレート</strong>を持ちます。この2つは別物で、値も目的も違います。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>どこ</th><th>持っているレート</th><th>値</th><th>なぜその値か</th></tr></thead>
+					<tbody>
+						<tr><td>native（<code>./cub3D</code>）</td><td>描画FPS</td><td><strong>60fps固定</strong></td><td><code>frame_delta</code>（<code>TARGET_FPS=60</code>）が早すぎるフレームをスキップして抑える</td></tr>
+						<tr><td>ブラウザ</td><td>描画FPS</td><td>モニタのリフレッシュ（通常60。高リフレッシュ機はそれ以上）</td><td><code>requestAnimationFrame</code>がモニタに同期する</td></tr>
+						<tr><td>サーバ（sim）</td><td>更新tick</td><td><strong>30Hz</strong>（配信は15〜20Hzに間引く）</td><td>判定は30回/秒で充分。60に上げても通信量が倍になるだけ</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p class="section-intro" style="margin-top: 14px">
+				<strong>描画FPSの上限は「人の目とモニタ」</strong>。60Hzモニタなら60fps以上描いても見えません。
+				<strong>更新tickの上限は「判定の精度と通信量」</strong>。だから<strong>あえて描画より遅く</strong>（30Hz）回します。
+			</p>
+			<div class="callout" style="margin-top: 18px">
+				<strong>30Hzはengine固定値ではなく、サーバ層の「ノブ」です。</strong>
+				<code>game_step(game, dt)</code> はdtを引数で受けるので、tickレートは<strong>呼ぶ側
+				（Nodeの<code>setInterval</code>。デモは<code>TICK_HZ=30</code>）</strong>が決めます。
+				<code>30</code>→<code>60</code>と書き換えれば上げられ、<strong>移動量はdt比例なので
+				ゲームの速さは変わりません</strong>。ただし①サーバCPUが増える（×ルーム数）
+				②このゲームでは精度の見返りが小さい③seed固定のデモ・テストのbyte一致再現が崩れる、
+				というトレードオフがあります。<strong>tick（判定）・配信・描画FPSは独立に調整可能</strong>
+				（例: tick 60だが配信は20のまま、も可）。
+			</div>
+			<p class="section-intro" style="margin-top: 18px">
+				そして、まさにこの「描く60回 vs 届く15〜20回」のズレを埋めるのが、補間です。
+				<strong>2枚の写真の「あいだ」を計算で埋めます。</strong>
+			</p>
+
+			<div class="callout warning" style="margin-top: 18px">
+				<strong>よくある誤解: 「2枚の写真から1枚の絵を作る」ではありません。</strong>
+				そう読むと「15回しか届かないなら7.5fpsしか描けないのでは？」となりますが、違います。
+				補間が作るのは<strong>「2枚の<em>あいだ</em>の、好きな時刻の状態」</strong>です。
+				「どこまで進んだか」を表す<code>alpha</code>は0.0〜1.0の<strong>連続値</strong>なので、
+				<strong>同じ2枚を使い回して何フレームでも描けます</strong>。
+			</div>
+			<pre><code>写真A ●───────────────────────● 写真B      ← 66.7ms 離れている（15Hz）
+      ↑      ↑      ↑      ↑
+   α=0.0  α=0.25  α=0.5  α=0.75            ← 60fps なら 4 フレーム分</code></pre>
+			<p class="section-intro">
+				つまり<strong>届く回数は、描く滑らかさを決めていません</strong>。では配信を増やすと
+				何が良くなるのか。<strong>軌跡の正確さ</strong>です。補間は2点を<strong>直線</strong>で
+				結ぶので、その間に実際のシムが曲がっていると、ショートカットして少しズレます。
+				15Hzなら66.7msぶんのズレで、歩く速さでは数センチ相当。目では分かりません。
+				その代わり通信量は30Hzの半分で済みます。
+			</p>
+			<p class="section-intro">
+				<strong>なぜ15なのか</strong>は「100ms過去を描く」（後述）と関係します。補間するには
+				「描きたい時刻を<strong>挟む2枚</strong>」が常に手元に要るので、100msの遅らせ分は
+				<strong>写真1枚ぶんの間隔＋通信のゆらぎ</strong>を吸収する予算です。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>配信</th><th>写真の間隔</th><th>100msの予算に対して</th></tr></thead>
+					<tbody>
+						<tr><td>30Hz</td><td>33.3ms</td><td>余りすぎ（通信量を倍払う意味がない）</td></tr>
+						<tr><td><strong>15Hz（採用）</strong></td><td><strong>66.7ms</strong></td><td><strong>余り33ms。1枚遅れても耐えられる</strong></td></tr>
+						<tr><td>10Hz</td><td>100ms</td><td>余りゼロ。1枚落ちると位置が飛ぶ</td></tr>
+					</tbody>
+				</table>
+			</div>
+
+			<h3 style="margin-top: 30px">補間のしくみ（数値例つき）</h3>
+			<p class="section-intro">
+				名前は難しそうですが、<strong>やっているのは割り算とかけ算だけ</strong>です。式は1本。
+			</p>
+			<pre><code>描く値 = A + (B - A) × alpha</code></pre>
+			<p class="section-intro">
+				<code>alpha</code>（アルファ）は<strong>「AとBの、どのへんか」を0〜1で表した割合</strong>です。
+				alpha=0ならちょうどA、0.5ならまんなか、1ならちょうどB。
+			</p>
+			<p class="section-intro">
+				具体例。写真A（時刻0.00秒・位置10）と写真B（時刻0.10秒・位置20）があり、
+				いま<strong>0.07秒</strong>の絵を描きたいとします。
+			</p>
+			<div class="grid grid-2">
+				<article class="card">
+					<p class="card-label">手順1 — alpha（どのへんか）を出す</p>
+					<pre><code>alpha = (描きたい時刻 - Aの時刻) / (Bの時刻 - Aの時刻)
+      = (0.07 - 0.00)  / (0.10 - 0.00)
+      = 0.7                          ← A と B の 70% の地点</code></pre>
+				</article>
+				<article class="card">
+					<p class="card-label">手順2 — その割合で混ぜる</p>
+					<pre><code>位置 = 10 + (20 - 10) × 0.7 = 17     ← 位置 17 に描く</code></pre>
+				</article>
+			</div>
+			<p class="section-intro" style="margin-top: 18px">
+				これを<strong>毎フレーム（1秒60回）</strong>やります。時間が進むとalphaが
+				0 → 0.2 → 0.5 …と増えるので、キャラはAの位置からBの位置へ<strong>すーっと滑って</strong>
+				いきます。アニメの「中割り」と同じ発想です。
+			</p>
+			<pre><code>0.00秒 alpha=0.0 → 位置10
+0.05秒 alpha=0.5 → 位置15
+0.07秒 alpha=0.7 → 位置17
+0.10秒 alpha=1.0 → 位置20   ← ここで次の写真Cに切り替え、また alpha=0 から</code></pre>
+			<p class="section-intro">
+				実際のコード（<code>web/sim_demo/replay.js</code>）も、この2手順そのものです。
+			</p>
+			<pre><code>alpha = (playT - timeOf(cur)) / (timeOf(next) - timeOf(cur));  // 手順1
+alpha = Math.min(1, Math.max(0, alpha));                       // 0〜1 に収める
+const flat = window.Cub3DSnapshotInterp.interpolate(cur, next, alpha);  // 手順2</code></pre>
+			<div class="callout" style="margin-top: 18px">
+				<strong>補間は「予測」ではありません。</strong>
+				AもBも<strong>すでに手元にある確定データ</strong>です。やっているのは
+				「既知の2点の<em>あいだ</em>を埋める」ことで、未来を当ててはいません。
+				だから外れようがない。これが「100ms過去を描く」理由（後述）とつながります。
+			</div>
+
+			<h3 style="margin-top: 30px">「同じ物体」はどう対応づけるのか — idで照合</h3>
+			<p class="section-intro">
+				「Aの物体aとBの物体aを、どうやって同じものだと判定しているのか」。答えは、
+				<strong>戦闘員が持つ変わらないid（席番号）で突き合わせている</strong>、です。
+			</p>
+			<ol class="path-list">
+				<li><div><strong>写真Bを早見表にする</strong><span>「id → 戦闘員」のMapに変換する</span></div></li>
+				<li><div><strong>写真Aの戦闘員を1人ずつ見る</strong><span>同じidをBの早見表から引く</span></div></li>
+				<li><div><strong>見つかった2つを補間する</strong><span>Aのその席・Bのその席の位置・向きを補間する</span></div></li>
+			</ol>
+			<pre><code>const later = new Map(d1.combatants.map((c) => [c.id, c]));  // B を id で引ける表に
+d0.combatants.forEach((c) => {
+	const next = later.get(c.id);   // A の戦闘員 c と同じ id を B から探す
+	if (!next) return;              // B に居なければ補間しない（A の値のまま）
+	// c（A側）と next（B側）の位置・向きを補間する
+});</code></pre>
+			<p class="section-intro">
+				<strong>リストの並び順では照合していません</strong>（並びが違っても平気）。
+				idという「背番号」で突き合わせるので、途中で順番が変わっても・誰かが消えても
+				正しく対応します（消えた席は受け口 <code>game_apply_snapshot</code> が画面外へ退避させます）。
+			</p>
+
+			<h3 style="margin-top: 30px">ピクセルは混ぜていない。状態を混ぜて描き直す</h3>
+			<p class="section-intro">
+				ここが一番大事で、直感と違うところです。<strong>2枚の写真のピクセル（色）は、
+				一切混ぜていません。</strong>
+			</p>
+			<pre><code>写真A・写真B（各戦闘員の位置・向き）
+      │  id で照合して、位置と向きだけ補間
+      ▼
+「いまの瞬間の全戦闘員の位置・向き」という数値
+      │  これを C の t_game に書き込む
+      ▼
+C がその位置から 3D シーンを丸ごと描き直す（レイキャスト）
+      ▼
+新品のピクセルが毎フレーム出来上がる</code></pre>
+			<p class="section-intro">
+				つまり<strong>「絵と絵を混ぜている」のではなく、「登場人物を正しい位置に置き直して、
+				毎フレーム3Dを一から描いている」</strong>。もしピクセルを混ぜたら、半透明の残像のような
+				気持ち悪い絵になります。実際は「敵は座標(17,8)・向き0.7」と<strong>数値を確定してから、
+				その敵を通常どおりくっきり描く</strong>ので、いつも鮮明です。
+			</p>
+			<p class="section-intro">
+				<strong>補間の対象は「数十個の数値」だけ</strong>です（4人×位置2＋向き1＝12個ほど）。
+				画面は約96万ピクセルありますが、そのどれも補間していません。
+				<strong>だから軽い</strong>——ここが直感に反する肝です。
+			</p>
+			<p class="section-intro">実物（<code>web/snapshot_interp.js</code>）:</p>
+			<pre><code>// 位置は線形（まっすぐ按分）
+out[o + 3] = c.pos[0] + (next.pos[0] - c.pos[0]) * alpha;   // x
+out[o + 4] = c.pos[1] + (next.pos[1] - c.pos[1]) * alpha;   // y
+// 向きは「最短の回り方」で
+out[o + 5] = lerpAngle(c.dir, next.dir, alpha);</code></pre>
+			<p class="section-intro">
+				<strong>向きだけ特別扱い</strong>しているのに注目してください。角度は360°＝0°で
+				一周するので、359°から1°へ動くとき、素直に按分すると<strong>逆回り（長いほう）に
+				358°ぐるっと回って見える</strong>。それを防ぐため <code>lerpAngle</code> が
+				「短いほうの弧」で回します。
+			</p>
+			<pre><code>function lerpAngle(a, b, alpha) {
+	let diff = b - a;
+	while (diff > Math.PI)  diff -= 2 * Math.PI;   // 半周を超えたら
+	while (diff < -Math.PI) diff += 2 * Math.PI;   // 逆側から回る
+	return a + diff * alpha;
+}</code></pre>
+
+			<h3 style="margin-top: 30px">位置と向きは補間する。でも「勝敗」は補間しない</h3>
+			<p class="section-intro">
+				補間するのは<strong>位置・向き</strong>という連続的に動く値だけです。
+				<strong>スコア・生死・勝者・手（グー/チョキ/パー）は、古いほうのsnapshotの値を
+				そのまま使います。</strong>これらは「7点」「死んでいる」のように飛び飛びの値で、
+				<strong>あいだを作る意味が無い</strong>し、勝手に作ると<strong>サーバの判定と
+				食い違う</strong>からです。ここでも「クライアントは判定しない」が徹底されています。
+			</p>
+
+			<h3 style="margin-top: 30px">なぜ「100ms前」を描くのか</h3>
+			<p class="section-intro">
+				補間には「AとBの2枚」が必要なので、<strong>Bが届くまでAのあとを描けません</strong>。
+				そこで、ブラウザは<strong>わざと100ms過去の時刻を描きます</strong>。こうすると、
+				描こうとする時刻の前後の写真が<strong>必ず手元にある</strong>状態になり、常に補間できます。
+			</p>
+			<p class="section-intro">
+				代償は「見えている世界が100ms遅れる」ことですが、<strong>視点の回転だけは例外</strong>で、
+				自分のマウス操作は<strong>待たずに即座に反映</strong>します（回転はサーバの許可を
+				待たなくてもズレないため）。これで操作の手応えは保たれます。
+			</p>
+		</section>
+
+		<section id="client">
+			<p class="section-kicker">05 · Client receiver &amp; working demo</p>
+			<h2>ブラウザ側の受け口と、これが動く実例</h2>
+			<p class="section-intro">
+				補間した数値を、Cの描画エンジンに渡すのが <code>game_apply_snapshot</code> です。
+			</p>
+			<pre><code>// codes/srcs/platform/web/web_snapshot.c
+int game_apply_snapshot(t_game* game, const double* snap, int len, int view_id)
+{
+	// snap（補間済みの写真）を、表示用の t_game に書き込むだけ。
+	// 勝敗・スコアの正本はサーバであり、ここでは一切判定しない。
+	// view_id の席＝自分はカメラになり、他の席は敵スプライトとして描く。
+}</code></pre>
+			<p class="section-intro">
+				ポイントは、<strong>このモードでは <code>game_step</code> を呼ばない</strong>ことです。
+				ローカルで計算するとサーバの正本とケンカするので、ブラウザは
+				「写真を貼り替えて描くだけ」に徹します。
+				<code>view_id</code> は「4人のうち自分がどの席か」です。自分の席はカメラ
+				（一人称視点）になり、残り3席は敵スプライトとして描かれます。
+			</p>
+
+			<h3 style="margin-top: 30px">これが動く実例</h3>
+			<p class="section-intro">
+				本番のNodeサーバ（W-10）・GameView（F-06）は<strong>どちらも完了済み</strong>です。
+				以下は開発初期に作った、一方通行の全経路だけを確認するための単体デモで、
+				W-10/F-06完了後も参照実装として残しています。
+			</p>
+			<pre><code>web/sim_demo/record.mjs    sim.wasm を回して写真を撮り、snapshots.json に保存
+        │  （＝サーバ役のデモ）
+        ▼
+web/sim_demo/replay.html   snapshots.json を読み、補間して描画（＝ブラウザ役のデモ）</code></pre>
+			<div class="callout" style="margin-top: 18px">
+				<strong>F-06は、この <code>replay.html</code> の「<code>snapshots.json</code> を読む」
+				ところを「WSで受信する」に差し替える形で実装済み</strong>です（<code>GameView.tsx</code>）。
+				補間（<code>snapshot_interp.js</code>）と受け口（<code>game_apply_snapshot</code>）は
+				そのまま流用されています。HUD（F-07）は実装済みですが未マージのままです
+				（<a href="https://github.com/samatsum/ft_Transcendence/pull/35">PR #35</a>）。
+			</div>
+		</section>
+
+		<section id="combatant">
+			<p class="section-kicker">06 · Combatant unification</p>
+			<h2>戦闘員統合 — 人もNPCも同じリスト</h2>
+			<p class="section-intro">
+				<strong>プレイヤーも敵も「戦闘員」という同じ1種類にまとめ、違いは
+				『誰が操作を決めるか』だけ</strong>にした、という話です。これが
+				「Multiplayer 3+」「Remote players」「AI opponent」の3モジュールを
+				<strong>1つの仕組みで</strong>成立させる鍵になっています。
+			</p>
+
+			<h3 style="margin-top: 26px">元のcub3Dの構造と、その限界</h3>
+			<p class="section-intro">元のcub3Dは、はっきり2種類に分かれていました。</p>
+			<pre><code>プレイヤー  = カメラ（画面の視点）。世界にただ1人
+敵（NPC）   = t_enemy のリスト。複数いる</code></pre>
+			<p class="section-intro">この作りだと、オンライン対戦にするとき困ります。</p>
+			<ul>
+				<li>対戦相手（人間）は「敵」なのか「プレイヤー」なのか？</li>
+				<li>4人対戦なら、残り3人はプレイヤーであり、同時に自分から見れば敵でもある</li>
+				<li>席が切断したら、そこをAIに<strong>差し替えたい</strong>。でもプレイヤーとNPCが
+					別構造だと、差し替えのたびに<strong>種類そのものを変換</strong>しなければならない</li>
+			</ul>
+			<p class="section-intro">
+				「プレイヤー」と「NPC」を別物として作ると、<strong>接触判定・描画・写真
+				（スナップショット）のすべてが2系統</strong>になり、永久に複雑さを抱えます。
+			</p>
+
+			<h3 style="margin-top: 30px">統合後の考え方</h3>
+			<p class="section-intro">
+				そこで、<strong>全員を「戦闘員（combatant）」という1種類のノード</strong>にまとめました。
+				プレイヤーも、<code>world.enemies</code> という<strong>同じリストの中の1要素</strong>になります。
+			</p>
+			<pre><code>world.enemies（戦闘員リスト）
+  ├─ 戦闘員0  ← 自分（人間）
+  ├─ 戦闘員1  ← リモートの人間
+  ├─ 戦闘員2  ← AI
+  └─ 戦闘員3  ← AI</code></pre>
+			<p class="section-intro">
+				<strong>違いはたった1つ、「入力源（input_source）」だけ</strong>です。
+			</p>
+			<pre><code>// codes/includes/enemy/enemy_types.h
+typedef enum e_input_source
+{
+	INPUT_SRC_AI = 0,        // AI が操作を決める
+	INPUT_SRC_EXTERNAL       // 外部（キーボード、将来は WS 経由の人間）が操作を供給
+}	t_input_source;</code></pre>
+			<ul>
+				<li><strong>AI席</strong>: その場でモード別AIが「前へ進む」「じゃんけんはグー」などを決める</li>
+				<li><strong>EXTERNAL席</strong>: 外から届いた入力（<code>t_input</code>）をそのまま使う</li>
+			</ul>
+			<div class="callout" style="margin-top: 18px">
+				<strong>移動も当たり判定も描画も、全員まったく同じコードを通ります。</strong>
+				入力を「AIが作る」か「外から来る」かだけが分岐点です。
+			</div>
+		</section>
+
+		<section id="modules">
+			<p class="section-kicker">07 · One structure, three modules</p>
+			<h2>これが3モジュールを一度に解決する</h2>
+			<p class="section-intro">
+				この1つの構造が、課題の3モジュールを同じ仕組みで満たします。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>モジュール</th><th>統合構造でどう成立するか</th></tr></thead>
+					<tbody>
+						<tr><td><strong>Multiplayer 3+</strong>（4人対戦）</td><td>戦闘員リストに人間のEXTERNAL席を4つ並べるだけ</td></tr>
+						<tr><td><strong>Remote players</strong>（リモート対戦）</td><td>EXTERNAL席の入力を「WS経由の人間入力」にするだけ</td></tr>
+						<tr><td><strong>AI opponent</strong>（AI対戦相手）</td><td>席の入力源をAIにするだけ</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p class="section-intro" style="margin-top: 18px">
+				そして<strong>切断・再接続</strong>が、この設計の一番おいしいところです。
+			</p>
+			<pre><code>人間がプレイ中          →  input_source = EXTERNAL
+       │ 切断
+その席を AI が代替       →  input_source = AI      （席はそのまま。中身は動き続ける）
+       │ 再接続
+人間が戻る               →  input_source = EXTERNAL</code></pre>
+			<p class="section-intro">
+				<strong>席の種類を変換する必要がありません。</strong> <code>input_source</code> という値を
+				<code>EXTERNAL ⇄ AI</code> で切り替えるだけ。だからW-12（切断・AI代替）は、
+				専用のAPI1つ（<code>game_set_input_source</code>）で済みます。
+			</p>
+			<div class="callout" style="margin-top: 18px">
+				<strong>元のRSPが、すでにこの形に近かった</strong>のが大きな資産でした。
+				RSPは元から「プレイヤー1人＋NPC3体＝4戦闘員」で、じゃんけんの勝敗判定も
+				「全部の異チームペアを見る」作りだったので、統合の差分が最小で済みました。
+			</div>
+		</section>
+
+		<section id="fields">
+			<p class="section-kicker">08 · What a combatant holds</p>
+			<h2>「戦闘員」が持つ主な情報と、唯一の例外</h2>
+			<p class="section-intro">
+				1つのノード（<code>t_enemy</code>）が、席として必要なものを全部持ちます。抜粋すると:
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>フィールド</th><th>意味</th></tr></thead>
+					<tbody>
+						<tr><td><code>input_source</code></td><td>AIかEXTERNALか（<strong>唯一の本質的な違い</strong>）</td></tr>
+						<tr><td><code>input</code></td><td>その席が保持している操作（EXTERNAL席はここに外部入力が入る）</td></tr>
+						<tr><td><code>is_player</code></td><td>自分の席か（自分の身体は描かない＝カメラになる）</td></tr>
+						<tr><td><code>combatant_id</code></td><td>席の番号。スナップショット・APIが席を特定する鍵</td></tr>
+						<tr><td><code>is_hazard</code></td><td>マップ由来の敵'M'か（下記参照）</td></tr>
+						<tr><td><code>death_timer</code> / <code>spawn</code></td><td>死亡演出と復帰地点（<strong>席ごとに</strong>持つ）</td></tr>
+						<tr><td><code>rsp</code></td><td>RSPの状態（チーム・手・生死）</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p class="section-intro" style="margin-top: 14px">
+				<code>is_player</code> の席だけは、身体のスプライトを描画リストに繋ぎません。
+				<strong>自分はカメラ（視点）になるので、自分の身体は画面に映らない</strong>——元のcub3Dと同じです。
+			</p>
+
+			<h3 style="margin-top: 30px">例外: ハザード（マップの敵'M'）は「席」ではない</h3>
+			<p class="section-intro">
+				1つだけ、戦闘員リストに居るが<strong>席ではない</strong>ものがあります。
+				FPSモードのマップに置かれる敵'M'（<code>is_hazard = 1</code>）です。
+				ハザードは「プレイヤーを邪魔する障害物」で、次の点で席と違います。
+			</p>
+			<ul>
+				<li>アイテムを拾わない</li>
+				<li>ゴールに入っても試合を終わらせない</li>
+				<li><strong>接触した席を死なせる側</strong>になる（G-08。当たると数秒リスポーン待ちのペナルティ）</li>
+			</ul>
+			<p class="section-intro">
+				同じリストに置きつつ <code>is_hazard</code> で見分けることで、描画（スプライトとして描く）は
+				共通化しつつ、ルール上の扱いだけ分けています。
+			</p>
+
+			<h3 style="margin-top: 30px">スナップショットとの関係</h3>
+			<p class="section-intro">
+				<a href="#snapshot">スナップショット</a>の節で「各戦闘員の位置・向き・手を送る」と
+				書きましたが、<strong>その『戦闘員』がまさにこの統合ノード</strong>です。送る側は、
+				リストを頭から舐めて1ノードずつ写真に写すだけ。「これはプレイヤー」「これはNPC」
+				という分岐が要りません。<strong>受け取るブラウザも区別せず、全員を同じスプライト
+				描画で描きます</strong>（自分の席だけカメラにする）。
+			</p>
+			<p class="section-intro">
+				統合していなかったら、写真も「プレイヤー欄」と「敵欄」の2系統になり、
+				補間も受け口も倍の複雑さになっていました。
+			</p>
+		</section>
+
+		<section id="summary">
+			<p class="section-kicker">09 · Summary</p>
+			<h2>まとめ</h2>
+			<div class="grid grid-2">
+				<article class="card">
+					<p class="card-label">サーバ権威 / スナップショット / 補間</p>
+					<ol class="path-list">
+						<li><div><strong>本当のゲームはサーバの中だけで進む</strong><span>（サーバ権威）。チートとズレを原理的に消すため</span></div></li>
+						<li><div><strong>データの流れは1往復</strong><span>ブラウザが input（mv/yaw）を送る → サーバが状態を計算 → snapshot を返す → ブラウザが補間して描く。描くのはブラウザでサーバは絵を持たない</span></div></li>
+						<li><div><strong>クライアントに勝敗判定コードは無い</strong><span>徹底して守られている</span></div></li>
+						<li><div><strong>サーバは写真を定期配信する</strong><span>1KB未満・JSON</span></div></li>
+						<li><div><strong>2枚のあいだを補間して滑らかに描く</strong><span>位置と向きだけ。スコア・生死は補間せず古い写真の値を使う。予測ではなく既知2点のあいだ埋め。物体の対応はidで照合し、数値を混ぜて毎フレーム描き直す</span></div></li>
+						<li><div><strong>100ms過去を描くことで常に補間できる</strong><span>ただし自分の視点回転だけは即時</span></div></li>
+					</ol>
+				</article>
+				<article class="card">
+					<p class="card-label">戦闘員統合</p>
+					<ol class="path-list">
+						<li><div><strong>プレイヤーもNPCも「戦闘員」1種類にまとめる</strong><span><code>world.enemies</code>の同じリストに置く</span></div></li>
+						<li><div><strong>違いは input_source だけ</strong><span>AIかEXTERNALか。移動・判定・描画は全員共通</span></div></li>
+						<li><div><strong>3モジュールが1つの仕組みで成立</strong><span>Multiplayer 3+ / Remote players / AI opponent</span></div></li>
+						<li><div><strong>切断→AI代替→復帰は input_source の切り替えだけ</strong><span>席の変換が要らない（W-12）</span></div></li>
+						<li><div><strong>元のRSPが既にこの形に近く、統合の差分が最小</strong><span>例外はハザード（'M'）。is_hazard で見分ける</span></div></li>
+					</ol>
+				</article>
+			</div>
+		</section>
+
+		<section id="faq">
+			<p class="section-kicker">10 · FAQ</p>
+			<h2>テクニカルリード自己確認 — サーバ権威と戦闘員統合の抜粋</h2>
+			<p class="section-intro">
+				<a href="../../../archive/説明用/コード想定Q&amp;A-テクニカルリード自己確認.md">旧・コード想定Q&amp;A（archive、学習用）</a>
+				から、このページのテーマ（サーバ権威・スナップショット・補間・戦闘員/席の統合）に
+				関わる項目だけを抜粋しています。他のテーマ（engine/pf_*構造、buildターゲット、
+				WASM、ディレクトリ構成、.cubマップ）の項目は他のページに分けています。
+			</p>
+			<div class="issue-grid">
+				<article class="issue-card">
+					<div class="issue-id">Q</div>
+					<div>
+						<h3>プレイヤーとNPCはどう区別している？</h3>
+						<p>
+							<strong>A.</strong> 区別しない。両方 <code>world.enemies</code> の1ノード
+							（<code>t_enemy</code>）で、違いは <code>input_source</code>（<code>AI</code> /
+							<code>EXTERNAL</code>）だけ。自席は <code>is_player</code>。
+						</p>
+						<p>確認: <code>codes/includes/enemy/enemy_types.h</code>（<code>t_enemy</code> / <code>t_input_source</code>）</p>
+					</div>
+				</article>
+				<article class="issue-card">
+					<div class="issue-id">Q</div>
+					<div>
+						<h3>外部入力席（サーバの人間）はどこで動く？</h3>
+						<p>
+							<strong>A.</strong> <code>step_external_combatants</code> が
+							<code>input_source==EXTERNAL</code> かつ非自席の生存席へ、保持中の
+							<code>t_input</code> を適用。native/web単体では該当席が無くno-op。
+						</p>
+						<p>確認: <code>codes/srcs/common/core/combatant.c:22</code></p>
+					</div>
+				</article>
+				<article class="issue-card">
+					<div class="issue-id">Q</div>
+					<div>
+						<h3>サーバから使うAPIは？ 呼び出し順は？</h3>
+						<p>
+							<strong>A.</strong> <code>game_create</code> → <code>game_add_combatant</code> ×定員 →
+							毎tick <code>sim_set_input</code> → <code>game_step</code> → <code>game_snapshot</code> →
+							JSON化（Node）。<code>game_set_input_source</code> で席をAI⇔外部に切替。
+						</p>
+						<p>確認: 正本 <code>includes/platform/sim.h</code> / 実装 <code>platform/headless/sim_api.c</code></p>
+					</div>
+				</article>
+				<article class="issue-card">
+					<div class="issue-id">Q</div>
+					<div>
+						<h3>スナップショットの形は？ tickは誰が付ける？</h3>
+						<p>
+							<strong>A.</strong> フラットなf64配列（ヘッダ5＋戦闘員1人9）。
+							<strong>tickはsimが持たずNodeが採番</strong>、JSON化もNodeの責務。
+							レイアウトはsim.hの<code>#define</code>が正本。
+						</p>
+						<p>確認: <code>includes/platform/sim.h</code>（<code>SIM_SNAP_*</code>）/ <code>platform/headless/sim_api.c:261</code>（<code>game_snapshot</code>）</p>
+					</div>
+				</article>
+				<article class="issue-card">
+					<div class="issue-id">Q</div>
+					<div>
+						<h3><code>game_apply_snapshot</code> は誰が使う？ どこにある？</h3>
+						<p>
+							<strong>A.</strong> <strong>クライアント専用</strong>（サーバは使わない）。
+							idで戦闘員を照合し、表示用 <code>t_game</code> に書く。勝敗は一切判定しない。
+						</p>
+						<p>確認: <code>platform/web/web_snapshot.c:42</code></p>
+					</div>
+				</article>
+			</div>
+		</section>
+
+		<section id="references">
+			<p class="section-kicker">11 · Sources of truth</p>
+			<h2>このHTMLは説明用。契約の正本は設計書</h2>
+			<div class="grid grid-3">
+				<article class="card">
+					<h3><a href="../../ai/engine-separation.md">① エンジン分離設計 §3-C/D</a></h3>
+					<p>マルチプレイヤー一般化とスナップショット構造の正本。</p>
+				</article>
+				<article class="card">
+					<h3><a href="../../ai/ws-protocol.md">② WSプロトコル設計 §5-C</a></h3>
+					<p>配信・JSON形・tickなど、W-11の正本。「なぜ配信は15Hzなのか」もここ。</p>
+				</article>
+				<article class="card">
+					<h3><a href="../../../codes/includes/platform/sim.h">codes/includes/platform/sim.h</a></h3>
+					<p>スナップショットのレイアウトとsim公開APIの正本。</p>
+				</article>
+				<article class="card">
+					<h3><a href="../../../codes/includes/enemy/enemy_types.h">codes/includes/enemy/enemy_types.h</a></h3>
+					<p><code>t_enemy</code> と <code>t_input_source</code> の定義。</p>
+				</article>
+				<article class="card">
+					<h3><a href="../../../codes/srcs/common/core/combatant.c">codes/srcs/common/core/combatant.c</a></h3>
+					<p>EXTERNAL席の駆動（<code>step_external_combatants</code>）。</p>
+				</article>
+				<article class="card">
+					<h3><a href="../../../web/sim_demo/">web/sim_demo/</a></h3>
+					<p><code>record.mjs</code> → <code>replay.html</code>。全経路が動く実例。</p>
+				</article>
+			</div>
+		</section>
+	</main>
+
+	<footer class="shell">
+		統合元: md_files/説明用/{スナップショットと補間.md, 戦闘員統合-人もNPCも同じリスト.md}（いずれも archive/ に移設）
+	</footer>
+</body>
+</html>

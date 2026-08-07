@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="ja">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="color-scheme" content="dark">
+	<title>ビルドと実行 — ft_transcendence</title>
+	<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+	<header class="hero">
+		<div class="shell">
+			<p class="eyebrow">説明用ドキュメント · ビルドと実行</p>
+			<h1>同じ C のゲームを、<br>3 つの環境で動かす。</h1>
+			<p class="hero-lead">
+				ft_transcendence のゲームロジックは C のソース 1 つしかありません。
+				それでも <code>make</code> は Linux の実行ファイルを、
+				<code>make web</code> はブラウザ用の WASM を、
+				<code>make sim</code> は Node サーバ用の WASM を作ります。
+				このページでは「何を作り分けているか」「誰がゲームループを回しているか」
+				「なぜ TypeScript のサーバが C のコードを実行できるのか」を 1 本にまとめます。
+			</p>
+			<p class="hero-note">
+				<span aria-hidden="true">●</span>
+				<strong>対象</strong>
+				<span>チームメンバー全員</span>
+			</p>
+		</div>
+	</header>
+
+	<nav class="topnav" aria-label="ページ内目次">
+		<div class="shell nav-inner">
+			<a href="#targets">3つのビルドターゲット</a>
+			<a href="#loop">誰がループを回すか</a>
+			<a href="#wasm">WASM入門</a>
+			<a href="#faq">FAQ</a>
+			<button class="print-button" type="button" onclick="window.print()">印刷 / PDF</button>
+		</div>
+	</nav>
+
+	<main class="shell">
+		<section id="targets">
+			<p class="section-kicker">01 · Build targets</p>
+			<h2>同じ C のソースから、用途の違う 3 つの成果物を作り分ける</h2>
+			<p class="section-intro">
+				ゲームロジックのソース（<code>codes/srcs/common</code>, <code>fps</code>, <code>rsp</code>）は
+				3 ターゲットとも同じです。違うのは「どの <code>pf_*</code> 実装を混ぜるか」と
+				「描画のコードを入れるか外すか」だけ。1 つの脳みそを、3 つの体に載せ替えるイメージです。
+			</p>
+
+			<pre><code>                共通のゲームロジック（移動・衝突・敵AI・じゃんけん・スコア）
+                        codes/srcs/common, fps, rsp
+                                    │
+        ┌───────────────────────────┼───────────────────────────┐
+        │                           │                           │
+    make                        make web                    make sim
+        │                           │                           │
+   platform/native            platform/web               platform/headless
+   ＋描画すべて                ＋描画すべて                 描画は除外
+        │                           │                           │
+        ▼                           ▼                           ▼
+   cub3D（ネイティブ）        render.wasm（ブラウザ）      sim.wasm（サーバ）</code></pre>
+
+			<div class="table-wrap" style="margin-top: 24px">
+				<table>
+					<thead>
+						<tr><th>コマンド</th><th>成果物</th><th>何のためのものか</th></tr>
+					</thead>
+					<tbody>
+						<tr><td><code>make</code></td><td><code>cub3D</code>（Linux 実行ファイル）</td><td><strong>開発・回帰確認</strong>用。従来の cub3D そのもの</td></tr>
+						<tr><td><code>make web</code></td><td><code>web/build/render.js</code> + <code>.wasm</code></td><td><strong>ブラウザで描く</strong>ためのもの。画面担当</td></tr>
+						<tr><td><code>make sim</code></td><td><code>web/build/sim.js</code> + <code>.wasm</code></td><td><strong>サーバで判定する</strong>ためのもの。頭脳担当</td></tr>
+						<tr><td><code>make test</code></td><td><code>codes/tests/sim_test</code>（実行ファイル）</td><td><strong>受入テスト</strong>。85 検査を自動実行</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p class="section-intro" style="margin-top: 12px">
+				（<code>make test</code> は成果物というより検証用ですが、ビルドの一種なので並べています。）
+			</p>
+
+			<div class="grid grid-3" style="margin-top: 28px">
+				<article class="card">
+					<p class="card-label">make · 開発の足場</p>
+					<h3>native（cub3D）</h3>
+					<p>
+						MiniLibX を使い、X11 のウィンドウを開いて動く従来どおりの cub3D。
+						全期間を通じて「壊れていないこと」を確認する基準です。
+						3 つのうち<strong>唯一 MiniLibX を必要とする</strong>ビルドです。
+					</p>
+				</article>
+				<article class="card">
+					<p class="card-label">make web · 画面担当</p>
+					<h3>web（render.wasm）</h3>
+					<p>
+						ブラウザの <code>&lt;canvas&gt;</code> に描くための WASM。
+						サーバから届いたスナップショットを<strong>描くだけ</strong>で、
+						自分ではゲームを判定しません。
+					</p>
+				</article>
+				<article class="card">
+					<p class="card-label">make sim · 頭脳担当</p>
+					<h3>server（sim.wasm）</h3>
+					<p>
+						Node サーバの中で回す、<strong>画面を持たない</strong>ゲーム本体。
+						唯一の正しい状態を計算します（サーバ権威）。30Hz で <code>game_step</code> を回し、
+						状態のスナップショットを返します。
+					</p>
+				</article>
+			</div>
+
+			<h3 style="margin-top: 36px">それぞれ詳しく</h3>
+
+			<p><strong>make（native）</strong></p>
+			<pre><code>make          # → ./cub3D が出来る
+./cub3D maps/rsp_map/rsp.cub</code></pre>
+			<p class="section-intro">
+				エンジンをいじったら、まず <code>make</code> して両モードが動くかを見ます。
+			</p>
+
+			<p><strong>make web（render.wasm）</strong></p>
+			<pre><code>make web      # → web/build/render.js + render.wasm</code></pre>
+			<p class="section-intro">
+				<code>make web</code> は最初に <code>web-assets</code>（XPM 画像を RGBA へ変換）も走らせます。
+				ブラウザは XPM を読めないので、事前変換が要ります。
+				動かすには HTTP サーバが要ります（<code>file://</code> では wasm を fetch できません）。
+			</p>
+
+			<p><strong>make sim（sim.wasm）</strong></p>
+			<pre><code>make sim      # → web/build/sim.js + sim.wasm</code></pre>
+			<p class="section-intro">
+				ここが肝心な点です。<strong>sim.wasm には描画のコードが物理的に入っていません</strong>。
+				Makefile の <code>SIM_RENDER_EXCLUDES</code> が <code>draw.c</code> / <code>raycast.c</code> /
+				<code>sprite.c</code> / <code>font.c</code> などをリンク対象から外しているので、
+				「描画シンボルが無い」状態で成立します。
+			</p>
+
+			<p><strong>make test（受入テスト）</strong></p>
+			<pre><code>make test     # → sim_test をビルドして即実行。85 検査</code></pre>
+			<p class="section-intro">
+				<code>sim.wasm</code> と<strong>同じソース構成</strong>（headless）を、emcc ではなく普通の gcc で
+				ネイティブの実行ファイルにしたもの。ブラウザも Node も要らずに走ります。
+				G-05〜G-09 のルール（先取点・ゴール・スポーン・ハザード・マップ）が仕様どおり動くかを
+				自動検証する、<strong>エンジンを壊す変更を検知する安全網</strong>です。
+			</p>
+
+			<h3 style="margin-top: 36px">「描く担当」と「判定する担当」に分けた理由</h3>
+			<div class="table-wrap">
+				<table>
+					<thead>
+						<tr><th></th><th>render.wasm</th><th>sim.wasm</th></tr>
+					</thead>
+					<tbody>
+						<tr><td>どこで動く</td><td>ブラウザ</td><td>Node サーバ</td></tr>
+						<tr><td>描画する</td><td>する</td><td>しない</td></tr>
+						<tr><td>ゲームを判定する</td><td>しない</td><td>する（唯一の正）</td></tr>
+						<tr><td>何個動く</td><td>各プレイヤーに 1 つ</td><td>1 試合に 1 つ（複数試合なら複数）</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p class="section-intro" style="margin-top: 12px">
+				<strong>判定を 1 か所（sim.wasm）に集めるからチートもズレも消える</strong>。
+				<strong>描画を各ブラウザ（render.wasm）に任せるから軽い</strong>。役割を割ったわけです。
+			</p>
+
+			<div class="callout" style="margin-top: 24px">
+				<strong>CI が 3 つとも毎回ビルドする</strong>
+				<p style="margin: 8px 0 0">
+					GitHub Actions（<code>.github/workflows/ci.yml</code>）が、push のたびに
+					<strong>3 ターゲット全部</strong>をビルドし、<code>make check</code>（lint）・
+					<code>make test</code>・native の起動スモークまで走らせます。
+					これは単なる確認ではなく安全装置です。たとえば <code>common/</code> に MLX を持ち込むと
+					<code>make web</code> / <code>make sim</code> が落ちるので、
+					共通コードを壊す変更がすり抜けられません。
+					「3 つとも緑になった」＝「3 環境どれも壊していない」の保証になります。
+				</p>
+			</div>
+		</section>
+
+		<section id="loop">
+			<p class="section-kicker">02 · Loop inversion</p>
+			<h2>誰がゲームを回しているか</h2>
+			<p class="section-intro">
+				ゲームを「回す人」を、環境ごとに差し替えられるようにした話です。
+				Linux ではライブラリが、ブラウザではブラウザが、サーバでは Node が回します。
+				この作りのおかげで、<strong>ゲームのロジックそのものは 3 か所で 1 つのまま</strong>でいられます。
+			</p>
+
+			<h3>ループとは何のことか</h3>
+			<p>
+				ゲームは、ものすごく速いパラパラ漫画です。1 秒間に 30〜60 回、次のことを繰り返します。
+			</p>
+			<pre><code>①入力を読む → ②状態を更新（移動・当たり判定・勝敗） → ③画面を描く → ①へ戻る</code></pre>
+			<p class="section-intro">
+				この「①へ戻る」をやり続ける仕組みが<strong>ループ</strong>です。
+				誰かがこのループを回し続けないと、ゲームは 1 枚目で止まったままになります。
+				問題は、<strong>この「回す人」が環境によって全然違う</strong>ことです。
+			</p>
+
+			<h3 style="margin-top: 32px">元の cub3D はどうだったか</h3>
+			<p>
+				元の cub3D は、<strong>回す人＝MiniLibX（MLX）</strong>でした。<code>main()</code> の最後はこうです。
+			</p>
+			<pre><code>// codes/srcs/common/main.c
+pf_setup_hooks(&game);   // 「毎フレーム main_loop を呼んで」と MLX に予約
+pf_loop(&game.window);   // ← ここで MLX に制御を渡す。★もう return してこない★</code></pre>
+			<p><code>pf_loop</code> の native 実装は、たった 1 行です。</p>
+			<pre><code>// platform_native.c
+void pf_loop(t_window* window) { mlx_loop(window->ptr); }</code></pre>
+			<p class="section-intro">
+				<code>mlx_loop</code>（<code>codes/minilibx-linux/mlx_loop.c</code>）は、
+				42 から配布された MLX ライブラリの中にある無限ループです。中身を削ると:
+			</p>
+			<pre><code>int mlx_loop(t_xvar *xvar)
+{
+	while (win_count(xvar) && !xvar->end_loop)   // ★これがループ本体
+	{
+		while (... XPending(xvar->display))       // 溜まった入力イベントを捌く
+			mlx_int_param_event[ev.type](...);    //   → key_press など
+		if (xvar->loop_hook)
+			xvar->loop_hook(xvar->loop_param);    // ← やることが無いとき main_loop(game) を呼ぶ
+	}
+	return (0);
+}</code></pre>
+			<p class="section-intro">
+				<code>loop_hook</code> に入っているのが、<code>pf_setup_hooks</code> で登録した <code>main_loop</code> です。
+				つまり <strong>MLX が、暇なたびに <code>main_loop</code> を延々と呼ぶ</strong>。これが元の構造でした。
+			</p>
+			<div class="callout warning">
+				<strong>ここが移植の壁だった</strong>
+				<p style="margin: 8px 0 0">
+					<code>mlx_loop</code> は Linux の X11 専用です。ブラウザにも Node にも存在しません。
+					そして「回す人」が MLX だと、ゲームを動かすには必ず MLX が要ることになります。
+				</p>
+			</div>
+
+			<h3 style="margin-top: 32px">「反転」とは何をしたのか</h3>
+			<p>
+				やったことは一言でいうと、<strong>「回す人」と「1 フレーム分の処理」を切り離した</strong>ことです。
+			</p>
+			<p><strong>Before（元の cub3D）</strong></p>
+			<pre><code>MLX（回す人） ──呼ぶ──▶ main_loop（1フレーム分の処理）
+        ↑ この2つが癒着していて、引き剥がせない</code></pre>
+			<p class="section-intro">
+				<code>main_loop</code> は「MLX から呼ばれる」ことが前提の関数でした。
+				MLX が居ないと呼んでもらえない＝動かせません。
+			</p>
+			<p><strong>After（反転後）</strong></p>
+			<pre><code>      1フレーム分の処理を、引数付きの「ただの関数」として公開する
+                    game_step(game, dt)
+                          ▲
+        ┌─────────────────┼─────────────────┐
+   MLX が呼ぶ          ブラウザが呼ぶ        Node が呼ぶ
+   （native）           （web）            （server）</code></pre>
+			<p class="section-intro">
+				<strong>「1 フレーム分の処理」を、誰からでも呼べる普通の関数にした。</strong>
+				すると「回す人」は誰でもよくなります。これを<strong>ループ反転</strong>と呼んでいます
+				（制御の向きが「ライブラリ→自分のコード」から「自分のコード←いろんな駆動元」に変わるので「反転」）。
+			</p>
+
+			<h3 style="margin-top: 32px">3 つの「回す人」</h3>
+			<p class="section-intro">同じ <code>game_step</code> を、3 者が別々の方法で呼びます。</p>
+			<div class="table-wrap">
+				<table>
+					<thead>
+						<tr><th>環境</th><th>回す人</th><th>ループの正体</th><th>1 フレームで呼ぶもの</th></tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>native</td>
+							<td>MLX</td>
+							<td><code>mlx_loop</code> の <code>while</code>（C・ライブラリ内）</td>
+							<td><code>main_loop</code> → <code>game_frame</code> → <code>game_step</code> + <code>render_frame</code> + <code>pf_present</code></td>
+						</tr>
+						<tr>
+							<td>web</td>
+							<td>ブラウザ</td>
+							<td><code>requestAnimationFrame</code>（JS）</td>
+							<td><code>tick</code> → <code>web_render</code>（= <code>game_step</code> + <code>render_frame</code>）→ JS が Canvas へ転送</td>
+						</tr>
+						<tr>
+							<td>server</td>
+							<td>Node</td>
+							<td><code>setInterval</code>（JS。W-10 で実装予定）</td>
+							<td><code>game_step</code> のみ（描画しない）</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			<p class="section-intro" style="margin-top: 12px">
+				<strong>3 つとも「回す人」が違うのに、<code>game_step</code> は 1 つ</strong>。これがこの設計の狙いです。
+			</p>
+
+			<p style="margin-top: 24px"><strong>web の実物（web/engine_demo.js）</strong></p>
+			<pre><code>function tick(now) {
+	const dt = Math.min((now - last) / 1000, 0.05);  // native の frame_delta に相当
+	last = now;
+	moduleRef._web_render(dt || (1 / 60));           // C を呼ぶ（game_step + render_frame）
+	present(moduleRef);                              // JS が Canvas へ転送（後述）
+	requestAnimationFrame(tick);                     // ★次のフレームで自分をまた呼ぶ
+}</code></pre>
+			<p class="section-intro">
+				最後の <code>requestAnimationFrame(tick)</code> が、native の <code>mlx_loop</code> の <code>while</code> に相当します。
+				「次に画面を描くタイミングで、また <code>tick</code> を呼んで」とブラウザに予約する。
+				ブラウザはモニタのリフレッシュ（普通 60Hz）に合わせて呼び返すので、延々と回ります。
+			</p>
+
+			<p style="margin-top: 24px"><strong>server の実物（現状は web/sim_demo/record.mjs）</strong></p>
+			<p class="section-intro">
+				本番の Node サーバ（W-10）はまだ未実装ですが、同じ構造の動く例がデモにあります。
+			</p>
+			<pre><code>let tick = 0;
+while (tick < MAX_SECONDS * TICK_HZ) {       // TICK_HZ = 30
+	driveExternalSeat(tick);                 // 外部（人間）入力を入れる
+	const finished = M._game_step(game, 1 / TICK_HZ);   // ★同じ game_step を呼ぶ
+	tick++;
+	if (tick % 2 === 0) snapshots.push(takeSnapshot(tick));  // 状態を記録して配信
+	if (finished) break;
+}</code></pre>
+			<p class="section-intro">
+				ここには <code>render_frame</code> も <code>present</code> もありません。<strong>サーバは描かない</strong>からです。
+				本番ではこの <code>while</code> が <code>setInterval(..., 1000/30)</code> に変わるだけで、中身は同じです。
+			</p>
+
+			<h3 style="margin-top: 32px">「回す人」が違うと、描画の担当も変わる</h3>
+			<p class="section-intro">
+				native の <code>game_frame</code> は、1 フレームの中で <code>pf_present</code>（画面転送）まで C がやっていました。
+				<strong>web はここが違います。</strong> C は「絵をメモリに書く」ところで止め、
+				<strong>Canvas に映すのは JS の仕事</strong>にしました。
+			</p>
+			<pre><code>// web_main.c ― C 側。pf_present を呼ばない
+int web_render(double delta_time)
+{
+	game_step(&g_game, delta_time);   // 状態を進める（3環境共通）
+	render_frame(&g_game);            // フレームバッファ（メモリ）に絵を描く
+	return (1);                       // ← ここで return。転送はしない
+}</code></pre>
+			<pre><code>// engine_demo.js ― JS 側の present。これが web での「pf_present の中身」
+function present(Module) {
+	const ptr = Module._web_framebuffer_ptr();   // C が描いたバッファの場所を聞く
+	const src = Module.HEAPU8;                    // WASM のメモリを直接読む
+	for (...) {
+		rgba[out]     = src[i + 2];   // B ┐ MLX は BGRA 並び、Canvas は RGBA なので
+		rgba[out + 1] = src[i + 1];   // G │ ここで並び順を入れ替える
+		rgba[out + 2] = src[i];       // R ┘
+		rgba[out + 3] = 255;
+	}
+	ctx.putImageData(image, 0, 0);    // ← ここで初めて Canvas に絵が出る
+}</code></pre>
+			<p class="section-intro">
+				<strong>C は「メモリに書く」、JS は「Canvas に映す」</strong>と役割が割れています。
+				だから <code>web_framebuffer_ptr()</code> のような「バッファの場所を教える関数」が要ります。
+			</p>
+
+			<div class="callout" style="margin-top: 24px">
+				<strong>まとめ</strong>
+				<p style="margin: 8px 0 0">
+					ループ＝パラパラ漫画をめくり続ける仕組み。元の cub3D は MLX が回す人だったが、
+					MLX は Linux 専用なのでそのままでは移植できない。そこで「1 フレーム分の処理」を
+					<code>game_step</code> という普通の関数に切り出した（ループ反転）。すると回す人は誰でもよくなる。
+					native=MLX / web=ブラウザ(rAF) / server=Node(setInterval)。
+					<code>game_step</code> は 3 環境で 1 つ。回す人と描く担当だけが環境ごとに違う。
+				</p>
+			</div>
+		</section>
+
+		<section id="wasm">
+			<p class="section-kicker">03 · WebAssembly</p>
+			<h2>なぜ Node で C を動かせるのか</h2>
+			<p class="section-intro">
+				C のコードを「ブラウザや Node が実行できる形」に翻訳した、それが WebAssembly（WASM）です。
+				「TypeScript のサーバが C のゲームを動かす」という、一見あべこべな構成が成り立つ理由を説明します。
+			</p>
+
+			<h3>何が不思議に見えるか</h3>
+			<p class="section-intro">私たちの構成は、こう聞くと変に感じます。</p>
+			<div class="callout">
+				<strong>Node（JavaScript の実行環境）の中で、C で書いたゲームエンジンが動いている。</strong>
+			</div>
+			<p class="section-intro" style="margin-top: 12px">
+				普通、C はコンパイルして「その OS 専用の実行ファイル（Linux なら ELF）」になります。
+				JavaScript の世界とは別物のはずです。なぜ Node が C を動かせるのか。
+				答えは<strong>「C を、実行ファイルではなく WebAssembly という中間形式にコンパイルしたから」</strong>です。
+			</p>
+
+			<h3 style="margin-top: 32px">WebAssembly（WASM）とは</h3>
+			<p class="section-intro">
+				WASM は、<strong>ブラウザや Node が直接実行できる、低レベルなバイナリ形式</strong>です。
+			</p>
+			<pre><code>ふつうの C     →  Linux 実行ファイル（cub3D）   … Linux でしか動かない
+WASM 向けの C  →  .wasm ファイル                … ブラウザでも Node でも動く</code></pre>
+			<p class="section-intro">
+				ポイントは、<strong>WASM が特定の OS ではなく「ブラウザ/Node の仮想マシン」向け</strong>であることです。
+				だから 1 つの <code>.wasm</code> が、ブラウザでも Node でも同じように動きます。
+				そして WASM は<strong>ネイティブに近い速さ</strong>で動くよう設計されています。JavaScript に
+				翻訳し直すのではなく、そのまま高速に実行されます。だからレイキャストのような重い計算も
+				現実的な速度で回ります。
+			</p>
+			<div class="callout" style="margin-top: 16px">
+				<strong>なぜこれを使うのか</strong>
+				<p style="margin: 8px 0 0">
+					私たちは<strong>C のゲームロジックを 1 つに保ちたい</strong>。WASM なら、その C を
+					ブラウザ（描画）でも Node（判定）でも動かせます。TypeScript に書き直す
+					（＝ロジックの二重管理）を避けられるのが最大の理由です。
+				</p>
+			</div>
+
+			<h3 style="margin-top: 32px">誰が翻訳するのか — Emscripten</h3>
+			<p class="section-intro">
+				C → WASM の翻訳をするのが<strong>Emscripten（emcc）</strong>というコンパイラです。
+				<code>gcc</code> の代わりだと思ってください。
+			</p>
+			<pre><code>gcc  ...   →  cub3D          （Linux 実行ファイル。make）
+emcc ...   →  sim.wasm ＋ sim.js  （WASM ＋ 橋渡しの JS。make sim）</code></pre>
+			<p class="section-intro">注目してほしいのは、emcc が<strong>2 つ</strong>のファイルを吐くことです。</p>
+			<div class="table-wrap">
+				<table>
+					<thead>
+						<tr><th>ファイル</th><th>中身</th><th>役割</th></tr>
+					</thead>
+					<tbody>
+						<tr><td><code>sim.wasm</code></td><td>翻訳された C 本体</td><td>実際に動くゲームロジック</td></tr>
+						<tr><td><code>sim.js</code>（glue）</td><td>Emscripten が自動生成する JavaScript</td><td><strong>JS と WASM の橋渡し</strong></td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p class="section-intro" style="margin-top: 12px">
+				<code>.wasm</code> は単体では使いにくい（メモリの確保や関数呼び出しの作法が生々しい）ので、
+				<strong>それを JS から扱いやすくする「glue（糊）コード」</strong>が一緒に生成されます。
+				私たちが Node から呼ぶのは、この <code>sim.js</code> です。
+			</p>
+
+			<h3 style="margin-top: 32px">実際に Node から呼んでいるところ</h3>
+			<p class="section-intro"><code>web/sim_demo/record.mjs</code> が、まさにこれをやっています。</p>
+			<pre><code>// glue（sim.js）を読み込む
+const createSim = require(here('../build/sim.js'));
+
+// WASM を初期化して、モジュール M を得る
+const M = await createSim();
+
+// あとは C の関数を M._関数名(...) で呼べる
+const game = M._sim_create(mapPtr, 1, TARGET_SCORE, SEED);   // C の sim_create
+M._game_step(game, 1 / 30);                                  // C の game_step
+M._game_snapshot(game, snapPtr, 256);                        // C の game_snapshot</code></pre>
+			<p class="section-intro">
+				C で書いた <code>sim_create</code> / <code>game_step</code> / <code>game_snapshot</code> が、
+				JS から <code>M._sim_create</code> のように<strong>普通の関数として呼べています</strong>。
+				これが「Node で C を動かす」の実体です。
+			</p>
+			<div class="callout" style="margin-top: 16px">
+				<strong><code>_</code>（アンダースコア）の意味</strong>
+				<p style="margin: 8px 0 0">
+					C の関数は WASM に入るとき名前の頭に <code>_</code> が付く決まりになっています。
+					だから JS 側は <code>M._game_step</code> と書きます。
+				</p>
+			</div>
+
+			<h3 style="margin-top: 32px">ひとつだけ知っておくべき癖 — メモリの受け渡し</h3>
+			<p class="section-intro">
+				JS と C は<strong>メモリの扱いが違う</strong>ため、文字列や配列をやり取りするときだけ
+				ひと手間かかります。数値（<code>int</code> / <code>double</code>）はそのまま渡せますが、
+				<strong>文字列やバッファは「WASM のメモリ上の住所（ポインタ）」で渡す</strong>必要があります。
+			</p>
+			<p class="section-intro"><code>record.mjs</code> で <code>.cub</code> のテキスト（文字列）を渡す部分がそれです。</p>
+			<pre><code>function writeCString(text) {
+	const bytes = new TextEncoder().encode(text);
+	const ptr = M._malloc(bytes.length + 1);   // WASM のメモリを確保して住所をもらう
+	M.HEAPU8.set(bytes, ptr);                  // その住所へ文字列を書き込む
+	M.HEAPU8[ptr + bytes.length] = 0;          // C の文字列は末尾 \0 が要る
+	return ptr;                                // 住所（ポインタ）を返す
+}
+
+const mapPtr = writeCString(mapText);
+const game = M._sim_create(mapPtr, 1, ...);    // 住所を渡す
+M._free(mapPtr);                               // 使い終わったら解放</code></pre>
+			<p class="section-intro">
+				<code>M.HEAPU8</code> は<strong>WASM のメモリを JS から覗く窓</strong>です。
+				C が書いた結果を JS がこの窓から読み取ります。
+			</p>
+			<div class="callout" style="margin-top: 16px">
+				<p style="margin: 0">
+					<strong>W-10 の実装では、この writeCString の作法がそのまま使えます。</strong>
+					難しいのは最初だけで、<code>record.mjs</code> にひな型が揃っています。
+				</p>
+			</div>
+
+			<h3 style="margin-top: 32px">native / web / server との対応</h3>
+			<p class="section-intro">同じ C から作った 3 つの成果物が、それぞれどう動くかを整理すると:</p>
+			<div class="table-wrap">
+				<table>
+					<thead>
+						<tr><th></th><th>ビルド</th><th>形式</th><th>誰が実行する</th></tr>
+					</thead>
+					<tbody>
+						<tr><td>native</td><td><code>gcc</code>（make）</td><td>Linux 実行ファイル</td><td>OS が直接</td></tr>
+						<tr><td>web</td><td><code>emcc</code>（make web）</td><td><code>render.wasm</code> + glue</td><td><strong>ブラウザ</strong>が実行</td></tr>
+						<tr><td>server</td><td><code>emcc</code>（make sim）</td><td><code>sim.wasm</code> + glue</td><td><strong>Node</strong> が実行</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p class="section-intro" style="margin-top: 12px">
+				web と server は<strong>同じ WASM の仕組み</strong>で、実行する場所（ブラウザ / Node）が違うだけです。
+				だから片方（<code>web/engine_demo.js</code>）で分かったことは、もう片方（<code>record.mjs</code>）でも通用します。
+			</p>
+
+			<div class="callout" style="margin-top: 24px">
+				<strong>まとめ</strong>
+				<p style="margin: 8px 0 0">
+					WebAssembly（WASM）= C を「ブラウザ/Node が実行できる形」に翻訳した中間形式。
+					OS 非依存で、1 つの <code>.wasm</code> がブラウザでも Node でもネイティブに近い速さで動く。
+					翻訳するのは Emscripten（emcc）。gcc の代わりに、<code>.wasm</code> と橋渡しの
+					<code>glue.js</code> を吐く。Node は glue を読み込み、C の関数を <code>M._関数名(...)</code>
+					で普通に呼ぶ。数値はそのまま、文字列/配列は WASM メモリの住所（ポインタ）で渡す。
+					これで C のロジックを 1 つに保ったまま、描画（ブラウザ）と判定（Node）に使える。
+				</p>
+			</div>
+		</section>
+
+		<section id="faq">
+			<p class="section-kicker">04 · FAQ</p>
+			<h2>よくある質問</h2>
+			<p class="section-intro">
+				技術リード自己確認シート（コード想定 Q&amp;A）から、ビルドターゲット・ゲームループ・
+				<code>game_step</code>・WASM に関わる項目だけを抜き出したものです。
+				エンジン構成や戦闘員統合、サーバ権威モデルに関する質問は他のテーマページにあります。
+			</p>
+
+			<div class="grid grid-2" style="margin-top: 20px">
+				<article class="card">
+					<h3>Q. プログラムはどこから始まり、1 フレームはどう回る？</h3>
+					<p>
+						A. <code>main()</code> → 引数/マップ検証でモード決定 → 初期化 →
+						<code>pf_setup_hooks</code>（イベント登録）→ <code>pf_loop</code>（制御を MLX に渡す）。
+						以後 MLX が毎フレーム <code>main_loop</code> を呼ぶ。<code>main_loop</code> は時間を測って
+						<code>game_frame</code>（= <code>game_step</code> + <code>render_frame</code> + <code>pf_present</code>）。
+					</p>
+					<p class="section-intro" style="margin-top: 10px">
+						確認: <code>common/main.c</code> / <code>common/core/loop.c:31</code>
+					</p>
+				</article>
+
+				<article class="card">
+					<h3>Q. <code>game_step</code> の中身と順序は？（順序に意味がある）</h3>
+					<p>
+						A. ①決着済みなら即 return ②<code>update_death</code>（全戦闘員の死亡タイマー）
+						③自席が生存なら <code>apply_input</code> ④<code>step_external_combatants</code>（外部入力席）
+						⑤<code>update_enemies</code>（AI 席）⑥<code>mode_ops.combat</code>（FPS=接触判定 / RSP=じゃんけん）
+						⑦<code>check_quest</code>（ゴール・収集）。
+					</p>
+					<p class="section-intro" style="margin-top: 10px">
+						確認: <code>common/core/loop.c:67</code>（<code>game_step</code>）。
+						死亡判定を先にする理由は「死んだ席が同 tick でゴール/収集しないため」（レビュー P1 修正）。
+					</p>
+				</article>
+
+				<article class="card">
+					<h3>Q. native / web / server で 1 フレームを「回す人」は誰？</h3>
+					<p>
+						A. native=MLX（<code>mlx_loop</code>）、web=ブラウザ（<code>requestAnimationFrame</code>）、
+						server=Node（<code>setInterval</code>。W-10 で実装）。
+						<strong>呼ばれる <code>game_step</code> は 3 つとも同一</strong>。
+					</p>
+				</article>
+
+				<article class="card">
+					<h3>Q. make のターゲットは？ sim に描画が入らないのはなぜ？</h3>
+					<p>
+						A. <code>make</code>（native）/ <code>web</code>（render.wasm）/ <code>sim</code>（sim.wasm）/
+						<code>test</code>（受入 85 検査）。sim は <code>SIM_RENDER_EXCLUDES</code> で描画ソース
+						（draw/raycast/sprite/font 等）をリンクから外す。
+					</p>
+					<p class="section-intro" style="margin-top: 10px">確認: <code>Makefile</code></p>
+				</article>
+
+				<article class="card">
+					<h3>Q. コード品質はどう担保している？</h3>
+					<p>
+						A. <code>make check</code>（独自 lint。CR001〜。common→モード依存も検知）+
+						<code>make test</code>（sim 85 検査）+ CI（3 ターゲットビルド + check + test + xvfb スモーク）を毎 push。
+					</p>
+					<p class="section-intro" style="margin-top: 10px">
+						確認: <code>.github/workflows/ci.yml</code> / <code>make check</code>
+					</p>
+				</article>
+			</div>
+		</section>
+	</main>
+
+	<footer class="shell">
+		<p>
+			統合元: md_files/説明用/{ループ反転-誰がゲームを回しているか.md, 3つのビルドターゲット.md,
+			なぜNodeでCを動かせるのか-WASM入門.md}（いずれも archive/ に移設）。
+		</p>
+	</footer>
+</body>
+</html>
