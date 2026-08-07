@@ -54,17 +54,17 @@
 				<article class="card">
 					<p class="card-label">必須14pt</p>
 					<p class="metric">1<small> 完了 / 8</small></p>
-					<p class="metric-note">完了1・部分完了4・未着手3（詳細は<a href="#core">§03</a>）</p>
+					<p class="metric-note">完了1・部分完了4・未着手3（詳細は<a href="#core">§02</a>）</p>
 				</article>
 				<article class="card">
 					<p class="card-label">ボーナス+5pt</p>
 					<p class="metric">1<small> 完了 / 3</small></p>
-					<p class="metric-note">完了1・部分完了2（詳細は<a href="#bonus">§04</a>）</p>
+					<p class="metric-note">完了1・部分完了2（詳細は<a href="#bonus">§03</a>）</p>
 				</article>
 				<article class="card">
 					<p class="card-label">予備モジュール</p>
 					<p class="metric">0<small> / 4</small></p>
-					<p class="metric-note">未選択・未着手。時間が余れば挑戦（詳細は<a href="#insurance">§05</a>）</p>
+					<p class="metric-note">未選択。観戦モードのみ土台あり、他3件は未着手（詳細は<a href="#insurance">§04</a>）</p>
 				</article>
 				<article class="card">
 					<p class="card-label">最大の上流ブロッカー</p>
@@ -124,16 +124,18 @@
 			<p class="section-kicker">04 · Insurance modules</p>
 			<h2>予備モジュール（未選択・時間が余れば挑戦）</h2>
 			<p class="section-intro">
-				必須14pt＋ボーナス5pt＝19ptが確定するまでは着手しません。4つとも現状<span class="tag status-todo">未着手</span>です。
+				必須14pt＋ボーナス5pt＝19ptが確定するまでは、モジュールとして着手・宣言しません。
+				ただし<strong>観戦モードだけは、F-06のGameView統合が土台として一部を先に作っています</strong>
+				——モジュール自体は依然未選択・未完成です。
 			</p>
 			<div class="table-wrap">
 				<table>
-					<thead><tr><th>優先度</th><th>モジュール</th><th>pt</th></tr></thead>
+					<thead><tr><th>優先度</th><th>モジュール</th><th>pt</th><th>状態</th><th>備考</th></tr></thead>
 					<tbody>
-						<tr><td>1</td><td>観戦モード</td><td>Minor 1</td></tr>
-						<tr><td>2</td><td>OAuth 2.0リモート認証（Google）</td><td>Minor 1</td></tr>
-						<tr><td>3</td><td>2FA（二要素認証）</td><td>Minor 1</td></tr>
-						<tr><td>4</td><td>Prometheus + Grafana監視</td><td>Major 2</td></tr>
+						<tr><td>1</td><td>観戦モード</td><td>Minor 1</td><td><span class="tag status-partial">部分完了（土台のみ）</span></td><td><code>welcome.role==='spectator'</code>時の表示（入力送信の抑止・「観戦中」表示）はF-06で完了済み（<a href="../../../app/frontend/src/pages/GameView.tsx"><code>GameView.tsx</code></a>）。一方、明示的な観戦入室のWS<code>spectate</code>アクションはサーバー側で<code>not_participant</code>を返すだけの未実装スタブ（<a href="../../../app/backend/src/game/ws.ts"><code>game/ws.ts</code></a>）、視点切替UIもF-12として未着手。モジュールとしての宣言・完成はまだ</td></tr>
+						<tr><td>2</td><td>OAuth 2.0リモート認証（Google）</td><td>Minor 1</td><td><span class="tag status-todo">未着手</span></td><td>—</td></tr>
+						<tr><td>3</td><td>2FA（二要素認証）</td><td>Minor 1</td><td><span class="tag status-todo">未着手</span></td><td>—</td></tr>
+						<tr><td>4</td><td>Prometheus + Grafana監視</td><td>Major 2</td><td><span class="tag status-todo">未着手</span></td><td>—</td></tr>
 					</tbody>
 				</table>
 			</div>
