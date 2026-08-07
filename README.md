@@ -10,7 +10,7 @@ natively, compiled to WASM in the browser for rendering, and compiled to WASM on
 sole authority over the match. Two game modes ship on top of it — an RSP ("rock-paper-scissors
 tag") team battle and an FPS collect-and-race mode.
 
-## Current status (2026-08-08)
+## Current status (2026-08-07)
 
 The C engine is complete. The online product layer around it — auth, matchmaking, and most of the
 frontend — is partially built. Read this table before trying to demo anything:

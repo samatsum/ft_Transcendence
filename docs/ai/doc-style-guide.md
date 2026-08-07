@@ -1,14 +1,15 @@
 # DOC_STYLE_GUIDE — How to Write a Page in `docs/`
 
-> Not translated from an older document — written new on 2026-08-08, after repeatedly having to
+> Not translated from an older document — written new on 2026-08-07, after repeatedly having to
 > re-derive the same conventions (page template, when to use Mermaid, how to validate a diagram,
 > how to check for dead links) from scratch across several docs PRs. Read this before adding or
 > restructuring anything under `docs/`.
 
 **Position**: This is process/authoring guidance, not a design document — it does not describe the
-product, only how to write and wire up a documentation page. Companion to
+product, only how to write and wire up a documentation page. Related to
 [git-workflow.md](./git-workflow.md) (how changes land) and
-[../ja/Git運用フロー.html](../ja/Git運用フロー.html) (its Japanese counterpart).
+[../ja/Git運用フロー.html](../ja/Git運用フロー.html) (its Japanese counterpart). Its own Japanese
+companion is [`../ja/ドキュメント作法.html`](../ja/ドキュメント作法.html).
 
 ## The two tracks, and which one a new page belongs in
 

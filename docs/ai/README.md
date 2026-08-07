@@ -59,7 +59,9 @@ As of 2026-08-05 the former 4-person team (torinoue / mamiyaza / hminemur, plus 
 
 ## Where these came from (old → new filename)
 
-All nine files above are English translations of documents that used to live under
+The nine documents translated from the original Japanese design docs — `requirements.md` through
+`dev-doc.md` in the table above (i.e. everything except `git-workflow.md` and
+`doc-style-guide.md`, which are new and were never translated from anything) — used to live under
 `md_files/02_設計書/`, `md_files/04_エンジン資料/`, and `md_files/01_課題/`. The old Japanese
 originals are archived, not deleted — each translated file has a one-line source note near the
 top pointing at its original path. Old numbering (⓪①②③④⑤⑥) and legacy English filenames

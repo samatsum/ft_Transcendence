@@ -6,7 +6,8 @@
 **Position**: This is the canonical git operating procedure for this repository, for both the human
 maintainer (samatsum) and any AI agent (Claude Code or otherwise) working in this repo. It is
 process guidance, not a design document — it does not describe the product, only how changes should
-land in `main`. Follow this exactly unless samatsum explicitly asks for a one-off exception.
+land in `main`. Follow this exactly unless samatsum explicitly asks for a one-off exception. Japanese
+companion: [`../ja/Git運用フロー.html`](../ja/Git運用フロー.html).
 
 ## The rule, in one sentence
 
