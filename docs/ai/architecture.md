@@ -13,9 +13,13 @@
 
 ---
 
-## Implementation status (as of 2026-07-30)
+## Implementation status (progress as of 2026-07-30; module lineup as of 2026-08-08)
 
 This document is a record from the design phase. The items below are already complete and are no longer "to be decided."
+
+> **Two dates, deliberately.** The *progress* column below was last reconciled on 2026-07-30 and nothing has
+> been completed since. The *module lineup* in §4 was rewritten on 2026-08-08 by D-19. So a row can say
+> "B-13 is no longer declared" (an 08-08 fact) while the completion counts around it are 07-30 facts.
 
 | Section | Content | Status |
 |---|---|---|
@@ -24,7 +28,7 @@ This document is a record from the design phase. The items below are already com
 | §2.3 | Network model (server-authoritative + snapshot distribution) | Approach finalized; B-08 lobby WS core, B-09 match formation, B-10 GameRoom, B-11 game WS, and B-12 disconnect grace period are all complete. B-08 is still waiting to be wired up to the real Cookie authentication from B-04/B-05 |
 | §2.4 | Web stack (selection across 9 layers) | All 9 selections finalized. 5 of the 9 are already integrated (React+Vite+TS / Tailwind / Fastify+TS / zod shared schema = I-01, WebSocket = B-11). The remaining layers are handled in B-03, B-04, I-15. The §2.4 table below includes an "Integrated" column |
 | §1.2 | Two games (RSP 2v2 / FPS 1v1 race) | Engine side complete. Both games run natively and in the browser. Only online multiplayer remains |
-| §3.1 | Server-authoritative sim + snapshot distribution | Lobby WS core (B-08), match formation (B-09), GameRoom (B-10), game WS (B-11), and disconnect grace period (B-12) are all complete. What remains is wiring in real authentication (B-04/B-05 → B-08) and B-13 persistence |
+| §3.1 | Server-authoritative sim + snapshot distribution | Lobby WS core (B-08), match formation (B-09), GameRoom (B-10), game WS (B-11), and disconnect grace period (B-12) are all complete. What remains is wiring in real authentication (B-04/B-05 → B-08) and the spectator fan-out (B-17). **B-13 persistence is no longer declared** as of D-19 (§4.3) |
 | §3.2 | Repository layout (monorepo) | Complete (I-01) |
 | §4 | Module selection, 19pt | Selection finalized; implementation status varies per module (see the list at [the top of the requirements doc](./requirements.md)) |
 | §6 §7 | Team structure & schedule | Actual operations have since changed. [6-チーム分担計画](../human/はじめに/チーム体制.html) is now the authoritative source |
@@ -261,7 +265,7 @@ Statistics (win rate, match history, leaderboard) are derived via aggregate quer
 |---|---|---|---|---|
 | 9 | Advanced 3D graphics | Gaming Major | 2 | The hand-written C raycaster (texture mapping, depth buffer, sprite rendering), compiled to WASM. E-13 measured 112fps @960×540. **Zero additional code — only a README justification.** Placed in the bonus deliberately: the subject phrases this as "using a library like Three.js or Babylon.js", and if an evaluator reads the library as mandatory, this is the module that gets rejected. In the bonus, that costs 2 of 5 bonus points and does not touch the pass line |
 | 10 | Custom-made design system | Web Minor | 1 | The subject requires 10+ reusable components plus a color palette, typography and icons. `app/frontend/src/components/` already has 9 (Button, Card, Modal, Toast, FormField, Input, Header, Footer, Layout) |
-| 11 | Spectator mode | Gaming Minor | 1 | GV-06 already handles `welcome.role === 'spectator'` (input suppressed, "観戦中" shown). Remaining: the WS `spectate` action (currently a `not_participant` stub) and the viewpoint-switch UI (GV-12) |
+| 11 | Spectator mode | Gaming Minor | 1 | GV-06 already handles `welcome.role === 'spectator'` (input suppressed, "観戦中" shown). Remaining: the WS `spectate` action (currently a `not_participant` stub → **B-17**) and the viewpoint-switch UI (**GV-12**). **This is the largest of the three remaining bonus gaps** — the other two are #10 (one more component, plus the palette / typography / icon set) and #12 (the status page plus backup & recovery). Declaring it makes both issues mandatory: an incomplete declared module scores 0 (Chapter VII) |
 | 12 | Health check / status page | DevOps Minor | 1 | `GET /api/health` already exists and is used by CI. Remaining: the status page plus automated backup and recovery procedures |
 | | **Subtotal** | | **+5** | |
 
@@ -277,7 +281,7 @@ they should be reconsidered if time frees up.
 | 1 | **Another game (FPS) with history + matchmaking** | Gaming Major 2 | The FPS engine is **already complete** and matchmaking is shared with RSP (B-08/B-09, done). The only blocker is user history → **B-13 alone**. Since B-13 also revives #2 below, that one issue is worth 3pt — this is the first thing to restore |
 | 2 | Game stats and match history | UserMgmt Minor 1 | B-13 (match persistence) + F-09 (profile/history screen) |
 | 3 | Standard user management and auth | UserMgmt Major 2 | Requires **all five** of profile update / avatar upload / friend add / online status / profile page (subject IV.3 — missing one means 0pt): B-06 + B-07 + F-09 + F-10. Note that auth itself is still built regardless, because Chapter III mandates it; only these five extras are module-only work |
-| 4 | Public API | Web Major 2 | API-key auth layer + documentation. Rate limiting is already designed (③§1-C) and the endpoint count clears 5 once B-02–B-07 land. Never formally evaluated before 2026-08-08 |
+| 4 | Public API | Web Major 2 | API-key auth layer + documentation. Rate limiting is already designed (③§1-C) and the endpoint count clears 5 once B-02–B-05 land (signup / login / logout / me / maps / health). Never formally evaluated before 2026-08-08 |
 | 5 | OAuth 2.0 / 2FA / Prometheus+Grafana | 1/1/2 | Entirely unstarted. Only worth revisiting if everything above is secure |
 
 ### 4.4 Dependency / consistency check
@@ -297,7 +301,10 @@ The original core 14 included Standard user management (2pt, not a line written)
 same), while AI opponent (2pt, complete and demonstrable) sat in the bonus. Since the bonus exists to
 absorb a rejection, this was backwards: a finished module was insuring an unfinished one. Swapping AI
 opponent into the core and dropping the two unstarted UserMgmt modules removes **B-06, B-07, B-13,
-F-09 and F-10** from the critical path.
+F-09 and F-10** from the critical path. In exchange it adds **B-17 and GV-12** (the spectator module's
+server and UI halves), which is a far smaller trade — those five issues spanned avatar storage, a
+friends graph, match persistence and two full screens; the two replacing them extend an existing WS
+handler and an existing HUD.
 
 **Problem 2 — modules that were already satisfied were never counted.**
 Advanced 3D graphics (2pt) requires no new code at all; the engine has done it since E-13. Custom

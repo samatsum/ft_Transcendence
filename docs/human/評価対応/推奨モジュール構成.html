@@ -117,7 +117,7 @@
 					<tbody>
 						<tr><td>9</td><td><strong>高度な3Dグラフィックス</strong></td><td>Gaming Major</td><td>2</td><td><span class="tag status-done">実装は完成</span></td><td><strong>コードはゼロ</strong>。READMEに正当化を書くのみ。<br>ただし却下リスクあり（→<a href="#risk">§06</a>）</td></tr>
 						<tr><td>10</td><td>カスタムデザインシステム</td><td>Web Minor</td><td>1</td><td><span class="tag status-partial">部品9個が存在</span></td><td>再利用可能部品をあと1個＋パレット/タイポグラフィの文書化</td></tr>
-						<tr><td>11</td><td>観戦モード</td><td>Gaming Minor</td><td>1</td><td><span class="tag status-partial">土台のみ</span></td><td>WSの<code>spectate</code>アクション実装＋視点切替UI（GV-12）</td></tr>
+						<tr><td>11</td><td>観戦モード</td><td>Gaming Minor</td><td>1</td><td><span class="tag status-partial">土台のみ</span></td><td>WSの<code>spectate</code>アクション実装（<strong>B-17</strong>）＋視点切替UI（<strong>GV-12</strong>）</td></tr>
 						<tr><td>12</td><td>ヘルスチェック/ステータスページ</td><td>DevOps Minor</td><td>1</td><td><span class="tag status-partial"><code>/api/health</code>済</span></td><td>ステータスページ＋自動バックアップ・復旧手順</td></tr>
 					</tbody>
 				</table>
@@ -142,7 +142,7 @@
 						<tr><td>高度な3Dグラフィックス</td><td>2</td><td>—</td><td><strong>ボーナスへ追加</strong></td><td>実装済みのものを申告するだけ</td></tr>
 						<tr><td>カスタムデザインシステム</td><td>1</td><td>—</td><td><strong>ボーナスへ追加</strong></td><td>部品9個が既存、あと1個</td></tr>
 						<tr><td>ヘルスチェック/ステータスページ</td><td>1</td><td>—</td><td><strong>ボーナスへ追加</strong></td><td><code>/api/health</code>が既存</td></tr>
-						<tr><td>観戦モード</td><td>1</td><td>予備</td><td><strong>ボーナスへ格上げ</strong></td><td>GV-06の土台が既にある</td></tr>
+						<tr><td>観戦モード</td><td>1</td><td>予備</td><td><strong>ボーナスへ格上げ</strong></td><td>GV-06の土台が既にある。ただし<strong>採用した以上は必須</strong>——B-17とGV-12は仕上げではなく必達作業になる</td></tr>
 						<tr><td>OAuth 2.0 / 2FA / Prometheus+Grafana</td><td>4</td><td>予備</td><td><span class="tag status-todo">外す</span></td><td>完全未着手。上の構成で19ptに届くため不要</td></tr>
 					</tbody>
 				</table>
@@ -179,7 +179,7 @@
 			</div>
 			<div class="callout" style="margin-top: 18px">
 				<strong>5つのIssueが不要になる。</strong>
-				一方で、増える作業は「観戦の<code>spectate</code>アクション＋GV-12」「部品1個＋文書化」
+				一方で、増える作業は「観戦の<code>spectate</code>アクション（B-17）＋GV-12」「部品1個＋文書化」
 				「ステータスページ＋バックアップ手順」の3つで、いずれも上記5つより明らかに軽い。
 				<strong>3Dグラフィックスに至っては追加作業ゼロ</strong>。
 			</div>

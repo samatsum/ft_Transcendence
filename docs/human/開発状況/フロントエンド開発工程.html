@@ -4,7 +4,7 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="color-scheme" content="dark">
-	<title>F作業全体 — サーバーを、プレイヤーが触れる画面にする12工程</title>
+	<title>F作業全体 — サーバーを、プレイヤーが触れる画面にする10工程</title>
 	<link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
@@ -13,14 +13,14 @@
 			<p class="eyebrow">Frontend · F系・GV系</p>
 			<h1>動くサーバーを、<br>プレイヤーが触れる画面にする。</h1>
 			<p class="hero-lead">
-				F系・GV系は、B系・I系と並行してブラウザ側の画面（<code>app/frontend/</code>）を作る12工程です。
-				ログイン画面、ロビー、対戦画面、HUD、プロフィールと、プレイヤーが実際にクリックする
+				F系・GV系は、B系・I系と並行してブラウザ側の画面（<code>app/frontend/</code>）を作る10工程です。
+				ログイン画面、ロビー、対戦画面、HUD、観戦画面と、プレイヤーが実際にクリックする
 				すべての面を担当します。<code>web/</code>（Cエンジンのwasm化）とは別レーンです。
 			</p>
 			<p class="hero-note">
 				<span aria-hidden="true">●</span>
-				<strong>現在地 2026-08-07</strong>
-				<span>F-01 / F-02 / GV-06 / GV-07 完了、F-03〜F-05・GV-08・F-09・F-10・F-11・GV-12は担当未定で未着手</span>
+				<strong>実装は2026-08-07時点／モジュール構成は2026-08-08のD-19改訂</strong>
+				<span>F-01 / F-02 / GV-06 / GV-07 完了、F-03〜F-05・GV-08・F-11・GV-12は担当未定で未着手</span>
 			</p>
 		</div>
 	</header>
@@ -30,7 +30,7 @@
 			<a href="#meaning">Fとは</a>
 			<a href="#current">現在地</a>
 			<a href="#flow">画面遷移の流れ</a>
-			<a href="#issues">12工程</a>
+			<a href="#issues">10工程</a>
 			<a href="#dependencies">依存と次手</a>
 			<a href="#code">コード入口</a>
 			<a href="#backend">B/Iとの境界</a>
@@ -78,23 +78,32 @@
 
 		<section id="current">
 			<p class="section-kicker">02 · Current position</p>
-			<h2>12件のうち、4件完了</h2>
+			<h2>10件のうち、4件完了</h2>
 			<p class="section-intro">
-				完了率は4/12＝33.3%。ただし完了した4件（F-01・F-02・GV-06・GV-07）は「対戦が実際に1試合、
+				完了率は4/10＝40.0%。ただし完了した4件（F-01・F-02・GV-06・GV-07）は「対戦が実際に1試合、
 				2ブラウザ間で動く」ために必要な最小構成で、Gate 2のデモ可能性を優先して先に進めた結果です。
 				ロビーは未実装（F-05）のため、今のところ試合は決め打ちの部屋IDで開始する開発用リンクから入ります。
+			</p>
+			<p class="section-intro">
+				<strong>分母が12から10に変わりました（2026-08-08）。</strong>
+				モジュール構成の改訂（D-19）でF-09（プロフィール）とF-10（フレンドUI）が<strong>不採用</strong>になったためです。
+				完了件数の4は変わっていません——分母だけが「これから実際にやる作業」へ縮みました。
+				不採用の2件はページから消さず、下の一覧に「不採用」として残してあります。
+				逆に<strong>GV-12（観戦UI）は予備枠から必須へ昇格</strong>しました。
+				なお<strong>F-03（ログイン画面）は影響を受けません</strong>——メール+パスワード認証は
+				モジュールではなく課題第III章の必須要件だからです。
 			</p>
 			<div class="grid grid-4">
 				<article class="card">
 					<p class="card-label">完了</p>
-					<p class="metric" style="color: var(--green)">4<small> / 12</small></p>
+					<p class="metric" style="color: var(--green)">4<small> / 10</small></p>
 					<p class="metric-note">F-01 · F-02 · GV-06 · GV-07</p>
-					<div class="progress" role="progressbar" aria-label="F作業33.3%完了" aria-valuenow="33.3" aria-valuemin="0" aria-valuemax="100"><span></span></div>
+					<div class="progress" role="progressbar" aria-label="F作業40.0%完了" aria-valuenow="40.0" aria-valuemin="0" aria-valuemax="100"><span></span></div>
 				</article>
 				<article class="card">
 					<p class="card-label">stubのみ存在</p>
-					<p class="metric" style="color: var(--yellow)">4</p>
-					<p class="metric-note">F-03・F-04・F-05・F-09。ルートと「後で実装」の断り書きだけがある</p>
+					<p class="metric" style="color: var(--yellow)">3</p>
+					<p class="metric-note">F-03・F-04・F-05。ルートと「後で実装」の断り書きだけがある（F-09のstubは不採用に伴い放置）</p>
 				</article>
 				<article class="card">
 					<p class="card-label">最大の上流ブロッカー</p>
@@ -122,7 +131,7 @@
 			<p class="section-intro">
 				F番号順に実装されるわけではありません。プレイヤー体験としては、次の順番で複数Issueが連携します。
 			</p>
-			<div class="lifecycle" aria-label="ログインから試合結果までの画面遷移">
+			<div class="lifecycle" style="grid-template-columns: repeat(6, minmax(125px, 1fr))" aria-label="ログインから試合結果までの画面遷移">
 				<article class="stage">
 					<span class="step">STEP 1</span>
 					<strong>ログイン</strong>
@@ -153,21 +162,18 @@
 					<strong>結果</strong>
 					<p>GV-08がmatch_endモーダルを出し、ロビーへ戻す（未実装）</p>
 				</article>
-				<article class="stage">
-					<span class="step">STEP 7</span>
-					<strong>プロフィール</strong>
-					<p>F-09が履歴・統計・アバターを表示する（未実装）</p>
-				</article>
+				
 			</div>
 			<p class="section-intro">
-				F-10（フレンドUI）はロビーとプロフィールの両方から横断的に使われ、F-11（レスポンシブ/
-				アクセシビリティ）は全画面を最後に横断して調整します。GV-12（観戦UI）は条件付きの予備枠です。
+				<strong>観戦（GV-12）はこの6ステップの続きではなく、STEP 5と並行して走る別の流れです。</strong>対戦者以外が試合中に<code>spectate</code>で接続し、プレイヤーと同じsnapshotを受け取って<code>match_end</code>まで見続けます——結果表示の後に始まるものではありません。サーバー側の受け口はB-17。<br>F-11（レスポンシブ/アクセシビリティ）は全画面を最後に横断して調整します。
+				<strong>GV-12は2026-08-08のモジュール改訂（D-19）で「予備枠」から「必須」へ変わりました</strong>——観戦モードを
+				+5点枠に採用したためです。申告したモジュールが動かないとその分は0点なので、これは後回しにできる仕上げではありません。
 			</p>
 		</section>
 
 		<section id="issues">
 			<p class="section-kicker">04 · F系・GV系</p>
-			<h2>12工程を「何のためか」で読む</h2>
+			<h2>10工程を「何のためか」で読む</h2>
 			<p class="section-intro">
 				詳細な受入条件は⑤バックログが正本です。ここでは、チーム説明で必要な
 				「何を解決するIssueか」と「どこまで済んだか」に絞っています。
@@ -176,11 +182,13 @@
 				<span class="pill"><span class="dot done"></span>完了</span>
 				<span class="pill"><span class="dot partial"></span>部分完了</span>
 				<span class="pill"><span class="dot todo"></span>未完</span>
+				<span class="pill"><span class="dot dropped"></span>不採用</span>
 			</div>
 			<div class="filters" aria-label="Issue絞り込み">
 				<button class="filter-button" type="button" data-filter="all" aria-pressed="true">すべて</button>
 				<button class="filter-button" type="button" data-filter="done" aria-pressed="false">完了</button>
 				<button class="filter-button" type="button" data-filter="todo" aria-pressed="false">未完</button>
+				<button class="filter-button" type="button" data-filter="dropped" aria-pressed="false">不採用</button>
 				<button class="filter-button" type="button" data-filter="samatsum" aria-pressed="false">samatsum担当</button>
 			</div>
 
@@ -207,7 +215,7 @@
 				</article>
 				<article class="issue-card" data-status="done" data-owner="samatsum">
 					<div class="issue-id">GV-06</div>
-					<div><h3>GameView統合</h3><p>render.wasm読込、Canvas描画、snapshot補間、入力送信をE-08/E-12へ接続。2ブラウザ間の対戦と観戦表示が動作。</p><div class="issue-meta"><span class="tag owner">samatsum</span><span class="tag status-done">完了</span></div></div>
+					<div><h3>GameView統合</h3><p>render.wasm読込、Canvas描画、snapshot補間、入力送信をE-08/E-12へ接続。2ブラウザ間の対戦が動作。<code>welcome.role==='spectator'</code>を受けたときの表示分岐（入力抑止・「観戦中」表示）も実装済みだが、サーバー側が<code>spectate</code>を受け付けないため<strong>実際に観戦者として接続することはまだできない</strong>（B-17待ち）。</p><div class="issue-meta"><span class="tag owner">samatsum</span><span class="tag status-done">完了</span></div></div>
 				</article>
 				<article class="issue-card" data-status="done" data-owner="samatsum">
 					<div class="issue-id">GV-07</div>
@@ -217,21 +225,21 @@
 					<div class="issue-id">GV-08</div>
 					<div><h3>試合遷移フロー</h3><p>match_found自動遷移→カウントダウン→match_endモーダル→ロビー復帰。WS再接続中もコンソールエラー無しが条件。</p><div class="issue-meta"><span class="tag status-todo">未着手（担当未定・F-05/GV-07待ち）</span></div></div>
 				</article>
-				<article class="issue-card" data-status="todo">
+				<article class="issue-card" data-status="dropped">
 					<div class="issue-id">F-09</div>
-					<div><h3>プロフィール/統計/履歴</h3><p>自己編集・アバターアップロード。<code>win_rate</code>がB-13のDB定義と一致する必要がある。</p><div class="issue-meta"><span class="tag status-todo">未着手（担当未定・B-06/B-13待ち）</span></div></div>
+					<div><h3>プロフィール/統計/履歴</h3><p>自己編集・アバターアップロード。<strong>「標準的なユーザー管理」を取り下げたため不採用。</strong>「ゲーム統計」1点を後から復活させる場合は、B-13と<em>セットで</em>必要になる。</p><div class="issue-meta"><span class="tag status-dropped">不採用（2026-08-08 · D-19）</span></div></div>
 				</article>
-				<article class="issue-card" data-status="todo">
+				<article class="issue-card" data-status="dropped">
 					<div class="issue-id">F-10</div>
-					<div><h3>フレンドUI</h3><p>ロビーのフレンド領域とプロフィールのボタン。presenceバッジをリアルタイム更新する。</p><div class="issue-meta"><span class="tag status-todo">未着手（担当未定・F-05/B-07待ち）</span></div></div>
+					<div><h3>フレンドUI</h3><p>ロビーのフレンド領域とプロフィールのボタン。presenceバッジをリアルタイム更新する。<strong>「標準的なユーザー管理」を取り下げたため不採用。</strong></p><div class="issue-meta"><span class="tag status-dropped">不採用（2026-08-08 · D-19）</span></div></div>
 				</article>
 				<article class="issue-card" data-status="todo">
 					<div class="issue-id">F-11</div>
-					<div><h3>レスポンシブ/アクセシビリティ</h3><p>375px幅で全画面確認、キーボードのみで試合開始まで到達可能にする。全画面を横断する仕上げ工程。</p><div class="issue-meta"><span class="tag status-todo">未着手（担当未定・F-04・F-05・GV-06・GV-07・GV-08・F-09・F-10待ち）</span></div></div>
+					<div><h3>レスポンシブ/アクセシビリティ</h3><p>375px幅で全画面確認、キーボードのみで試合開始まで到達可能にする。全画面を横断する仕上げ工程。<strong>対象画面が2つ減りました</strong>——F-09/F-10が不採用になったためです。</p><div class="issue-meta"><span class="tag status-todo">未着手（担当未定・F-04・F-05・GV-06・GV-07・GV-08・GV-12待ち）</span></div></div>
 				</article>
 				<article class="issue-card" data-status="todo">
 					<div class="issue-id">GV-12</div>
-					<div><h3>観戦UI（予備枠）</h3><p>観戦者向けHUD。ARCHITECTURE §4.3の条件を満たす場合のみ着手する予備Issue。</p><div class="issue-meta"><span class="tag status-todo">未着手（条件付き・担当未定）</span></div></div>
+					<div><h3>観戦UI</h3><p>観戦者向けHUDと視点切替。対戦者以外が<code>match_end</code>までコンソールエラー無しで観られること。<strong>2026-08-08に予備枠から必須へ昇格</strong>（観戦モジュールを+5点枠に採用）。サーバー側のB-17とセット。</p><div class="issue-meta"><span class="tag status-todo">未着手・必須へ昇格（担当未定・B-17待ち）</span></div></div>
 				</article>
 			</div>
 		</section>
@@ -250,7 +258,7 @@
 					<ol class="path-list">
 						<li><div><strong>F-03 → F-04</strong><span>B-04（本認証）が閉じ次第、ログイン画面とレイアウトを実装</span></div></li>
 						<li><div><strong>F-05</strong><span>B-08/B-09（ロビーWS・マッチ成立）を消費してロビー一式を実装</span></div></li>
-						<li><div><strong>GV-08 → F-09 → F-10</strong><span>試合遷移、プロフィール、フレンドUIの順に接続</span></div></li>
+						<li><div><strong>GV-08 → GV-12</strong><span>試合遷移を閉じ、続けて観戦UIを載せる（GV-12はB-17待ち）</span></div></li>
 						<li><div><strong>F-11</strong><span>最後に全画面のレスポンシブ/アクセシビリティを横断調整</span></div></li>
 					</ol>
 				</article>
@@ -309,8 +317,7 @@
 						<tr><td>B-08/B-09 lobby WS + match_found</td><td>F-05/GV-08</td><td>ロビー表示、再接続、試合画面への遷移</td></tr>
 						<tr><td>B-11 snapshot/event</td><td>GV-06/GV-07</td><td>render.wasm、補間、Canvas、HUD、入力送信（完了済み）</td></tr>
 						<tr><td>B-12 grace/AI状態</td><td>GV-07</td><td>切断猶予とAI切替の可視化（完了済み）</td></tr>
-						<tr><td>B-13 history/stats</td><td>F-09</td><td>プロフィール・履歴・統計表示</td></tr>
-						<tr><td>B-07 presence</td><td>F-10</td><td>フレンド操作とリアルタイムbadge</td></tr>
+						<tr><td>B-17 spectator接続 + snapshot配信</td><td>GV-12</td><td>観戦HUD、視点切替、観戦者向けの入力抑止</td></tr>
 					</tbody>
 				</table>
 			</div>

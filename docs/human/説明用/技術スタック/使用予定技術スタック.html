@@ -124,31 +124,32 @@
 	</section>
 
 	<section class="section">
-		<div class="section-head"><span class="section-num">4</span><span class="section-title">予備 — 未選択・着手予定なし</span></div>
+		<div class="section-head"><span class="section-num">4</span><span class="section-title">不採用 — 申告しない・着手予定なし</span></div>
 		<table>
 			<thead><tr><th>技術</th><th>どのようなものか</th><th>位置づけ</th></tr></thead>
 			<tbody>
 				<tr>
 					<td class="tech">OAuth 2.0<br>（Google）</td>
 					<td class="what">外部サービスのアカウントでログインできるようにする仕組み。</td>
-					<td class="why">予備モジュール（Minor 1pt）。Fastify に成熟したプラグインがあり、<code>User</code> に <code>OAuthAccount</code> を足すだけで済むため候補に入れている。</td>
+					<td class="why">不採用（Minor 1pt）。Fastify に成熟したプラグインがあり、<code>User</code> に <code>OAuthAccount</code> を足すだけで済むため、復活させるなら安い部類。</td>
 				</tr>
 				<tr>
 					<td class="tech">2FA<br>（TOTP）</td>
 					<td class="what">パスワードに加えて、時間で変わる6桁コードを要求する二要素認証。</td>
-					<td class="why">予備モジュール（Minor 1pt）。ライブラリと QR 表示、認証画面1枚の追加で済む見込み。</td>
+					<td class="why">不採用（Minor 1pt）。ライブラリと QR 表示、認証画面1枚の追加で済む見込み。</td>
 				</tr>
 				<tr>
 					<td class="tech">Prometheus<br>＋ Grafana</td>
 					<td class="what">サーバーの状態を数値として収集し（Prometheus）、グラフとして可視化する（Grafana）監視ツール。</td>
-					<td class="why">予備モジュール（Major 2pt）。compose にコンテナを2つ足し、Fastify に計測用エンドポイントを生やす形。ゲーム本体と独立しているので着手が遅くても成立する。</td>
+					<td class="why">不採用（Major 2pt）。compose にコンテナを2つ足し、Fastify に計測用エンドポイントを生やす形。ゲーム本体と独立しているので着手が遅くても成立する。</td>
 				</tr>
 			</tbody>
 		</table>
 		<p class="note">
 			<strong>この4つ目の節だけ性質が違う。</strong>
-			上の1〜3は「やると決まっているがまだ書いていない」もの。この節は<strong>そもそも採用を決めていない</strong>。
-			必須 14pt ＋ ボーナス 5pt が確実になるまで着手しない方針で、
+			上の1〜3は「やると決まっているがまだ書いていない」もの。この節は<strong>採用しないと決めた</strong>もの。
+			2026-08-08 のモジュール改訂（D-19）で「予備」という区分自体を廃止し、採用か不採用かの2択にした。
+			必須 14pt ＋ ボーナス 5pt でちょうど上限の 19pt に届くため、この3つは無くても成立する。
 			動かないモジュールを申告すると 0pt になるため、完成したものだけを評価当日に申告する。
 		</p>
 	</section>

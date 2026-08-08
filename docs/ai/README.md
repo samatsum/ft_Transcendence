@@ -14,15 +14,17 @@ Superseded/original documents (the Japanese Markdown these files were translated
 material that didn't carry forward into either the AI or human doc set) live under
 [`../../archive/`](../../archive/) for historical reference. They are not maintained.
 
-## Project status (as of 2026-08-07, reconciled against `origin/main` @ `40acdee`)
+## Project status (implementation as of 2026-08-07, reconciled against `origin/main` @ `40acdee`; module lineup as of the 2026-08-08 D-19 revision)
 
 - **C engine** (Engine E-01–E-14 / Gameplay G-01–G-10): complete.
 - **Server** (B-/I-series): I-01, B-08, B-09, B-10, B-11, B-12, B-14 complete. B-08–B-12 were
   built ahead of schedule against `ALLOW_DEV_AUTH` and still need to integrate with real cookie
-  auth (**B-02–B-05**, not yet done). **B-13, I-15, I-16** are also outstanding. CI is green on all jobs.
+  auth (**B-02–B-05**, not yet done). **B-17 (spectator server side), I-15, I-16** are also outstanding.
+  **B-06, B-07 and B-13 were dropped on 2026-08-08** by the D-19 module revision. CI is green on all jobs.
 - **Frontend** (F-/GV-series): **F-01 (scaffold), F-02 (fetch wrapper), GV-06 (GameView integration), and
   GV-07 (HUD overlay, merged via [PR #35](https://github.com/samatsum/ft_Transcendence/pull/35)) are
-  complete and merged to main.** F-03, F-04, F-05, GV-08・F-09・F-10・F-11・GV-12 are not started. Next milestone is
+  complete and merged to main.** F-03, F-04, F-05, GV-08・F-11・GV-12 are not started; **F-09 and F-10 were
+  dropped on 2026-08-08**, and **GV-12 was promoted from reserve to required** by the same revision. Next milestone is
   **Gate 2** (2 browsers, 2v2 RSP match working end-to-end), which needs F-05 and GV-08 (both not
   started — GV-06/GV-07 currently have no lobby to launch from).
 
