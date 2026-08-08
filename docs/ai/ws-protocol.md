@@ -607,7 +607,7 @@ Closing a tab → logging in from another tab → re-entering `/game/:roomId` �
 | JSON to start, binary is YAGNI | §2-A + §5-C size budget (under 1KB/message as an acceptance criterion) |
 | game_create/add_combatant/set_input/step/snapshot/apply_snapshot/destroy | §6-B correspondence table (the sole addendum = `game_set_input_source`) |
 
-## 10. Acceptance criteria (seeds for ⑤ backlog W-xx/B-xx)
+## 10. Acceptance criteria (seeds for ⑤ backlog B-xx/GV-xx)
 
 ### 10-A. Completion criteria for B-08 alone
 
@@ -658,7 +658,7 @@ B-08's completion is not "the match runs" — it's the above, plus **exactly one
 |---|---|
 | 2026-07-11 | §5-A/§9: removed `input.hand` (⑤ [BACKLOG.md](./backlog.md) D-17; alternatives comparison in ⑤ §0) |
 | 2026-07-23 | §6-B: noted that the "§3-B addendum request" is **implemented** (`game_set_input_source`). Corrected the leftover `hand` reference in that table (already removed per D-17) to `act`, and added the implemented wrapper `sim_set_input`'s arguments. Reflowed long lines for readability |
-| 2026-07-29 | Resolved 4 design gaps (filling holes before the B-08-W-13 implementations): added addenda for room-code issuance atomicity, freezing expected human seats, snapshot's mode, and firing match_end after persistence. Reflected in `room.ts` and `game.ts` |
+| 2026-07-29 | Resolved 4 design gaps (filling holes before the B-08–B-13 implementations): added addenda for room-code issuance atomicity, freezing expected human seats, snapshot's mode, and firing match_end after persistence. Reflected in `room.ts` and `game.ts` |
 | 2026-07-30 | **B-08 design complete**: fixed the I-01/B-10/B-11/B-14 implementation patterns into §0-A. Added the full lobby wire type set, UserContextRegistry, friend-restricted presence, 10-second replacement/room reconnect, heartbeat/session expiry, FIFO deadline, LobbyRoom canonical rules, synchronous claim + token rollback, the immutable-MatchPlan-based B-09 boundary, implementation layout, and the 10-item B-08 acceptance list. Removed the unimplemented speed multipliers/AI strength from the wire. Corrected the old "restoration allowed after grace expiry" note and the impossible old note about "rescuing a persistence failure via match_result" |
 | 2026-07-30 | **B-08 core implementation**: implemented `shared/ws/lobby.ts`, `backend/src/lobby/`, the shared `ws/connection.ts`, `/ws/lobby`, and the Vite `/ws` proxy. `npm run check:lobby` checks FIFO / the 3 forming paths / rollback / LobbyRoom / grace / presence / real WS / heartbeat / session index. Real Cookie authentication, DB profile lookup, and the logout hook call await integration with B-04/B-05 |
 | 2026-07-30 | **B-09 implementation complete**: `lobby/match.ts` connects the immutable MatchPlan to a real GameRoom. Implemented token commit/rollback, the 5-second abort, reservation tokens, discarding delayed successes, `match_found`, and context release via GameRoom lifecycle. `npm run check:lobby` automatically checks manual/60-second/full-capacity forming, the 10-second zero-human close, generation failure, timeout, and zero lingering reservations |

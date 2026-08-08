@@ -106,14 +106,14 @@ Match the convention already established across 35+ PRs in this repo's history �
 
 | Prefix | Use for |
 |---|---|
-| `feat/` | New functionality (`feat/f-01-scaffold`, `feat/w-08-lobby`) |
+| `feat/` | New functionality (`feat/f-01-scaffold`, `feat/b-08-lobby`) |
 | `fix/` | Bug fixes, review-feedback fixups |
 | `docs/` | `docs/` directory or `README.md` changes only, no code |
 | `chore/` | Tooling, deps, config with no product-facing behavior change |
 | `ci/` | CI workflow changes |
 
 `<slug>` is a short kebab-case description, optionally prefixed with the Issue id it implements
-(`feat/w-12-reconnect`, `docs/w-08-design-complete`). Avoid personal-name-prefixed branches
+(`feat/b-12-reconnect`, `docs/b-08-design-complete`). Avoid personal-name-prefixed branches
 (`claude/...`, `samatsum/...`) going forward — they don't sort next to the work they relate to and
 don't communicate what they contain; prefer `<type>/<slug>` even for AI-authored branches.
 
@@ -167,7 +167,7 @@ When filing one:
 
 - **Title**: `<Issue-ID>: <short description>` (e.g. "G-11: FPS's shoot mechanic can eliminate the
   other seat").
-- **Labels**: one `lane:engine` / `lane:gameplay` / `lane:backend` / `lane:frontend` matching the
+- **Labels**: one `lane:engine` / `lane:backend` / `lane:infra` / `lane:frontend` / `lane:gameview` matching the
   E/G/W/F prefix, plus `backlog-tracked`, plus `bug` or `enhancement` as fits.
 - **Body**: cite file:line with **absolute GitHub URLs**
   (`https://github.com/samatsum/ft_Transcendence/blob/main/...`), never repo-relative paths — an
