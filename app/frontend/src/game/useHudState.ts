@@ -10,7 +10,7 @@ import {
 	type HudState,
 } from './hudState.js';
 
-// F-07: HudOverlay が消費する派生 state を1本の hook に集約。
+// GV-07: HudOverlay が消費する派生 state を1本の hook に集約。
 // - lastEvent の変化ごとに applyGameEvent
 // - 200ms 間隔で snapshotBufferRef.current の tail を読んでスコア/seats を更新
 //   (snapshot ref は再レンダを走らせないので明示的にサンプリングする)

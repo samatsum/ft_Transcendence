@@ -10,7 +10,7 @@ import { fallbackMessage } from './errorMessages.js';
 // - Cookie(セッション)を送るため credentials: 'same-origin' 固定。
 //   本番は nginx が REST/WS を同一オリジンで振り分ける(⓪ §3.1)ので Vite dev も同じ
 // - body 指定 + json:true(既定) で自動 JSON.stringify + Content-Type。
-//   multipart(W-06 アバター等)は json:false + Content-Type を呼び出し側で
+//   multipart(B-06 アバター等)は json:false + Content-Type を呼び出し側で
 // - AbortError は再スロー(呼び出し側が cancel と real error を区別できる)。
 //   network 失敗は ApiError('network_error') に丸めて Toast の統一路へ
 

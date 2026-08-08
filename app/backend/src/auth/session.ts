@@ -1,6 +1,6 @@
-// W-04 / W-05 で torinoue が実装する認証の共通入口（Issue #11 でシグネチャを合意）。
+// B-04 / B-05 で torinoue が実装する認証の共通入口（Issue #11 でシグネチャを合意）。
 //
-// **いまは samatsum が置いた暫定実装です。** W-08〜W-11 を auth の完成を待たずに
+// **いまは samatsum が置いた暫定実装です。** B-08〜B-11 を auth の完成を待たずに
 // 書き進めるための足場で、torinoue は **このファイルの中身を書き換えるだけ**でよく、
 // 呼び出し側（`ws.ts` など）は1行も変わりません。
 //
@@ -16,12 +16,12 @@ export const SESSION_COOKIE_NAME = 'ft_session';
 
 export interface AuthedUser {
 	userId: number;
-	/** W-12 の再接続で「同じセッションか」を見たくなった場合のため */
+	/** B-12 の再接続で「同じセッションか」を見たくなった場合のため */
 	sessionId: number;
 }
 
 /**
- * W-04 の本実装が入るまで `x-dev-user` を使うための明示的な開発用 opt-in。
+ * B-04 の本実装が入るまで `x-dev-user` を使うための明示的な開発用 opt-in。
  *
  * `NODE_ENV !== 'production'` だけでは、NODE_ENV の設定漏れや staging でもスタブ認証が
  * 開くため不十分。development と専用フラグの両方を明示した場合だけ許可する。
@@ -33,7 +33,7 @@ function isDevAuthEnabled(): boolean {
 /**
  * Cookie を検証して「このリクエスト/接続が誰か」を返す。無効なら `null`。
  *
- * **本実装（W-04/W-05）でやること**:
+ * **本実装（B-04/B-05）でやること**:
  *   1. `SESSION_COOKIE_NAME` の Cookie を取り出す（無ければ null）
  *   2. SHA-256 でハッシュし `Session.tokenHash` を引く（③ §3。生トークンは保存しない）
  *   3. `expiresAt` を過ぎていれば null
@@ -42,10 +42,10 @@ function isDevAuthEnabled(): boolean {
  * @returns 認証できたユーザー、または `null`
  */
 export async function authenticateRequest(req: FastifyRequest): Promise<AuthedUser | null> {
-	// TODO(W-04): 上記1〜4を実装する。torinoue がこの関数の中身を置き換える。
+	// TODO(B-04): 上記1〜4を実装する。torinoue がこの関数の中身を置き換える。
 	//
 	// それまでの繋ぎとして `x-dev-user` ヘッダで userId を指定できるようにしてある。
-	// **W-11 の複数クライアント検証に必要**（スタブが常に同じ userId を返すと
+	// **B-11 の複数クライアント検証に必要**（スタブが常に同じ userId を返すと
 	// 2人目が「同一ユーザーの多重接続」扱いで弾かれてしまう）。
 	// 本実装では Cookie だけを見るので、この分岐ごと消えてよい。
 	if (!isDevAuthEnabled()) return null;
@@ -56,10 +56,10 @@ export async function authenticateRequest(req: FastifyRequest): Promise<AuthedUs
 
 /**
  * ② §1 の Origin 検査。自ホストと一致しない接続を拒否する（CSRF-over-WS 対策）。
- * REST の変更系にも同じ判定を使う（W-05「Origin 検証の共通化」）。
+ * REST の変更系にも同じ判定を使う（B-05「Origin 検証の共通化」）。
  */
 export function isAllowedOrigin(req: FastifyRequest): boolean {
-	// TODO(W-05): W-04 の Cookie 認証と合わせて共通ミドルウェアへ統合する。
+	// TODO(B-05): B-04 の Cookie 認証と合わせて共通ミドルウェアへ統合する。
 	const origin = req.headers.origin;
 	if (typeof origin !== 'string') return false;
 

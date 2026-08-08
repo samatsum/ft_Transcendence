@@ -1,4 +1,4 @@
-// W-09: W-08 の immutable MatchPlan を W-10 の GameRoom へ変換する接着層。
+// B-09: B-08 の immutable MatchPlan を B-10 の GameRoom へ変換する接着層。
 //
 // 生成成功までは lobby context を commit せず、5秒期限・生成失敗・古いtokenでは
 // rollback/discardする。GameRoom終了は lifecycle hook で受け、in_matchをidleへ戻す。
@@ -74,7 +74,7 @@ export async function prepareMatch(
 	}
 }
 
-/** 本番のGameRoom registry入口へW-09の生成オプションをそのまま渡す */
+/** 本番のGameRoom registry入口へB-09の生成オプションをそのまま渡す */
 async function defaultCreateRoom(options: PrepareMatchRoomOptions): Promise<GameRoom> {
 	return createRoomFromRules(options);
 }

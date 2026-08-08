@@ -1,11 +1,11 @@
-// W-10: GameRoom 本体。1試合 = 1ルーム = 1つの t_game（② §6）。
+// B-10: GameRoom 本体。1試合 = 1ルーム = 1つの t_game（② §6）。
 //
 // 状態機械の正本は 2-WSプロトコル設計「6-A. 状態機械」:
 //   created ──全人間join or 10s──► countdown(3s) ──► playing ──決着──► finished ──60s──► closed
 //      └── 人間0人のまま10s ──► closed（記録なし）
 //
 // 本ファイルは **WS を知らない**。配信は onBroadcast コールバック経由で、
-// W-11 がそこへ WebSocket.send を差し込む。
+// B-11 がそこへ WebSocket.send を差し込む。
 import { diffEvents } from './events.js';
 import { SimGame, INPUT_SRC_AI, INPUT_SRC_EXTERNAL, NEUTRAL_INPUT, type SeatInput } from './sim.js';
 import type {
@@ -29,14 +29,14 @@ export type RoomLifecycleReason =
 	| 'discarded';
 
 // ② §5-D のイベントと match_end.reason は `@ft/shared` の ws/game.ts が正本
-// （Issue #10 で配置を合意）。F-06/F-07 が同じ定義を import するので、
+// （Issue #10 で配置を合意）。GV-06/GV-07 が同じ定義を import するので、
 // ここで再定義せず re-export する。
 export type { MatchEndReason } from '@ft/shared';
 
-/** ルーム層が配信するイベント（② §5-D）。W-11 が WS メッセージとして流す */
+/** ルーム層が配信するイベント（② §5-D）。B-11 が WS メッセージとして流す */
 export type RoomEvent = GameEvent;
 
-/** ② §5-B の welcome を W-11 が組み立てるために必要な、ルームが持つ情報 */
+/** ② §5-B の welcome を B-11 が組み立てるために必要な、ルームが持つ情報 */
 export interface RoomDescription {
 	mode: SnapshotMode;
 	/** welcome.map_text。サーバがロードした .cub をそのまま配る（② §5-B の単一情報源） */
@@ -49,8 +49,8 @@ export interface RoomDescription {
 }
 
 /**
- * ② §6-C 2. で永続化に渡す試合結果。これは outcome だけなので、W-09 が
- * MatchPlan を閉じ込めた closure で席・ユーザー・rules と結合し、W-13 の Prisma
+ * ② §6-C 2. で永続化に渡す試合結果。これは outcome だけなので、B-09 が
+ * MatchPlan を閉じ込めた closure で席・ユーザー・rules と結合し、B-13 の Prisma
  * 実装が Match / MatchPlayer 行を作って採番した id を返す。
  *
  * abandon（人間全員離脱）の場合も呼ばれる（`winner = null`, `reason = 'abandon'`）。
@@ -92,7 +92,7 @@ const COUNTDOWN_MS = 3_000;
 /** finished で結果画面のため接続を維持する時間（② §6-A）。満了で close 1000 */
 export const FINISHED_HOLD_MS = 60_000;
 /**
- * 1 tick の処理がこれを超えたら過負荷とみなして警告（⑤ W-10 受入条件）。
+ * 1 tick の処理がこれを超えたら過負荷とみなして警告（⑤ B-10 受入条件）。
  *
  * ② §8 は「`game_step` 所要が**周期の 50%**」と定めている。周期いっぱい（100%）で
  * 警告していては、気づいた時にはもう配信が遅れている。半分で予兆を拾う。
@@ -103,13 +103,13 @@ const OVERRUN_LOG_INTERVAL_MS = 1_000;
 
 export interface RoomOptions {
 	roomId: string;
-	/** .cub の中身。マップ ID からの解決は W-14 の責務 */
+	/** .cub の中身。マップ ID からの解決は B-14 の責務 */
 	cubText: string;
 	mode: SnapshotMode;
 	targetScore: number;
 	seed: number;
 	/**
-	 * 人間が座る予定の席（② §6-A の追補）。マッチメイキング（W-09）が渡す。
+	 * 人間が座る予定の席（② §6-A の追補）。マッチメイキング（B-09）が渡す。
 	 *
 	 * ルームは全席を AI で生成するため、**どの席が人間の席かを自力では知り得ない**。
 	 * ② §4-C の「全人間席の join 完了 or 10秒経過」を判定するのに必要で、
@@ -120,7 +120,7 @@ export interface RoomOptions {
 	 */
 	humanSlots?: number[];
 	/**
-	 * 席に着く予定の人間の一覧（② §4-C の participant 登録）。W-09 が渡す。
+	 * 席に着く予定の人間の一覧（② §4-C の participant 登録）。B-09 が渡す。
 	 *
 	 * ゲーム WS の `join` は**ペイロードを持たない**（② §5-A）。Cookie から得た
 	 * userId をこの表で slot に引き当てて本人特定する。表に無い userId は
@@ -130,7 +130,7 @@ export interface RoomOptions {
 	 */
 	participants?: ReadonlyArray<{ userId: number; slot: number }>;
 	/**
-	 * 全参加者へ配信する。W-11 が WS へ差し替える。
+	 * 全参加者へ配信する。B-11 が WS へ差し替える。
 	 *
 	 * `serialized` は **ルーム内で1回だけ `JSON.stringify` した文字列**。
 	 * ② §5-B が「全参加者+観戦者に同一シリアライズ済み文字列を配信
@@ -139,7 +139,7 @@ export interface RoomOptions {
 	 */
 	onBroadcast?: (message: RoomMessage, serialized: string) => void;
 	/**
-	 * ② §6-C 2. の永続化フック（W-13 の責務）。
+	 * ② §6-C 2. の永続化フック（B-13 の責務）。
 	 *
 	 * 最終 snapshot 配信の直後、`event(match_end)` 発火の直前に呼ばれる。
 	 * 戻り値の `matchId` が `event(match_end).d.match_id` に載る（結果画面が
@@ -148,13 +148,13 @@ export interface RoomOptions {
 	 * **未提供 or 例外 or `null` を返した場合**は `match_id: null` で match_end を
 	 * 発火する。DB行が無いので lobby WS の `match_result` も送らず、クライアントは
 	 * 最終 snapshot の勝敗・スコアだけで結果画面を表示する（② §5-D）。
-	 * W-13 未実装のうち（＝現在）は未提供で問題ない。
+	 * B-13 未実装のうち（＝現在）は未提供で問題ない。
 	 */
 	persistMatch?: (context: PersistedMatchContext) => Promise<PersistedMatchResult | null>;
 	/** match_end 配信後、永続化成功時だけロビーの match_result へ渡す */
 	onMatchResult?: (result: MatchResultPayload) => void;
 	/**
-	 * ② §4-E: W-09 が試合終了・開始前破棄を購読し、ロビーの in_match context を解放する。
+	 * ② §4-E: B-09 が試合終了・開始前破棄を購読し、ロビーの in_match context を解放する。
 	 *
 	 * GameRoom の内部状態をポーリングせずに済むよう、状態遷移の直後に同期通知する。
 	 */
@@ -213,9 +213,9 @@ export class GameRoom {
 	private readonly expectedHumanSlots: Set<number>;
 	/** userId → slot（② §4-C の participant 登録）。join の本人特定に使う */
 	private readonly participantSlots = new Map<number, number>();
-	/** W-12: participant席ごとのconnected/grace/aiとabandonedを持つ正本 */
+	/** B-12: participant席ごとのconnected/grace/aiとabandonedを持つ正本 */
 	private readonly playerSeats = new Map<number, PlayerSeat>();
-	/** 配信の購読者。W-11 の WS 層がここに1つ登録して接続へファンアウトする */
+	/** 配信の購読者。B-11 の WS 層がここに1つ登録して接続へファンアウトする */
 	private readonly listeners = new Set<BroadcastListener>();
 
 	private lastOverrunLogAt = 0;
@@ -290,7 +290,7 @@ export class GameRoom {
 	/**
 	 * 配信を購読する。戻り値を呼ぶと解除。
 	 *
-	 * W-11 は**ルームにつき1回**購読し、そこから接続集合へファンアウトする。
+	 * B-11 は**ルームにつき1回**購読し、そこから接続集合へファンアウトする。
 	 * 接続ごとに購読すると ② §5-B の「同一シリアライズ済み文字列を配信」が
 	 * 崩れる（接続数ぶん stringify してしまう）。
 	 */
@@ -299,7 +299,7 @@ export class GameRoom {
 		return () => this.listeners.delete(listener);
 	}
 
-	/** W-11 が welcome（② §5-B）を組み立てるための情報 */
+	/** B-11 が welcome（② §5-B）を組み立てるための情報 */
 	describe(): RoomDescription {
 		return {
 			mode: this.mode,
@@ -321,7 +321,7 @@ export class GameRoom {
 			seed: options.seed,
 		});
 		// ② §6-B: 全席をまず AI で作る。人間が来たら入力源だけ EXTERNAL へ切り替える。
-		// これで接続タイミングに関係なく試合が成立する（W-12 の AI 代替も同じ仕組み）
+		// これで接続タイミングに関係なく試合が成立する（B-12 の AI 代替も同じ仕組み）
 		for (let slot = 0; slot < seatCount(options.mode); slot++) {
 			room.sim.addCombatant(slot, true);
 			room.inputs.set(slot, { ...NEUTRAL_INPUT });
@@ -362,7 +362,7 @@ export class GameRoom {
 	}
 
 	/**
-	 * 人間が席に着く。W-11 の join、W-12 の再接続から呼ぶ。
+	 * 人間が席に着く。B-11 の join、B-12 の再接続から呼ぶ。
 	 *
 	 * ② §4-C: created の間に**予定していた人間席が全部埋まれば**、10 秒を待たず
 	 * カウントダウンへ進む。判定に使うのは `humanSlots`（② §6-A 追補）で、
@@ -380,7 +380,7 @@ export class GameRoom {
 			throw new Error(`join は ${this.state} では受け付けない`);
 		}
 		if (!Number.isInteger(slot) || slot < 0 || slot >= seatCount(this.mode)) {
-			// W-11 は外部メッセージから slot を決めるので、ここで必ず弾く
+			// B-11 は外部メッセージから slot を決めるので、ここで必ず弾く
 			throw new Error(`slot ${slot} は ${this.mode} の定員 ${seatCount(this.mode)} の外`);
 		}
 		const playerSeat = this.playerSeats.get(slot);
@@ -456,7 +456,7 @@ export class GameRoom {
 		return { message, serialized: JSON.stringify(message) };
 	}
 
-	/** W-11 が受信した input を席バッファへ。反映は次の tick（② §6-B） */
+	/** B-11 が受信した input を席バッファへ。反映は次の tick（② §6-B） */
 	setInput(slot: number, input: SeatInput): void {
 		if (this.state !== 'playing') return;
 		if (!this.humanSeats.has(slot)) return;
@@ -543,7 +543,7 @@ export class GameRoom {
 	}
 
 	/**
-	 * ⑤ W-10 の受入条件「tick 過負荷警告ログ」。
+	 * ⑤ B-10 の受入条件「tick 過負荷警告ログ」。
 	 * 1 tick の処理が 33ms を超え始めたら、ルーム数か sim が限界に近い。
 	 */
 	private warnIfOverrun(startedAt: number): void {
@@ -595,7 +595,7 @@ export class GameRoom {
 				: outcome === 'forfeit'
 					? (forfeitWinner ?? null)
 					: last.d.match.winner;
-		// ② §5-D: reason は score|goal|forfeit|abandon。forfeit は W-12（leave / 猶予満了）で使う
+		// ② §5-D: reason は score|goal|forfeit|abandon。forfeit は B-12（leave / 猶予満了）で使う
 		const reason: MatchEndReason =
 			outcome === 'abandon'
 				? 'abandon'
@@ -615,7 +615,7 @@ export class GameRoom {
 	 * **永続化と発火の順序を逆にしない**（②§6-C の改訂 2026-07-29）。
 	 * 逆にすると FE の結果画面が match_id を非同期に受け取る前提で書けなくなる。
 	 *
-	 * 永続化未提供（W-13 未実装）・例外・null 戻り値のいずれも `match_id: null` へ
+	 * 永続化未提供（B-13 未実装）・例外・null 戻り値のいずれも `match_id: null` へ
 	 * フォールバック（② §5-D）。DB行が無いため `match_result` は送らず、
 	 * クライアントは最終 snapshot の勝敗・スコアだけで結果画面を表示する。
 	 */
@@ -676,7 +676,7 @@ export class GameRoom {
 			{ room: this.roomId, tick: this.tick, reason, winner, score, match_id: matchId },
 			'GameRoom: 試合終了',
 		);
-		// ② §6-C 4. の lobby WS 配信は onMatchResult の接続先（W-09/W-13）の責務
+		// ② §6-C 4. の lobby WS 配信は onMatchResult の接続先（B-09/B-13）の責務
 	}
 
 	private setState(next: RoomState, reason: RoomLifecycleReason): void {
@@ -756,7 +756,7 @@ export class GameRoom {
 		this.broadcast({ t: 'player_status', d: { slot, state } });
 	}
 
-	/** 決着時点でconnectedでないparticipant席をW-13永続化用に返す */
+	/** 決着時点でconnectedでないparticipant席をB-13永続化用に返す */
 	private disconnectedParticipantSlots(): number[] {
 		return [...this.playerSeats]
 			.filter(([, seat]) => seat.state !== 'connected')

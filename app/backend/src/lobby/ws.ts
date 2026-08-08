@@ -1,4 +1,4 @@
-// W-08: `/ws/lobby` gateway（② §3）。
+// B-08: `/ws/lobby` gateway（② §3）。
 //
 // WebSocket を知るのはこの層だけ。wire は @ft/shared、所属と状態遷移は
 // UserContextRegistry / MatchQueue / LobbyRooms に委譲する。
@@ -64,7 +64,7 @@ export interface MatchPlanControls {
 	rollback(): boolean;
 	/** 生成失敗をrollbackし、接続中参加者へinternal_errorを通知する */
 	fail(message: string): boolean;
-	/** W-09 が GameRoom 生成に成功した後だけ呼ぶ */
+	/** B-09 が GameRoom 生成に成功した後だけ呼ぶ */
 	commit(roomId: string, discardPreparedMatch?: () => void): boolean;
 }
 
@@ -203,7 +203,7 @@ export class LobbyRuntime {
 		return true;
 	}
 
-	/** W-09の完了待ちになっているplan数を返す */
+	/** B-09の完了待ちになっているplan数を返す */
 	activePlanCount(): number {
 		return this.activePlans.size;
 	}
@@ -221,7 +221,7 @@ export class LobbyRuntime {
 		this.actionHistory.clear();
 	}
 
-	/** 新planをW-09 callbackへ渡し、5秒timeoutとrollbackを管理する */
+	/** 新planをB-09 callbackへ渡し、5秒timeoutとrollbackを管理する */
 	private emitMatchPlan(plan: MatchPlan): void {
 		if (this.activePlans.has(plan.token)) return;
 		const active = {
@@ -231,7 +231,7 @@ export class LobbyRuntime {
 		};
 		this.activePlans.set(plan.token, active);
 		if (!this.onMatchPlan) {
-			// W-09未接続中も user を starting_match に固着させない。
+			// B-09未接続中も user を starting_match に固着させない。
 			this.fail(plan, 'match preparation is not available');
 			return;
 		}
@@ -344,7 +344,7 @@ async function handleConnection(
 		}
 		app.log.info(
 			{ user: state.connection.userId, code, online: runtime.registry.onlineCount() },
-			'W-08: lobby WS 切断',
+			'B-08: lobby WS 切断',
 		);
 	});
 
@@ -360,7 +360,7 @@ async function handleConnection(
 		displayName = await profileResolver.getDisplayName(user.userId);
 		if (!displayName) throw new Error('empty display name');
 	} catch (error) {
-		app.log.warn({ user: user.userId, error }, 'W-08: user profile 解決失敗');
+		app.log.warn({ user: user.userId, error }, 'B-08: user profile 解決失敗');
 		socket.close(WS_CLOSE.unauthenticated, 'user profile unavailable');
 		return;
 	}
@@ -408,7 +408,7 @@ async function handleConnection(
 	resendContext(user.userId, runtime);
 	app.log.info(
 		{ user: user.userId, online: runtime.registry.onlineCount() },
-		'W-08: lobby WS 接続',
+		'B-08: lobby WS 接続',
 	);
 
 	for (const raw of pending.drain()) {

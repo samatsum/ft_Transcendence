@@ -1,5 +1,5 @@
 // render.wasm を Canvas に載せて、snapshot バッファを 100ms 遅延で補間しながら
-// 毎フレーム描画するフック（F-06 / ② §5-C / ④ §4）。
+// 毎フレーム描画するフック（GV-06 / ② §5-C / ④ §4）。
 //
 // 責務:
 //   - welcome 受信後 → render.wasm ロード → texture 必要分ロード → web_init。

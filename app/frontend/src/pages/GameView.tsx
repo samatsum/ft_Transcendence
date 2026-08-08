@@ -1,6 +1,6 @@
-// GameView（/game/:roomId）— F-06 + F-07 の統合先。
+// GameView（/game/:roomId）— GV-06 + GV-07 の統合先。
 // ② §5 のゲーム WS + render.wasm + snapshot 補間 + 30Hz 入力送信 + HUD 8要素を組む。
-// マッチ遷移フロー（match_end → /lobby ボタン → auto navigate）は F-08 の担当
+// マッチ遷移フロー（match_end → /lobby ボタン → auto navigate）は GV-08 の担当
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -14,8 +14,8 @@ import { useEngineRenderer } from '../game/useEngineRenderer.js';
 import { useGameInput } from '../game/useGameInput.js';
 import { useGameSocket } from '../game/useGameSocket.js';
 
-// F-07 推奨決定#4: match_end で /api/matches/:id を toast:false で取り試合詳細を表示。
-// shared/api/matches.ts の正式スキーマは W-13 で確定するため、暫定 schema をここに置く
+// GV-07 推奨決定#4: match_end で /api/matches/:id を toast:false で取り試合詳細を表示。
+// shared/api/matches.ts の正式スキーマは B-13 で確定するため、暫定 schema をここに置く
 const matchDetailsSchema = z.object({
 	players: z.array(
 		z.object({
@@ -67,8 +67,8 @@ export default function GameView() {
 		localYawRef,
 	});
 
-	// match_end の match_id で試合詳細取得(F-07 推奨決定#4)。
-	// W-13 未実装期間は失敗する前提なので toast:false + error state で握る
+	// match_end の match_id で試合詳細取得(GV-07 推奨決定#4)。
+	// B-13 未実装期間は失敗する前提なので toast:false + error state で握る
 	const api = useApi();
 	const [matchDetails, setMatchDetails] = useState<MatchDetailsView | null>(null);
 	const [matchDetailsError, setMatchDetailsError] = useState(false);
@@ -93,7 +93,7 @@ export default function GameView() {
 		};
 	}, [lastEvent, api]);
 
-	// close 1000/4002 でロビーへ戻す(F-08 で match_end モーダル → 明示遷移が主。
+	// close 1000/4002 でロビーへ戻す(GV-08 で match_end モーダル → 明示遷移が主。
 	// ここは close 到達時の自動フォールバック)
 	useEffect(() => {
 		if (closeCode === WS_CLOSE.normal || closeCode === WS_CLOSE.roomNotFound) {
@@ -140,12 +140,12 @@ export default function GameView() {
 					)}
 					{rendererStatus === 'ready' && isSpectator && (
 						<p className="rounded bg-black/60 px-4 py-2 text-sm">
-							観戦中(視点切替は F-12)
+							観戦中(視点切替は GV-12)
 						</p>
 					)}
 				</div>
 
-				{/* F-07 HUD 8要素 */}
+				{/* GV-07 HUD 8要素 */}
 				<HudOverlay
 					welcome={welcome}
 					snapshotBufferRef={snapshotBufferRef}

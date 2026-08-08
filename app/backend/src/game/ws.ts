@@ -1,10 +1,10 @@
-// W-11: ゲーム WS（`/ws/game/:roomId`）。② §5 の実装。
+// B-11: ゲーム WS（`/ws/game/:roomId`）。② §5 の実装。
 //
-// **この層だけが WebSocket を知っている。** GameRoom（W-10）は通信を知らず、
+// **この層だけが WebSocket を知っている。** GameRoom（B-10）は通信を知らず、
 // 配信は `room.subscribe()` 経由で受け取ってここが接続へファンアウトする。
 //
 // 受入条件（② §10）:
-//   №5 snapshot < 1KB … W-10 で実測済み（avg 523B）
+//   №5 snapshot < 1KB … B-10 で実測済み（avg 523B）
 //   №6 不正メッセージ … 本ファイルの `handleMessage` が全部引き受ける
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import {
@@ -122,14 +122,14 @@ async function handleConnection(
 		peers.delete(conn);
 		app.log.info(
 			{ room: roomId, user: conn.userId, slot: conn.slot, peers: peers.size },
-			'W-11: WS 切断',
+			'B-11: WS 切断',
 		);
 		// 置換された旧接続の close は、新接続が引き継ぐ席を解放してはいけない。
 		if (!conn.replaced && conn.slot !== null) room.disconnect(conn.slot);
 		if (peers.size === 0) releaseRoomConnections(roomId);
 	});
 
-	// ② §1: Cookie を検証。未認証は close 4000。実装は W-04/W-05（いまはスタブ）
+	// ② §1: Cookie を検証。未認証は close 4000。実装は B-04/B-05（いまはスタブ）
 	const user = await authenticateRequest(req);
 	if (closed || socket.readyState !== OPEN) return;
 	if (!user) {
@@ -173,7 +173,7 @@ async function handleConnection(
 	peers.add(conn);
 	ready = { conn, room, roomId, peers };
 	// ② §8: 接続/切断/join を構造化ログに残す（**input はログしない**。量とプライバシー）
-	app.log.info({ room: roomId, user: conn.userId, peers: peers.size }, 'W-11: WS 接続');
+	app.log.info({ room: roomId, user: conn.userId, peers: peers.size }, 'B-11: WS 接続');
 
 	for (const raw of pendingMessages.drain()) {
 		if (socket.readyState !== OPEN) break;
@@ -305,13 +305,13 @@ function handleJoin(conn: Connection, room: GameRoom, app: FastifyInstance): voi
 		({ resume } = room.join(slot));
 	} catch (err) {
 		// 定員外 slot / 受け付けない状態（finished 等）。ルーム層が弾いた
-		app.log.warn({ room: room.roomId, slot, err }, 'W-11: join を拒否');
+		app.log.warn({ room: room.roomId, slot, err }, 'B-11: join を拒否');
 		conn.socket.close(WS_CLOSE.notAllowed, 'join rejected');
 		return;
 	}
 	conn.slot = slot;
 	conn.joined = true;
-	app.log.info({ room: room.roomId, user: conn.userId, slot, resume }, 'W-11: join');
+	app.log.info({ room: room.roomId, user: conn.userId, slot, resume }, 'B-11: join');
 
 	// ② §5-B: welcome は**接続ごとに内容が違う**ので一斉配信できない
 	const d = room.describe();

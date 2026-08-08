@@ -1,4 +1,4 @@
-// W-08 の決定的検査 + 実 WebSocket 結合検査（② §10-A）。
+// B-08 の決定的検査 + 実 WebSocket 結合検査（② §10-A）。
 // 実行: npm run check:lobby --workspace @ft/backend
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -539,7 +539,7 @@ interface W09Harness {
 	preparations: Promise<boolean>[];
 }
 
-/** 実GameRoomまたは注入factoryを使うW-09検査runtimeを構築する */
+/** 実GameRoomまたは注入factoryを使うB-09検査runtimeを構築する */
 function createW09Harness(
 	overrides: Partial<
 		Pick<MatchPreparationOptions, 'createRoom' | 'discardRoom'>
@@ -581,7 +581,7 @@ async function waitForW09(harness: W09Harness): Promise<void> {
 	await Promise.all(harness.preparations);
 }
 
-/** W-09の3成立経路、lifecycle解放、失敗・timeout・遅延成功cleanupを検査する */
+/** B-09の3成立経路、lifecycle解放、失敗・timeout・遅延成功cleanupを検査する */
 async function checkW09Integration(): Promise<void> {
 	assert.equal(roomCount(), 0);
 	assert.equal(roomReservationCount(), 0);
@@ -1069,41 +1069,41 @@ function checkHeartbeatAndSessionIndex(): void {
 	connectionManager.clear();
 }
 
-/** W-08受入検査を順番に実行する */
+/** B-08受入検査を順番に実行する */
 async function main(): Promise<void> {
-	console.log('W-08 検査1: shared wire');
+	console.log('B-08 検査1: shared wire');
 	checkSharedWire();
 	console.log('  OK: client/server schema・strict rules・room code正規化');
 
-	console.log('W-08 検査2: FIFO / full・manual・timeout claim / rollback');
+	console.log('B-08 検査2: FIFO / full・manual・timeout claim / rollback');
 	checkQueueAndClaims();
 	console.log('  OK: 3経路とも immutable MatchPlan が各1件、競合とrollbackも正常');
 
-	console.log('W-08 検査3: LobbyRoom');
+	console.log('B-08 検査3: LobbyRoom');
 	checkLobbyRooms();
 	console.log('  OK: 衝突再試行・席・rules・host委譲・grace・rollback');
 
-	console.log('W-08 検査4: presence');
+	console.log('B-08 検査4: presence');
 	await checkPresence();
 	console.log('  OK: friend限定・4状態・version逆転防止・置換online_count');
 
-	console.log('W-08 検査5: prepare 5秒timeout / late success');
+	console.log('B-08 検査5: prepare 5秒timeout / late success');
 	checkPrepareTimeout();
 	console.log('  OK: abort+rollback、遅延成功はcommitせずdispose');
 
-	console.log('W-09 検査: MatchPlan→実GameRoom / lifecycle / rollback');
+	console.log('B-09 検査: MatchPlan→実GameRoom / lifecycle / rollback');
 	await checkW09Integration();
 	console.log('  OK: 満員・手動・60秒、10秒待機、AI補完、失敗・timeout cleanup');
 
-	console.log('W-08 検査6: 実WebSocket');
+	console.log('B-08 検査6: 実WebSocket');
 	await checkRealWebSocket();
 	console.log('  OK: hello/認証/Origin/4KB/違反/置換/session/Vite契約');
 
-	console.log('W-08 検査7: 共通heartbeat/session索引');
+	console.log('B-08 検査7: 共通heartbeat/session索引');
 	checkHeartbeatAndSessionIndex();
 	console.log('  OK: pongなし2周期で掃除、同一sessionのlobby/gameを4000');
 
-	console.log('W-08: ② §10-A の実装受入条件を満たしています');
+	console.log('B-08: ② §10-A の実装受入条件を満たしています');
 }
 
 main().catch((error: unknown) => {

@@ -1,7 +1,7 @@
 // E-12 一方通行デモの再生側: record.mjs が書いた snapshot JSON 列を
 // 「100ms 遅延の2点補間 → web_apply_snapshot → web_render_frame」で表示する
 // （② §5-C の補間契約。クライアントに勝敗判定コードは無い）。
-// W-11/F-06 では snapshots.json の代わりに WS 受信バッファが同じ経路に入る
+// B-11/GV-06 では snapshots.json の代わりに WS 受信バッファが同じ経路に入る
 (() => {
 	const canvas = document.getElementById('screen');    // 描画先の <canvas>
 	const statusEl = document.getElementById('status');  // 状態表示

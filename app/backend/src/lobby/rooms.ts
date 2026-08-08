@@ -1,4 +1,4 @@
-// W-08: 招待コード制 LobbyRoom と custom MatchPlan の同期 claim（② §4-B）。
+// B-08: 招待コード制 LobbyRoom と custom MatchPlan の同期 claim（② §4-B）。
 //
 // LobbyRoom は待合室であり GameRoom ではない。open 中だけ席・host・rules を変更し、
 // start の同期区間で starting に予約して不変 MatchPlan を1件だけ発行する。
@@ -288,7 +288,7 @@ export class LobbyRooms {
 		}
 	}
 
-	/** W-09 失敗時。token が全員で一致する場合だけ snapshot を丸ごと復元する */
+	/** B-09 失敗時。token が全員で一致する場合だけ snapshot を丸ごと復元する */
 	rollback(plan: MatchPlan): boolean {
 		if (plan.rollback.kind !== 'custom') return false;
 		const snapshot = plan.rollback.room;
@@ -328,7 +328,7 @@ export class LobbyRooms {
 		return true;
 	}
 
-	/** W-09 commit後に code を失効させる */
+	/** B-09 commit後に code を失効させる */
 	complete(plan: MatchPlan): boolean {
 		if (plan.source.kind !== 'custom') return false;
 		const room = this.rooms.get(plan.source.code);

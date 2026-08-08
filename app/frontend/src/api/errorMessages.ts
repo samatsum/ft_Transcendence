@@ -2,7 +2,7 @@ import type { ApiErrorCode } from './apiError.js';
 
 // サーバ msg が空/欠落のときのフォールバック(推奨決定#2)。
 // サーバの msg があればそれを優先し、無ければこの map から引く。
-// backend(torinoue W-02) が日本語で msg を返すとは限らないため、フロント側で
+// backend(torinoue B-02) が日本語で msg を返すとは限らないため、フロント側で
 // ユーザ向け文言を用意しておく。エンドポイント特有の細かい文言は呼び出し側で override
 
 export const ERROR_MESSAGES_JA: Record<ApiErrorCode, string> = {

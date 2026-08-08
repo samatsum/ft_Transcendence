@@ -11,7 +11,7 @@ import { PlayerStatusRow } from './PlayerStatusRow.js';
 import { ScoreBar } from './ScoreBar.js';
 import { ScreenEdgeFlash } from './ScreenEdgeFlash.js';
 
-// F-07 HUD 統合。GameView から呼ばれ、useGameSocket が公開する
+// GV-07 HUD 統合。GameView から呼ばれ、useGameSocket が公開する
 // welcome / snapshot / lastEvent / playerStatus / closeCode / status を
 // 8要素の HUD へ配線する。
 //

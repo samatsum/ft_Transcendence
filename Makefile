@@ -16,7 +16,7 @@ PLATFORM_WEB_DIR = codes/srcs/platform/web
 PLATFORM_HEADLESS_DIR = codes/srcs/platform/headless
 WEB_BUILD_DIR   = web/build
 WEB_ASSET_DIR   = web/assets
-# F-06: app/frontend が Vite dev/nginx とも同一パス /engine/ から
+# GV-06: app/frontend が Vite dev/nginx とも同一パス /engine/ から
 # render.wasm/render.js/sim.wasm/sim.js/textures を配信できるようにする
 # コピー先。生成物なので .gitignore で追跡除外
 FE_ENGINE_DIR   = app/frontend/public/engine
@@ -173,9 +173,9 @@ $(WEB_BUILD_DIR)/sim.js: $(SIM_SRCS) $(HEADERS) Makefile
 	@mkdir -p $(WEB_BUILD_DIR)
 	$(EMCC) $(SIM_CFLAGS) $(SIM_SRCS) -o $@ $(SIM_LDFLAGS)
 
-# F-06: `make web` と `make sim` の出力を app/frontend/public/engine/{build,assets}/
+# GV-06: `make web` と `make sim` の出力を app/frontend/public/engine/{build,assets}/
 # へ配布する。Vite dev は `/engine/build/render.wasm` として素直に配信し、
-# 本番 nginx（W-15）も `dist/engine/` から同じパスを配信する
+# 本番 nginx（I-15）も `dist/engine/` から同じパスを配信する
 frontend-engine-assets: web sim
 	@mkdir -p $(FE_ENGINE_DIR)/build $(FE_ENGINE_DIR)/assets
 	cp -r $(WEB_BUILD_DIR)/. $(FE_ENGINE_DIR)/build/

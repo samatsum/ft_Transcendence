@@ -1,6 +1,6 @@
 // E-12 一方通行デモの記録側: Node 上の sim.wasm で RSP を権威実行し、
 // ② §5-C 形式の snapshot JSON 列を snapshots.json へ書き出す。
-// W-10（GameRoom）ではこの「sim → JSON」部分が WS 配信に置き換わる。
+// B-10（GameRoom）ではこの「sim → JSON」部分が WS 配信に置き換わる。
 // 実行: node web/sim_demo/record.mjs（要: make sim 済み）
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -73,7 +73,7 @@ function takeSnapshot(tick) {
 			match: {
 				state: STATE_NAME[f[0]] ?? 'playing',
 				// ② §5-C 改訂 2026-07-29: snapshot 単体で winner の意味を確定できるよう mode を含める。
-				// このデモは RSP 固定。W-10 の GameRoom は room.mode（'rsp'|'fps'）を渡す
+				// このデモは RSP 固定。B-10 の GameRoom は room.mode（'rsp'|'fps'）を渡す
 				mode: 'rsp',
 				winner: f[1] < 0 ? null : f[1],
 				score: [f[2], f[3]],
