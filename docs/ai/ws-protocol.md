@@ -5,6 +5,21 @@
 **Position**: A detailing of [ARCHITECTURE_DESIGN.md](./architecture.md) §2.3 / §3.1. Aligned with [ENGINE_SEPARATION_DESIGN.md](./engine-separation.md) §3-B (sim public API) and §3-D (snapshot structure). This is the authoritative work order for the Backend/DevOps lane's WS / GameRoom / matchmaking work (B-09, implemented by samatsum). The GameView work (GV-06) and HUD work (GV-07, merged via [PR #35](https://github.com/samatsum/ft_Transcendence/pull/35)) consume this document as the client implementation contract; both are **done**, also implemented by samatsum.
 **Principle**: This document contains no implementation code (wire format, state machines, and acceptance criteria only). The implementation source of truth for message schemas is the zod definitions in `shared/`; if implementation diverges from this document, revise this document first, then implement.
 
+> **Reading this after the 2026-08-08 module revision (D-19).** Two things changed for this document,
+> and neither invalidates the wire format:
+>
+> - **`match_result` (§5) and the `persistMatch` closure (§7-B) are designed but no longer declared.**
+>   They exist because of B-13 (match persistence), which was dropped — see
+>   [architecture.md §4.3](./architecture.md). The design stays here verbatim because B-13 is
+>   **restore candidate №1**: on its own it brings back "add another game" (2pt). Treat those sections
+>   as a specification on the shelf, not as a work order. The same applies to B-07's `FriendResolver`
+>   Prisma adapter in §6 — B-08 already ships a working fake resolver, which is all the declared
+>   lineup needs.
+> - **`spectate` went the other way and is now required.** The spectator module is part of the adopted
+>   +5pt bonus, so the `spectate` message family and `welcome.role === "spectator"` must actually work
+>   at evaluation. The handler in `app/backend/src/game/ws.ts` currently answers `not_participant`;
+>   closing that gap is **B-17**.
+
 ---
 
 ## 0. Premises and decisions finalized in this round

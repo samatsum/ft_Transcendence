@@ -4,7 +4,7 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="color-scheme" content="dark">
-	<title>Backend / Infra 全体 — エンジンをオンライン製品にする16工程</title>
+	<title>Backend / Infra 全体 — エンジンをオンライン製品にする14工程</title>
 	<link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
@@ -15,7 +15,7 @@
 			<p class="hero-lead">
 				B系・I系の作業は、Engineレーン（E系・G系）で完成したゲームを作り直す工程ではありません。
 				認証し、対戦相手を集め、サーバーで動かし、ネット越しに配り、
-				結果を保存し、1コマンドで起動できる製品へ包む16工程です。
+				観戦者へも配り、1コマンドで起動できる製品へ包む14工程です。
 			</p>
 			<p class="hero-note">
 				<span aria-hidden="true">●</span>
@@ -32,7 +32,7 @@
 			<a href="#meaning">B/Iとは</a>
 			<a href="#current">現在地</a>
 			<a href="#flow">一試合の流れ</a>
-			<a href="#issues">16工程</a>
+			<a href="#issues">14工程</a>
 			<a href="#dependencies">依存と次手</a>
 			<a href="#code">コード入口</a>
 			<a href="#frontend">F/GVとの境界</a>
@@ -61,9 +61,9 @@
 					<p>ロビー、マッチ成立、GameRoom、ゲームWS、再接続とAI代替を担当します。</p>
 				</article>
 				<article class="card">
-					<p class="card-label">Product data · B-06/07/13/14</p>
-					<h3>製品データ</h3>
-					<p>アバター、フレンド、試合履歴・統計、対戦マップ一覧を提供します。</p>
+					<p class="card-label">Product data · B-14・B-17</p>
+					<h3>製品データと観戦</h3>
+					<p>対戦マップ一覧の配布と、観戦者への試合配信を提供します。</p>
 				</article>
 				<article class="card">
 					<p class="card-label">Delivery · I-15/16</p>
@@ -80,17 +80,24 @@
 
 		<section id="current">
 			<p class="section-kicker">02 · Current position</p>
-			<h2>16件のうち、6件完了＋1件コア完了</h2>
+			<h2>14件のうち、6件完了＋1件コア完了</h2>
 			<p class="section-intro">
-				厳格な完了率は6/16＝37.5%。B-08は大部分が動いていますが、本Cookie認証との
+				厳格な完了率は6/14＝42.9%。B-08は大部分が動いていますが、本Cookie認証との
 				通し検査が残るため「完全完了」には数えていません。
+			</p>
+			<p class="section-intro">
+				<strong>分母が16から14に変わりました（2026-08-08）。</strong>
+				モジュール構成の改訂（D-19）でB-06・B-07・B-13が<strong>不採用</strong>になり、
+				代わりに観戦モードのサーバー側<strong>B-17</strong>が新規に必要になったためです。
+				完了件数の6は変わっていません——分母だけが「これから実際にやる作業」へ縮みました。
+				不採用の3件はページから消さず、下の一覧に「不採用」として残してあります。
 			</p>
 			<div class="grid grid-4">
 				<article class="card">
 					<p class="card-label">完了</p>
-					<p class="metric" style="color: var(--green)">6<small> / 16</small></p>
+					<p class="metric" style="color: var(--green)">6<small> / 14</small></p>
 					<p class="metric-note">I-01 · B-09 · B-10 · B-11 · B-12 · B-14</p>
-					<div class="progress" role="progressbar" aria-label="Backend/Infra作業37.5%完了" aria-valuenow="37.5" aria-valuemin="0" aria-valuemax="100"><span></span></div>
+					<div class="progress" role="progressbar" aria-label="Backend/Infra作業42.9%完了" aria-valuenow="42.9" aria-valuemin="0" aria-valuemax="100"><span></span></div>
 				</article>
 				<article class="card">
 					<p class="card-label">コア実装済み</p>
@@ -99,8 +106,8 @@
 				</article>
 				<article class="card">
 					<p class="card-label">samatsum側の次</p>
-					<p class="metric">B-13</p>
-					<p class="metric-note">B-03のDB正本を受け、試合結果の永続化結合を支援する</p>
+					<p class="metric">B-02〜B-05</p>
+					<p class="metric-note">Fastify・DB・本認証・Originを通し、B-08の最終結合まで運ぶ（旧・次手のB-13は不採用）</p>
 				</article>
 				<article class="card">
 					<p class="card-label">最大の上流ブロッカー</p>
@@ -155,19 +162,19 @@
 				</article>
 				<article class="stage">
 					<span class="step">STEP 7</span>
-					<strong>結果</strong>
-					<p>B-13が決着をDBへ保存し、履歴・統計・match_resultを返す</p>
+					<strong>決着</strong>
+					<p>B-11が<code>match_end</code>を全員へ配って試合を閉じる。<strong>DBへの保存（B-13）は不採用のため行わない</strong></p>
 				</article>
 			</div>
 			<p class="section-intro">
-				B-06/07はユーザー機能としてこの流れを横から支え、B-14は対戦前にマップ情報を供給、
+				B-14は対戦前にマップ情報を供給し、B-17はこの流れに観戦者を横から合流させ、
 				I-16は全工程をPRごとに検査します。
 			</p>
 		</section>
 
 		<section id="issues">
 			<p class="section-kicker">04 · B系・I系</p>
-			<h2>16工程を「何のためか」で読む</h2>
+			<h2>14工程を「何のためか」で読む</h2>
 			<p class="section-intro">
 				詳細な受入条件は⑤バックログが正本です。ここでは、チーム説明で必要な
 				「何を解決するIssueか」と「どこまで済んだか」に絞っています。
@@ -176,12 +183,14 @@
 				<span class="pill"><span class="dot done"></span>完了</span>
 				<span class="pill"><span class="dot partial"></span>部分完了</span>
 				<span class="pill"><span class="dot todo"></span>未完</span>
+				<span class="pill"><span class="dot dropped"></span>不採用</span>
 			</div>
 			<div class="filters" aria-label="Issue絞り込み">
 				<button class="filter-button" type="button" data-filter="all" aria-pressed="true">すべて</button>
 				<button class="filter-button" type="button" data-filter="done" aria-pressed="false">完了</button>
 				<button class="filter-button" type="button" data-filter="partial" aria-pressed="false">部分完了</button>
 				<button class="filter-button" type="button" data-filter="todo" aria-pressed="false">未完</button>
+				<button class="filter-button" type="button" data-filter="dropped" aria-pressed="false">不採用</button>
 				<button class="filter-button" type="button" data-filter="samatsum" aria-pressed="false">samatsum担当</button>
 			</div>
 
@@ -206,13 +215,13 @@
 					<div class="issue-id">B-05</div>
 					<div><h3>OriginとCookie認可</h3><p>異Originの変更系RESTとWSを拒否し、認証判定をロビー/ゲーム双方で共用する。</p><div class="issue-meta"><span class="tag status-todo">未完成（開発用判定のみ・担当未定）</span></div></div>
 				</article>
-				<article class="issue-card" data-status="todo">
+				<article class="issue-card" data-status="dropped">
 					<div class="issue-id">B-06</div>
-					<div><h3>アバター</h3><p>2MB上限、MIMEとマジックバイト検査、nginx静的配信までを安全に通す。</p><div class="issue-meta"><span class="tag status-todo">未完成・切り捨て候補（担当未定）</span></div></div>
+					<div><h3>アバター</h3><p>2MB上限、MIMEとマジックバイト検査、nginx静的配信までを安全に通す。<strong>「標準的なユーザー管理」モジュールを取り下げたため不採用。</strong></p><div class="issue-meta"><span class="tag status-dropped">不採用（2026-08-08 · D-19）</span></div></div>
 				</article>
-				<article class="issue-card" data-status="todo">
+				<article class="issue-card" data-status="dropped">
 					<div class="issue-id">B-07</div>
-					<div><h3>フレンドAPI</h3><p>申請・承認・削除とpresence合成を持つ。B-08はfriend resolverの差込口まで準備済み。</p><div class="issue-meta"><span class="tag status-todo">未完成・切り捨て候補（担当未定）</span></div></div>
+					<div><h3>フレンドAPI</h3><p>申請・承認・削除とpresence合成を持つ。B-08はfriend resolverの差込口まで準備済みだが、<strong>「標準的なユーザー管理」モジュールを取り下げたため不採用。</strong></p><div class="issue-meta"><span class="tag status-dropped">不採用（2026-08-08 · D-19）</span></div></div>
 				</article>
 				<article class="issue-card" data-status="partial" data-owner="samatsum">
 					<div class="issue-id">B-08</div>
@@ -234,13 +243,17 @@
 					<div class="issue-id">B-12</div>
 					<div><h3>切断・復帰・AI代替</h3><p>30秒grace、人間→AI、復帰時AI→人間、RSP全員離脱、FPS放置/明示leaveの不戦勝まで実WebSocketで検証済み。</p><div class="issue-meta"><span class="tag owner">samatsum</span><span class="tag status-done">完了</span></div></div>
 				</article>
-				<article class="issue-card" data-status="todo" data-owner="samatsum">
+				<article class="issue-card" data-status="dropped">
 					<div class="issue-id">B-13</div>
-					<div><h3>試合永続化と統計</h3><p>match_endをDBのMatch/MatchPlayerへ1回だけ保存し、履歴・統計APIとロビーmatch_resultへ展開。</p><div class="issue-meta"><span class="tag owner">samatsum（結合支援）</span><span class="tag status-todo">未完成（担当未定・B-03待ち）</span></div></div>
+					<div><h3>試合永続化と統計</h3><p>match_endをDBのMatch/MatchPlayerへ1回だけ保存し、履歴・統計APIとロビーmatch_resultへ展開。<strong>不採用だが復帰候補の第1位</strong>——FPSエンジンとマッチメイクは完成済みなので、これ1件だけで「別のゲームの追加」2点が復活する。</p><div class="issue-meta"><span class="tag status-dropped">不採用（復帰候補№1）</span></div></div>
 				</article>
 				<article class="issue-card" data-status="done" data-owner="samatsum">
 					<div class="issue-id">B-14</div>
 					<div><h3>マップ配布</h3><p><code>GET /api/maps</code>と<code>welcome.map_text</code>を同じホワイトリストへ結び、サーバーが読む本文と一致させる。</p><div class="issue-meta"><span class="tag owner">samatsum</span><span class="tag status-done">完了</span></div></div>
+				</article>
+				<article class="issue-card" data-status="todo">
+					<div class="issue-id">B-17</div>
+					<div><h3>観戦のサーバー側</h3><p>対戦者以外の接続を受け入れ、<code>welcome</code>を<code>role: "spectator"</code>で返し、snapshot配信の宛先に加える。現在は<code>not_participant</code>を返すスタブ。<strong>観戦モジュールを+5点枠に採用したため新規に必要になった。</strong></p><div class="issue-meta"><span class="tag status-todo">未完成・新規（担当未定）</span></div></div>
 				</article>
 				<article class="issue-card" data-status="todo">
 					<div class="issue-id">I-15</div>
@@ -257,8 +270,9 @@
 			<p class="section-kicker">05 · Dependencies</p>
 			<h2>次に進む順番は、番号順ではない</h2>
 			<p class="section-intro">
-				B-12まで接続済みです。B-02〜B-07・B-13・I-15・I-16は現在担当未定で未完成のまま残っています。
-				samatsumが単独稼働のなかで、本認証をB-08へ結合するレーンと、B-13の試合永続化支援を進めます。
+				B-12まで接続済みです。採用分のうちB-02〜B-05・B-17・I-15・I-16が担当未定で未完成のまま残っています
+				（B-06・B-07・B-13は2026-08-08に不採用）。
+				samatsumが単独稼働のなかで、本認証をB-08へ結合するレーンを進めます。
 			</p>
 			<div class="grid grid-2">
 				<article class="card">
@@ -267,7 +281,7 @@
 						<li><div><strong>B-02 → B-03</strong><span>共通Fastify処理とDB正本を置く</span></div></li>
 						<li><div><strong>B-04 → B-05</strong><span>本Cookie認証とOrigin共通化を閉じる</span></div></li>
 						<li><div><strong>I-15を並行</strong><span>最終日の前にcompose/TLSを通す</span></div></li>
-						<li><div><strong>B-13</strong><span>試合成立後に永続化・履歴へ接続</span></div></li>
+						<li><div><strong>B-17</strong><span>観戦接続を受け入れ、snapshot配信の宛先に加える</span></div></li>
 					</ol>
 				</article>
 				<article class="card">
@@ -276,7 +290,7 @@
 						<li><div><strong>B-08最終結合</strong><span>B-04/B-05を受けて本認証の通し検査</span></div></li>
 						<li><div><strong>B-09 完了</strong><span>ロビーのMatchPlanを完成済みGameRoomへ接続済み</span></div></li>
 						<li><div><strong>B-12 完了</strong><span>切断・AI代替・復帰・FPS不戦勝を実WebSocketで検証済み</span></div></li>
-						<li><div><strong>B-13結合支援</strong><span>match_endと永続化callbackの境界を通す</span></div></li>
+						<li><div><strong>B-17</strong><span>既存のsnapshot fan-outへ観戦者を足す（+5点枠で唯一実装が残る項目）</span></div></li>
 					</ol>
 				</article>
 			</div>
@@ -327,8 +341,7 @@
 						<tr><td>B-08/B-09 lobby WS + match_found</td><td>F-05/GV-08</td><td>ロビー表示、再接続、試合画面への遷移</td></tr>
 						<tr><td>B-11 snapshot/event</td><td>GV-06/GV-07</td><td>render.wasm、補間、Canvas、HUD、入力送信</td></tr>
 						<tr><td>B-12 grace/AI状態</td><td>GV-07</td><td>切断猶予とAI切替の可視化</td></tr>
-						<tr><td>B-13 history/stats</td><td>F-09</td><td>プロフィール・履歴・統計表示</td></tr>
-						<tr><td>B-07 presence</td><td>F-10</td><td>フレンド操作とリアルタイムbadge</td></tr>
+						<tr><td>B-17 spectator接続 + snapshot配信</td><td>GV-12</td><td>観戦HUD、視点切替、観戦者向けの入力抑止</td></tr>
 					</tbody>
 				</table>
 			</div>
@@ -336,7 +349,7 @@
 
 		<section id="talk">
 			<p class="section-kicker">08 · Three-minute talk</p>
-			<h2>このまま読める、W全体の3分説明</h2>
+			<h2>このまま読める、B系・I系全体の3分説明</h2>
 			<div class="script">
 				<blockquote>
 					<p>
@@ -351,7 +364,7 @@
 					<p>
 						試合中はB-10がサーバー上でsim.wasmを30Hz実行し、
 						B-11が入力とsnapshotをWebSocketで運びます。切断時はB-12が30秒の復帰猶予と
-						AI代替を管理し、決着後はB-13が結果をDBへ保存します。
+						AI代替を管理し、決着はB-11が<code>match_end</code>で全員へ配ります。
 					</p>
 					<p>
 						B-14はサーバーが実際に読むマップを配り、I-15は全体をHTTPSとDockerで起動し、
@@ -359,7 +372,9 @@
 					</p>
 					<p>
 						現在はI-01、B-09、B-10、B-11、B-12、B-14が完了し、B-08もコア実装済みです。
-						次の重要点は、本認証B-04/B-05との結合と、試合永続化B-13です。」
+						次の重要点は、本認証B-04/B-05との結合と、+5点枠で唯一実装が残る観戦のB-17です。<br>
+						2026-08-08のモジュール改訂で、アバターB-06・フレンドB-07・試合永続化B-13は不採用にしました。
+						完成済みのものを申告し、未着手のものを外した結果です。」
 					</p>
 				</blockquote>
 			</div>
@@ -383,7 +398,7 @@
 				</article>
 				<article class="card">
 					<h3><a href="../../ai/rest-api.md">③ REST API設計</a></h3>
-					<p>B-02〜B-07/B-13/B-14のREST・DB契約（英語MD。AI向け資料）。</p>
+					<p>B-02〜B-14のREST・DB契約（英語MD。AI向け資料。B-06/B-07/B-13分は不採用のため参考情報）。</p>
 				</article>
 				<article class="card">
 					<h3><a href="../説明用/エンジン構成.html">エンジン構成</a></h3>

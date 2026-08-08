@@ -314,6 +314,9 @@ h3 {
 .dot.done { background: var(--green); }
 .dot.partial { background: var(--yellow); }
 .dot.todo { background: #71859d; }
+/* 不採用 = 2026-08-08のモジュール改訂(D-19)で「やらない」と決めた作業。
+   消さずに残すため、未完(todo)とは別状態として中空の丸で描く。 */
+.dot.dropped { background: transparent; box-shadow: inset 0 0 0 2px #6b7688; }
 
 .issue-grid {
 	display: grid;
@@ -360,6 +363,12 @@ h3 {
 .tag.status-done { background: rgb(126 231 135 / 13%); color: var(--green); }
 .tag.status-partial { background: rgb(255 209 102 / 13%); color: var(--yellow); }
 .tag.status-todo { background: rgb(159 178 200 / 12%); color: #bac8d8; }
+.tag.status-dropped { background: transparent; color: #8c99ab; box-shadow: inset 0 0 0 1px #4d5768; }
+/* 不採用カードは一覧に残すが、進行中の作業と読み違えないよう明度を落とす。
+   復帰候補（B-13など）が探せる必要があるので、非表示にはしない。 */
+.issue-card[data-status="dropped"] { opacity: 0.62; }
+.issue-card[data-status="dropped"]:hover,
+.issue-card[data-status="dropped"]:focus-within { opacity: 1; }
 
 .table-wrap {
 	overflow-x: auto;

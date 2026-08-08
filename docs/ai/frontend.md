@@ -2,7 +2,7 @@
 
 > Source: translated from the Japanese original at md_files/02_設計書/4-フロントエンド設計.md (archived).
 
-**Positioning**: This document translates the API contracts from [ARCHITECTURE_DESIGN.md](./architecture.md) §2.4/§3.1, [WS_PROTOCOL_DESIGN.md](./ws-protocol.md) (②) §3/§5/§7-B, and [REST_API_DESIGN.md](./rest-api.md) (③) into screen specifications. It corresponds to the Frontend lane's work instructions, structurally split into non-game screens and GameView/HUD — originally planned across mamiyaza (non-game) and hminemur (GameView/HUD), neither active as of 2026-08-05. **F-01, F-02, GV-06, and GV-07 are nonetheless done** (implemented solo by samatsum; GV-07 merged via [PR #35](https://github.com/samatsum/ft_Transcendence/pull/35)); see [backlog.md](./backlog.md) §5 for per-issue status. F-03, F-04, F-05, GV-08・F-09・F-10・F-11・GV-12 remain **未完成 (not started)** and unassigned (see [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html)).
+**Positioning**: This document translates the API contracts from [ARCHITECTURE_DESIGN.md](./architecture.md) §2.4/§3.1, [WS_PROTOCOL_DESIGN.md](./ws-protocol.md) (②) §3/§5/§7-B, and [REST_API_DESIGN.md](./rest-api.md) (③) into screen specifications. It corresponds to the Frontend lane's work instructions, structurally split into non-game screens and GameView/HUD — originally planned across mamiyaza (non-game) and hminemur (GameView/HUD), neither active as of 2026-08-05. **F-01, F-02, GV-06, and GV-07 are nonetheless done** (implemented solo by samatsum; GV-07 merged via [PR #35](https://github.com/samatsum/ft_Transcendence/pull/35)); see [backlog.md](./backlog.md) §5 for per-issue status. F-03, F-04, F-05, GV-08・F-11・GV-12 remain **未完成 (not started)** and unassigned. **F-09 and F-10 are no longer declared** as of 2026-08-08 (D-19) — their screen specs below are retained as the recovery plan, not as work orders — while **GV-12 was promoted from reserve to required** (see [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html)).
 **Principle**: This document contains no implementation code (only screen composition, state, data sources, and acceptance criteria).
 
 ---
@@ -84,7 +84,7 @@ Layer structure (bottom to top):
 | Countdown | Full-screen `3・2・1` overlay → disappears on `match_start` | `event(countdown / match_start)` |
 | match_end modal | Win/loss, final score, "Return to lobby" button. If `match_id` is a positive integer, per-player results are also shown from REST. If null, notifies that saving failed and shows results from the final snapshot only | `event(match_end).d.match_id` → `GET /api/matches/:id` (only when non-null) |
 | Own connection banner | On own WS disconnect, a "Reconnecting…" banner + automatic reconnect. On recovery, a "Reconnected" toast is shown when `welcome.resume=true` | `useGameSocket` state machine (§4) |
-| Spectator HUD (reserve 1) | When `role=spectator`, adds a viewpoint switch button (seats 1–4) | `welcome.role`. Switching only changes the viewpoint target on the client side (② §5-E) |
+| Spectator HUD (**GV-12, required as of 2026-08-08**) | When `role=spectator`, adds a viewpoint switch button (seats 1–4). Needs **B-17** (the server side of `spectate`) first | `welcome.role`. Switching only changes the viewpoint target on the client side (② §5-E) |
 
 **Input capture** (the contract that connects to the E-08 JS side):
 
