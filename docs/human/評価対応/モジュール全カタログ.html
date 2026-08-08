@@ -66,6 +66,20 @@
 					</p>
 				</article>
 				<article class="card">
+					<p class="card-label">見落とし候補・Gaming #39</p>
+					<h3>高度な3Dグラフィックス（Major, 2pt）</h3>
+					<p>
+						原文は「using a library <strong>like</strong> Three.js or Babylon.js」。
+						<code>like</code>を例示と読めば、指定ライブラリの使用自体は必須ではない。
+						下位要件（没入感のある3D環境・高度な描画技術・スムーズな性能）は、
+						Cで自作したレイキャスティングエンジン（E-13で実測112fps@960×540）で
+						満たしていると主張しうる——むしろライブラリを呼ぶより技術的難度は高い。
+						<strong>リスク</strong>: 評価者が「ライブラリ必須」と読む可能性と、
+						レイキャスティングが厳密には2.5D（壁は常に垂直、カメラの俯仰なし）である点。
+						ただし却下されても合格ラインの14ptは他で確保できる見込みなので、申告してみる価値はある。
+					</p>
+				</article>
+				<article class="card">
 					<p class="card-label">次点候補・Web #12</p>
 					<h3>カスタムデザインシステム（Minor, 1pt）</h3>
 					<p>
@@ -107,18 +121,27 @@
 			<p class="section-kicker">02 · Live counter</p>
 			<h2>チェックを動かして、合計ptを試算する</h2>
 			<p class="section-intro">
-				下のチェックボックスは今の採用状況を反映している（採用済み／予備＝チェック済み、それ以外＝未チェック）。
+				下のチェックボックスは今の採用状況を反映している（採用済み15件＝チェック済み。うち4件は予備モジュール）。
 				試しにチェックを増減させると、下の合計が動く。<strong>ページを再読み込みすると元に戻る</strong>
 				（保存されない、純粋な試算用）。
 			</p>
+			<div class="callout warning">
+				<strong>スコアの上限は19pt。合格ラインは14pt。</strong>
+				課題書 第VII章より、ボーナスは<strong>最大+5pt</strong>（必須14pt分がすべて実装済みの場合にのみ加算される）。
+				つまり<strong>19ptを超えてチェックしても、その分スコアが増えることはない</strong>。
+				それでも14ptより多く積む意味はあり、課題書自身も
+				「評価中に一部のモジュールが検証されない場合に備えて、合計14ポイント以上を目指すのが良い」と明記している——
+				<strong>超過分はスコアではなく、当日却下された時の予備</strong>という位置づけ。
+				初期状態が24ptなのはこの考え方によるもので、5pt分が落ちても合格ラインを維持できる余裕を見ている。
+			</div>
 			<div class="grid grid-3">
 				<div class="card">
 					<p class="card-label">チェック済み合計</p>
 					<p class="metric" id="total-pt" style="color: var(--green)">0<small> pt</small></p>
-					<p class="metric-note">Major=2pt・Minor=1ptの合計</p>
+					<p class="metric-note" id="total-note">Major=2pt・Minor=1ptの合計</p>
 				</div>
 				<div class="card">
-					<p class="card-label">必須14ptとの差</p>
+					<p class="card-label">却下されても耐えられる量</p>
 					<p class="metric" id="diff-pt">—</p>
 					<p class="metric-note" id="diff-note">—</p>
 				</div>
@@ -235,7 +258,7 @@
 						<tr><td><input type="checkbox" class="mchk" data-pt="2" checked></td><td>36</td><td>Major: リモートプレイヤー</td><td>2</td><td><span class="tag status-done">採用済み（必須#2）</span></td></tr>
 						<tr><td><input type="checkbox" class="mchk" data-pt="2" checked></td><td>37</td><td>Major: マルチプレイヤー（3人以上）</td><td>2</td><td><span class="tag status-done">採用済み（必須#3）</span></td></tr>
 						<tr><td><input type="checkbox" class="mchk" data-pt="2" checked></td><td>38</td><td>Major: 別のゲーム（履歴+マッチメイキング付き）</td><td>2</td><td><span class="tag status-done">採用済み（ボーナス#10）</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="2"></td><td>39</td><td>Major: 高度な3Dグラフィックス（Three.js等）</td><td>2</td><td><span class="tag status-todo">対象外（自前raycasterであり指定ライブラリ不使用）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="2"></td><td>39</td><td>Major: 高度な3Dグラフィックス（Three.js等）</td><td>2</td><td><span class="tag status-partial">要検討（§01参照・自前実装で要件を満たしうる）</span></td></tr>
 						<tr><td><input type="checkbox" class="mchk" data-pt="1"></td><td>40</td><td>Minor: 高度なチャット機能</td><td>1</td><td><span class="tag status-todo">対象外（#5の基本チャットが前提）</span></td></tr>
 						<tr><td><input type="checkbox" class="mchk" data-pt="1"></td><td>41</td><td>Minor: トーナメントシステム</td><td>1</td><td><span class="tag status-todo">未検討</span></td></tr>
 						<tr><td><input type="checkbox" class="mchk" data-pt="1" checked></td><td>42</td><td>Minor: ゲームカスタマイズオプション</td><td>1</td><td><span class="tag status-done">採用済み（ボーナス#11）</span></td></tr>
@@ -343,6 +366,7 @@
 		(() => {
 			const boxes = [...document.querySelectorAll('.mchk')];
 			const totalEl = document.getElementById('total-pt');
+			const totalNoteEl = document.getElementById('total-note');
 			const countEl = document.getElementById('total-count');
 			const diffEl = document.getElementById('diff-pt');
 			const diffNoteEl = document.getElementById('diff-note');
@@ -351,14 +375,18 @@
 				for (const b of boxes) {
 					if (b.checked) { pt += Number(b.dataset.pt); count++; }
 				}
+				const scored = Math.min(pt, 19);
 				totalEl.innerHTML = pt + '<small> pt</small>';
+				totalNoteEl.textContent = pt > 19
+					? '実際に加算されるのは上限の19ptまで（超過分は却下時の予備）'
+					: 'Major=2pt・Minor=1ptの合計。スコア換算 ' + scored + 'pt';
 				countEl.textContent = count;
 				const diff = pt - 14;
-				diffEl.textContent = (diff >= 0 ? '+' : '') + diff;
+				diffEl.textContent = (diff >= 0 ? '+' : '') + diff + 'pt';
 				diffEl.style.color = diff >= 0 ? 'var(--green)' : 'var(--yellow)';
 				diffNoteEl.textContent = diff >= 0
-					? '必須14ptを満たしている（ボーナスは+5pt上限）'
-					: '必須14ptにあと ' + Math.abs(diff) + 'pt 足りない';
+					? 'この分が当日却下されても、合格ライン14ptを維持できる'
+					: '合格ライン14ptにあと ' + Math.abs(diff) + 'pt 足りない';
 			}
 			for (const b of boxes) b.addEventListener('change', recalc);
 			recalc();
