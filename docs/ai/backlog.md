@@ -123,7 +123,7 @@ An input channel that accepts state as input is itself an entry point for cheati
 
 Numbered items in the acceptance-criteria column indicate mapping to acceptance criteria 1–6 in ②§10.
 
-| Issue | Title | Acceptance criteria | Dependency | Day (14-day schedule; for the 5-day schedule see [⑥§5.1](../human/はじめに/チーム体制.html)) |
+| Issue | Title | Acceptance criteria | Dependency | Day (14-day schedule; the 5-day-schedule day-equivalences are inline in §6's Gate table below) |
 |---|---|---|---|---|
 | W-01 (done) | Add repository skeleton (`app/backend/`, `app/frontend/`, `app/shared/`, `infra/`, TS tooling, `env.example`+`.gitignore`) | backend/frontend start up under D-18's layout (keep current layout + add) → **achieved** (§1) | — | 1 |
 | W-02 | Fastify startup configuration (TS, pino, zod validation pipeline, ③§1 error-envelope/rate-limit middleware) | Invalid input returns 400/429 in the ③§1-A shape | W-01 | 2 |
@@ -151,7 +151,7 @@ Numbered items in the acceptance-criteria column indicate mapping to acceptance 
 > F-03–F-05 and F-08–F-12 remain unassigned and not started (未完成), open for a future team member. See
 > [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html).
 
-| Issue | Title | Acceptance criteria | Dependency | Day (14-day schedule; for the 5-day schedule see [⑥§5.1](../human/はじめに/チーム体制.html)) |
+| Issue | Title | Acceptance criteria | Dependency | Day (14-day schedule; the 5-day-schedule day-equivalences are inline in §6's Gate table below) |
 |---|---|---|---|---|
 | F-01 (done) | Scaffold (Vite/React/TS/Tailwind/Router/ErrorBoundary/StrictMode) | Foundation for ④§6-1's zero-console-errors policy. Zero build warnings | W-01 | 1 |
 | F-02 (done) | fetch wrapper + shared zod integration (③§1 error-envelope handling, toast integration) | 401 redirects to `/login`; errors appear as toasts | F-01 | 3 |
@@ -176,7 +176,7 @@ development. `GameView`/`HudOverlay` currently have no lobby to be launched from
 | Gate | Content | Issues that converge here | Status |
 |---|---|---|---|
 | Gate 1 (Day 2) | Canvas rendering of a static map | E-01–E-07 | **Passed (go)**, 2026-07-11 |
-| Gate 2 (Day 7 → **Day 3 under the 5-day schedule**) | **A 2v2 RSP match is playable start to finish between 2 browsers** | E-08–E-12 / G-01–G-05 / W-08–W-11 / F-05–F-08 | Not yet (**E, G, W-08 core, W-09–W-12, and F-06/F-07 are done**. What remains on the server side is W-08 integration with W-04/W-05; on the frontend side, F-05 (lobby, not started — F-06/F-07 currently have no lobby to launch from) and F-08 (match transition, not started))<br>**W-12 (disconnect/reconnect/AI takeover) is not counted toward Gate 2 — it was carried out and completed on Day 4 instead** (consistent with [⑥§5.1](../human/はじめに/チーム体制.html)). W-12 is ②§10-B №4 and is not something to be dropped |
+| Gate 2 (Day 7 → **Day 3 under the 5-day schedule**) | **A 2v2 RSP match is playable start to finish between 2 browsers** | E-08–E-12 / G-01–G-05 / W-08–W-11 / F-05–F-08 | Not yet (**E, G, W-08 core, W-09–W-12, and F-06/F-07 are done**. What remains on the server side is W-08 integration with W-04/W-05; on the frontend side, F-05 (lobby, not started — F-06/F-07 currently have no lobby to launch from) and F-08 (match transition, not started))<br>**W-12 (disconnect/reconnect/AI takeover) is not counted toward Gate 2 — it was carried out and completed on Day 4 instead** (consistent with the 5-day-schedule mapping in this same table). W-12 is ②§10-B №4 and is not something to be dropped |
 | Gate 3 (Day 11 → **Day 4 under the 5-day schedule**) | Core 14pt fully working in the integrated environment | W-13, W-14, F-09–F-11, G-06–G-09 (FPS-related), and everything else | Not yet (**G-06–G-09 are done**) |
 | Day 12 (→ **Day 5**) | Hardening day (every item per the ARCHITECTURE §9.1 script) | Turned into a single Issue, H-01 (whole team) | Not yet |
 
