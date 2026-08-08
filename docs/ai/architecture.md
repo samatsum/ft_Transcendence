@@ -155,7 +155,7 @@ All 9 layers have finalized selections. The table below includes an "Integrated"
 | Backend | **Fastify + TypeScript** | NestJS / Express / Django | With Node, `sim.wasm` can be executed directly (the deciding factor). Fastify has an official WS plugin and is lightweight. NestJS would be overkill for this schedule | W-01 |
 | DB | **SQLite + Prisma (ORM)** | PostgreSQL | Evaluation is a single local host (A1). One fewer container; backups = a file copy. Prisma satisfies the ORM Minor requirement, and migrating to Postgres later remains easy | Pending — W-03 |
 | Realtime | **WebSocket (@fastify/websocket)** | Socket.IO | Raw WS is sufficient; Socket.IO's abstraction isn't needed here | Integrated in W-11 (originally planned for W-08, but the game WS landed first) |
-| Auth | Email + password (argon2id) + **opaque session token via httpOnly cookie** (not JWT — see [rest-api.md](./rest-api.md) D-4) | — | Ensures the required minimum baseline. OAuth/2FA are insurance modules (§5) | Pending — W-04 |
+| Auth | Email + password (argon2id) + **opaque session token via httpOnly cookie** (not JWT — see [rest-api.md](./rest-api.md) D-4) | — | Ensures the required minimum baseline. OAuth/2FA are not declared under the current lineup (§4.3) | Pending — W-04 |
 | Input validation | **zod schema shared between FE and BE** | — | Satisfies the "validate on both frontend and backend" requirement with a single schema definition | W-01 |
 | Reverse proxy / TLS | **nginx** (HTTPS termination via self-signed cert, static file serving, WS proxy) | Caddy | Track record and available documentation. Internal backend traffic can be plaintext (allowed by the subject) | Pending — W-15 |
 | Container | **Docker Compose** (`docker compose up` as a single command) | — | Required. Composition: `nginx` + `app` (Fastify + sim.wasm) + a volume (SQLite/avatars) | Pending — W-15 |
@@ -234,7 +234,12 @@ Statistics (win rate, match history, leaderboard) are derived via aggregate quer
 
 ## 4. Module selection and points calculation
 
-> **Priority policy (team-decided)**: the only mandatory target is the **core 14pt**. The 3 bonus items (#9–11) are positioned as points on top, but also as a **fallback** in case any core module is scored 0pt during evaluation. The §4.3 insurance modules are only attempted "if time remains" — no work allocation may threaten completion of the core.
+> **Revised 2026-08-08 (D-19).** The lineup below replaces the original one. The trigger was samatsum
+> noticing that a Web-category module (Public API) had never been formally evaluated; auditing all 55
+> subject modules against the source text then showed two structural problems with the original
+> selection, described in §4.5. **The rule now is: the core 14pt holds only modules that are hard to
+> reject and cheap to finish; anything with interpretive risk goes in the bonus, where a rejection
+> costs nothing against the pass line.**
 
 ### 4.1 Core 14pt (mandatory target line)
 
@@ -244,40 +249,68 @@ Statistics (win rate, match history, leaderboard) are derived via aggregate quer
 | 2 | Remote players | Gaming Major | 2 | Server-authoritative sim + WS; explicitly demonstrates latency interpolation and disconnect/reconnect (AI takeover → handback) |
 | 3 | Multiplayer (3+ players) | Gaming Major | 2 | RSP 2v2 = 4 players in the same match |
 | 4 | Frameworks on both FE and BE | Web Major | 2 | React (FE) + Fastify (BE) |
-| 5 | Real-time functionality via WebSockets | Web Major | 2 | Beyond game sync: lobby online-presence and live match-result updates (connect/disconnect handling, broadcasting) |
-| 6 | Standard user management and auth | UserMgmt Major | 2 | Profile updates, avatar upload, friends + online status, profile page |
-| 7 | Use of an ORM | Web Minor | 1 | Prisma + SQLite |
-| 8 | Game stats and match history | UserMgmt Minor | 1 | Aggregation over Match/MatchPlayer (win rate, history, per-mode record) |
+| 5 | Real-time functionality via WebSockets | Web Major | 2 | Game sync (input/snapshot at 30Hz/15Hz), connect/disconnect handling (W-12's 30s grace + AI takeover), and broadcasting — the subject's three sub-requirements are met by the game WS alone; lobby presence is additional, not load-bearing |
+| 6 | AI opponent | AI Major | 2 | **Already complete.** RSP rock-paper-scissors AI ("chase a winning hand, flee a losing hand") and the FPS chase AI. Fills empty/disconnected seats and serves as a single-player opponent |
+| 7 | Use of an ORM | Web Minor | 1 | Prisma + SQLite. A DB is mandatory under Chapter III regardless, so this module costs nothing beyond W-03 |
+| 8 | Game customization options | Gaming Minor | 1 | Map selection (.cub assets) + points-to-win. **Engine-side parameters already exist**; only the selection UI remains |
 | | **Subtotal** | | **14** | |
 
-### 4.2 Bonus +5pt (positioned as points that also serve as a fallback for the core)
+### 4.2 Bonus +5pt (capped at 5 by Chapter VII; also a fallback if a core module scores 0)
 
 | # | Module | Category | pt | How this design achieves it |
 |---|---|---|---|---|
-| 9 | AI opponent | AI Major | 2 | Porting the existing RSP rock-paper-scissors AI and the FPS chase AI. Fills empty/disconnected seats and serves as a single-player opponent. Pitched as human-like behavior — "chase a winning hand, flee a losing hand." Supports difficulty tuning (speed/reaction coefficient) |
-| 10 | Another game (with history + matchmaking) | Gaming Major | 2 | FPS race mode, built on the matchmaking queue and history infrastructure shared with the first game |
-| 11 | Game customization options | Gaming Minor | 1 | Map selection (.cub assets) + points-to-win, movement/enemy speed (UI over existing parameters like MS/ES) |
+| 9 | Advanced 3D graphics | Gaming Major | 2 | The hand-written C raycaster (texture mapping, depth buffer, sprite rendering), compiled to WASM. E-13 measured 112fps @960×540. **Zero additional code — only a README justification.** Placed in the bonus deliberately: the subject phrases this as "using a library like Three.js or Babylon.js", and if an evaluator reads the library as mandatory, this is the module that gets rejected. In the bonus, that costs 2 of 5 bonus points and does not touch the pass line |
+| 10 | Custom-made design system | Web Minor | 1 | The subject requires 10+ reusable components plus a color palette, typography and icons. `app/frontend/src/components/` already has 9 (Button, Card, Modal, Toast, FormField, Input, Header, Footer, Layout) |
+| 11 | Spectator mode | Gaming Minor | 1 | F-06 already handles `welcome.role === 'spectator'` (input suppressed, "観戦中" shown). Remaining: the WS `spectate` action (currently a `not_participant` stub) and the viewpoint-switch UI (F-12) |
+| 12 | Health check / status page | DevOps Minor | 1 | `GET /api/health` already exists and is used by CI. Remaining: the status page plus automated backup and recovery procedures |
 | | **Subtotal** | | **+5** | |
 
 **Declared total: 19pt = core 14 + bonus cap of 5.**
 
-### 4.3 Insurance modules (attempted only "if time remains")
+### 4.3 Considered and not declared
 
-Attempted, in priority order, only if the core and bonus are entirely secure. Only working features get declared in the README. All were chosen for their low marginal cost given this architecture.
+Not attempted under the current plan. Listed with what it would cost to bring one back, in the order
+they should be reconsidered if time frees up.
 
-| Priority | Module | pt | Why the marginal cost is low |
+| Priority | Module | pt | What it would take |
 |---|---|---|---|
-| 1 | Spectator mode | Minor 1 | Just a read-only WS subscription to GameRoom + a viewpoint-switch UI (already designed in §3.1) |
-| 2 | OAuth 2.0 remote auth (Google) | Minor 1 | Fastify has a mature plugin for this; just adds an `OAuthAccount` on `User` |
-| 3 | Full 2FA system | Minor 1 | TOTP library + QR display; one extra screen in the auth flow |
-| 4 | Prometheus + Grafana monitoring | Major 2 | Two extra containers in compose + a Fastify metrics endpoint. Independent of the game core, so it can be started late |
+| 1 | **Another game (FPS) with history + matchmaking** | Gaming Major 2 | The FPS engine is **already complete** and matchmaking is shared with RSP (W-08/W-09, done). The only blocker is user history → **W-13 alone**. Since W-13 also revives #2 below, that one issue is worth 3pt — this is the first thing to restore |
+| 2 | Game stats and match history | UserMgmt Minor 1 | W-13 (match persistence) + F-09 (profile/history screen) |
+| 3 | Standard user management and auth | UserMgmt Major 2 | Requires **all five** of profile update / avatar upload / friend add / online status / profile page (subject IV.3 — missing one means 0pt): W-06 + W-07 + F-09 + F-10. Note that auth itself is still built regardless, because Chapter III mandates it; only these five extras are module-only work |
+| 4 | Public API | Web Major 2 | API-key auth layer + documentation. Rate limiting is already designed (③§1-C) and the endpoint count clears 5 once W-02–W-07 land. Never formally evaluated before 2026-08-08 |
+| 5 | OAuth 2.0 / 2FA / Prometheus+Grafana | 1/1/2 | Entirely unstarted. Only worth revisiting if everything above is secure |
 
 ### 4.4 Dependency / consistency check
 
-- Game-dependent required modules (AI opponent / Multiplayer 3+ / Another game / Customization / Spectator / Game stats) → all satisfied because **#1 RSP is the first game**.
-- Another game's "requires a first game" dependency → RSP comes first, FPS second (schedule follows this order too).
+- Game-dependent modules (AI opponent / Multiplayer 3+ / Customization / Spectator) → all satisfied because **#1 RSP is the first game**.
+- Advanced 3D graphics is **not** in the subject's list of game-dependent modules, but a game exists regardless.
 - SSR is not chosen (the ICP-incompatibility caveat also becomes moot). Advanced chat is not chosen (since the prerequisite User interaction Major module wasn't selected).
 - "C→WASM engine porting" will not be declared as a Modules of choice (custom Major) — it is the means by which the game modules are realized, and declaring it separately risks being flagged as double-counting. If there's room during evaluation, it will be mentioned verbally only.
+- The two Web Minor modules "frontend framework only" / "backend framework only" are **not** declared alongside #4, which covers both. The subject does not explicitly forbid claiming all three, but doing so would be counting the same work twice.
+
+### 4.5 Why the lineup changed (D-19, 2026-08-08)
+
+Two structural problems with the original selection, both found by auditing all 55 modules:
+
+**Problem 1 — the pass line rested on unstarted work while finished work sat in the bonus.**
+The original core 14 included Standard user management (2pt, not a line written) and Game stats (1pt,
+same), while AI opponent (2pt, complete and demonstrable) sat in the bonus. Since the bonus exists to
+absorb a rejection, this was backwards: a finished module was insuring an unfinished one. Swapping AI
+opponent into the core and dropping the two unstarted UserMgmt modules removes **W-06, W-07, W-13,
+F-09 and F-10** from the critical path.
+
+**Problem 2 — modules that were already satisfied were never counted.**
+Advanced 3D graphics (2pt) requires no new code at all; the engine has done it since E-13. Custom
+design system (1pt) is 9/10 of the way there. Health check (1pt) already has its endpoint. None of
+these had been evaluated. Together they replace the dropped points at a fraction of the cost.
+
+**What this does not change:** the Chapter III mandatory requirements are independent of module choice.
+W-02–W-05 (validation, DB, auth, Origin), W-15 (compose/TLS), F-03 (login screens), F-04 (Privacy/ToS)
+and F-11 (responsive) are built either way. The revision only rearranges what sits on top of that floor.
+
+**The real critical path is unchanged and is not about module selection:** 8pt of game modules
+(#1/#2/#3/#5) all depend on F-05 (lobby) and F-03 (login) existing. Those two screens, not the module
+lineup, decide whether this project passes.
 
 ---
 
@@ -357,7 +390,7 @@ The subject's mandatory roles (PO / PM / Tech Lead / Developer) are assigned acr
 | 13 | Code freeze. README (English, full chapter VI structure), ER diagram, AI usage log, demo script, evaluation rehearsal | | | |
 | 14 | Buffer (fixes from rehearsal only), submission | | | |
 
-**Fallbacks**: If Gate 1 fails → fall back to Option B (TS raycaster, using the C implementation as a spec; First and Fourth join the port). If Gate 2 fails → swap out FPS mode (#10) for insurance modules (insurance-1 + insurance-2, etc.) to still secure 14+α. If Gate 3 fails → drop non-working modules from the declaration (never declare a 0pt module).
+**Fallbacks**: If Gate 1 fails → fall back to Option B (TS raycaster, using the C implementation as a spec; First and Fourth join the port). If Gate 2 fails → the game modules (#1/#2/#3/#5, 8pt) are what's at risk, and no substitution recovers that much; the response is to fix F-05/F-03 rather than re-pick modules (§4.5). If Gate 3 fails → drop non-working modules from the declaration (never declare a 0pt module).
 
 ---
 
@@ -418,7 +451,7 @@ Mapped 1:1 to the inspection steps on the evaluation sheet (42evalhub / ft_trans
 | Password hash+salt explanation | Be ready to explain the choice of argon2id (memory-hard, salt built in) in 30 seconds | torinoue |
 | Form validation checked via **live SQLi/XSS/invalid-input testing** | Run an attack battery on **Day 5**: empty input, type mismatches, SQLi strings, XSS payloads (against chat-equivalent fields, display name, avatar filename). Explain the defense-in-depth of zod + Prisma (prepared-statement equivalent) + React's auto-escaping | torinoue, mamiyaza |
 | HTTPS confirmed **via the browser address bar** | Pre-install mkcert's local CA on **every machine that will connect**, showing a warning-free lock icon (avoids the self-signed warning derailing the demo). **Caution: if demoing a connection from a separate PC, forgetting to install the CA on that machine will fail this whole check** | torinoue |
-| Modules demoed **individually**, one at a time, with dependencies confirmed | A rehearsed script for each of §4's #1–#11: how to show it, under 2 minutes each, assigned presenter. State the dependency (RSP is the first game) verbally up front | torinoue writes the script; presenters per §4 |
+| Modules demoed **individually**, one at a time, with dependencies confirmed | A rehearsed script for each of §4's #1–#12: how to show it, under 2 minutes each, assigned presenter. State the dependency (RSP is the first game) verbally up front. For #9 (advanced 3D) be ready to justify the hand-written raycaster against the subject's "using a library like Three.js" wording — see §4.2 | torinoue writes the script; presenters per §4 |
 | Everyone can explain each other's area (teamwork check) | Cross-training exercise at the Day 5 rehearsal — each person explains one area that isn't their own | Everyone |
 | Multi-user concurrency / multiplayer 3+ | **Two 4-window demos** prepared (see design doc 2 §10-5; revised down from the original "8 windows"). **Demo A**: 1 room, 4 humans, 0 AI seats (demonstrates core #3's 2pt with humans only). **Demo B**: 2 rooms, each "2 humans + 2 AI" = 4 windows total (demonstrates no conflicts, per III.2). **If possible, connecting from 4 separate physical machines** would simultaneously demonstrate core #2's "across separate PCs" requirement | samatsum (owns the W-11 distribution side) |
 | Bonuses only demoed if the core is fully working; capped at 5pt | Script always runs "core 14pt demo → complete → then bonus." If a core issue surfaces, bonus demos are cancelled in favor of fixing the core | torinoue makes the go/no-go call |
@@ -434,6 +467,6 @@ Mapped 1:1 to the inspection steps on the evaluation sheet (42evalhub / ft_trans
 | Stack | React+Vite+Tailwind / Fastify+TS / Prisma+SQLite / nginx TLS / Docker Compose |
 | Main game | RSP 2v2, first to 10 points (a rock-paper-scissors win = +1 point). Human/AI input is swapped into the existing 4-combatant structure |
 | Second game | FPS 1v1 race (collect → door → first to goal). Enemies act as hazards |
-| Modules | **Mandatory target is core 14pt**. The 3 bonus items (+5pt) count as points and also serve as a fallback for the core. The 4 insurance items (spectator/OAuth/2FA/monitoring) are attempted only if time remains. No custom Major is declared |
+| Modules | **Mandatory target is core 14pt**, holding only modules that are hard to reject and cheap to finish. The 4 bonus items (+5pt) count as points and also absorb a rejection; advanced 3D sits there deliberately because its "library" wording carries interpretive risk. Revised 2026-08-08 (D-19, §4.5) after auditing all 55 subject modules. No custom Major is declared |
 | Team structure (as planned; superseded 2026-08-05) | **samatsum** = Tech Lead / Engine + Gameplay (complete) + game server, **torinoue** = PM / Backend foundation, **mamiyaza** = PO / Frontend foundation, **hminemur** = Developer / Frontend game screens. Critical areas use a two-person model. Task management via GitHub, communication via Discord. **The team has since dissolved; samatsum is now the sole active contributor covering every role** (current authoritative source: [チーム体制.html](../human/はじめに/チーム体制.html)) |
 | Quality gates | Day 2 (WASM rendering) / Day 7 (full 2v2 RSP playthrough) / Day 11 (all 19pt working) / Day 12 (disqualification-risk hardening) — **these numbers are from the original 14-day plan. For the current 5-day mapping, see [doc 6 §5.1](../human/はじめに/チーム体制.html) (Gate 2 = Day 3 / Gate 3 = Day 4 / hardening = Day 5)** |
