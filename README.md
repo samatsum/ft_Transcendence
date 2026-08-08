@@ -10,10 +10,14 @@ natively, compiled to WASM in the browser for rendering, and compiled to WASM on
 sole authority over the match. Two game modes ship on top of it — an RSP ("rock-paper-scissors
 tag") team battle and an FPS collect-and-race mode.
 
-## Current status (2026-08-07)
+## Current status (implementation 2026-08-07 / module lineup 2026-08-08)
 
 The C engine is complete. The online product layer around it — auth, matchmaking, and most of the
-frontend — is partially built. Read this table before trying to demo anything:
+frontend — is partially built. Read this table before trying to demo anything.
+
+Two dates on purpose: nothing has been *completed* since 2026-07-30, but the **declared module lineup was
+rewritten on 2026-08-08** (decision D-19), which is why several rows below say "not declared" for work
+that older commits still describe as planned.
 
 | Area | Status |
 |---|---|

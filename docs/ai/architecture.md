@@ -13,9 +13,13 @@
 
 ---
 
-## Implementation status (as of 2026-07-30)
+## Implementation status (progress as of 2026-07-30; module lineup as of 2026-08-08)
 
 This document is a record from the design phase. The items below are already complete and are no longer "to be decided."
+
+> **Two dates, deliberately.** The *progress* column below was last reconciled on 2026-07-30 and nothing has
+> been completed since. The *module lineup* in §4 was rewritten on 2026-08-08 by D-19. So a row can say
+> "B-13 is no longer declared" (an 08-08 fact) while the completion counts around it are 07-30 facts.
 
 | Section | Content | Status |
 |---|---|---|
@@ -261,7 +265,7 @@ Statistics (win rate, match history, leaderboard) are derived via aggregate quer
 |---|---|---|---|---|
 | 9 | Advanced 3D graphics | Gaming Major | 2 | The hand-written C raycaster (texture mapping, depth buffer, sprite rendering), compiled to WASM. E-13 measured 112fps @960×540. **Zero additional code — only a README justification.** Placed in the bonus deliberately: the subject phrases this as "using a library like Three.js or Babylon.js", and if an evaluator reads the library as mandatory, this is the module that gets rejected. In the bonus, that costs 2 of 5 bonus points and does not touch the pass line |
 | 10 | Custom-made design system | Web Minor | 1 | The subject requires 10+ reusable components plus a color palette, typography and icons. `app/frontend/src/components/` already has 9 (Button, Card, Modal, Toast, FormField, Input, Header, Footer, Layout) |
-| 11 | Spectator mode | Gaming Minor | 1 | GV-06 already handles `welcome.role === 'spectator'` (input suppressed, "観戦中" shown). Remaining: the WS `spectate` action (currently a `not_participant` stub → **B-17**) and the viewpoint-switch UI (**GV-12**). **This is the only bonus item with real implementation work left**, and declaring it makes both issues mandatory — an incomplete declared module scores 0 (Chapter VII) |
+| 11 | Spectator mode | Gaming Minor | 1 | GV-06 already handles `welcome.role === 'spectator'` (input suppressed, "観戦中" shown). Remaining: the WS `spectate` action (currently a `not_participant` stub → **B-17**) and the viewpoint-switch UI (**GV-12**). **This is the largest of the three remaining bonus gaps** — the other two are #10 (one more component, plus the palette / typography / icon set) and #12 (the status page plus backup & recovery). Declaring it makes both issues mandatory: an incomplete declared module scores 0 (Chapter VII) |
 | 12 | Health check / status page | DevOps Minor | 1 | `GET /api/health` already exists and is used by CI. Remaining: the status page plus automated backup and recovery procedures |
 | | **Subtotal** | | **+5** | |
 

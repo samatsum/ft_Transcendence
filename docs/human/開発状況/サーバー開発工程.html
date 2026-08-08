@@ -290,7 +290,7 @@
 						<li><div><strong>B-08最終結合</strong><span>B-04/B-05を受けて本認証の通し検査</span></div></li>
 						<li><div><strong>B-09 完了</strong><span>ロビーのMatchPlanを完成済みGameRoomへ接続済み</span></div></li>
 						<li><div><strong>B-12 完了</strong><span>切断・AI代替・復帰・FPS不戦勝を実WebSocketで検証済み</span></div></li>
-						<li><div><strong>B-17</strong><span>既存のsnapshot fan-outへ観戦者を足す（+5点枠で唯一実装が残る項目）</span></div></li>
+						<li><div><strong>B-17</strong><span>既存のsnapshot fan-outへ観戦者を足す（+5点枠で残作業がある3項目のうち最大）</span></div></li>
 					</ol>
 				</article>
 			</div>
@@ -372,7 +372,7 @@
 					</p>
 					<p>
 						現在はI-01、B-09、B-10、B-11、B-12、B-14が完了し、B-08もコア実装済みです。
-						次の重要点は、本認証B-04/B-05との結合と、+5点枠で唯一実装が残る観戦のB-17です。<br>
+						次の重要点は、本認証B-04/B-05との結合と、観戦のB-17です。<br>
 						2026-08-08のモジュール改訂で、アバターB-06・フレンドB-07・試合永続化B-13は不採用にしました。
 						完成済みのものを申告し、未着手のものを外した結果です。」
 					</p>
@@ -394,7 +394,7 @@
 				</article>
 				<article class="card">
 					<h3><a href="../../ai/ws-protocol.md">② WSプロトコル設計</a></h3>
-					<p>B-08〜B-14のwire、状態機械、切断規約（英語MD。AI向け資料）。</p>
+					<p>B-08〜B-14に加え、<strong>B-17</strong>の<code>welcome.role</code>・<code>spectate</code>・観戦者へのsnapshot配信もここが正本（英語MD。AI向け資料）。</p>
 				</article>
 				<article class="card">
 					<h3><a href="../../ai/rest-api.md">③ REST API設計</a></h3>

@@ -14,12 +14,12 @@
 			<h1>動くサーバーを、<br>プレイヤーが触れる画面にする。</h1>
 			<p class="hero-lead">
 				F系・GV系は、B系・I系と並行してブラウザ側の画面（<code>app/frontend/</code>）を作る10工程です。
-				ログイン画面、ロビー、対戦画面、HUD、プロフィールと、プレイヤーが実際にクリックする
+				ログイン画面、ロビー、対戦画面、HUD、観戦画面と、プレイヤーが実際にクリックする
 				すべての面を担当します。<code>web/</code>（Cエンジンのwasm化）とは別レーンです。
 			</p>
 			<p class="hero-note">
 				<span aria-hidden="true">●</span>
-				<strong>現在地 2026-08-07</strong>
+				<strong>実装は2026-08-07時点／モジュール構成は2026-08-08のD-19改訂</strong>
 				<span>F-01 / F-02 / GV-06 / GV-07 完了、F-03〜F-05・GV-08・F-11・GV-12は担当未定で未着手</span>
 			</p>
 		</div>
@@ -131,7 +131,7 @@
 			<p class="section-intro">
 				F番号順に実装されるわけではありません。プレイヤー体験としては、次の順番で複数Issueが連携します。
 			</p>
-			<div class="lifecycle" aria-label="ログインから試合結果までの画面遷移">
+			<div class="lifecycle" style="grid-template-columns: repeat(6, minmax(125px, 1fr))" aria-label="ログインから試合結果までの画面遷移">
 				<article class="stage">
 					<span class="step">STEP 1</span>
 					<strong>ログイン</strong>
@@ -162,14 +162,10 @@
 					<strong>結果</strong>
 					<p>GV-08がmatch_endモーダルを出し、ロビーへ戻す（未実装）</p>
 				</article>
-				<article class="stage">
-					<span class="step">STEP 7</span>
-					<strong>観戦</strong>
-					<p>GV-12が対戦者以外に試合を見せる（未実装・B-17待ち）</p>
-				</article>
+				
 			</div>
 			<p class="section-intro">
-				F-11（レスポンシブ/アクセシビリティ）は全画面を最後に横断して調整します。
+				<strong>観戦（GV-12）はこの6ステップの続きではなく、STEP 5と並行して走る別の流れです。</strong>対戦者以外が試合中に<code>spectate</code>で接続し、プレイヤーと同じsnapshotを受け取って<code>match_end</code>まで見続けます——結果表示の後に始まるものではありません。サーバー側の受け口はB-17。<br>F-11（レスポンシブ/アクセシビリティ）は全画面を最後に横断して調整します。
 				<strong>GV-12は2026-08-08のモジュール改訂（D-19）で「予備枠」から「必須」へ変わりました</strong>——観戦モードを
 				+5点枠に採用したためです。申告したモジュールが動かないとその分は0点なので、これは後回しにできる仕上げではありません。
 			</p>
@@ -219,7 +215,7 @@
 				</article>
 				<article class="issue-card" data-status="done" data-owner="samatsum">
 					<div class="issue-id">GV-06</div>
-					<div><h3>GameView統合</h3><p>render.wasm読込、Canvas描画、snapshot補間、入力送信をE-08/E-12へ接続。2ブラウザ間の対戦と観戦表示が動作。</p><div class="issue-meta"><span class="tag owner">samatsum</span><span class="tag status-done">完了</span></div></div>
+					<div><h3>GameView統合</h3><p>render.wasm読込、Canvas描画、snapshot補間、入力送信をE-08/E-12へ接続。2ブラウザ間の対戦が動作。<code>welcome.role==='spectator'</code>を受けたときの表示分岐（入力抑止・「観戦中」表示）も実装済みだが、サーバー側が<code>spectate</code>を受け付けないため<strong>実際に観戦者として接続することはまだできない</strong>（B-17待ち）。</p><div class="issue-meta"><span class="tag owner">samatsum</span><span class="tag status-done">完了</span></div></div>
 				</article>
 				<article class="issue-card" data-status="done" data-owner="samatsum">
 					<div class="issue-id">GV-07</div>

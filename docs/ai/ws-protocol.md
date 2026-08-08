@@ -300,7 +300,7 @@ idle ──room_create/room_join──► in_room ──room_start claim──�
   └────room_leave/grace expiry──────┘                          └──► in_room
 ```
 
-Out of scope (not implemented): simultaneous party queueing, rate/rank-aware matching, tournaments, spectator queueing. Spectating is only the §5-E hook.
+Out of scope (not implemented): simultaneous party queueing, rate/rank-aware matching, tournaments, spectator queueing. Spectating itself is **in scope and required** as of 2026-08-08 (B-17 / GV-12) — what stays out of scope is *queueing* to spectate; a spectator joins a known room directly via §5-E.
 
 ### 4-E. The sole B-08 → B-09 handoff: immutable MatchPlan
 
@@ -358,7 +358,7 @@ The formalization of the 5 message families `join / input / snapshot / event / s
 | `join` | — (identity is via Cookie plus the room's participant registration; no payload needed) | Same message for both first join and reconnect. A non-participant closes with `4003` unless the §5-E spectate conditions are met |
 | `input` | `seq`, `yaw`, `mv`, `act?` (table below) | Fixed 30Hz send rate |
 | `leave` | — | Explicit resignation/leave (skips the disconnect grace, AI-izes the seat immediately; FPS forfeits immediately) |
-| `spectate` | — | Join as spectator (a stretch item, 保1; §5-E) |
+| `spectate` | — | Join as spectator (§5-E). **Required as of 2026-08-08** — the spectator module is part of the declared +5pt bonus (B-17) |
 
 **`input` field spec** (mapped to the sim layer's `t_input`; logical axes follow the existing `t_axis`):
 
@@ -465,11 +465,19 @@ A closed enumeration built around the 4 types from ARCHITECTURE §2.3, plus room
 
 Events are **presentation/notification triggers**; the source of truth for game state is always the snapshot (the design tolerates dropped events since state always catches up via snapshot — events are never resent on reconnect).
 
-### 5-E. Spectate hook (a stretch item, 保1 — implement only if there's spare capacity; only design cost is paid up front)
+### 5-E. Spectate hook (**required as of 2026-08-08** — B-17; previously a 保1 stretch item)
 
 - A connection that sends `spectate` is **simply added to the snapshot/event delivery set** (`welcome.role=spectator`, `slot=null`). Its `input` is silently discarded.
 - Viewpoint switching is entirely client-side (since the snapshot includes pos/dir for all combatants, `render_frame` can render from any combatant's viewpoint — zero added server cost).
-- Eligibility: any logged-in user, during `playing`. The room-listing API (③) is added when this stretch item is taken up.
+- Eligibility: any logged-in user, during `playing`.
+- **Getting to a room without a listing API.** ③ has no room-listing endpoint, and adding one is not part of
+  B-17. A spectator therefore reaches a match by room id — the lobby's `match_found` and `room_state`
+  already carry it, and `/game/:roomId` is a real route. Declaring the module does **not** require browsing
+  live matches; it requires that watching one works.
+- **Acceptance (B-17 + GV-12)**: a third browser, logged in and not seated, sends `spectate`, receives
+  `welcome` with `role: "spectator"` and `slot: null`, then receives the same snapshot stream as the players
+  through `match_end` — without occupying a seat, without affecting AI-takeover logic, and with its `input`
+  discarded.
 
 ---
 

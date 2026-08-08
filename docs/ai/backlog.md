@@ -151,7 +151,7 @@ Numbered items in the acceptance-criteria column indicate mapping to acceptance 
 > implementation, not design. Filed under `B-` rather than `GV-` per the lane rule in
 > [`./git-workflow.md`](./git-workflow.md): lanes follow **what the code is**, and `ws.ts` is Fastify
 > backend code.
-
+>
 > **On the three rows marked "not declared"**: the 2026-08-08 module revision (D-19) dropped the modules
 > that were the *only* reason those issues existed — "standard user management" (avatar, friends,
 > profile) and "game statistics". The rows are **kept, not deleted**, because their acceptance criteria
@@ -183,7 +183,7 @@ Numbered items in the acceptance-criteria column indicate mapping to acceptance 
 | F-02 (done) | fetch wrapper + shared zod integration (③§1 error-envelope handling, toast integration) | 401 redirects to `/login`; errors appear as toasts | F-01 | 3 |
 | F-03 | Auth screens + route guard (④§3.1, §1) | ④§6-3 | F-02, B-04 | 3 |
 | F-04 | Common layout + **actual Privacy/ToS copy** (④§2, §3.5) | ④§6-4. Zero placeholder text | F-01 | 3–4 |
-| F-05 | Full lobby suite (④§3.2's 5 regions + `useLobbySocket` per ④§4) | ④§6-5 (match feed reflects live updates) | F-03, B-08, B-09 | 5–7 |
+| F-05 | Lobby suite — **3 of ④§3.2's 5 regions** as of 2026-08-08 (Quick Match / Custom Room / Room view) + `useLobbySocket` per ④§4 | Queue join/leave/AI-fill, room create/join/rules/start, and `match_found` auto-navigation all work against the live lobby WS with no console errors | F-03, B-08, B-09 | 5–7 |
 | GV-06 (done) | GameView integration (render.wasm loading, Canvas, interpolation receiver, input sending; wired to E-08/E-12) | A match works between 2 browsers and the spectator view doesn't break | F-05, E-12, B-11 | 6–7 |
 | GV-07 (done) | Full HUD overlay suite (④§3.3's 8 elements) | ④§6-6 (grace→AI transition is displayed) | GV-06 | 7–8 |
 | GV-08 | Match transition flow (match_found auto-transition → countdown → match_end modal → back to lobby) | No console errors while the WS connection is re-established mid-transition | F-05, GV-07 | 7–8 |
@@ -191,6 +191,25 @@ Numbered items in the acceptance-criteria column indicate mapping to acceptance 
 | F-10 **(not declared, 2026-08-08)** | Friends UI (④§3.2 friends region + ④§3.4 buttons) | Presence badge updates in real time | F-05, B-07 | — (was 10) |
 | F-11 | Responsive + accessibility adjustments (④ D-13, §6-2/7) — **scope reduced 2026-08-08**: profile and friends screens no longer exist, so this now covers auth / layout / lobby / GameView / match-transition / spectator only | Confirmed at 375px full-screen. Reachable up to match start using keyboard only | F-04・F-05・GV-06・GV-07・GV-08・GV-12 | 11 |
 | GV-12 **(now required, 2026-08-08)** | Spectator UI (④§3.3 spectator HUD) | A non-participant can watch a live match through to `match_end` without console errors, and the spectator HUD does not expose either seat's private input | GV-07, **B-17** | 11 |
+
+> **F-05 lost 2 of its 5 lobby regions (2026-08-08).** ④§3.2 defines five: Quick Match, Custom Room, Room
+> view, **Friends**, **Match feed**. Two of them have no data source under the revised lineup:
+>
+> - **Friends** reads `GET /api/friends` and `presence_update`, both owned by **B-07** (not declared).
+> - **Match feed** prepends on `match_result`, which ②§7-B only emits after **B-13** persists the match —
+>   `persistMatch` returns null without it, so the `onMatchResult` hook never fires. The old acceptance
+>   criterion for F-05 was literally "the match feed reflects live updates", so it had to be replaced.
+>
+> **Ownership of `match_result` is therefore B-13 recovery scope, not active work** — that covers ②§5's
+> `match_result` payload, ②§7-B's `persistMatch` closure, and ④§3.2's match-feed region as one unit. If
+> B-13 comes back, all three come back together.
+>
+> **The mandatory requirement is still met without them.** Subject III's "real-time updates are reflected to
+> all connected users" is satisfied by the lobby WS (`queue_state`, `room_state` to every member) and the
+> game WS (15Hz snapshot fan-out to every participant) — neither needs the match feed. **A cheaper partial
+> restore exists** if the feed is wanted later: broadcast `match_result` straight from GameRoom's in-memory
+> outcome instead of after a DB write. That is a small backend change and does **not** require B-13, but it
+> is not currently declared or planned — do not start it without a decision.
 
 > **What D-19 changed in this lane (2026-08-08).** F-09 and F-10 are **not declared** and are out of the
 > completion-rate denominator on
@@ -249,7 +268,7 @@ development. `GameView`/`HudOverlay` currently have no lobby to be launched from
 | 7 | ORM | 1 | Prisma's schema and migrations run on compose first startup | B-03 + I-15 |
 | **8** | **Game customization** | **1** | Map selection + points-to-win, with defaults available | Engine params **done**; selection UI remains (promoted from bonus) |
 | — | **Mandatory requirement** (not a module) | — | **Responsive at 2 sizes (375px and desktop width) / reachable up to match start using keyboard only** (subject III.3. **not a "nice to have"**) | F-11 |
-| 9/10/11/12 | Bonus | +5 | Only declare items that are **fully working** (never declare something that doesn't work) | Advanced 3D (done, needs README justification) / design system (9 of 10 components exist) / **spectator — the only bonus item with real work left: B-17 + GV-12** / health-check page (`/api/health` exists) |
+| 9/10/11/12 | Bonus | +5 | Only declare items that are **fully working** (never declare something that doesn't work) | Advanced 3D (done, needs README justification) / design system (**1 more component + palette/typography/icons**) / **spectator (B-17 + GV-12 — the largest of the three gaps)** / health-check (`/api/health` exists; **status page + backup/recovery remain**). Only #9 is genuinely finished |
 
 > **No longer on the critical path:** B-06 (avatar), B-07 (friends API), B-13 (match persistence),
 > F-09 (profile screen) and F-10 (friends UI) were only required by the dropped modules. B-13 remains
