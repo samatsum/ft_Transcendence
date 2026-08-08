@@ -158,22 +158,22 @@
 			<h2>Web</h2>
 			<div class="table-wrap">
 				<table>
-					<thead><tr><th></th><th>#</th><th>モジュール</th><th>pt</th><th>現状</th></tr></thead>
+					<thead><tr><th>選択</th><th>#</th><th>モジュール</th><th>pt</th><th>現状</th></tr></thead>
 					<tbody>
-						<tr><td><input type="checkbox" class="mchk" data-pt="2" checked></td><td>1</td><td>Major: FE+BEフレームワーク使用</td><td>2</td><td><span class="tag status-done">採用済み（必須#4）</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="1"></td><td>2</td><td>Minor: FEフレームワークのみ</td><td>1</td><td><span class="tag status-todo">対象外（#1と同時申告不可）</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="1"></td><td>3</td><td>Minor: BEフレームワークのみ</td><td>1</td><td><span class="tag status-todo">対象外（同上）</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="2" checked></td><td>4</td><td>Major: WebSocketsのリアルタイム機能</td><td>2</td><td><span class="tag status-done">採用済み（必須#5）</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="2"></td><td>5</td><td>Major: User interaction（チャット+プロフィール+フレンド）</td><td>2</td><td><span class="tag status-partial">要検討（§01参照、プロフィール/フレンドは重複済み）</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="2"></td><td>6</td><td>Major: 公開API（APIキー・レート制限・ドキュメント・5エンドポイント）</td><td>2</td><td><span class="tag status-partial">要検討（§01参照・最有力候補）</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="1" checked></td><td>7</td><td>Minor: ORMの使用</td><td>1</td><td><span class="tag status-done">採用済み（必須#7）</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="1"></td><td>8</td><td>Minor: 通知システム（作成/更新/削除の全操作）</td><td>1</td><td><span class="tag status-todo">未検討</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="1"></td><td>9</td><td>Minor: リアルタイム共同編集機能</td><td>1</td><td><span class="tag status-todo">対象外（本プロジェクトに適合しない）</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="1"></td><td>10</td><td>Minor: SSR</td><td>1</td><td><span class="tag status-todo">対象外（不選択、ICP非互換の記載もあり）</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="1"></td><td>11</td><td>Minor: PWA（オフライン対応）</td><td>1</td><td><span class="tag status-todo">未検討</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="1"></td><td>12</td><td>Minor: カスタムデザインシステム（10部品以上）</td><td>1</td><td><span class="tag status-partial">要検討（§01参照・次点候補）</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="1"></td><td>13</td><td>Minor: 高度な検索（フィルタ/ソート/ページネーション）</td><td>1</td><td><span class="tag status-todo">未検討</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="1"></td><td>14</td><td>Minor: ファイルアップロード・管理システム</td><td>1</td><td><span class="tag status-todo">未検討（アバター1種のみでは要件未達）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="2" checked aria-label="モジュール1: Major: FE+BEフレームワーク使用"></td><td>1</td><td>Major: FE+BEフレームワーク使用</td><td>2</td><td><span class="tag status-done">採用済み（必須#4）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="1" aria-label="モジュール2: Minor: FEフレームワークのみ"></td><td>2</td><td>Minor: FEフレームワークのみ</td><td>1</td><td><span class="tag status-todo">対象外（#1と同時申告不可）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="1" aria-label="モジュール3: Minor: BEフレームワークのみ"></td><td>3</td><td>Minor: BEフレームワークのみ</td><td>1</td><td><span class="tag status-todo">対象外（同上）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="2" checked aria-label="モジュール4: Major: WebSocketsのリアルタイム機能"></td><td>4</td><td>Major: WebSocketsのリアルタイム機能</td><td>2</td><td><span class="tag status-done">採用済み（必須#5）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="2" aria-label="モジュール5: Major: User interaction（チャット+プロフィール+フレンド）"></td><td>5</td><td>Major: User interaction（チャット+プロフィール+フレンド）</td><td>2</td><td><span class="tag status-partial">要検討（§01参照、プロフィール/フレンドは重複済み）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="2" aria-label="モジュール6: Major: 公開API（APIキー・レート制限・ドキュメント・5エンドポイント）"></td><td>6</td><td>Major: 公開API（APIキー・レート制限・ドキュメント・5エンドポイント）</td><td>2</td><td><span class="tag status-partial">要検討（§01参照・最有力候補）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="1" checked aria-label="モジュール7: Minor: ORMの使用"></td><td>7</td><td>Minor: ORMの使用</td><td>1</td><td><span class="tag status-done">採用済み（必須#7）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="1" aria-label="モジュール8: Minor: 通知システム（作成/更新/削除の全操作）"></td><td>8</td><td>Minor: 通知システム（作成/更新/削除の全操作）</td><td>1</td><td><span class="tag status-todo">未検討</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="1" aria-label="モジュール9: Minor: リアルタイム共同編集機能"></td><td>9</td><td>Minor: リアルタイム共同編集機能</td><td>1</td><td><span class="tag status-todo">対象外（本プロジェクトに適合しない）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="1" aria-label="モジュール10: Minor: SSR"></td><td>10</td><td>Minor: SSR</td><td>1</td><td><span class="tag status-todo">対象外（不選択、ICP非互換の記載もあり）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="1" aria-label="モジュール11: Minor: PWA（オフライン対応）"></td><td>11</td><td>Minor: PWA（オフライン対応）</td><td>1</td><td><span class="tag status-todo">未検討</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="1" aria-label="モジュール12: Minor: カスタムデザインシステム（10部品以上）"></td><td>12</td><td>Minor: カスタムデザインシステム（10部品以上）</td><td>1</td><td><span class="tag status-partial">要検討（§01参照・次点候補）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="1" aria-label="モジュール13: Minor: 高度な検索（フィルタ/ソート/ページネーション）"></td><td>13</td><td>Minor: 高度な検索（フィルタ/ソート/ページネーション）</td><td>1</td><td><span class="tag status-todo">未検討</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="1" aria-label="モジュール14: Minor: ファイルアップロード・管理システム"></td><td>14</td><td>Minor: ファイルアップロード・管理システム</td><td>1</td><td><span class="tag status-todo">未検討（アバター1種のみでは要件未達）</span></td></tr>
 					</tbody>
 				</table>
 			</div>
@@ -184,12 +184,12 @@
 			<h2>Accessibility and Internationalization</h2>
 			<div class="table-wrap">
 				<table>
-					<thead><tr><th></th><th>#</th><th>モジュール</th><th>pt</th><th>現状</th></tr></thead>
+					<thead><tr><th>選択</th><th>#</th><th>モジュール</th><th>pt</th><th>現状</th></tr></thead>
 					<tbody>
-						<tr><td><input type="checkbox" class="mchk" data-pt="2"></td><td>15</td><td>Major: 完全なアクセシビリティ準拠（WCAG 2.1 AA）</td><td>2</td><td><span class="tag status-todo">対象外（F-11の範囲を大きく超える）</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="1"></td><td>16</td><td>Minor: 多言語対応（3言語以上）</td><td>1</td><td><span class="tag status-todo">対象外（i18n未計画）</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="1"></td><td>17</td><td>Minor: RTL言語対応</td><td>1</td><td><span class="tag status-todo">対象外</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="1"></td><td>18</td><td>Minor: 追加ブラウザ対応（2つ以上）</td><td>1</td><td><span class="tag status-todo">対象外（Chrome単独ターゲット方針）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="2" aria-label="モジュール15: Major: 完全なアクセシビリティ準拠（WCAG 2.1 AA）"></td><td>15</td><td>Major: 完全なアクセシビリティ準拠（WCAG 2.1 AA）</td><td>2</td><td><span class="tag status-todo">対象外（F-11の範囲を大きく超える）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="1" aria-label="モジュール16: Minor: 多言語対応（3言語以上）"></td><td>16</td><td>Minor: 多言語対応（3言語以上）</td><td>1</td><td><span class="tag status-todo">対象外（i18n未計画）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="1" aria-label="モジュール17: Minor: RTL言語対応"></td><td>17</td><td>Minor: RTL言語対応</td><td>1</td><td><span class="tag status-todo">対象外</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="1" aria-label="モジュール18: Minor: 追加ブラウザ対応（2つ以上）"></td><td>18</td><td>Minor: 追加ブラウザ対応（2つ以上）</td><td>1</td><td><span class="tag status-todo">対象外（Chrome単独ターゲット方針）</span></td></tr>
 					</tbody>
 				</table>
 			</div>
@@ -200,15 +200,15 @@
 			<h2>User Management</h2>
 			<div class="table-wrap">
 				<table>
-					<thead><tr><th></th><th>#</th><th>モジュール</th><th>pt</th><th>現状</th></tr></thead>
+					<thead><tr><th>選択</th><th>#</th><th>モジュール</th><th>pt</th><th>現状</th></tr></thead>
 					<tbody>
-						<tr><td><input type="checkbox" class="mchk" data-pt="2" checked></td><td>19</td><td>Major: 標準的なユーザー管理・認証</td><td>2</td><td><span class="tag status-done">採用済み（必須#6）</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="1" checked></td><td>20</td><td>Minor: ゲーム統計・対戦履歴</td><td>1</td><td><span class="tag status-done">採用済み（必須#8）</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="1" checked></td><td>21</td><td>Minor: OAuth 2.0リモート認証</td><td>1</td><td><span class="tag status-partial">予備モジュール#2（未着手）</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="2"></td><td>22</td><td>Major: 高度な権限システム（役割管理）</td><td>2</td><td><span class="tag status-todo">対象外（管理者/モデレーターの概念が無い）</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="2"></td><td>23</td><td>Major: 組織システム</td><td>2</td><td><span class="tag status-todo">対象外</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="1" checked></td><td>24</td><td>Minor: 2FA（二要素認証）</td><td>1</td><td><span class="tag status-partial">予備モジュール#3（未着手）</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="1"></td><td>25</td><td>Minor: ユーザー行動分析ダッシュボード</td><td>1</td><td><span class="tag status-todo">未検討</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="2" checked aria-label="モジュール19: Major: 標準的なユーザー管理・認証"></td><td>19</td><td>Major: 標準的なユーザー管理・認証</td><td>2</td><td><span class="tag status-done">採用済み（必須#6）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="1" checked aria-label="モジュール20: Minor: ゲーム統計・対戦履歴"></td><td>20</td><td>Minor: ゲーム統計・対戦履歴</td><td>1</td><td><span class="tag status-done">採用済み（必須#8）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="1" checked aria-label="モジュール21: Minor: OAuth 2.0リモート認証"></td><td>21</td><td>Minor: OAuth 2.0リモート認証</td><td>1</td><td><span class="tag status-partial">予備モジュール#2（未着手）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="2" aria-label="モジュール22: Major: 高度な権限システム（役割管理）"></td><td>22</td><td>Major: 高度な権限システム（役割管理）</td><td>2</td><td><span class="tag status-todo">対象外（管理者/モデレーターの概念が無い）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="2" aria-label="モジュール23: Major: 組織システム"></td><td>23</td><td>Major: 組織システム</td><td>2</td><td><span class="tag status-todo">対象外</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="1" checked aria-label="モジュール24: Minor: 2FA（二要素認証）"></td><td>24</td><td>Minor: 2FA（二要素認証）</td><td>1</td><td><span class="tag status-partial">予備モジュール#3（未着手）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="1" aria-label="モジュール25: Minor: ユーザー行動分析ダッシュボード"></td><td>25</td><td>Minor: ユーザー行動分析ダッシュボード</td><td>1</td><td><span class="tag status-todo">未検討</span></td></tr>
 					</tbody>
 				</table>
 			</div>
@@ -219,16 +219,16 @@
 			<h2>Artificial Intelligence</h2>
 			<div class="table-wrap">
 				<table>
-					<thead><tr><th></th><th>#</th><th>モジュール</th><th>pt</th><th>現状</th></tr></thead>
+					<thead><tr><th>選択</th><th>#</th><th>モジュール</th><th>pt</th><th>現状</th></tr></thead>
 					<tbody>
-						<tr><td><input type="checkbox" class="mchk" data-pt="2" checked></td><td>26</td><td>Major: AI対戦相手</td><td>2</td><td><span class="tag status-done">採用済み（ボーナス#9）</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="2"></td><td>27</td><td>Major: RAGシステム</td><td>2</td><td><span class="tag status-todo">対象外</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="2"></td><td>28</td><td>Major: LLMシステムインターフェース</td><td>2</td><td><span class="tag status-todo">対象外</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="2"></td><td>29</td><td>Major: 機械学習による推奨システム</td><td>2</td><td><span class="tag status-todo">対象外</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="1"></td><td>30</td><td>Minor: コンテンツモデレーションAI</td><td>1</td><td><span class="tag status-todo">対象外（UGC無し）</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="1"></td><td>31</td><td>Minor: 音声/スピーチ統合</td><td>1</td><td><span class="tag status-todo">対象外</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="1"></td><td>32</td><td>Minor: 感情分析</td><td>1</td><td><span class="tag status-todo">対象外</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="1"></td><td>33</td><td>Minor: 画像認識・タグ付け</td><td>1</td><td><span class="tag status-todo">対象外</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="2" checked aria-label="モジュール26: Major: AI対戦相手"></td><td>26</td><td>Major: AI対戦相手</td><td>2</td><td><span class="tag status-done">採用済み（ボーナス#9）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="2" aria-label="モジュール27: Major: RAGシステム"></td><td>27</td><td>Major: RAGシステム</td><td>2</td><td><span class="tag status-todo">対象外</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="2" aria-label="モジュール28: Major: LLMシステムインターフェース"></td><td>28</td><td>Major: LLMシステムインターフェース</td><td>2</td><td><span class="tag status-todo">対象外</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="2" aria-label="モジュール29: Major: 機械学習による推奨システム"></td><td>29</td><td>Major: 機械学習による推奨システム</td><td>2</td><td><span class="tag status-todo">対象外</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="1" aria-label="モジュール30: Minor: コンテンツモデレーションAI"></td><td>30</td><td>Minor: コンテンツモデレーションAI</td><td>1</td><td><span class="tag status-todo">対象外（UGC無し）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="1" aria-label="モジュール31: Minor: 音声/スピーチ統合"></td><td>31</td><td>Minor: 音声/スピーチ統合</td><td>1</td><td><span class="tag status-todo">対象外</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="1" aria-label="モジュール32: Minor: 感情分析"></td><td>32</td><td>Minor: 感情分析</td><td>1</td><td><span class="tag status-todo">対象外</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="1" aria-label="モジュール33: Minor: 画像認識・タグ付け"></td><td>33</td><td>Minor: 画像認識・タグ付け</td><td>1</td><td><span class="tag status-todo">対象外</span></td></tr>
 					</tbody>
 				</table>
 			</div>
@@ -239,9 +239,9 @@
 			<h2>Cybersecurity</h2>
 			<div class="table-wrap">
 				<table>
-					<thead><tr><th></th><th>#</th><th>モジュール</th><th>pt</th><th>現状</th></tr></thead>
+					<thead><tr><th>選択</th><th>#</th><th>モジュール</th><th>pt</th><th>現状</th></tr></thead>
 					<tbody>
-						<tr><td><input type="checkbox" class="mchk" data-pt="2"></td><td>34</td><td>Major: WAF/ModSecurity + HashiCorp Vault</td><td>2</td><td><span class="tag status-todo">対象外（評価環境の規模に対し過剰）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="2" aria-label="モジュール34: Major: WAF/ModSecurity + HashiCorp Vault"></td><td>34</td><td>Major: WAF/ModSecurity + HashiCorp Vault</td><td>2</td><td><span class="tag status-todo">対象外（評価環境の規模に対し過剰）</span></td></tr>
 					</tbody>
 				</table>
 			</div>
@@ -252,18 +252,18 @@
 			<h2>Gaming and user experience</h2>
 			<div class="table-wrap">
 				<table>
-					<thead><tr><th></th><th>#</th><th>モジュール</th><th>pt</th><th>現状</th></tr></thead>
+					<thead><tr><th>選択</th><th>#</th><th>モジュール</th><th>pt</th><th>現状</th></tr></thead>
 					<tbody>
-						<tr><td><input type="checkbox" class="mchk" data-pt="2" checked></td><td>35</td><td>Major: 完全なWebベースのゲーム</td><td>2</td><td><span class="tag status-done">採用済み（必須#1）</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="2" checked></td><td>36</td><td>Major: リモートプレイヤー</td><td>2</td><td><span class="tag status-done">採用済み（必須#2）</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="2" checked></td><td>37</td><td>Major: マルチプレイヤー（3人以上）</td><td>2</td><td><span class="tag status-done">採用済み（必須#3）</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="2" checked></td><td>38</td><td>Major: 別のゲーム（履歴+マッチメイキング付き）</td><td>2</td><td><span class="tag status-done">採用済み（ボーナス#10）</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="2"></td><td>39</td><td>Major: 高度な3Dグラフィックス（Three.js等）</td><td>2</td><td><span class="tag status-partial">要検討（§01参照・自前実装で要件を満たしうる）</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="1"></td><td>40</td><td>Minor: 高度なチャット機能</td><td>1</td><td><span class="tag status-todo">対象外（#5の基本チャットが前提）</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="1"></td><td>41</td><td>Minor: トーナメントシステム</td><td>1</td><td><span class="tag status-todo">未検討</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="1" checked></td><td>42</td><td>Minor: ゲームカスタマイズオプション</td><td>1</td><td><span class="tag status-done">採用済み（ボーナス#11）</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="1"></td><td>43</td><td>Minor: ゲーミフィケーション（実績/バッジ等）</td><td>1</td><td><span class="tag status-todo">未検討</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="1" checked></td><td>44</td><td>Minor: 観戦モード</td><td>1</td><td><span class="tag status-partial">予備モジュール#1（F-06で土台のみ実装済み）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="2" checked aria-label="モジュール35: Major: 完全なWebベースのゲーム"></td><td>35</td><td>Major: 完全なWebベースのゲーム</td><td>2</td><td><span class="tag status-done">採用済み（必須#1）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="2" checked aria-label="モジュール36: Major: リモートプレイヤー"></td><td>36</td><td>Major: リモートプレイヤー</td><td>2</td><td><span class="tag status-done">採用済み（必須#2）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="2" checked aria-label="モジュール37: Major: マルチプレイヤー（3人以上）"></td><td>37</td><td>Major: マルチプレイヤー（3人以上）</td><td>2</td><td><span class="tag status-done">採用済み（必須#3）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="2" checked aria-label="モジュール38: Major: 別のゲーム（履歴+マッチメイキング付き）"></td><td>38</td><td>Major: 別のゲーム（履歴+マッチメイキング付き）</td><td>2</td><td><span class="tag status-done">採用済み（ボーナス#10）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="2" aria-label="モジュール39: Major: 高度な3Dグラフィックス（Three.js等）"></td><td>39</td><td>Major: 高度な3Dグラフィックス（Three.js等）</td><td>2</td><td><span class="tag status-partial">要検討（§01参照・自前実装で要件を満たしうる）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="1" aria-label="モジュール40: Minor: 高度なチャット機能"></td><td>40</td><td>Minor: 高度なチャット機能</td><td>1</td><td><span class="tag status-todo">対象外（#5の基本チャットが前提）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="1" aria-label="モジュール41: Minor: トーナメントシステム"></td><td>41</td><td>Minor: トーナメントシステム</td><td>1</td><td><span class="tag status-todo">未検討</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="1" checked aria-label="モジュール42: Minor: ゲームカスタマイズオプション"></td><td>42</td><td>Minor: ゲームカスタマイズオプション</td><td>1</td><td><span class="tag status-done">採用済み（ボーナス#11）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="1" aria-label="モジュール43: Minor: ゲーミフィケーション（実績/バッジ等）"></td><td>43</td><td>Minor: ゲーミフィケーション（実績/バッジ等）</td><td>1</td><td><span class="tag status-todo">未検討</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="1" checked aria-label="モジュール44: Minor: 観戦モード"></td><td>44</td><td>Minor: 観戦モード</td><td>1</td><td><span class="tag status-partial">予備モジュール#1（F-06で土台のみ実装済み）</span></td></tr>
 					</tbody>
 				</table>
 			</div>
@@ -274,12 +274,12 @@
 			<h2>DevOps</h2>
 			<div class="table-wrap">
 				<table>
-					<thead><tr><th></th><th>#</th><th>モジュール</th><th>pt</th><th>現状</th></tr></thead>
+					<thead><tr><th>選択</th><th>#</th><th>モジュール</th><th>pt</th><th>現状</th></tr></thead>
 					<tbody>
-						<tr><td><input type="checkbox" class="mchk" data-pt="2"></td><td>45</td><td>Major: ELKによるログ管理</td><td>2</td><td><span class="tag status-todo">対象外（評価環境の規模に対し過剰）</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="2" checked></td><td>46</td><td>Major: Prometheus + Grafana監視</td><td>2</td><td><span class="tag status-partial">予備モジュール#4（未着手）</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="2"></td><td>47</td><td>Major: マイクロサービス構成のBackend</td><td>2</td><td><span class="tag status-todo">対象外（設計方針と正反対）</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="1"></td><td>48</td><td>Minor: ヘルスチェック/ステータスページ+自動バックアップ</td><td>1</td><td><span class="tag status-partial">要検討（§01参照。/api/healthは実装済み）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="2" aria-label="モジュール45: Major: ELKによるログ管理"></td><td>45</td><td>Major: ELKによるログ管理</td><td>2</td><td><span class="tag status-todo">対象外（評価環境の規模に対し過剰）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="2" checked aria-label="モジュール46: Major: Prometheus + Grafana監視"></td><td>46</td><td>Major: Prometheus + Grafana監視</td><td>2</td><td><span class="tag status-partial">予備モジュール#4（未着手）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="2" aria-label="モジュール47: Major: マイクロサービス構成のBackend"></td><td>47</td><td>Major: マイクロサービス構成のBackend</td><td>2</td><td><span class="tag status-todo">対象外（設計方針と正反対）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="1" aria-label="モジュール48: Minor: ヘルスチェック/ステータスページ+自動バックアップ"></td><td>48</td><td>Minor: ヘルスチェック/ステータスページ+自動バックアップ</td><td>1</td><td><span class="tag status-partial">要検討（§01参照。/api/healthは実装済み）</span></td></tr>
 					</tbody>
 				</table>
 			</div>
@@ -290,11 +290,11 @@
 			<h2>Data and Analytics</h2>
 			<div class="table-wrap">
 				<table>
-					<thead><tr><th></th><th>#</th><th>モジュール</th><th>pt</th><th>現状</th></tr></thead>
+					<thead><tr><th>選択</th><th>#</th><th>モジュール</th><th>pt</th><th>現状</th></tr></thead>
 					<tbody>
-						<tr><td><input type="checkbox" class="mchk" data-pt="2"></td><td>49</td><td>Major: 高度な分析ダッシュボード（可視化）</td><td>2</td><td><span class="tag status-todo">未検討</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="1"></td><td>50</td><td>Minor: データエクスポート/インポート</td><td>1</td><td><span class="tag status-todo">未検討</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="1"></td><td>51</td><td>Minor: GDPR準拠機能</td><td>1</td><td><span class="tag status-todo">未検討</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="2" aria-label="モジュール49: Major: 高度な分析ダッシュボード（可視化）"></td><td>49</td><td>Major: 高度な分析ダッシュボード（可視化）</td><td>2</td><td><span class="tag status-todo">未検討</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="1" aria-label="モジュール50: Minor: データエクスポート/インポート"></td><td>50</td><td>Minor: データエクスポート/インポート</td><td>1</td><td><span class="tag status-todo">未検討</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="1" aria-label="モジュール51: Minor: GDPR準拠機能"></td><td>51</td><td>Minor: GDPR準拠機能</td><td>1</td><td><span class="tag status-todo">未検討</span></td></tr>
 					</tbody>
 				</table>
 			</div>
@@ -305,10 +305,10 @@
 			<h2>Blockchain</h2>
 			<div class="table-wrap">
 				<table>
-					<thead><tr><th></th><th>#</th><th>モジュール</th><th>pt</th><th>現状</th></tr></thead>
+					<thead><tr><th>選択</th><th>#</th><th>モジュール</th><th>pt</th><th>現状</th></tr></thead>
 					<tbody>
-						<tr><td><input type="checkbox" class="mchk" data-pt="2"></td><td>52</td><td>Major: トーナメントスコアをブロックチェーンに保存</td><td>2</td><td><span class="tag status-todo">対象外</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="1"></td><td>53</td><td>Minor: ICPバックエンド</td><td>1</td><td><span class="tag status-todo">対象外</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="2" aria-label="モジュール52: Major: トーナメントスコアをブロックチェーンに保存"></td><td>52</td><td>Major: トーナメントスコアをブロックチェーンに保存</td><td>2</td><td><span class="tag status-todo">対象外</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="1" aria-label="モジュール53: Minor: ICPバックエンド"></td><td>53</td><td>Minor: ICPバックエンド</td><td>1</td><td><span class="tag status-todo">対象外</span></td></tr>
 					</tbody>
 				</table>
 			</div>
@@ -324,10 +324,10 @@
 			</p>
 			<div class="table-wrap">
 				<table>
-					<thead><tr><th></th><th>#</th><th>モジュール</th><th>pt</th><th>現状</th></tr></thead>
+					<thead><tr><th>選択</th><th>#</th><th>モジュール</th><th>pt</th><th>現状</th></tr></thead>
 					<tbody>
-						<tr><td><input type="checkbox" class="mchk" data-pt="2"></td><td>54</td><td>Major: 独自モジュール</td><td>2</td><td><span class="tag status-todo">不採用（判断済み、理由あり）</span></td></tr>
-						<tr><td><input type="checkbox" class="mchk" data-pt="1"></td><td>55</td><td>Minor: 独自モジュール（小規模版）</td><td>1</td><td><span class="tag status-todo">不採用（同上）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="2" aria-label="モジュール54: Major: 独自モジュール"></td><td>54</td><td>Major: 独自モジュール</td><td>2</td><td><span class="tag status-todo">不採用（判断済み、理由あり）</span></td></tr>
+						<tr><td><input type="checkbox" class="mchk" data-pt="1" aria-label="モジュール55: Minor: 独自モジュール（小規模版）"></td><td>55</td><td>Minor: 独自モジュール（小規模版）</td><td>1</td><td><span class="tag status-todo">不採用（同上）</span></td></tr>
 					</tbody>
 				</table>
 			</div>
