@@ -101,6 +101,9 @@
 						<tr><td>コンテナ / Docker</td><td>「アプリと、それが動くのに必要な環境一式」を1つの箱に詰めて配れるようにする技術。評価は<code>docker compose up</code>という単一コマンドで動く必要がある（<a href="https://aws.amazon.com/jp/docker/">解説: AWS「Docker とは」</a>）</td></tr>
 						<tr><td>Docker Compose</td><td>複数のコンテナ（nginx・Node・DBなど）をまとめて起動する仕組み。<code>docker-compose.yml</code>に定義されている（<a href="https://docs.docker.jp/compose/index.html">解説: Docker ドキュメント日本語化プロジェクト「Docker Compose 概要」</a>）</td></tr>
 						<tr><td>CI（継続的インテグレーション）</td><td>コードをpushするたびに自動でビルド・テストを走らせる仕組み（<a href="https://github.com/resources/articles/ci-cd?locale=ja">解説: GitHub「CI/CDとは」</a>）。このリポジトリでは<code>.github/workflows/ci.yml</code>1本の中に3つのジョブが定義されていて、毎push・毎PRで並行して走る</td></tr>
+						<tr><td>起動スモーク（smoke test）</td><td>「詳しく動作確認する」のではなく、<strong>起動してすぐ落ちないか（クラッシュしないか）だけ</strong>を確認する、最も基本的な健全性チェック。語源は電子機器の試作品の電源を入れて発煙しないか調べる試験（<a href="https://developer.mozilla.org/ja/docs/Glossary/Smoke_Test">公式: MDN用語集「Smoke Test」</a>）。このリポジトリでは<code>native</code>ジョブが実マップ5枚を実際に起動し、5秒間クラッシュせず動き続けたら成功と判定する</td></tr>
+						<tr><td>sim（<code>sim.wasm</code>）</td><td>Cエンジンを、<strong>判定専用</strong>（描画コードを含まない）としてビルドしたWebAssembly。サーバー（Node）がこれを実行し、衝突・勝敗・スコアだけを計算する。対になるのが描画専用の<code>render.wasm</code>。詳細は<a href="./E-専門用語.html">E用語集</a>の「3つのビルドターゲット」</td></tr>
+						<tr><td>モノレポ（monorepo）</td><td>複数の独立したパッケージ（プロジェクト）を、1つのリポジトリにまとめて入れる構成（対義語はマルチレポ）。<code>app/</code>配下の<code>shared</code>・<code>backend</code>・<code>frontend</code>がnpm workspacesでこの構成になっており、<code>shared</code>のzodスキーマを他2つが直接importできるのはこのおかげ（<a href="https://about.gitlab.com/ja-jp/blog/what-is-monorepo/">解説: GitLab「モノレポとは？」</a>）</td></tr>
 					</tbody>
 				</table>
 			</div>
