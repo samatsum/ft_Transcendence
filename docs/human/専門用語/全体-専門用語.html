@@ -15,7 +15,7 @@
 			<p class="hero-lead">
 				このページは「コードは<code>codes/</code>くらいしか分からない」人が、他の用語集
 				（<a href="./E-専門用語.html">E</a>・<a href="./G-専門用語.html">G</a>・
-				<a href="./W-専門用語.html">W</a>・<a href="./F-専門用語.html">F</a>）を読む前に
+				<a href="./B・I-専門用語.html">B・I</a>・<a href="./F-専門用語.html">F</a>）を読む前に
 				知っておくと迷わない、レーン横断の共通語彙です。
 			</p>
 			<div class="hero-note">
@@ -50,7 +50,7 @@
 					<tbody>
 						<tr><td><code>codes/</code></td><td>C</td><td>ゲームエンジン本体。あなたが知っている部分。native / web / sim の3ターゲットに化ける元になるソース</td></tr>
 						<tr><td><code>web/</code></td><td>C由来のWASM + 少量のJS</td><td><code>codes/</code>をブラウザ/Node向けに翻訳した成果物（<code>render.wasm</code>・<code>sim.wasm</code>）と、それを動かすための最小限のJS（<code>engine_demo.js</code>など）。<strong>フロント画面（React）とは別物</strong> — 詳しくは下の「よくある勘違い」参照</td></tr>
-						<tr><td><code>app/backend/</code></td><td>TypeScript</td><td>Node上で動くサーバー。認証・DB・WebSocket・<code>sim.wasm</code>の実行を担当。詳細は<a href="./W-専門用語.html">W用語集</a></td></tr>
+						<tr><td><code>app/backend/</code></td><td>TypeScript</td><td>Node上で動くサーバー。認証・DB・WebSocket・<code>sim.wasm</code>の実行を担当。詳細は<a href="./B・I-専門用語.html">B・I用語集</a></td></tr>
 						<tr><td><code>app/frontend/</code></td><td>TypeScript（React）</td><td>ブラウザで動く画面。ロビー・対戦画面・プロフィールなど。詳細は<a href="./F-専門用語.html">F用語集</a></td></tr>
 						<tr><td><code>app/shared/</code></td><td>TypeScript</td><td>backendとfrontendが同じ型定義を使うための共有コード（zodスキーマなど）</td></tr>
 						<tr><td><code>infra/</code></td><td>設定ファイル</td><td>nginx・TLS証明書・Dockerfile。本番起動まわり</td></tr>
@@ -82,7 +82,7 @@
 						<tr><td>プロトコル</td><td>通信の「言葉の決まり」。このプロジェクトにはREST APIとWebSocketの2種類がある</td></tr>
 						<tr><td>REST API</td><td>ブラウザが「GET /api/users/1」のようにHTTPでサーバへ1回ずつ要求を送る方式。ログイン・プロフィール取得などに使う（<a href="https://aws.amazon.com/jp/what-is/restful-api/">解説: AWS「RESTful API とは」</a>）</td></tr>
 						<tr><td>WebSocket（WS）</td><td>一度繋いだら繋ぎっぱなしで、双方向に小さいメッセージを送り合える通信方式。対戦中の入力・状態配信に使う（RESTだと繋ぎ直しのコストが高すぎる）（<a href="https://developer.mozilla.org/ja/docs/Web/API/WebSockets_API">公式: MDN WebSocket API</a>）</td></tr>
-						<tr><td>スナップショット（snapshot）</td><td>サーバが今の試合状態を「写真」のように切り出してクライアントへ送るデータ。詳細は<a href="./W-専門用語.html">W用語集</a>・<a href="../説明用/サーバ権威モデル.html">サーバ権威モデル.html</a></td></tr>
+						<tr><td>スナップショット（snapshot）</td><td>サーバが今の試合状態を「写真」のように切り出してクライアントへ送るデータ。詳細は<a href="./B・I-専門用語.html">B・I用語集</a>・<a href="../説明用/サーバ権威モデル.html">サーバ権威モデル.html</a></td></tr>
 						<tr><td>tick</td><td>サーバがゲームを1コマ進める単位（このプロジェクトは30Hz＝1秒に30回）。フレーム（描画の1コマ）とは別の概念</td></tr>
 					</tbody>
 				</table>
@@ -169,7 +169,7 @@
 		<p>2026-08-07 作成。次に読む: 自分の担当・興味に応じて
 			<a href="./E-専門用語.html">E</a> /
 			<a href="./G-専門用語.html">G</a> /
-			<a href="./W-専門用語.html">W</a> /
+			<a href="./B・I-専門用語.html">B・I</a> /
 			<a href="./F-専門用語.html">F</a> の用語集へ。全体像は
 			<a href="../はじめに/オンボーディング.html">オンボーディング.html</a>も参照。</p>
 	</footer>
