@@ -11,7 +11,7 @@ import './index.css';
 // F-01 で組み替え。外側→内側の順:
 //   StrictMode
 //     └── ErrorBoundary（描画例外の受け皿。④ §2 の受入）
-//           └── BrowserRouter（F-06 で先行導入）
+//           └── BrowserRouter（GV-06 で先行導入）
 //                 └── AuthProvider（起動時 /api/auth/me、④ §1 のガードの元）
 //                       └── ToastProvider（fetch ラッパの F-02 が push する先）
 //                             └── App（④ §1 の Routes 表）

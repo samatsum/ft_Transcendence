@@ -30,7 +30,7 @@ export const errorEnvelopeSchema = z.object({
 
 export type ErrorEnvelope = z.infer<typeof errorEnvelopeSchema>;
 
-// ③ §1-A の HTTP ステータス対応。W-02 のエラーハンドラがこの表を使う
+// ③ §1-A の HTTP ステータス対応。B-02 のエラーハンドラがこの表を使う
 export const errorStatusByCode: Record<ErrorCode, number> = {
 	validation_failed: 400,
 	unauthenticated: 401,

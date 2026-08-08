@@ -1,7 +1,7 @@
-// W-10: ルームのレジストリ。room_id → GameRoom をモジュールスコープの Map で
+// B-10: ルームのレジストリ。room_id → GameRoom をモジュールスコープの Map で
 // 同時複数保持する（② §6。マルチユーザー要件の根拠）。
 //
-// W-09（マッチメイキング）と W-11（ゲーム WS）は、GameRoom の内部を知らずに
+// B-09（マッチメイキング）と B-11（ゲーム WS）は、GameRoom の内部を知らずに
 // ここの createRoom / getRoom / closeRoom だけを使う。
 import { defaultMapId, loadMapText, type GameMode } from './maps.js';
 import { GameRoom, type RoomOptions, type RoomState } from './room.js';
@@ -16,7 +16,7 @@ let pumpTimer: NodeJS.Timeout | null = null;
 
 export type CreateRoomOptions = Omit<RoomOptions, 'roomId'> & {
 	roomId?: string;
-	/** W-09のclaim token。abort後の遅延完了が新しい予約を消さないために使う */
+	/** B-09のclaim token。abort後の遅延完了が新しい予約を消さないために使う */
 	reservationToken?: string;
 	signal?: AbortSignal;
 };
@@ -60,10 +60,10 @@ export async function createRoom(options: CreateRoomOptions): Promise<GameRoom> 
 }
 
 /**
- * ② §4-B の `rules` からルームを作る（W-09 が使う入口）。
+ * ② §4-B の `rules` からルームを作る（B-09 が使う入口）。
  *
  * **マップ ID → `.cub` テキストの解決はここで行う**（③ §2-E / ② §5-B）。
- * GameRoom 自体はテキストしか知らないので、W-14 の変更が room.ts に波及しない。
+ * GameRoom 自体はテキストしか知らないので、B-14 の変更が room.ts に波及しない。
  */
 export async function createRoomFromRules(options: {
 	roomId?: string;
@@ -90,7 +90,7 @@ export async function createRoomFromRules(options: {
 		roomId: options.roomId,
 		cubText: text,
 		mode: options.mode,
-		// 範囲 3–21 の検証は W-08 の共有 lobby スキーマ側の責務（G-05 の決定）。
+		// 範囲 3–21 の検証は B-08 の共有 lobby スキーマ側の責務（G-05 の決定）。
 		// ここは 0 を渡せばエンジンが既定値へ落とす
 		targetScore: options.rules?.target_score ?? 0,
 		seed: options.seed ?? 0,
@@ -119,7 +119,7 @@ export function roomCount(): number {
 	return rooms.size;
 }
 
-/** W-09検査と監視向けに、生成中予約の件数を返す */
+/** B-09検査と監視向けに、生成中予約の件数を返す */
 export function roomReservationCount(): number {
 	return reserved.size;
 }

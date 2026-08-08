@@ -1,9 +1,9 @@
-// W-10 の確認用エントリ。Fastify も WS も通さず、Node 単体で sim を回す。
+// B-10 の確認用エントリ。Fastify も WS も通さず、Node 単体で sim を回す。
 // 実行: npx tsx app/backend/src/game/dev-run.ts
 //
 // 検査1: web/sim_demo/record.mjs と **同じ条件で同じ結果**になること
 //        （TypeScript 移植が忠実であることの保証）
-// 検査2: ⑤ W-10 の受入条件「Node 上で複数ルーム同時進行」
+// 検査2: ⑤ B-10 の受入条件「Node 上で複数ルーム同時進行」
 //        30Hz の実時間で複数ルームを並走させ、全部が決着に到達することを見る
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -226,7 +226,7 @@ async function checkMultipleRoomsRunConcurrently(): Promise<boolean> {
 			/* 期待どおり */
 		}
 
-		// W-11 でクライアントから 30Hz で届く input を模擬する。
+		// B-11 でクライアントから 30Hz で届く input を模擬する。
 		// 入力を送らないと席が動かず、接触＝得点がほとんど起きない
 		let yaw = 0;
 		let clientTick = 0;
@@ -293,7 +293,7 @@ async function main(): Promise<void> {
 	console.log('\n検査2: sim インスタンスの独立性（② §6「1ルーム = 1インスタンス」）');
 	const independentOk = await checkInstancesAreIndependent();
 
-	console.log('\n検査3: 複数ルーム同時進行（⑤ W-10 受入条件）');
+	console.log('\n検査3: 複数ルーム同時進行（⑤ B-10 受入条件）');
 	const roomsOk = await checkMultipleRoomsRunConcurrently();
 
 	if (!portOk || !independentOk || !roomsOk) {

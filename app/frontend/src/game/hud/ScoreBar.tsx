@@ -2,7 +2,7 @@
 //   RSP: [赤 7 - 4 青] チーム色付き
 //   FPS: スコア非表示(レースなので進行状況 = 収集数 x/y。要 world_delta 集計)
 //
-// F-07 は snapshot.match.score を直接表示する MVP。FPS の収集数表示は
+// GV-07 は snapshot.match.score を直接表示する MVP。FPS の収集数表示は
 // snapshot.world_delta の全量把握が要り複雑なので、後続 PR で拡張。
 // 「値の正本は snapshot、event は演出」原則(② §5-D)
 

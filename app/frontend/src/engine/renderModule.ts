@@ -1,5 +1,5 @@
 // render.js（emcc glue、MODULARIZE=1 EXPORT_NAME=createCub3DModule）を
-// ブラウザに動的にロードするヘルパ（F-06）。
+// ブラウザに動的にロードするヘルパ（GV-06）。
 //
 // glue はスクリプト読み込み時に `window.createCub3DModule = (opts) => Promise<Module>`
 // を定義する。ここでは <script> を挿入して当該グローバルの登場を待ち、

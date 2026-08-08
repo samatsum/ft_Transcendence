@@ -3,7 +3,7 @@
 // f64 配列（レイアウトは codes/includes/platform/sim.h）へ変換する。
 // 位置は線形、向きは最短弧。離散値（state/score/hand/alive/チーム）は古い側
 // s0 の値を使う（正本はサーバ。ここでは判定・演出を作らない）。
-// F-06（GameView 統合）はこのファイルをそのまま流用する想定
+// GV-06（GameView 統合）はこのファイルをそのまま流用する想定
 (() => {
 	// フラット f64 配列のレイアウト定数（C 側 sim.h の #define と一致させる正本）:
 	// HEADER = 先頭のヘッダ要素数（SIM_SNAP_HEADER_DOUBLES）。中身は

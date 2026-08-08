@@ -1,7 +1,7 @@
-// W-10: フラット f64 の snapshot を ② §5-C の JSON へ変換する。
+// B-10: フラット f64 の snapshot を ② §5-C の JSON へ変換する。
 //
 // **型と契約は `@ft/shared` の ws/game.ts が正本**（Issue #10 で配置を合意）。
-// hminemur の F-06 は同じ定義を import するので、ここで形を変えると両方が壊れる
+// hminemur の GV-06 は同じ定義を import するので、ここで形を変えると両方が壊れる
 // ＝ 変えるときは ② の「5-C. snapshot ペイロード」を先に改訂すること（⑥ §7-3）。
 //
 // フラット配列のレイアウトの正本は codes/includes/platform/sim.h。

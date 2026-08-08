@@ -1,7 +1,7 @@
-// W-08: lobby/game WebSocket が共有する接続基盤（② §3-D）。
+// B-08: lobby/game WebSocket が共有する接続基盤（② §3-D）。
 //
 // gateway 固有の状態は持たず、pre-auth 上限、heartbeat、session_id 索引だけを担う。
-// W-04/W-05 の logout は server が所有する ConnectionManager の
+// B-04/B-05 の logout は server が所有する ConnectionManager の
 // closeSessionConnections() を呼べば、同じ Session の lobby/game を即時に
 // close 4000 できる。
 import { MAX_CLIENT_MESSAGE_BYTES, WS_CLOSE } from '@ft/shared';
@@ -114,7 +114,7 @@ export class ConnectionManager {
 	}
 
 	/**
-	 * W-04/W-05 のlogout hook。同一sessionのlobby/gameをclose 4000にする。
+	 * B-04/B-05 のlogout hook。同一sessionのlobby/gameをclose 4000にする。
 	 */
 	closeSessionConnections(sessionId: number): void {
 		for (const entry of [...(this.connectionsBySession.get(sessionId) ?? [])]) {

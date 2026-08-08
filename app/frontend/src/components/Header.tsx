@@ -4,7 +4,7 @@ import { Button } from './Button.js';
 import { useAuth } from '../contexts/AuthContext.js';
 
 // ④ §2「Header: ロゴ（→ /lobby）、自分のアバター+名前（→ /profile/:me）、ログアウト」。
-// アバター画像本体（W-06/F-09）は未実装なのでイニシャルの丸で代替。
+// アバター画像本体（B-06/F-09）は未実装なのでイニシャルの丸で代替。
 // 「未ログイン時は Header 全体を出さない」ではなく、「ユーザ情報部分だけ非表示」にする
 // （/privacy /terms は未ログインでも読めるので Header 自体は要る）
 

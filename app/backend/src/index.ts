@@ -1,5 +1,5 @@
-// W-01: Fastify の起動骨格。ここに W-02 で zod 検証パイプライン・
-// ③§1 エラーエンベロープ/レート制限、W-03 で Prisma、W-08〜W-12 で WS と
+// I-01: Fastify の起動骨格。ここに B-02 で zod 検証パイプライン・
+// ③§1 エラーエンベロープ/レート制限、B-03 で Prisma、B-08〜B-12 で WS と
 // GameRoom（sim.wasm）が載る。現時点は「起動して疎通する」ことだけを担う。
 import { pathToFileURL } from 'node:url';
 
@@ -41,7 +41,7 @@ export interface BuildServerOptions {
 
 /** Fastify serverと、そのserver専用のWebSocket接続管理を構築する */
 export async function buildServer(options: BuildServerOptions = {}) {
-	// pino のログ設定は W-02 で本格化する（開発中は既定の JSON ログ）
+	// pino のログ設定は B-02 で本格化する（開発中は既定の JSON ログ）
 	const app = Fastify({ logger: true });
 	const connectionManager = options.connectionManager ?? new ConnectionManager();
 
@@ -55,7 +55,7 @@ export async function buildServer(options: BuildServerOptions = {}) {
 		});
 	});
 
-	// W-14: ③ §2-E のマップ一覧。**本文（.cub）は返さない** — マップ本文は
+	// B-14: ③ §2-E のマップ一覧。**本文（.cub）は返さない** — マップ本文は
 	// welcome.map_text で配るので（② §5-B）、ここは選択 UI 用のメタデータだけ
 	app.get('/api/maps', async (request, reply) => {
 		const mode = (request.query as { mode?: string }).mode;
@@ -65,7 +65,7 @@ export async function buildServer(options: BuildServerOptions = {}) {
 		return listMaps(mode as GameMode | undefined);
 	});
 
-	// W-11: ゲーム WS（② §5）。ロビー WS（W-08）も同じプラグインに載る
+	// B-11: ゲーム WS（② §5）。ロビー WS（B-08）も同じプラグインに載る
 	await app.register(fastifyWebsocket, {
 		// ② §2-A の 4KB 上限は handleMessage 側でも見るが、ここでも枠を切っておく
 		options: { maxPayload: 64 * 1024 },
@@ -100,7 +100,7 @@ async function main() {
 
 // **直接実行されたときだけ起動する。**
 // `buildServer` を import しただけでサーバが立ち上がると、テスト側が自分の
-// ポートで listen できずに固まる（W-11 の ws-check.ts で実際に踏んだ）。
+// ポートで listen できずに固まる（B-11 の ws-check.ts で実際に踏んだ）。
 // import 時に副作用を持たせないための定型。
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
 	void main();

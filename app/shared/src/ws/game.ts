@@ -4,8 +4,8 @@ import { WS_PROTOCOL_VERSION } from './envelope.js';
 
 // ② §5 ゲーム WS 仕様（`/ws/game/:roomId`）。
 //
-// **FE/BE がこのファイルだけを見て通信できること**が目的。サーバ（W-11）は
-// クライアントから来たものを `.parse()` し、クライアント（F-06）は受け取ったものを
+// **FE/BE がこのファイルだけを見て通信できること**が目的。サーバ（B-11）は
+// クライアントから来たものを `.parse()` し、クライアント（GV-06）は受け取ったものを
 // `.parse()` する。同じ定義を両側が使うので、片側だけ直して壊れることがない
 // （課題書 III.3「フロント/バック双方での入力検証」の充足箇所）。
 
@@ -29,7 +29,7 @@ export const gameInputSchema = z.object({
 		/**
 		 * 絶対角・ラジアン。視点回転はクライアント権威（② §5-C）なので
 		 * サーバは範囲検証をしない。**NaN / Infinity だけはここで弾く**
-		 * （3-エンジンPhase3レポート の W-10 申し送り 7）。
+		 * （3-エンジンPhase3レポート の B-10 申し送り 7）。
 		 */
 		yaw: z.number().finite(),
 		/** 4bit ビットマスク: bit0=前進 / bit1=後退 / bit2=左strafe / bit3=右strafe */
@@ -56,7 +56,7 @@ export const gameSpectateSchema = z.object({
 	d: z.object({}).optional(),
 });
 
-/** クライアント→サーバの全種。W-11 はこれで `.parse()` して不正を弾く（受入条件 №6） */
+/** クライアント→サーバの全種。B-11 はこれで `.parse()` して不正を弾く（受入条件 №6） */
 export const gameClientMessageSchema = z.discriminatedUnion('t', [
 	gameJoinSchema,
 	gameInputSchema,
@@ -76,7 +76,7 @@ export type MatchState = z.infer<typeof matchStateSchema>;
 export const combatantViewSchema = z.object({
 	/**
 	 * 席 id。**snapshot 内の並び順とは無関係**なので必ずこれで照合する
-	 * （W-10 申し送り 4。内部リストは生成の逆順）。
+	 * （B-10 申し送り 4。内部リストは生成の逆順）。
 	 * マップ由来の敵ハザードは id=8 以降（`sim.h` の `SIM_HAZARD_ID_BASE`）。
 	 */
 	id: z.number(),
@@ -154,7 +154,7 @@ export const gameEventSchema = z.object({
 			kind: z.literal('match_end'),
 			winner: z.number().nullable(),
 			reason: matchEndReasonSchema,
-			/** 永続化済み DB 行の正整数 id（③ D-10）。W-13 が採番するまで null */
+			/** 永続化済み DB 行の正整数 id（③ D-10）。B-13 が採番するまで null */
 			match_id: z.number().int().positive().nullable(),
 		}),
 		z.object({ kind: z.literal('player_disconnected'), slot: z.number(), grace_ms: z.number() }),
@@ -208,7 +208,7 @@ export type PlayerStatusMessage = z.infer<typeof playerStatusMessageSchema>;
  * サーバ→クライアントの全種（`error` を除く。`error` は `ws/errors.ts`）。
  *
  * サーバは**この形で送るだけで `.parse()` しない**（自分が作ったものなので）。
- * 15Hz × ルーム数ぶん検証すると無駄。**受信側（F-06）が `.parse()` する**。
+ * 15Hz × ルーム数ぶん検証すると無駄。**受信側（GV-06）が `.parse()` する**。
  */
 export const gameServerMessageSchema = z.discriminatedUnion('t', [
 	welcomeMessageSchema,

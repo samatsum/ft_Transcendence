@@ -4,7 +4,7 @@ import { matchEndReasonSchema } from './game.js';
 import { WS_PROTOCOL_VERSION } from './envelope.js';
 import { wsErrorSchema } from './errors.js';
 
-// W-08: ロビー WS（`/ws/lobby`）の単一情報源。FE/BE はこのファイルの
+// B-08: ロビー WS（`/ws/lobby`）の単一情報源。FE/BE はこのファイルの
 // discriminated union を共有し、独自の wire type を作らない（② §3）。
 
 export const lobbyModeSchema = z.enum(['rsp', 'fps']);

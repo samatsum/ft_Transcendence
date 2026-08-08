@@ -72,8 +72,8 @@ const HAND_FLASH_MS = 300;
  */
 export function seatsFromSnapshot(combatants: SnapshotPayload['combatants']): Map<number, SeatInfo> {
 	const seats = new Map<number, SeatInfo>();
-	// snapshot の combatants は slot と id が別概念だが、W-10 実装では
-	// combatant_id = slot(0..3)。sim の内部リスト順は関係なく id で照合する(F-06 参照)
+	// snapshot の combatants は slot と id が別概念だが、B-10 実装では
+	// combatant_id = slot(0..3)。sim の内部リスト順は関係なく id で照合する(GV-06 参照)
 	combatants.forEach((c) => {
 		seats.set(c.id, {
 			slot: c.id,

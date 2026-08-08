@@ -1,4 +1,4 @@
-// W-08: mode別 FIFO と quick MatchPlan の同期 claim（② §4-A）。
+// B-08: mode別 FIFO と quick MatchPlan の同期 claim（② §4-A）。
 import {
 	type LobbyMode,
 	type LobbyServerMessage,
@@ -174,7 +174,7 @@ export class MatchQueue {
 	}
 
 	/**
-	 * W-09 の生成失敗時。接続中の参加者だけを元の joinedAt/sequence で戻し、
+	 * B-09 の生成失敗時。接続中の参加者だけを元の joinedAt/sequence で戻し、
 	 * 生成中に切断した参加者は idle にする。
 	 */
 	rollback(plan: MatchPlan): boolean {

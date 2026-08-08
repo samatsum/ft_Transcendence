@@ -1,6 +1,6 @@
-// W-10: sim.wasm のロードと呼び出しを1ファイルに閉じ込める。
+// B-10: sim.wasm のロードと呼び出しを1ファイルに閉じ込める。
 // **ここ以外から wasm のポインタ・ヒープを触らないこと**（② §6-B）。
-// 呼び出し順の正本は 3-エンジンPhase3レポート「W-10 への申し送り」1。
+// 呼び出し順の正本は 3-エンジンPhase3レポート「B-10 への申し送り」1。
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 
@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 // 落としている（⑥ §6 の教訓）。必ず createRequire 経由で読む。
 const require = createRequire(import.meta.url);
 
-// W-15（docker）でレイアウトが変わりうるので環境変数で上書き可能にしておく
+// I-15（docker）でレイアウトが変わりうるので環境変数で上書き可能にしておく
 const SIM_JS_PATH =
 	process.env.SIM_WASM_PATH ??
 	fileURLToPath(new URL('../../../../web/build/sim.js', import.meta.url));
@@ -82,10 +82,10 @@ export async function createSimModule(): Promise<SimModule> {
 }
 
 export interface SimGameOptions {
-	/** .cub の中身そのもの。ファイルの解決はルーム層の外（W-14）の責務 */
+	/** .cub の中身そのもの。ファイルの解決はルーム層の外（B-14）の責務 */
 	cubText: string;
 	mode: 'rsp' | 'fps';
-	/** 1 以上で有効。0 以下は既定値。製品仕様の 3–21 検証は W-11 №6 の責務 */
+	/** 1 以上で有効。0 以下は既定値。製品仕様の 3–21 検証は B-11 №6 の責務 */
 	targetScore: number;
 	/** 0 = 時刻由来（本番） / 非 0 = 乱数系列固定（テスト・再現用。申し送り 5） */
 	seed: number;
@@ -140,7 +140,7 @@ export class SimGame {
 		}
 	}
 
-	/** join / 切断（W-12）での AI ⇔ 人間の付け替え */
+	/** join / 切断（B-12）での AI ⇔ 人間の付け替え */
 	setInputSource(combatantId: number, source: number): void {
 		this.assertAlive();
 		if (this.module._game_set_input_source(this.game, combatantId, source) === 0) {

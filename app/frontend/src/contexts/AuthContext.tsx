@@ -14,10 +14,10 @@ import { apiFetch, isAbortError } from '../api/apiFetch.js';
 
 // ④ D-12「fetch ラッパ + Context + zod」の Auth Context。
 // - 起動時に GET /api/auth/me を叩き、ログイン中なら user を保持（④ §1）
-// - W-04 未実装のため 401/404/network error はすべて「未ログイン」扱いにする
+// - B-04 未実装のため 401/404/network error はすべて「未ログイン」扱いにする
 //   （F-01 の推奨決定#3）
 // - VITE_DEV_AUTOLOGIN=1 でネットワーク接続なしにダミー user を注入する
-// - user shape は W-04 の /api/auth/me レスポンス確定後、shared 側の zod へ寄せる想定。
+// - user shape は B-04 の /api/auth/me レスポンス確定後、shared 側の zod へ寄せる想定。
 //   現時点では最小のフィールドだけを持つ（暫定 schema を api 呼び出しへ渡す）
 
 export interface AuthUser {
@@ -25,7 +25,7 @@ export interface AuthUser {
 	displayName: string;
 }
 
-// W-04 完成時に shared/api/ 側の zod へ置き換える暫定スキーマ
+// B-04 完成時に shared/api/ 側の zod へ置き換える暫定スキーマ
 const authUserSchema = z.object({
 	id: z.number(),
 	displayName: z.string(),
@@ -50,7 +50,7 @@ async function fetchMe(signal: AbortSignal): Promise<AuthUser | null> {
 	} catch (err) {
 		// F-02 の apiFetch は AbortError をそのまま再スロー、
 		// その他は ApiError（unauthenticated / network_error / invalid_response 等）に統一。
-		// AuthContext の初期 fetch では W-04 未実装時のフォールバックとして
+		// AuthContext の初期 fetch では B-04 未実装時のフォールバックとして
 		// 「Abort 以外は全部未ログイン扱い」で丸める
 		if (isAbortError(err)) throw err;
 		return null;
@@ -115,7 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 	const logout = useCallback(async () => {
 		invalidateBootstrap();
-		// W-04 未実装なので失敗は握って state だけ落とす。
+		// B-04 未実装なので失敗は握って state だけ落とす。
 		// F-02 の apiFetch 経由(credentials・error 統一)。204 が返る前提なので schema なし
 		try {
 			await apiFetch('/api/auth/logout', { method: 'POST' });

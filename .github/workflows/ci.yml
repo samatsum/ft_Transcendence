@@ -1,6 +1,6 @@
 # E-14: エンジン CI（① §6 / ⑤ §2）。毎 PR で「3 ターゲットビルド + make check +
 # sim 受入テスト + native 起動スモーク」を回し、native を壊す退行を即検知する。
-# W-16 が backend/frontend の lint・型検査ジョブをこのワークフローへ追加する予定。
+# I-16 が backend/frontend の lint・型検査ジョブをこのワークフローへ追加する予定。
 name: ci
 
 on:
@@ -88,8 +88,8 @@ jobs:
             exit "$RC"
           fi
 
-  # W-01 で追加した TS モノレポ（app/{shared,backend,frontend}）の型検査とビルド。
-  # W-16 が lint（ESLint 等）をここへ足す
+  # I-01 で追加した TS モノレポ（app/{shared,backend,frontend}）の型検査とビルド。
+  # I-16 が lint（ESLint 等）をここへ足す
   web-app:
     runs-on: ubuntu-latest
     steps:

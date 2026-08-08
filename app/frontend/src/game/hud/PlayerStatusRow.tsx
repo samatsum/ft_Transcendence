@@ -4,7 +4,7 @@ import type { SeatInfo } from '../hudState.js';
 // ④ §3.3 HUD 表 対戦者ステータス行:
 //   各席: 名前 + 状態バッジ `connected / 切断中(残n秒) / AI`
 // - grace は残秒表示(1秒間隔で描画更新)
-// - 「名前」は placeholder(F-07 では slot 番号 + AI 判定)。実名は shared 拡張の別 PR
+// - 「名前」は placeholder(GV-07 では slot 番号 + AI 判定)。実名は shared 拡張の別 PR
 
 interface PlayerStatusRowProps {
 	seats: Map<number, SeatInfo>;

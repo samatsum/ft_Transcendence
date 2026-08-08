@@ -1,4 +1,4 @@
-// W-08: 1ユーザー1コンテキストの正本（② §3-E）。
+// B-08: 1ユーザー1コンテキストの正本（② §3-E）。
 //
 // queue / LobbyRoom / gateway は所属 Map を別々に持たず、すべて本 Registry の
 // 同期 compare-and-set を通す。presence も context と現在接続から都度導出する。
@@ -106,7 +106,7 @@ export type MatchPlanRollback =
 			readonly room: CustomRollbackSnapshot;
 	  };
 
-/** W-08 → W-09 の唯一の引き渡し。createMatchPlan() が再帰的に freeze する */
+/** B-08 → B-09 の唯一の引き渡し。createMatchPlan() が再帰的に freeze する */
 export interface MatchPlan {
 	readonly token: string;
 	readonly source: MatchPlanSource;
@@ -302,7 +302,7 @@ export class UserContextRegistry {
 		return true;
 	}
 
-	/** W-09 成功時用。一括確認に失敗した場合は部分 commit しない */
+	/** B-09 成功時用。一括確認に失敗した場合は部分 commit しない */
 	commitMatch(
 		token: string,
 		roomId: string,
@@ -364,7 +364,7 @@ export class UserContextRegistry {
 		this.friendIdsByUser.clear();
 	}
 
-	/** W-07 のfriend関係変更時に、次回presence fan-outで再解決させる */
+	/** B-07 のfriend関係変更時に、次回presence fan-outで再解決させる */
 	invalidateFriendCache(userId: number): void {
 		this.friendIdsByUser.delete(userId);
 	}
@@ -434,7 +434,7 @@ export class UserContextRegistry {
 	}
 }
 
-/** W-09へ渡すMatchPlan全体を再帰的にfreezeする */
+/** B-09へ渡すMatchPlan全体を再帰的にfreezeする */
 export function createMatchPlan(plan: MatchPlan): MatchPlan {
 	return deepFreeze(plan);
 }

@@ -1,9 +1,9 @@
-// W-11 の確認用エントリ。**ブラウザを使わず**に受入条件を検証する。
+// B-11 の確認用エントリ。**ブラウザを使わず**に受入条件を検証する。
 // 実行: npx tsx app/backend/src/game/ws-check.ts
 //
 // 検査1: 対人戦の疎通 — 2クライアントが join → welcome → input → snapshot → match_end
 // 検査2: ② §10 受入条件 №6 — 不正メッセージ4種がそれぞれ仕様どおりに扱われる
-// 検査3: W-12 — 30秒grace内の復帰、満了AI確定、RSP abandon、FPS forfeit
+// 検査3: B-12 — 30秒grace内の復帰、満了AI確定、RSP abandon、FPS forfeit
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
@@ -413,7 +413,7 @@ async function checkInvalidMessages(): Promise<string[]> {
 	return bad;
 }
 
-/* ── 検査3: W-12 切断・再接続・AI代替 ───────────────────────────── */
+/* ── 検査3: B-12 切断・再接続・AI代替 ───────────────────────────── */
 
 /** 30秒graceのRSP復帰/全員abandonとFPS forfeitを実WSで検査する */
 async function checkReconnectAndForfeit(): Promise<string[]> {
@@ -422,7 +422,7 @@ async function checkReconnectAndForfeit(): Promise<string[]> {
 	try {
 		await runReconnectAndForfeitChecks(bad, clients);
 	} catch (error) {
-		bad.push(`W-12検査中の例外: ${error instanceof Error ? error.message : String(error)}`);
+		bad.push(`B-12検査中の例外: ${error instanceof Error ? error.message : String(error)}`);
 	} finally {
 		for (const client of clients) client.close();
 		for (const roomId of Object.values(W12_ROOM_IDS)) closeRoom(roomId);
@@ -430,7 +430,7 @@ async function checkReconnectAndForfeit(): Promise<string[]> {
 	return bad;
 }
 
-/** W-12の各シナリオを順に実行し、失敗をbadへ集約する */
+/** B-12の各シナリオを順に実行し、失敗をbadへ集約する */
 async function runReconnectAndForfeitChecks(
 	bad: string[],
 	clients: TestClient[],
@@ -833,7 +833,7 @@ async function flushPromises(): Promise<void> {
 	await Promise.resolve();
 }
 
-/* ── 検査4: W-14 マップ API とテキスト配布の一致 ─────────────────── */
+/* ── 検査4: B-14 マップ API とテキスト配布の一致 ─────────────────── */
 
 async function checkMaps(baseUrl: string): Promise<string[]> {
 	const bad: string[] = [];
@@ -849,7 +849,7 @@ async function checkMaps(baseUrl: string): Promise<string[]> {
 	if (badMode.status !== 400) bad.push(`不正な mode が 400 にならない (${badMode.status})`);
 	if (all.some((m) => 'path' in (m as object))) bad.push('API がサーバ内部の path を漏らしている');
 
-	// **W-14 の受入条件**: サーバのロード内容と配布テキストが常に一致する。
+	// **B-14 の受入条件**: サーバのロード内容と配布テキストが常に一致する。
 	// ルームを ID から作り、welcome.map_text が同じ .cub であることを確かめる
 	for (const meta of listMaps()) {
 		const room = await createRoomFromRules({
@@ -903,11 +903,11 @@ async function main(): Promise<void> {
 	const bad2 = await checkInvalidMessages();
 	console.log(bad2.length ? `  NG:\n    ${bad2.join('\n    ')}` : '  OK: 9項目すべて仕様どおり');
 
-	console.log('\n検査3: W-12 切断・再接続・AI代替');
+	console.log('\n検査3: B-12 切断・再接続・AI代替');
 	const bad3 = await checkReconnectAndForfeit();
 	console.log(bad3.length ? `  NG:\n    ${bad3.join('\n    ')}` : '  OK: grace復帰・AI代替・abandon・forfeit');
 
-	console.log('\n検査4: W-14 マップ API とテキスト配布の一致');
+	console.log('\n検査4: B-14 マップ API とテキスト配布の一致');
 	const bad4 = await checkMaps(`http://127.0.0.1:${PORT}`);
 	console.log(bad4.length ? `  NG:\n    ${bad4.join('\n    ')}` : '  OK');
 
@@ -915,12 +915,12 @@ async function main(): Promise<void> {
 	await app.close();
 
 	if (bad1.length || bad2.length || bad3.length || bad4.length) {
-		console.error('\nW-11 / W-12 / W-14: 失敗');
+		console.error('\nW-11 / B-12 / B-14: 失敗');
 		process.exit(1);
 	}
 	console.log('\nW-11: 受入条件 №5 / №6 を満たしています');
-	console.log('W-12: 受入条件 №4 を満たしています');
-	console.log('W-14: マップ一覧とテキスト配布の一致を確認しました');
+	console.log('B-12: 受入条件 №4 を満たしています');
+	console.log('B-14: マップ一覧とテキスト配布の一致を確認しました');
 }
 
 main().catch((err: unknown) => {

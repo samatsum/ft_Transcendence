@@ -1,10 +1,10 @@
-// ② §5-C 補間契約の TS 実装（F-06）。web/snapshot_interp.js（E-12・IIFE + window global）
+// ② §5-C 補間契約の TS 実装（GV-06）。web/snapshot_interp.js（E-12・IIFE + window global）
 // を React/TS 世界から使える純関数へ移植。
 //
 // - 位置は線形、向きは最短弧（±π をまたぐ回転が逆回りに見えないように）。
 // - 離散値（state/score/hand/alive/is_ai/team）は古い側 s0 の値を使う。
 //   正本はサーバで、ここは補間の便宜なので判定・演出を作らない。
-// - `overrideDir` は F-06 で追加した第4引数（穴3 の決定）。② §5-C
+// - `overrideDir` は GV-06 で追加した第4引数（穴3 の決定）。② §5-C
 //   「自分の yaw のみローカル優先」を、`web_apply_snapshot` へ書き込む直前の
 //   flat 配列で反映するための口。welcome.combatant_id と一致する席の dir を
 //   local yaw で上書きしてから wasm へ渡す。

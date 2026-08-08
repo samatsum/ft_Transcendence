@@ -24,11 +24,11 @@ export interface RenderModule {
 		height: number,
 	) => number;
 
-	// snapshot 経路（F-06 が使う本命）
+	// snapshot 経路（GV-06 が使う本命）
 	_web_apply_snapshot: (flatPtr: number, len: number, viewId: number) => void;
 	_web_render_frame: () => void;
 
-	// ローカル駆動用（engine_demo.html で使用。F-06 は使わない）
+	// ローカル駆動用（engine_demo.html で使用。GV-06 は使わない）
 	_web_render: (dt: number) => void;
 	_web_set_input: (
 		fwd: number,

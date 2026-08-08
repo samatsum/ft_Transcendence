@@ -6,19 +6,19 @@ import type { MatchEndState } from '../hudState.js';
 //   勝敗・最終スコア・「ロビーへ戻る」。
 //   match_id が正整数なら REST から各プレイヤー成績も表示、null なら保存失敗を通知し
 //   最終 snapshot だけで結果表示
-// F-07 の推奨決定#4: /api/matches/:id は toast:false で試み、W-13 未完成期間は
+// GV-07 の推奨決定#4: /api/matches/:id は toast:false で試み、B-13 未完成期間は
 // 失敗を握って snapshot だけで表示。matchDetails は親から渡す(fetch は GameView 側)
 
 interface MatchEndModalProps {
 	end: MatchEndState;
 	mode: 'rsp' | 'fps';
-	/** 詳細取得の状態(W-13 完成前は常に null) */
+	/** 詳細取得の状態(B-13 完成前は常に null) */
 	matchDetails: MatchDetailsView | null;
 	detailsError: boolean;
 	onReturnToLobby: () => void;
 }
 
-/** GET /api/matches/:id の要約(W-13 完成時に shared 側で確定させる予定) */
+/** GET /api/matches/:id の要約(B-13 完成時に shared 側で確定させる予定) */
 export interface MatchDetailsView {
 	players: Array<{
 		display_name: string;
