@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="ja">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="color-scheme" content="dark">
+	<title>推奨モジュール構成（提案） — ft_transcendence</title>
+	<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+	<header class="hero">
+		<div class="shell">
+			<p class="eyebrow">42評価 · 提案（未採用）</p>
+			<h1>残作業を最小にして<br>14pt＋5ptを取る構成。</h1>
+			<p class="hero-lead">
+				<a href="./モジュール全カタログ.html">全55モジュールの洗い出し</a>で見つかった候補を踏まえて、
+				<strong>「同じ14ptなら、残っている作業が一番少ない組み合わせはどれか」</strong>という観点で組み直した提案。
+				現行計画（<a href="./42モジュール対応表.html">42モジュール対応表.html</a>）との違いは、
+				<strong>高価なモジュールを、すでに完成しているもの・ほぼ完成しているものへ差し替える</strong>点にある。
+			</p>
+			<div class="hero-note">
+				<strong>これは提案であり、採用済みの構成ではない</strong>
+				<span>正本は今も architecture.md §4。採用するならそちらを先に更新すること</span>
+			</div>
+		</div>
+	</header>
+
+	<nav class="topnav" aria-label="ページ内目次">
+		<div class="shell nav-inner">
+			<a href="#idea">考え方</a>
+			<a href="#core">推奨・必須14pt</a>
+			<a href="#bonus">推奨・追加5pt</a>
+			<a href="#diff">現行計画との差分</a>
+			<a href="#saved">削れる作業</a>
+			<a href="#risk">リスクと次善策</a>
+			<button class="print-button" type="button" onclick="window.print()">印刷 / PDF</button>
+		</div>
+	</nav>
+
+	<main class="shell">
+		<section id="idea">
+			<p class="section-kicker">01 · Principle</p>
+			<h2>2つの原則で組み直した</h2>
+			<div class="grid grid-2">
+				<article class="card">
+					<p class="card-label">原則1</p>
+					<h3>必須14ptには、却下されにくいものだけを置く</h3>
+					<p>
+						14ptは合格ライン。ここに解釈の余地があるモジュールを置くと、
+						当日却下された瞬間に不合格になる。<strong>実演すれば誰が見ても明らかなもの</strong>だけで14ptを組む。
+						解釈が割れうるものは、落ちても影響しないボーナス側へ回す。
+					</p>
+				</article>
+				<article class="card">
+					<p class="card-label">原則2</p>
+					<h3>同じptなら、残作業が少ない方を採る</h3>
+					<p>
+						モジュールのptは難易度と無関係。<strong>2ptのために新しいサブシステムを作るより、
+						すでに動いているものを2ptとして申告する方が合理的</strong>。
+						エンジン側は完成済みなので、この判断で浮く工数が大きい。
+					</p>
+				</article>
+			</div>
+			<div class="callout" style="margin-top: 18px">
+				<strong>前提として動かせないもの:</strong>
+				課題書 第III章の必須要件（FE+BE+DBのWebアプリ、メール+パスワード認証のハッシュ化、
+				単一コマンド起動、全接続HTTPS、Privacy/ToS、レスポンシブ）は<strong>モジュールとは無関係に必須</strong>。
+				つまり <code>W-02</code>〜<code>W-05</code>・<code>W-15</code>・<code>F-03</code>・<code>F-04</code>・<code>F-11</code>
+				は、どの構成を選んでも必ずやる。この提案はその「必ずやる分」の外側だけを組み替えている。
+			</div>
+		</section>
+
+		<section id="core">
+			<p class="section-kicker">02 · Recommended core</p>
+			<h2>推奨・必須14pt</h2>
+			<p class="section-intro">
+				8モジュールで14pt。<strong>4モジュール（8pt）がすでに完成またはエンジン側完成</strong>で、
+				残り4モジュールも「必ずやる認証・ロビー作業」が終われば自動的に成立する。
+				新規サブシステムの追加はゼロ。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>#</th><th>モジュール</th><th>区分</th><th>pt</th><th>今の状態</th><th>成立に必要な残作業</th></tr></thead>
+					<tbody>
+						<tr><td>1</td><td>完全なWebベースのゲーム（RSP）</td><td>Gaming Major</td><td>2</td><td><span class="tag status-partial">エンジン完成</span></td><td>ログイン→ロビー導線（必須作業に含まれる）</td></tr>
+						<tr><td>2</td><td>リモートプレイヤー</td><td>Gaming Major</td><td>2</td><td><span class="tag status-partial">実証済み</span></td><td>同上。W-12の30秒切断復帰は実装済みで、むしろ強い実演材料</td></tr>
+						<tr><td>3</td><td>マルチプレイヤー（3人以上）</td><td>Gaming Major</td><td>2</td><td><span class="tag status-partial">エンジン完成</span></td><td>同上（RSP 2v2＝4人）</td></tr>
+						<tr><td>4</td><td>FE/BE双方でフレームワーク</td><td>Web Major</td><td>2</td><td><span class="tag status-done">完了</span></td><td><strong>なし</strong></td></tr>
+						<tr><td>5</td><td>WebSocketsのリアルタイム機能</td><td>Web Major</td><td>2</td><td><span class="tag status-partial">ゲームWSは完了</span></td><td>W-08のロビーWS結合（必須作業に含まれる）</td></tr>
+						<tr><td>6</td><td><strong>AI対戦相手</strong></td><td>AI Major</td><td>2</td><td><span class="tag status-done">完了</span></td><td><strong>なし</strong>（現行計画ではボーナス扱いだったものを必須へ昇格）</td></tr>
+						<tr><td>7</td><td>ORMの使用（Prisma）</td><td>Web Minor</td><td>1</td><td><span class="tag status-todo">未着手</span></td><td>W-03のみ。<strong>DBは第III章で必須</strong>なので、どのみち作る＝実質タダ</td></tr>
+						<tr><td>8</td><td>ゲームカスタマイズオプション</td><td>Gaming Minor</td><td>1</td><td><span class="tag status-partial">エンジン側完成</span></td><td>マップ選択と先取点の選択UI（ロビー画面の一部）</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<div class="callout" style="margin-top: 18px">
+				<strong>ポイント: 「AI対戦相手」を必須側へ動かした。</strong>
+				すでに完成していて実演も容易な2ptを、合格ラインの内側に置く。
+				現行計画ではここがボーナス扱いで、代わりに<strong>未着手の「標準的なユーザー管理」2pt</strong>が
+				必須側に入っていた——完成品を保険に回し、未着手のものを命綱にしていた形になる。
+			</div>
+		</section>
+
+		<section id="bonus">
+			<p class="section-kicker">03 · Recommended bonus</p>
+			<h2>推奨・目指せ追加5pt</h2>
+			<p class="section-intro">
+				ボーナスは上限+5pt。ここには<strong>「安い」か「落ちても構わない」</strong>ものを置く。
+				4モジュールで5pt、いずれも新規サブシステムを必要としない。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>#</th><th>モジュール</th><th>区分</th><th>pt</th><th>今の状態</th><th>成立に必要な残作業</th></tr></thead>
+					<tbody>
+						<tr><td>9</td><td><strong>高度な3Dグラフィックス</strong></td><td>Gaming Major</td><td>2</td><td><span class="tag status-done">実装は完成</span></td><td><strong>コードはゼロ</strong>。READMEに正当化を書くのみ。<br>ただし却下リスクあり（→<a href="#risk">§06</a>）</td></tr>
+						<tr><td>10</td><td>カスタムデザインシステム</td><td>Web Minor</td><td>1</td><td><span class="tag status-partial">部品9個が存在</span></td><td>再利用可能部品をあと1個＋パレット/タイポグラフィの文書化</td></tr>
+						<tr><td>11</td><td>観戦モード</td><td>Gaming Minor</td><td>1</td><td><span class="tag status-partial">土台のみ</span></td><td>WSの<code>spectate</code>アクション実装＋視点切替UI（F-12）</td></tr>
+						<tr><td>12</td><td>ヘルスチェック/ステータスページ</td><td>DevOps Minor</td><td>1</td><td><span class="tag status-partial"><code>/api/health</code>済</span></td><td>ステータスページ＋自動バックアップ・復旧手順</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<div class="callout warning" style="margin-top: 18px">
+				<strong>ボーナスは必須14ptが全て揃って初めて加算される</strong>（課題書 第VII章）。
+				先にボーナスへ手を出さないこと。実装順は必ず「必須14pt → 完成 → ボーナス」。
+			</div>
+		</section>
+
+		<section id="diff">
+			<p class="section-kicker">04 · Diff</p>
+			<h2>現行計画（19pt）との差分</h2>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>モジュール</th><th>pt</th><th>現行</th><th>提案</th><th>理由</th></tr></thead>
+					<tbody>
+						<tr><td>AI対戦相手</td><td>2</td><td>ボーナス</td><td><strong>必須へ昇格</strong></td><td>完成済み。合格ラインは確実なもので固める</td></tr>
+						<tr><td>標準的なユーザー管理・認証</td><td>2</td><td>必須</td><td><span class="tag status-todo">外す</span></td><td>アバター・フレンド・プロフィール画面まで要求され高価。認証自体は第III章で必須なので実装は残る</td></tr>
+						<tr><td>ゲーム統計・対戦履歴</td><td>1</td><td>必須</td><td><span class="tag status-todo">外す</span></td><td>W-13の永続化とF-09のプロフィール画面が前提。1ptに対して重い</td></tr>
+						<tr><td>別のゲーム（FPS）</td><td>2</td><td>ボーナス</td><td><span class="tag status-todo">外す（保留）</span></td><td>エンジンは完成しているが「履歴＋マッチメイキング」が条件でW-13が要る。<strong>時間ができたら真っ先に戻す候補</strong></td></tr>
+						<tr><td>高度な3Dグラフィックス</td><td>2</td><td>—</td><td><strong>ボーナスへ追加</strong></td><td>実装済みのものを申告するだけ</td></tr>
+						<tr><td>カスタムデザインシステム</td><td>1</td><td>—</td><td><strong>ボーナスへ追加</strong></td><td>部品9個が既存、あと1個</td></tr>
+						<tr><td>ヘルスチェック/ステータスページ</td><td>1</td><td>—</td><td><strong>ボーナスへ追加</strong></td><td><code>/api/health</code>が既存</td></tr>
+						<tr><td>観戦モード</td><td>1</td><td>予備</td><td><strong>ボーナスへ格上げ</strong></td><td>F-06の土台が既にある</td></tr>
+						<tr><td>OAuth 2.0 / 2FA / Prometheus+Grafana</td><td>4</td><td>予備</td><td><span class="tag status-todo">外す</span></td><td>完全未着手。上の構成で19ptに届くため不要</td></tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+
+		<section id="saved">
+			<p class="section-kicker">05 · What this saves</p>
+			<h2>この構成なら、着手しなくてよくなるIssue</h2>
+			<p class="section-intro">
+				下のIssueは、上の構成を採る限り<strong>モジュール獲得のためには不要</strong>になる。
+				（製品として作りたいなら別の理由で作ればよいが、点数のためには要らない。）
+			</p>
+			<div class="grid grid-2">
+				<article class="card">
+					<p class="card-label">Backend</p>
+					<h3>W-06 / W-07 / W-13</h3>
+					<p>
+						<strong>W-06</strong> アバターアップロード（2MB制限・MIME/マジックバイト検査・nginx静的配信）、
+						<strong>W-07</strong> フレンドAPI（申請・承認・削除・presence合成）、
+						<strong>W-13</strong> 試合永続化と統計API。
+						いずれも「標準的なユーザー管理」「ゲーム統計」を外したことで不要になる。
+					</p>
+				</article>
+				<article class="card">
+					<p class="card-label">Frontend</p>
+					<h3>F-09 / F-10</h3>
+					<p>
+						<strong>F-09</strong> プロフィール/統計/履歴画面＋自己編集＋アバター、
+						<strong>F-10</strong> フレンドUI（presenceバッジのリアルタイム更新）。
+						どちらも上記バックエンドに依存していたもの。
+					</p>
+				</article>
+			</div>
+			<div class="callout" style="margin-top: 18px">
+				<strong>5つのIssueが不要になる。</strong>
+				一方で、増える作業は「観戦の<code>spectate</code>アクション＋F-12」「部品1個＋文書化」
+				「ステータスページ＋バックアップ手順」の3つで、いずれも上記5つより明らかに軽い。
+				<strong>3Dグラフィックスに至っては追加作業ゼロ</strong>。
+			</div>
+		</section>
+
+		<section id="risk">
+			<p class="section-kicker">06 · Risks</p>
+			<h2>リスクと、その次善策</h2>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>リスク</th><th>影響</th><th>対策</th></tr></thead>
+					<tbody>
+						<tr>
+							<td><strong>3Dグラフィックスが却下される</strong><br>（評価者が「Three.js等のライブラリ必須」と読む）</td>
+							<td>ボーナス5pt→3pt。<strong>合格ラインには影響しない</strong></td>
+							<td>そもそも必須側に置いていないのが対策。加えて、レイキャスティングの実装内容（テクスチャマッピング・深度バッファ・スプライト描画）を説明できるようにしておく</td>
+						</tr>
+						<tr>
+							<td>ゲーム系4モジュール（#1/#2/#3/#5＝8pt）が<br>ロビー未完成で実演できない</td>
+							<td><strong>致命的</strong>。合格ラインを割る</td>
+							<td>ここが本当の急所。F-05（ロビー）とF-03（ログイン）は最優先。<a href="../開発状況/フロントエンド開発工程.html">フロントエンド開発工程</a>参照</td>
+						</tr>
+						<tr>
+							<td>時間が余った場合</td>
+							<td>—</td>
+							<td>真っ先に戻すのは<strong>別のゲーム（FPS, 2pt）</strong>。W-13を作れば同時に<strong>ゲーム統計（1pt）</strong>も復活し、W-13ひとつで3pt分になる。その時点で最もリスクの高いモジュールと差し替える</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+
+		<section id="references">
+			<p class="section-kicker">07 · Sources of truth</p>
+			<h2>このHTMLは提案。正本は設計書</h2>
+			<div class="grid grid-3">
+				<article class="card">
+					<h3><a href="../../ai/architecture.md">architecture.md §4</a></h3>
+					<p>現行のモジュール選定（19pt）の正本。<strong>この提案を採用するなら、まずここを更新する</strong>。</p>
+				</article>
+				<article class="card">
+					<h3><a href="./モジュール全カタログ.html">モジュール全カタログ</a></h3>
+					<p>全55モジュールの一覧。この提案で使った候補の出どころ。</p>
+				</article>
+				<article class="card">
+					<h3><a href="./42モジュール対応表.html">42モジュール対応表</a></h3>
+					<p>現行19pt構成の実装状況とコード入口。</p>
+				</article>
+				<article class="card">
+					<h3><a href="../開発状況/サーバー開発工程.html">サーバー開発工程</a></h3>
+					<p>W-01〜W-16の進捗。§05で「不要になる」としたW-06/07/13の詳細。</p>
+				</article>
+				<article class="card">
+					<h3><a href="../開発状況/フロントエンド開発工程.html">フロントエンド開発工程</a></h3>
+					<p>F-01〜F-12の進捗。急所であるF-03/F-05の位置づけ。</p>
+				</article>
+				<article class="card">
+					<h3><a href="../../../archive/01_課題/ft_transcendence_対訳.md">課題書 対訳</a></h3>
+					<p>第IV章（モジュール定義）と第VII章（ボーナス上限5pt）の原文。</p>
+				</article>
+			</div>
+		</section>
+	</main>
+
+	<footer>
+		<div class="shell">
+			提案資料 · 2026-08-08作成。<strong>採用されていない</strong>——採用する場合は
+			<code>architecture.md</code> §4を先に更新し、その後このページと
+			<code>42モジュール対応表.html</code>を追従させてください。
+			<p>samatsumの「初期チェック24ptのうち、必須でなく未着手のものは何か」という問いから、
+			「では残作業を最小にする構成は何か」へ発展して作成したもの。</p>
+		</div>
+	</footer>
+</body>
+</html>
