@@ -218,8 +218,9 @@ development. `GameView`/`HudOverlay` currently have no lobby to be launched from
 
 > **No longer on the critical path:** W-06 (avatar), W-07 (friends API), W-13 (match persistence),
 > F-09 (profile screen) and F-10 (friends UI) were only required by the dropped modules. W-13 remains
-> the highest-value optional issue — it alone restores both "add another game" (2pt, FPS engine is
-> already complete) and "game statistics" (1pt).
+> the highest-value optional issue — **on its own it restores "add another game" (2pt)**, since the FPS
+> engine and matchmaking are already complete and only user history is missing. "Game statistics" (1pt)
+> needs **W-13 and F-09 together**, so it is a separate, larger decision.
 
 **Critical path (updated 2026-07-30)**: the original core chain, E-08/E-09 → E-10 → E-11, is complete, and
 **W-01/W-09/W-10/W-11/W-12/W-14 are done**, so the remaining work on the game-server side is now

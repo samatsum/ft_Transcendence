@@ -57,13 +57,16 @@
 >
 > **Dropped from the previous lineup**: standard user management (2pt), game statistics (1pt),
 > add another game (2pt), OAuth / 2FA / Prometheus+Grafana. The FPS engine and matchmaking are
-> already built, so "add another game" plus "game statistics" both unlock from **W-13 alone** —
-> that is the first thing to restore if time frees up.
+> already built, so **W-13 alone restores "add another game" (2pt)** — that is the cheapest thing to
+> restore if time frees up. "Game statistics" (1pt) needs **W-13 plus F-09** (the profile/history
+> screen), so it costs more than the FPS module and should be judged separately.
 >
-> ### Why ◎ and 〇 are distinguished
+> ### What declaring a module commits you to
 >
 > During evaluation, **a demo is requested for each declared module, and an incomplete one scores 0pt** (Chapter IV).
-> For this reason, ◎ items are those the team "will definitely finish and declare," while 〇 items are "declared only if working."
+> So a ◎ is a commitment, not an aspiration: declare it only if it will actually be finished and
+> demonstrable. This is why the lineup was rebuilt around modules that are already done or nearly done
+> (D-19) — and why anything not confidently finishable is left unmarked rather than declared hopefully.
 >
 > The rationale for adoption decisions is in [0-Overall Architecture Design §4](./architecture.md) (module selection and point calculation); the authoritative breakdown of mandatory requirements is in the same document's §5.
 
