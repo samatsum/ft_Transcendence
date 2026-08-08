@@ -5,12 +5,12 @@
 **Position**: A detailing of [ARCHITECTURE_DESIGN.md](./architecture.md) §2.4 / §3.3.
 Includes the definitions of the three items that [WS_PROTOCOL_DESIGN.md](./ws-protocol.md) (②)
 delegated to REST (presence initial list / `GET /api/maps` / match detail).
-Of the Backend/DevOps lanes, this is the Auth / REST / DB work order — most of it (W-02–W-07, W-13) is
+Of the Backend/DevOps lanes, this is the Auth / REST / DB work order — most of it (B-02–B-07, B-13) is
 **未完成 (not yet started/not done)**; see [backlog.md](./backlog.md) for per-issue status. It also serves
 as the source of truth for the REST API contract consumed by the frontend. The frontend-foundation work
 (F-01 scaffold, F-02 fetch wrapper) that consumes this contract is **done** (implemented solo by samatsum);
 F-03–F-05 (auth screens, layout, lobby) are not started. This REST work and the original frontend-foundation
-plan were assigned to torinoue and mamiyaza respectively; as of 2026-08-05 neither is active, so W-02–W-07/W-13
+plan were assigned to torinoue and mamiyaza respectively; as of 2026-08-05 neither is active, so B-02–B-07/B-13
 and F-03–F-05 are unassigned — see [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html).
 **Principle**: This document contains no implementation code.
 The implementation source of truth for message schemas is the zod definitions in `shared/api/`; if this document
@@ -22,7 +22,7 @@ and the implementation diverge, this document is revised first and the implement
 
 | # | Topic | Decision | Rationale |
 |---|---|---|---|
-| D-4 | Session scheme | **Opaque session token (DB `Session` row) + httpOnly Cookie**. JWT not adopted | ② §7's reconnect identity verification and immediate logout invalidation require a DB lookup, so there is no benefit to being stateless. Only the token hash is stored in the DB. On logout, close 4000 any open lobby/game WS looked up from W-08's session connection index |
+| D-4 | Session scheme | **Opaque session token (DB `Session` row) + httpOnly Cookie**. JWT not adopted | ② §7's reconnect identity verification and immediate logout invalidation require a DB lookup, so there is no benefit to being stateless. Only the token hash is stored in the DB. On logout, close 4000 any open lobby/game WS looked up from B-08's session connection index |
 | D-5 | Cookie attributes | `HttpOnly; Secure; SameSite=Lax; Path=/`. **TTL 7 days, sliding extension on access** | Effectively eliminates re-login requests during the evaluation period. `Secure` assumes nginx TLS termination (A1) |
 | D-6 | CSRF countermeasure | **SameSite=Lax + Origin header validation on mutating methods (POST/PATCH/PUT/DELETE)** | Unified with the WS Origin check approach in ② §1. No CSRF token is introduced (avoid building a duplicate mechanism) |
 | D-7 | RefreshToken | **Not created** (the "Session / RefreshToken" in ARCHITECTURE §3.3 is consolidated into `Session`. This document revises §3.3) | The sliding extension in D-5 is sufficient. Same judgment as ② §7's "don't build a dual token system" |
@@ -124,7 +124,7 @@ labor with ② §3).
 
 | Method / Path | Content |
 |---|---|
-| `GET /api/friends` | `{ friends: [{ user, status }], sent: [request], received: [request] }`. `status` is obtained from W-08's `UserContextRegistry.getPresence(userId)` as `online\|in_queue\|in_game\|offline` |
+| `GET /api/friends` | `{ friends: [{ user, status }], sent: [request], received: [request] }`. `status` is obtained from B-08's `UserContextRegistry.getPresence(userId)` as `online\|in_queue\|in_game\|offline` |
 | `POST /api/friends/requests` | Send a request specifying `display_name`. Self-request or an existing relationship (checked bidirectionally) returns 409 |
 | `POST /api/friends/requests/:id/accept` | Recipient only. Sets `status` to accepted |
 | `DELETE /api/friends/requests/:id` | Sender = cancel / recipient = reject (row deleted) |
@@ -132,9 +132,9 @@ labor with ② §3).
 
 - Real-time notification of requests is not performed (reflected only when the lobby screen re-fetches). Only
   presence is updated live via WS — this is a **deliberate simplification**.
-- W-07 plugs a Prisma adapter into the `FriendResolver.getAcceptedFriendIds(userId)` interface owned by W-08. W-08
+- B-07 plugs a Prisma adapter into the `FriendResolver.getAcceptedFriendIds(userId)` interface owned by B-08. B-08
   checks the state version and sends diffs only to friend connections, so the REST layer does not hold a WebSocket
-  directly, and the dependency direction does not create a cycle with the W-08→W-07 implementation order.
+  directly, and the dependency direction does not create a cycle with the B-08→B-07 implementation order.
 
 ### 2-D. Matches & Stats (`/api/matches`, `/api/users/:id/stats`) — Day 8–9
 
@@ -184,7 +184,7 @@ The source of truth for the ID space referenced by ② §4-B's `rules.map`.
   FPS — a 1v1 with 2 seats + enemy hazards completes the gate path of "collect all → door D opens → reach the goal
   determines the winner."
   **Approval via in-team test play is a separate step** (the table above is to be transcribed once server
-  implementation begins, from W-01 onward).
+  implementation begins, from I-01 onward).
 
 ---
 
@@ -261,7 +261,7 @@ adopted. Not built as part of the core.)
 | SQLi practical test | Prisma (prepared-statement equivalent). Raw SQL is not used even for statistics aggregation (written using Prisma's groupBy/aggregate) |
 | XSS practical test | React escaping + `display_name` character-set restriction + server-generated avatar filenames |
 | Invalid input | Dual zod validation (§1-B) + boundary testing of 429/413/415 |
-| Zero secrets exposure | Raw session tokens and passwords are never logged (pino redact configuration). `.env` follows W-15's `env.example` workflow |
+| Zero secrets exposure | Raw session tokens and passwords are never logged (pino redact configuration). `.env` follows I-15's `env.example` workflow |
 
 ---
 

@@ -24,7 +24,7 @@
 				<strong>対象</strong>
 				<span>チームメンバー全員</span>
 				<span aria-hidden="true">·</span>
-				<span>関連: F-06 GameView / W-10 GameRoom / W-12 切断・AI代替</span>
+				<span>関連: GV-06 GameView / B-10 GameRoom / B-12 切断・AI代替</span>
 			</p>
 		</div>
 	</header>
@@ -182,7 +182,7 @@ sequenceDiagram
 				1回分で<strong>1KB未満</strong>に収まります（4人+数体なのでJSONで十分。実測で確認済み）。
 				正本のレイアウトは <code>codes/includes/platform/sim.h</code> です。
 			</p>
-			<h3 style="margin-top: 26px">誰が何を担当するか（ここがW-10とF-06の境界）</h3>
+			<h3 style="margin-top: 26px">誰が何を担当するか（ここがB-10とGV-06の境界）</h3>
 			<pre><code>サーバ（Node）                            ブラウザ
 ─────────────                            ─────────
 game_snapshot()                          受信
@@ -449,19 +449,19 @@ int game_apply_snapshot(t_game* game, const double* snap, int len, int view_id)
 
 			<h3 style="margin-top: 30px">これが動く実例</h3>
 			<p class="section-intro">
-				本番のNodeサーバ（W-10）・GameView（F-06）は<strong>どちらも完了済み</strong>です。
+				本番のNodeサーバ（B-10）・GameView（GV-06）は<strong>どちらも完了済み</strong>です。
 				以下は開発初期に作った、一方通行の全経路だけを確認するための単体デモで、
-				W-10/F-06完了後も参照実装として残しています。
+				B-10/GV-06完了後も参照実装として残しています。
 			</p>
 			<pre><code>web/sim_demo/record.mjs    sim.wasm を回して写真を撮り、snapshots.json に保存
         │  （＝サーバ役のデモ）
         ▼
 web/sim_demo/replay.html   snapshots.json を読み、補間して描画（＝ブラウザ役のデモ）</code></pre>
 			<div class="callout" style="margin-top: 18px">
-				<strong>F-06は、この <code>replay.html</code> の「<code>snapshots.json</code> を読む」
+				<strong>GV-06は、この <code>replay.html</code> の「<code>snapshots.json</code> を読む」
 				ところを「WSで受信する」に差し替える形で実装済み</strong>です（<code>GameView.tsx</code>）。
 				補間（<code>snapshot_interp.js</code>）と受け口（<code>game_apply_snapshot</code>）は
-				そのまま流用されています。HUD（F-07）も
+				そのまま流用されています。HUD（GV-07）も
 				<a href="https://github.com/samatsum/ft_Transcendence/pull/35">PR #35</a>として実装・マージ済みです。
 			</div>
 		</section>
@@ -547,7 +547,7 @@ typedef enum e_input_source
 人間が戻る               →  input_source = EXTERNAL</code></pre>
 			<p class="section-intro">
 				<strong>席の種類を変換する必要がありません。</strong> <code>input_source</code> という値を
-				<code>EXTERNAL ⇄ AI</code> で切り替えるだけ。だからW-12（切断・AI代替）は、
+				<code>EXTERNAL ⇄ AI</code> で切り替えるだけ。だからB-12（切断・AI代替）は、
 				専用のAPI1つ（<code>game_set_input_source</code>）で済みます。
 			</p>
 			<div class="callout" style="margin-top: 18px">
@@ -633,7 +633,7 @@ typedef enum e_input_source
 						<li><div><strong>プレイヤーもNPCも「戦闘員」1種類にまとめる</strong><span><code>world.enemies</code>の同じリストに置く</span></div></li>
 						<li><div><strong>違いは input_source だけ</strong><span>AIかEXTERNALか。移動・判定・描画は全員共通</span></div></li>
 						<li><div><strong>3モジュールが1つの仕組みで成立</strong><span>Multiplayer 3+ / Remote players / AI opponent</span></div></li>
-						<li><div><strong>切断→AI代替→復帰は input_source の切り替えだけ</strong><span>席の変換が要らない（W-12）</span></div></li>
+						<li><div><strong>切断→AI代替→復帰は input_source の切り替えだけ</strong><span>席の変換が要らない（B-12）</span></div></li>
 						<li><div><strong>元のRSPが既にこの形に近く、統合の差分が最小</strong><span>例外はハザード（'M'）。is_hazard で見分ける</span></div></li>
 					</ol>
 				</article>
@@ -722,7 +722,7 @@ typedef enum e_input_source
 				</article>
 				<article class="card">
 					<h3><a href="../../ai/ws-protocol.md">② WSプロトコル設計 §5-C</a></h3>
-					<p>配信・JSON形・tickなど、W-11の正本。「なぜ配信は15Hzなのか」もここ。</p>
+					<p>配信・JSON形・tickなど、B-11の正本。「なぜ配信は15Hzなのか」もここ。</p>
 				</article>
 				<article class="card">
 					<h3><a href="../../../codes/includes/platform/sim.h">codes/includes/platform/sim.h</a></h3>

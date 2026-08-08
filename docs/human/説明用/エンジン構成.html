@@ -23,7 +23,7 @@
 			<p class="hero-note">
 				<span aria-hidden="true">●</span>
 				<strong>対象</strong>
-				<span>チームメンバー全員。とくに境界の保守とF-06（pf_presentの受け側実装。完了済み）を担うsamatsum</span>
+				<span>チームメンバー全員。とくに境界の保守とGV-06（pf_presentの受け側実装。完了済み）を担うsamatsum</span>
 			</p>
 		</div>
 	</header>
@@ -176,7 +176,7 @@ pf_present(&game->window);   // Linux: 画面に出る / ブラウザ: Canvasに
 					<tbody>
 						<tr><td><strong>headless</strong></td><td>プラットフォーム層の実装（<code>platform_headless.c</code>）。「画面が無い」という性質</td></tr>
 						<tr><td><strong><code>sim.wasm</code></strong></td><td>headless実装を含めてビルドした成果物</td></tr>
-						<tr><td><strong>サーバ / GameRoom</strong></td><td><code>sim.wasm</code>を30Hzで回すNode側のコード（W-10）</td></tr>
+						<tr><td><strong>サーバ / GameRoom</strong></td><td><code>sim.wasm</code>を30Hzで回すNode側のコード（B-10）</td></tr>
 					</tbody>
 				</table>
 			</div>
@@ -285,7 +285,7 @@ void pf_present(t_window* w) { (void)w; }                        // 何もしな
 			<p><strong>結論から言うと、<code>pf_*</code>を直接呼ぶ機会はほぼありません。</strong></p>
 			<div class="grid grid-2" style="margin-top: 12px">
 				<article class="card">
-					<p class="card-label">samatsum（ゲームサーバ / W-10・W-11）</p>
+					<p class="card-label">samatsum（ゲームサーバ / B-10・B-11）</p>
 					<p>
 						<code>sim.wasm</code>をNodeで動かすとき、中ではheadless版の<code>pf_*</code>
 						が使われています。「描画しない・入力を拾わない・ループを持たない」実装なので、
@@ -296,7 +296,7 @@ void pf_present(t_window* w) { (void)w; }                        // 何もしな
 					</p>
 				</article>
 				<article class="card">
-					<p class="card-label">フロントゲーム / F-06（完了済み・samatsum実装）</p>
+					<p class="card-label">フロントゲーム / GV-06（完了済み・samatsum実装）</p>
 					<p>
 						ブラウザでは<strong><code>pf_present</code>が「JSがWASMメモリを読んで
 						Canvasに描く」</strong>という形になっています。C側は絵をメモリに書くだけで、
@@ -515,7 +515,7 @@ README.md             プロジェクトの顔</code></pre>
 					<h3>フォルダを開けば「どのレーンか」が分かる</h3>
 					<p>
 						<code>app/</code>の中はレーン分担そのままです。<code>app/backend/</code>＝
-						Auth / REST / DB（未完成）、<code>app/frontend/</code>＝画面（F-01・F-02・F-06は完了、
+						Auth / REST / DB（未完成）、<code>app/frontend/</code>＝画面（F-01・F-02・GV-06は完了、
 						残りは未完成）、<code>app/shared/</code>＝全員が使うzod契約、<code>codes/</code>＝エンジン本体
 						（完成済み。もう触らない）。複数人で並行作業する体制になったときも、
 						この対応がそのまま効きます（現在はsamatsum単独稼働。<a href="../はじめに/チーム体制.html">チーム体制.html</a>参照）。
@@ -587,7 +587,7 @@ README.md             プロジェクトの顔</code></pre>
 					<thead><tr><th>フォルダ</th><th>動かさなかった理由</th></tr></thead>
 					<tbody>
 						<tr><td><code>codes/</code></td><td>Cプロジェクトそのもの。今のままが正しい</td></tr>
-						<tr><td><code>web/</code></td><td><code>Makefile</code>（<code>web/build</code>）・<code>record.mjs</code>・CIが参照。動かすとパス書き換えが多い。W-10でbackendが読みに来る時に見直すのが自然</td></tr>
+						<tr><td><code>web/</code></td><td><code>Makefile</code>（<code>web/build</code>）・<code>record.mjs</code>・CIが参照。動かすとパス書き換えが多い。B-10でbackendが読みに来る時に見直すのが自然</td></tr>
 						<tr><td><code>maps/</code> <code>textures/</code></td><td><strong>評価者が打つ<code>./cub3D maps/...</code>が変わってしまう</strong>。<code>.cub</code>内の<code>./textures/...</code>全行とUSER_DOCも直す羽目に。費用が大きく評価に触るので据え置き</td></tr>
 					</tbody>
 				</table>
@@ -612,11 +612,11 @@ README.md             プロジェクトの顔</code></pre>
 
 			<div class="callout warning">
 				<strong>進捗上の注意（原資料は2026-07-30時点）:</strong>
-				このセクションは<strong>W-01完了時点の出発点</strong>を説明した記録です。その後
-				W-01/W-09/W-10/W-11/W-12/W-14までとW-08コアが実装され、進捗はさらに進んでいます。
+				このセクションは<strong>I-01完了時点の出発点</strong>を説明した記録です。その後
+				I-01/B-09/B-10/B-11/B-12/B-14までとB-08コアが実装され、進捗はさらに進んでいます。
 				「<code>app/</code>は骨格だけ」という以下の記述はその時点のスナップショットとして
 				読んでください。現在地・依存・担当の最新は
-				<a href="../開発状況/サーバー開発工程.html">W作業全体 —
+				<a href="../開発状況/サーバー開発工程.html">Backend / Infra 全体 —
 				エンジンをオンライン製品にする16工程</a>を参照してください。
 			</div>
 
@@ -626,14 +626,14 @@ README.md             プロジェクトの顔</code></pre>
 					<thead><tr><th>半分</th><th>実体</th><th>状態</th><th>役割</th></tr></thead>
 					<tbody>
 						<tr><td><strong>エンジン</strong></td><td><code>codes/</code>（C）+ <code>web/</code>（WASMとデモ）</td><td>完成（Engine E-01〜E-14 / Gameplay G-01〜G-10）</td><td>移動・衝突・敵AI・じゃんけん・描画。単体で動く</td></tr>
-						<tr><td><strong>製品層</strong></td><td><code>app/</code>（backend / frontend / shared）</td><td>W-01完了時点ではほぼ未着手（骨格のみ）</td><td>認証・ロビー・オンライン対戦・履歴。エンジンをネット越しの製品にする</td></tr>
+						<tr><td><strong>製品層</strong></td><td><code>app/</code>（backend / frontend / shared）</td><td>I-01完了時点ではほぼ未着手（骨格のみ）</td><td>認証・ロビー・オンライン対戦・履歴。エンジンをネット越しの製品にする</td></tr>
 					</tbody>
 				</table>
 			</div>
 
 			<h3><code>app/</code>の「当時の今」— 骨格だけ</h3>
 			<p>
-				<code>app/</code>はW-01で枠だけ作った状態でした。ゲームのコードはまだ1行も
+				<code>app/</code>はI-01で枠だけ作った状態でした。ゲームのコードはまだ1行も
 				入っていません。
 			</p>
 			<div class="table-wrap">
@@ -661,8 +661,8 @@ README.md             プロジェクトの顔</code></pre>
 				<table>
 					<thead><tr><th><code>app/</code>の部分</th><th>これから作る中身</th><th>エンジンとの接続</th></tr></thead>
 					<tbody>
-						<tr><td><code>app/backend/</code></td><td>REST・認証・DB・WSとGameRoom</td><td><strong><code>sim.wasm</code>をNodeで回す</strong>（W-10）</td></tr>
-						<tr><td><code>app/frontend/</code></td><td>ロビー・GameView・HUD・プロフィール</td><td><strong><code>render.wasm</code> + <code>snapshot_interp.js</code></strong>を使う（F-06）</td></tr>
+						<tr><td><code>app/backend/</code></td><td>REST・認証・DB・WSとGameRoom</td><td><strong><code>sim.wasm</code>をNodeで回す</strong>（B-10）</td></tr>
+						<tr><td><code>app/frontend/</code></td><td>ロビー・GameView・HUD・プロフィール</td><td><strong><code>render.wasm</code> + <code>snapshot_interp.js</code></strong>を使う（GV-06）</td></tr>
 						<tr><td><code>app/shared/</code></td><td>REST/WSのメッセージ契約（zod）</td><td>型の単一情報源。両者がimport</td></tr>
 					</tbody>
 				</table>
@@ -676,14 +676,14 @@ README.md             プロジェクトの顔</code></pre>
 			<h3>補足：<code>web/</code>は今後も触るのか</h3>
 			<p>「ほぼ完成だが、3つの経路で今後も関わる」が答えです。</p>
 			<ol class="path-list">
-				<li><div><strong><code>codes/</code>を直すと<code>web/build/*.wasm</code>が再生成される</strong><span>手で<code>web/</code>を編集するのではなく、Cを直して<code>make web</code> / <code>make sim</code>が生成物を更新する（例: W-14の<code>world_delta</code>）</span></div></li>
-				<li><div><strong><code>snapshot_interp.js</code>はF-06が流用する</strong><span><code>app/frontend</code>からimport/取り込む形になり、実質<code>web/</code>の資産が<code>app/</code>に持ち込まれる（補間ロジックを書き直さずに済む）</span></div></li>
-				<li><div><strong>wasmの置き場や読み込み経路の見直し</strong><span><code>app/</code>とエンジンを結線するW-10 / F-06の際、<code>web/build/</code>の成果物をどこから読むかを再検討する可能性がある（設計上の未決事項）</span></div></li>
+				<li><div><strong><code>codes/</code>を直すと<code>web/build/*.wasm</code>が再生成される</strong><span>手で<code>web/</code>を編集するのではなく、Cを直して<code>make web</code> / <code>make sim</code>が生成物を更新する（例: B-14の<code>world_delta</code>）</span></div></li>
+				<li><div><strong><code>snapshot_interp.js</code>はGV-06が流用する</strong><span><code>app/frontend</code>からimport/取り込む形になり、実質<code>web/</code>の資産が<code>app/</code>に持ち込まれる（補間ロジックを書き直さずに済む）</span></div></li>
+				<li><div><strong>wasmの置き場や読み込み経路の見直し</strong><span><code>app/</code>とエンジンを結線するB-10 / GV-06の際、<code>web/build/</code>の成果物をどこから読むかを再検討する可能性がある（設計上の未決事項）</span></div></li>
 			</ol>
 			<p>
 				<code>engine_demo</code> / <code>sim_demo</code> / <code>bench_render.mjs</code>
 				そのものを積極的に書き換える予定は薄く、<strong>「動く参照実装」として残す</strong>
-				のが基本方針です（F-06は<code>replay.html</code>を下敷きにする）。
+				のが基本方針です（GV-06は<code>replay.html</code>を下敷きにする）。
 			</p>
 		</section>
 
@@ -735,9 +735,9 @@ Cross-Origin-Embedder-Policy: require-corp</code></pre>
 			</p>
 			<div class="callout warning">
 				<strong>私たちにとって、これが何を意味するか:</strong>
-				nginx（W-15）の設定が、その分ややこしくなる。<strong>評価の拒否条件「コンソールに
+				nginx（I-15）の設定が、その分ややこしくなる。<strong>評価の拒否条件「コンソールに
 				警告・エラーゼロ」を、原因の分かりにくいヘッダ由来のエラーで落とすリスク</strong>を
-				抱える。W-15は残り日程で沼ると痛い。要するに、<strong>並列化の見返り（速度）に
+				抱える。I-15は残り日程で沼ると痛い。要するに、<strong>並列化の見返り（速度）に
 				対して、リスクとインフラの手間が見合わない</strong>。
 			</div>
 
@@ -821,7 +821,7 @@ Cross-Origin-Embedder-Policy: require-corp</code></pre>
 					<p>
 						A. native=MLX（<code>mlx_loop</code>）、web=ブラウザ
 						（<code>requestAnimationFrame</code>）、server=Node（<code>setInterval</code>。
-						W-10で実装）。<strong>呼ばれる<code>game_step</code>は3つとも同一</strong>。
+						B-10で実装）。<strong>呼ばれる<code>game_step</code>は3つとも同一</strong>。
 					</p>
 				</article>
 				<article class="card">

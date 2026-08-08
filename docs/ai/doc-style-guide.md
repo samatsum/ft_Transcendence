@@ -120,7 +120,7 @@ actually use, grouped by purpose:
 | Tables | `.table-wrap` (wrapping div for horizontal scroll) around a plain `<table>` |
 | Status tags | `.tag`, `.tag.status-done` (green) / `.tag.status-partial` (yellow) / `.tag.status-todo` (gray), `.tag.owner` |
 | Numbered steps | `<ol class="path-list">` — auto-numbered circular badges |
-| Big numbers | `.metric` / `.metric-note` inside a `.card` — **only for things that are actually counts**; an Issue id like "W-13" displayed at this size reads as a number, prefix it so it's unambiguous (a CodeRabbit review caught exactly this on `サーバー開発工程.html`) |
+| Big numbers | `.metric` / `.metric-note` inside a `.card` — **only for things that are actually counts**; an Issue id like "B-13" displayed at this size reads as a number, prefix it so it's unambiguous (a CodeRabbit review caught exactly this on `サーバー開発工程.html`) |
 | Long quoted narration | `.script` wrapping a `<blockquote>` |
 | Code | Plain `<pre><code>…</code></pre>` for actual code/commands/terminal output. **Not** for diagrams — see below |
 

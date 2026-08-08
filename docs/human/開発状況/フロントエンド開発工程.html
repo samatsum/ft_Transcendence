@@ -10,17 +10,17 @@
 <body>
 	<header class="hero">
 		<div class="shell">
-			<p class="eyebrow">Frontend · F-01—F-12</p>
+			<p class="eyebrow">Frontend · F系・GV系</p>
 			<h1>動くサーバーを、<br>プレイヤーが触れる画面にする。</h1>
 			<p class="hero-lead">
-				F作業は、W作業と並行してブラウザ側の画面（<code>app/frontend/</code>）を作る12工程です。
+				F系・GV系は、B系・I系と並行してブラウザ側の画面（<code>app/frontend/</code>）を作る12工程です。
 				ログイン画面、ロビー、対戦画面、HUD、プロフィールと、プレイヤーが実際にクリックする
 				すべての面を担当します。<code>web/</code>（Cエンジンのwasm化）とは別レーンです。
 			</p>
 			<p class="hero-note">
 				<span aria-hidden="true">●</span>
 				<strong>現在地 2026-08-07</strong>
-				<span>F-01 / F-02 / F-06 / F-07 完了、F-03〜F-05・F-08〜F-12は担当未定で未着手</span>
+				<span>F-01 / F-02 / GV-06 / GV-07 完了、F-03〜F-05・GV-08・F-09・F-10・F-11・GV-12は担当未定で未着手</span>
 			</p>
 		</div>
 	</header>
@@ -33,7 +33,7 @@
 			<a href="#issues">12工程</a>
 			<a href="#dependencies">依存と次手</a>
 			<a href="#code">コード入口</a>
-			<a href="#backend">Wとの境界</a>
+			<a href="#backend">B/Iとの境界</a>
 			<a href="#talk">3分説明</a>
 			<button class="print-button" type="button" onclick="window.print()">印刷 / PDF</button>
 		</div>
@@ -44,7 +44,7 @@
 			<p class="section-kicker">01 · Meaning</p>
 			<h2>Fは「エンジンの見た目」ではなく、プレイヤーが操作する製品の顔</h2>
 			<p class="section-intro">
-				Issue接頭辞のFは、このプロジェクトではFrontendレーンを指します。サーバー側はW-01〜W-16です。
+				Issue接頭辞のFは、このプロジェクトではFrontendレーンを指します。サーバー側はB系・I系です。
 				Fは大きく4つの仕事に分かれます。
 			</p>
 			<div class="grid grid-4">
@@ -59,7 +59,7 @@
 					<p>認証画面、共通レイアウト、ロビー、プロフィール、フレンドUIを担当します。</p>
 				</article>
 				<article class="card">
-					<p class="card-label">Match · F-06/07/08/12</p>
+					<p class="card-label">Match · GV-06/07/08/12</p>
 					<h3>対戦そのもの</h3>
 					<p>render.wasmの表示、HUD、試合遷移、（条件付きで）観戦画面を担当します。</p>
 				</article>
@@ -70,9 +70,9 @@
 				</article>
 			</div>
 			<div class="callout" style="margin-top: 18px">
-				<strong>Wとの境界:</strong>
+				<strong>B系・I系との境界:</strong>
 				Wは「サーバーとして何を保証するか」を完成させます。Fは「その保証を、プレイヤーが
-				迷わず操作できる画面としてどう見せるか」を受け持ちます。詳細は<a href="#backend">Wとの境界</a>参照。
+				迷わず操作できる画面としてどう見せるか」を受け持ちます。詳細は<a href="#backend">B/Iとの境界</a>参照。
 			</div>
 		</section>
 
@@ -80,7 +80,7 @@
 			<p class="section-kicker">02 · Current position</p>
 			<h2>12件のうち、4件完了</h2>
 			<p class="section-intro">
-				完了率は4/12＝33.3%。ただし完了した4件（F-01・F-02・F-06・F-07）は「対戦が実際に1試合、
+				完了率は4/12＝33.3%。ただし完了した4件（F-01・F-02・GV-06・GV-07）は「対戦が実際に1試合、
 				2ブラウザ間で動く」ために必要な最小構成で、Gate 2のデモ可能性を優先して先に進めた結果です。
 				ロビーは未実装（F-05）のため、今のところ試合は決め打ちの部屋IDで開始する開発用リンクから入ります。
 			</p>
@@ -88,7 +88,7 @@
 				<article class="card">
 					<p class="card-label">完了</p>
 					<p class="metric" style="color: var(--green)">4<small> / 12</small></p>
-					<p class="metric-note">F-01 · F-02 · F-06 · F-07</p>
+					<p class="metric-note">F-01 · F-02 · GV-06 · GV-07</p>
 					<div class="progress" role="progressbar" aria-label="F作業33.3%完了" aria-valuenow="33.3" aria-valuemin="0" aria-valuemax="100"><span></span></div>
 				</article>
 				<article class="card">
@@ -98,12 +98,12 @@
 				</article>
 				<article class="card">
 					<p class="card-label">最大の上流ブロッカー</p>
-					<p class="metric">W-04</p>
+					<p class="metric">B-04</p>
 					<p class="metric-note">本認証が無いとF-03（ログイン画面）が実際には繋がらない</p>
 				</article>
 				<article class="card">
 					<p class="card-label">計画からの逸脱</p>
-					<p class="metric">F-06/07</p>
+					<p class="metric">GV-06/07</p>
 					<p class="metric-note">本来F-05の後の予定だったが、Gate 2優先で先に完了させた</p>
 				</article>
 			</div>
@@ -141,17 +141,17 @@
 				<article class="stage">
 					<span class="step">STEP 4</span>
 					<strong>試合開始遷移</strong>
-					<p>F-08がmatch_foundからカウントダウンへ自動遷移する（未実装）</p>
+					<p>GV-08がmatch_foundからカウントダウンへ自動遷移する（未実装）</p>
 				</article>
 				<article class="stage">
 					<span class="step">STEP 5</span>
 					<strong>対戦</strong>
-					<p>F-06がrender.wasmとCanvasを繋ぎ、F-07がHUDを重ねる（完了）</p>
+					<p>GV-06がrender.wasmとCanvasを繋ぎ、GV-07がHUDを重ねる（完了）</p>
 				</article>
 				<article class="stage">
 					<span class="step">STEP 6</span>
 					<strong>結果</strong>
-					<p>F-08がmatch_endモーダルを出し、ロビーへ戻す（未実装）</p>
+					<p>GV-08がmatch_endモーダルを出し、ロビーへ戻す（未実装）</p>
 				</article>
 				<article class="stage">
 					<span class="step">STEP 7</span>
@@ -161,12 +161,12 @@
 			</div>
 			<p class="section-intro">
 				F-10（フレンドUI）はロビーとプロフィールの両方から横断的に使われ、F-11（レスポンシブ/
-				アクセシビリティ）は全画面を最後に横断して調整します。F-12（観戦UI）は条件付きの予備枠です。
+				アクセシビリティ）は全画面を最後に横断して調整します。GV-12（観戦UI）は条件付きの予備枠です。
 			</p>
 		</section>
 
 		<section id="issues">
-			<p class="section-kicker">04 · F-01—F-12</p>
+			<p class="section-kicker">04 · F系・GV系</p>
 			<h2>12工程を「何のためか」で読む</h2>
 			<p class="section-intro">
 				詳細な受入条件は⑤バックログが正本です。ここでは、チーム説明で必要な
@@ -195,7 +195,7 @@
 				</article>
 				<article class="issue-card" data-status="todo">
 					<div class="issue-id">F-03</div>
-					<div><h3>認証画面 + route guard</h3><p>signup/loginフォームと保護ページのガード。<code>LoginPage.tsx</code>はstubのみ存在。</p><div class="issue-meta"><span class="tag status-todo">未着手（担当未定・W-04待ち）</span></div></div>
+					<div><h3>認証画面 + route guard</h3><p>signup/loginフォームと保護ページのガード。<code>LoginPage.tsx</code>はstubのみ存在。</p><div class="issue-meta"><span class="tag status-todo">未着手（担当未定・B-04待ち）</span></div></div>
 				</article>
 				<article class="issue-card" data-status="todo">
 					<div class="issue-id">F-04</div>
@@ -203,34 +203,34 @@
 				</article>
 				<article class="issue-card" data-status="todo">
 					<div class="issue-id">F-05</div>
-					<div><h3>ロビー一式</h3><p>5領域（キュー/ルーム/フレンド/試合フィード等）と<code>useLobbySocket</code>。<code>LobbyPage.tsx</code>はF-06動作確認用の暫定リンクのみ。</p><div class="issue-meta"><span class="tag status-todo">未着手（担当未定・W-08/W-09待ち）</span></div></div>
+					<div><h3>ロビー一式</h3><p>5領域（キュー/ルーム/フレンド/試合フィード等）と<code>useLobbySocket</code>。<code>LobbyPage.tsx</code>はGV-06動作確認用の暫定リンクのみ。</p><div class="issue-meta"><span class="tag status-todo">未着手（担当未定・B-08/B-09待ち）</span></div></div>
 				</article>
 				<article class="issue-card" data-status="done" data-owner="samatsum">
-					<div class="issue-id">F-06</div>
+					<div class="issue-id">GV-06</div>
 					<div><h3>GameView統合</h3><p>render.wasm読込、Canvas描画、snapshot補間、入力送信をE-08/E-12へ接続。2ブラウザ間の対戦と観戦表示が動作。</p><div class="issue-meta"><span class="tag owner">samatsum</span><span class="tag status-done">完了</span></div></div>
 				</article>
 				<article class="issue-card" data-status="done" data-owner="samatsum">
-					<div class="issue-id">F-07</div>
+					<div class="issue-id">GV-07</div>
 					<div><h3>HUDオーバーレイ一式</h3><p>スコア・カウントダウン・接続状態など8要素。grace期間→AI代替の可視化まで実装。</p><div class="issue-meta"><span class="tag owner">samatsum</span><span class="tag status-done">完了</span></div></div>
 				</article>
 				<article class="issue-card" data-status="todo">
-					<div class="issue-id">F-08</div>
-					<div><h3>試合遷移フロー</h3><p>match_found自動遷移→カウントダウン→match_endモーダル→ロビー復帰。WS再接続中もコンソールエラー無しが条件。</p><div class="issue-meta"><span class="tag status-todo">未着手（担当未定・F-05/F-07待ち）</span></div></div>
+					<div class="issue-id">GV-08</div>
+					<div><h3>試合遷移フロー</h3><p>match_found自動遷移→カウントダウン→match_endモーダル→ロビー復帰。WS再接続中もコンソールエラー無しが条件。</p><div class="issue-meta"><span class="tag status-todo">未着手（担当未定・F-05/GV-07待ち）</span></div></div>
 				</article>
 				<article class="issue-card" data-status="todo">
 					<div class="issue-id">F-09</div>
-					<div><h3>プロフィール/統計/履歴</h3><p>自己編集・アバターアップロード。<code>win_rate</code>がW-13のDB定義と一致する必要がある。</p><div class="issue-meta"><span class="tag status-todo">未着手（担当未定・W-06/W-13待ち）</span></div></div>
+					<div><h3>プロフィール/統計/履歴</h3><p>自己編集・アバターアップロード。<code>win_rate</code>がB-13のDB定義と一致する必要がある。</p><div class="issue-meta"><span class="tag status-todo">未着手（担当未定・B-06/B-13待ち）</span></div></div>
 				</article>
 				<article class="issue-card" data-status="todo">
 					<div class="issue-id">F-10</div>
-					<div><h3>フレンドUI</h3><p>ロビーのフレンド領域とプロフィールのボタン。presenceバッジをリアルタイム更新する。</p><div class="issue-meta"><span class="tag status-todo">未着手（担当未定・F-05/W-07待ち）</span></div></div>
+					<div><h3>フレンドUI</h3><p>ロビーのフレンド領域とプロフィールのボタン。presenceバッジをリアルタイム更新する。</p><div class="issue-meta"><span class="tag status-todo">未着手（担当未定・F-05/B-07待ち）</span></div></div>
 				</article>
 				<article class="issue-card" data-status="todo">
 					<div class="issue-id">F-11</div>
-					<div><h3>レスポンシブ/アクセシビリティ</h3><p>375px幅で全画面確認、キーボードのみで試合開始まで到達可能にする。全画面を横断する仕上げ工程。</p><div class="issue-meta"><span class="tag status-todo">未着手（担当未定・F-04〜F-10待ち）</span></div></div>
+					<div><h3>レスポンシブ/アクセシビリティ</h3><p>375px幅で全画面確認、キーボードのみで試合開始まで到達可能にする。全画面を横断する仕上げ工程。</p><div class="issue-meta"><span class="tag status-todo">未着手（担当未定・F-04・F-05・GV-06・GV-07・GV-08・F-09・F-10待ち）</span></div></div>
 				</article>
 				<article class="issue-card" data-status="todo">
-					<div class="issue-id">F-12</div>
+					<div class="issue-id">GV-12</div>
 					<div><h3>観戦UI（予備枠）</h3><p>観戦者向けHUD。ARCHITECTURE §4.3の条件を満たす場合のみ着手する予備Issue。</p><div class="issue-meta"><span class="tag status-todo">未着手（条件付き・担当未定）</span></div></div>
 				</article>
 			</div>
@@ -240,17 +240,17 @@
 			<p class="section-kicker">05 · Dependencies</p>
 			<h2>次に進む順番は、番号順ではない</h2>
 			<p class="section-intro">
-				F-06/F-07はF-05より先に完了しています。これは「Gate 2でデモできる状態を優先する」という
+				GV-06/GV-07はF-05より先に完了しています。これは「Gate 2でデモできる状態を優先する」という
 				判断のもとで、計画（④設計書の依存順）とあえて順序を変えたものです。ロビーが無いため、
-				F-06/F-07は今も<code>/game/dev-room</code>という開発用URLから直接入る形で確認します。
+				GV-06/GV-07は今も<code>/game/dev-room</code>という開発用URLから直接入る形で確認します。
 			</p>
 			<div class="grid grid-2">
 				<article class="card">
 					<p class="card-label">Player-facing（未着手・担当未定）</p>
 					<ol class="path-list">
-						<li><div><strong>F-03 → F-04</strong><span>W-04（本認証）が閉じ次第、ログイン画面とレイアウトを実装</span></div></li>
-						<li><div><strong>F-05</strong><span>W-08/W-09（ロビーWS・マッチ成立）を消費してロビー一式を実装</span></div></li>
-						<li><div><strong>F-08 → F-09 → F-10</strong><span>試合遷移、プロフィール、フレンドUIの順に接続</span></div></li>
+						<li><div><strong>F-03 → F-04</strong><span>B-04（本認証）が閉じ次第、ログイン画面とレイアウトを実装</span></div></li>
+						<li><div><strong>F-05</strong><span>B-08/B-09（ロビーWS・マッチ成立）を消費してロビー一式を実装</span></div></li>
+						<li><div><strong>GV-08 → F-09 → F-10</strong><span>試合遷移、プロフィール、フレンドUIの順に接続</span></div></li>
 						<li><div><strong>F-11</strong><span>最後に全画面のレスポンシブ/アクセシビリティを横断調整</span></div></li>
 					</ol>
 				</article>
@@ -259,16 +259,16 @@
 					<ol class="path-list">
 						<li><div><strong>F-01 完了</strong><span>骨格・ルーティング・ビルド警告ゼロを確立</span></div></li>
 						<li><div><strong>F-02 完了</strong><span>共通fetch・エラー処理・401リダイレクトを確立</span></div></li>
-						<li><div><strong>F-06 完了</strong><span>W-11のsnapshotをrender.wasm経由でCanvasへ表示</span></div></li>
-						<li><div><strong>F-07 完了</strong><span>W-12のgrace/AI状態をHUDへ可視化</span></div></li>
+						<li><div><strong>GV-06 完了</strong><span>B-11のsnapshotをrender.wasm経由でCanvasへ表示</span></div></li>
+						<li><div><strong>GV-07 完了</strong><span>B-12のgrace/AI状態をHUDへ可視化</span></div></li>
 					</ol>
 				</article>
 			</div>
 			<div class="callout" style="margin-top: 18px">
 				<strong>合流点:</strong>
-				<code>W-04 → F-03 → F-04 → F-05 → F-08</code>。
+				<code>B-04 → F-03 → F-04 → F-05 → GV-08</code>。
 				ここが通ると「ログインした人がロビーから実試合へ入り、結果を見てロビーへ戻る」という
-				プレイヤー体験が一本になります。現時点の最大のブロッカーはW-04（本認証）です。
+				プレイヤー体験が一本になります。現時点の最大のブロッカーはB-04（本認証）です。
 			</div>
 		</section>
 
@@ -284,9 +284,9 @@
 					<tbody>
 						<tr><td>F-01 / 骨格</td><td><a href="../../../app/frontend/src/main.tsx"><code>main.tsx</code></a> / <a href="../../../app/frontend/src/App.tsx"><code>App.tsx</code></a></td><td>Router定義、ErrorBoundary、StrictModeの配線</td></tr>
 						<tr><td>F-02 / 通信</td><td><a href="../../../app/frontend/src/api/apiFetch.ts"><code>api/apiFetch.ts</code></a> / <a href="../../../app/frontend/src/api/apiError.ts"><code>apiError.ts</code></a></td><td>共通エラーエンベロープの解釈とToast連携</td></tr>
-						<tr><td>F-06 / 描画</td><td><a href="../../../app/frontend/src/pages/GameView.tsx"><code>pages/GameView.tsx</code></a> / <a href="../../../app/frontend/src/engine/renderModule.ts"><code>engine/renderModule.ts</code></a></td><td>render.wasm読込とCanvas転送</td></tr>
-						<tr><td>F-06 / 補間・通信</td><td><a href="../../../app/frontend/src/engine/snapshotInterp.ts"><code>engine/snapshotInterp.ts</code></a> / <a href="../../../app/frontend/src/game/useGameSocket.ts"><code>game/useGameSocket.ts</code></a></td><td>snapshotの補間計算とゲームWS接続の維持</td></tr>
-						<tr><td>F-07 / HUD</td><td><a href="../../../app/frontend/src/game/hud/HudOverlay.tsx"><code>game/hud/HudOverlay.tsx</code></a></td><td>8要素の重ね合わせ。個別コンポーネントは同ディレクトリ</td></tr>
+						<tr><td>GV-06 / 描画</td><td><a href="../../../app/frontend/src/pages/GameView.tsx"><code>pages/GameView.tsx</code></a> / <a href="../../../app/frontend/src/engine/renderModule.ts"><code>engine/renderModule.ts</code></a></td><td>render.wasm読込とCanvas転送</td></tr>
+						<tr><td>GV-06 / 補間・通信</td><td><a href="../../../app/frontend/src/engine/snapshotInterp.ts"><code>engine/snapshotInterp.ts</code></a> / <a href="../../../app/frontend/src/game/useGameSocket.ts"><code>game/useGameSocket.ts</code></a></td><td>snapshotの補間計算とゲームWS接続の維持</td></tr>
+						<tr><td>GV-07 / HUD</td><td><a href="../../../app/frontend/src/game/hud/HudOverlay.tsx"><code>game/hud/HudOverlay.tsx</code></a></td><td>8要素の重ね合わせ。個別コンポーネントは同ディレクトリ</td></tr>
 						<tr><td>F-03/04/05/09 / stub</td><td><a href="../../../app/frontend/src/pages/LoginPage.tsx"><code>pages/LoginPage.tsx</code></a> ほか</td><td>ファイル先頭コメントに「未実装。担当Issueで書く」の明記あり</td></tr>
 					</tbody>
 				</table>
@@ -303,14 +303,14 @@
 			</p>
 			<div class="table-wrap">
 				<table>
-					<thead><tr><th>Wが保証するもの</th><th>消費するF</th><th>F側で残る仕事</th></tr></thead>
+					<thead><tr><th>B系・I系が保証するもの</th><th>消費する側</th><th>F系・GV系で残る仕事</th></tr></thead>
 					<tbody>
-						<tr><td>W-04 auth REST + Cookie</td><td>F-03</td><td>フォーム、route guard、401遷移</td></tr>
-						<tr><td>W-08/W-09 lobby WS + match_found</td><td>F-05/F-08</td><td>ロビー表示、再接続、試合画面への遷移</td></tr>
-						<tr><td>W-11 snapshot/event</td><td>F-06/F-07</td><td>render.wasm、補間、Canvas、HUD、入力送信（完了済み）</td></tr>
-						<tr><td>W-12 grace/AI状態</td><td>F-07</td><td>切断猶予とAI切替の可視化（完了済み）</td></tr>
-						<tr><td>W-13 history/stats</td><td>F-09</td><td>プロフィール・履歴・統計表示</td></tr>
-						<tr><td>W-07 presence</td><td>F-10</td><td>フレンド操作とリアルタイムbadge</td></tr>
+						<tr><td>B-04 auth REST + Cookie</td><td>F-03</td><td>フォーム、route guard、401遷移</td></tr>
+						<tr><td>B-08/B-09 lobby WS + match_found</td><td>F-05/GV-08</td><td>ロビー表示、再接続、試合画面への遷移</td></tr>
+						<tr><td>B-11 snapshot/event</td><td>GV-06/GV-07</td><td>render.wasm、補間、Canvas、HUD、入力送信（完了済み）</td></tr>
+						<tr><td>B-12 grace/AI状態</td><td>GV-07</td><td>切断猶予とAI切替の可視化（完了済み）</td></tr>
+						<tr><td>B-13 history/stats</td><td>F-09</td><td>プロフィール・履歴・統計表示</td></tr>
+						<tr><td>B-07 presence</td><td>F-10</td><td>フレンド操作とリアルタイムbadge</td></tr>
 					</tbody>
 				</table>
 			</div>
@@ -322,20 +322,20 @@
 			<div class="script">
 				<blockquote>
 					<p>
-						「Wが作るのはサーバーの保証、Fが作るのはプレイヤーが実際に触る画面です。
+						「B系・I系が作るのはサーバーの保証、F系・GV系が作るのはプレイヤーが実際に触る画面です。
 						F-01でVite/React/TSの骨格を作り、F-02で共通の通信処理（エラー表示・401リダイレクト）を整えました。
 					</p>
 					<p>
 						本来はF-03のログイン画面、F-04の共通レイアウト、F-05のロビーと順に作ってから対戦画面へ進む
-						計画でしたが、Gate 2でデモできることを優先し、先にF-06（render.wasmをCanvasへ表示し、
-						snapshotを補間する対戦画面）とF-07（スコア・切断猶予・AI代替を見せるHUD）を完成させました。
+						計画でしたが、Gate 2でデモできることを優先し、先にGV-06（render.wasmをCanvasへ表示し、
+						snapshotを補間する対戦画面）とGV-07（スコア・切断猶予・AI代替を見せるHUD）を完成させました。
 					</p>
 					<p>
 						その結果、今は開発用の固定URLから2ブラウザ間で1試合を最後まで見せられます。
 						一方でログイン画面・ロビー・プロフィールはまだstub（受け皿だけ）の状態です。
 					</p>
 					<p>
-						次に必要なのは、Wの本認証（W-04）が閉じ次第のF-03、そしてW-08/W-09を使うF-05のロビーです。
+						次に必要なのは、Wの本認証（B-04）が閉じ次第のF-03、そしてB-08/B-09を使うF-05のロビーです。
 						この2つが繋がると、プレイヤーはログインからロビー経由で実試合に入れるようになります。」
 					</p>
 				</blockquote>
@@ -348,7 +348,7 @@
 			<div class="grid grid-3">
 				<article class="card">
 					<h3><a href="../../ai/backlog.md">⑤ バックログ</a></h3>
-					<p>F-01〜F-12の受入条件・依存・進捗の正本（英語MD。AI向け資料）。</p>
+					<p>F系・GV系の受入条件・依存・進捗の正本（英語MD。AI向け資料）。</p>
 				</article>
 				<article class="card">
 					<h3><a href="../はじめに/チーム体制.html">⑥ チーム体制</a></h3>
@@ -356,11 +356,11 @@
 				</article>
 				<article class="card">
 					<h3><a href="../../ai/frontend.md">④ Frontend設計</a></h3>
-					<p>F-01〜F-12の画面構成・状態管理・受入条件（英語MD。AI向け資料）。</p>
+					<p>F系・GV系の画面構成・状態管理・受入条件（英語MD。AI向け資料）。</p>
 				</article>
 				<article class="card">
 					<h3><a href="./サーバー開発工程.html">サーバー開発工程</a></h3>
-					<p>Wレーンの同種ドキュメント。F側との境界表はこちらにもある。</p>
+					<p>Backend / Infraレーンの同種ドキュメント。F側との境界表はこちらにもある。</p>
 				</article>
 			</div>
 		</section>
@@ -368,7 +368,7 @@
 
 	<footer>
 		<div class="shell">
-			説明用資料 · F-01〜F-12 · 2026-08-07時点。
+			説明用資料 · F系・GV系 · 2026-08-07時点。
 			進捗が変わったら、まず⑤バックログを更新し、その後このHTMLを追従させてください。
 			<p>samatsumからの依頼（2026-08-07）を受けて新規作成。サーバー開発工程.htmlと対になるよう、
 			同じ共通スタイルシート・同じ節構成で書いています。</p>

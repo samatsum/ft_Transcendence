@@ -68,7 +68,7 @@
 				<strong>前提として動かせないもの:</strong>
 				課題書 第III章の必須要件（FE+BE+DBのWebアプリ、メール+パスワード認証のハッシュ化、
 				単一コマンド起動、全接続HTTPS、Privacy/ToS、レスポンシブ）は<strong>モジュールとは無関係に必須</strong>。
-				つまり <code>W-02</code>〜<code>W-05</code>・<code>W-15</code>・<code>F-03</code>・<code>F-04</code>・<code>F-11</code>
+				つまり <code>B-02</code>〜<code>B-05</code>・<code>I-15</code>・<code>F-03</code>・<code>F-04</code>・<code>F-11</code>
 				は、どの構成を選んでも必ずやる。この改訂はその「必ずやる分」の外側だけを組み替えている。
 			</div>
 		</section>
@@ -86,12 +86,12 @@
 					<thead><tr><th>#</th><th>モジュール</th><th>区分</th><th>pt</th><th>今の状態</th><th>成立に必要な残作業</th></tr></thead>
 					<tbody>
 						<tr><td>1</td><td>完全なWebベースのゲーム（RSP）</td><td>Gaming Major</td><td>2</td><td><span class="tag status-partial">エンジン完成</span></td><td>ログイン→ロビー導線（必須作業に含まれる）</td></tr>
-						<tr><td>2</td><td>リモートプレイヤー</td><td>Gaming Major</td><td>2</td><td><span class="tag status-partial">実証済み</span></td><td>同上。W-12の30秒切断復帰は実装済みで、むしろ強い実演材料</td></tr>
+						<tr><td>2</td><td>リモートプレイヤー</td><td>Gaming Major</td><td>2</td><td><span class="tag status-partial">実証済み</span></td><td>同上。B-12の30秒切断復帰は実装済みで、むしろ強い実演材料</td></tr>
 						<tr><td>3</td><td>マルチプレイヤー（3人以上）</td><td>Gaming Major</td><td>2</td><td><span class="tag status-partial">エンジン完成</span></td><td>同上（RSP 2v2＝4人）</td></tr>
 						<tr><td>4</td><td>FE/BE双方でフレームワーク</td><td>Web Major</td><td>2</td><td><span class="tag status-done">完了</span></td><td><strong>なし</strong></td></tr>
-						<tr><td>5</td><td>WebSocketsのリアルタイム機能</td><td>Web Major</td><td>2</td><td><span class="tag status-partial">ゲームWSは完了</span></td><td>W-08のロビーWS結合（必須作業に含まれる）</td></tr>
+						<tr><td>5</td><td>WebSocketsのリアルタイム機能</td><td>Web Major</td><td>2</td><td><span class="tag status-partial">ゲームWSは完了</span></td><td>B-08のロビーWS結合（必須作業に含まれる）</td></tr>
 						<tr><td>6</td><td><strong>AI対戦相手</strong></td><td>AI Major</td><td>2</td><td><span class="tag status-done">完了</span></td><td><strong>なし</strong>（現行計画ではボーナス扱いだったものを必須へ昇格）</td></tr>
-						<tr><td>7</td><td>ORMの使用（Prisma）</td><td>Web Minor</td><td>1</td><td><span class="tag status-todo">未着手</span></td><td>W-03のみ。<strong>DBは第III章で必須</strong>なので、どのみち作る＝実質タダ</td></tr>
+						<tr><td>7</td><td>ORMの使用（Prisma）</td><td>Web Minor</td><td>1</td><td><span class="tag status-todo">未着手</span></td><td>B-03のみ。<strong>DBは第III章で必須</strong>なので、どのみち作る＝実質タダ</td></tr>
 						<tr><td>8</td><td>ゲームカスタマイズオプション</td><td>Gaming Minor</td><td>1</td><td><span class="tag status-partial">エンジン側完成</span></td><td>マップ選択と先取点の選択UI（ロビー画面の一部）</td></tr>
 					</tbody>
 				</table>
@@ -117,7 +117,7 @@
 					<tbody>
 						<tr><td>9</td><td><strong>高度な3Dグラフィックス</strong></td><td>Gaming Major</td><td>2</td><td><span class="tag status-done">実装は完成</span></td><td><strong>コードはゼロ</strong>。READMEに正当化を書くのみ。<br>ただし却下リスクあり（→<a href="#risk">§06</a>）</td></tr>
 						<tr><td>10</td><td>カスタムデザインシステム</td><td>Web Minor</td><td>1</td><td><span class="tag status-partial">部品9個が存在</span></td><td>再利用可能部品をあと1個＋パレット/タイポグラフィの文書化</td></tr>
-						<tr><td>11</td><td>観戦モード</td><td>Gaming Minor</td><td>1</td><td><span class="tag status-partial">土台のみ</span></td><td>WSの<code>spectate</code>アクション実装＋視点切替UI（F-12）</td></tr>
+						<tr><td>11</td><td>観戦モード</td><td>Gaming Minor</td><td>1</td><td><span class="tag status-partial">土台のみ</span></td><td>WSの<code>spectate</code>アクション実装＋視点切替UI（GV-12）</td></tr>
 						<tr><td>12</td><td>ヘルスチェック/ステータスページ</td><td>DevOps Minor</td><td>1</td><td><span class="tag status-partial"><code>/api/health</code>済</span></td><td>ステータスページ＋自動バックアップ・復旧手順</td></tr>
 					</tbody>
 				</table>
@@ -137,12 +137,12 @@
 					<tbody>
 						<tr><td>AI対戦相手</td><td>2</td><td>ボーナス</td><td><strong>必須へ昇格</strong></td><td>完成済み。合格ラインは確実なもので固める</td></tr>
 						<tr><td>標準的なユーザー管理・認証</td><td>2</td><td>必須</td><td><span class="tag status-todo">外す</span></td><td>アバター・フレンド・プロフィール画面まで要求され高価。認証自体は第III章で必須なので実装は残る</td></tr>
-						<tr><td>ゲーム統計・対戦履歴</td><td>1</td><td>必須</td><td><span class="tag status-todo">外す</span></td><td>W-13の永続化とF-09のプロフィール画面が前提。1ptに対して重い</td></tr>
-						<tr><td>別のゲーム（FPS）</td><td>2</td><td>ボーナス</td><td><span class="tag status-todo">外す（保留）</span></td><td>エンジンは完成しているが「履歴＋マッチメイキング」が条件でW-13が要る。<strong>時間ができたら真っ先に戻す候補</strong></td></tr>
+						<tr><td>ゲーム統計・対戦履歴</td><td>1</td><td>必須</td><td><span class="tag status-todo">外す</span></td><td>B-13の永続化とF-09のプロフィール画面が前提。1ptに対して重い</td></tr>
+						<tr><td>別のゲーム（FPS）</td><td>2</td><td>ボーナス</td><td><span class="tag status-todo">外す（保留）</span></td><td>エンジンは完成しているが「履歴＋マッチメイキング」が条件でB-13が要る。<strong>時間ができたら真っ先に戻す候補</strong></td></tr>
 						<tr><td>高度な3Dグラフィックス</td><td>2</td><td>—</td><td><strong>ボーナスへ追加</strong></td><td>実装済みのものを申告するだけ</td></tr>
 						<tr><td>カスタムデザインシステム</td><td>1</td><td>—</td><td><strong>ボーナスへ追加</strong></td><td>部品9個が既存、あと1個</td></tr>
 						<tr><td>ヘルスチェック/ステータスページ</td><td>1</td><td>—</td><td><strong>ボーナスへ追加</strong></td><td><code>/api/health</code>が既存</td></tr>
-						<tr><td>観戦モード</td><td>1</td><td>予備</td><td><strong>ボーナスへ格上げ</strong></td><td>F-06の土台が既にある</td></tr>
+						<tr><td>観戦モード</td><td>1</td><td>予備</td><td><strong>ボーナスへ格上げ</strong></td><td>GV-06の土台が既にある</td></tr>
 						<tr><td>OAuth 2.0 / 2FA / Prometheus+Grafana</td><td>4</td><td>予備</td><td><span class="tag status-todo">外す</span></td><td>完全未着手。上の構成で19ptに届くため不要</td></tr>
 					</tbody>
 				</table>
@@ -159,11 +159,11 @@
 			<div class="grid grid-2">
 				<article class="card">
 					<p class="card-label">Backend</p>
-					<h3>W-06 / W-07 / W-13</h3>
+					<h3>B-06 / B-07 / B-13</h3>
 					<p>
-						<strong>W-06</strong> アバターアップロード（2MB制限・MIME/マジックバイト検査・nginx静的配信）、
-						<strong>W-07</strong> フレンドAPI（申請・承認・削除・presence合成）、
-						<strong>W-13</strong> 試合永続化と統計API。
+						<strong>B-06</strong> アバターアップロード（2MB制限・MIME/マジックバイト検査・nginx静的配信）、
+						<strong>B-07</strong> フレンドAPI（申請・承認・削除・presence合成）、
+						<strong>B-13</strong> 試合永続化と統計API。
 						いずれも「標準的なユーザー管理」「ゲーム統計」を外したことで不要になる。
 					</p>
 				</article>
@@ -179,7 +179,7 @@
 			</div>
 			<div class="callout" style="margin-top: 18px">
 				<strong>5つのIssueが不要になる。</strong>
-				一方で、増える作業は「観戦の<code>spectate</code>アクション＋F-12」「部品1個＋文書化」
+				一方で、増える作業は「観戦の<code>spectate</code>アクション＋GV-12」「部品1個＋文書化」
 				「ステータスページ＋バックアップ手順」の3つで、いずれも上記5つより明らかに軽い。
 				<strong>3Dグラフィックスに至っては追加作業ゼロ</strong>。
 			</div>
@@ -205,7 +205,7 @@
 						<tr>
 							<td>時間が余った場合</td>
 							<td>—</td>
-							<td>真っ先に戻すのは<strong>別のゲーム（FPS, 2pt）</strong>。W-13を作れば同時に<strong>ゲーム統計（1pt）</strong>も復活し、W-13ひとつで3pt分になる。その時点で最もリスクの高いモジュールと差し替える</td>
+							<td>真っ先に戻すのは<strong>別のゲーム（FPS, 2pt）</strong>。B-13を作れば同時に<strong>ゲーム統計（1pt）</strong>も復活し、B-13ひとつで3pt分になる。その時点で最もリスクの高いモジュールと差し替える</td>
 						</tr>
 					</tbody>
 				</table>
@@ -230,11 +230,11 @@
 				</article>
 				<article class="card">
 					<h3><a href="../開発状況/サーバー開発工程.html">サーバー開発工程</a></h3>
-					<p>W-01〜W-16の進捗。§05で「不要になる」としたW-06/07/13の詳細。</p>
+					<p>B系・I系の進捗。§05で「不要になる」としたB-06/07/13の詳細。</p>
 				</article>
 				<article class="card">
 					<h3><a href="../開発状況/フロントエンド開発工程.html">フロントエンド開発工程</a></h3>
-					<p>F-01〜F-12の進捗。急所であるF-03/F-05の位置づけ。</p>
+					<p>F系・GV系の進捗。急所であるF-03/F-05の位置づけ。</p>
 				</article>
 				<article class="card">
 					<h3><a href="../../../archive/01_課題/ft_transcendence_対訳.md">課題書 対訳</a></h3>

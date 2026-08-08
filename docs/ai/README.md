@@ -17,14 +17,14 @@ material that didn't carry forward into either the AI or human doc set) live und
 ## Project status (as of 2026-08-07, reconciled against `origin/main` @ `40acdee`)
 
 - **C engine** (Engine E-01–E-14 / Gameplay G-01–G-10): complete.
-- **Server** (W-series): W-01, W-08, W-09, W-10, W-11, W-12, W-14 complete. W-08–W-12 were
+- **Server** (B-/I-series): I-01, B-08, B-09, B-10, B-11, B-12, B-14 complete. B-08–B-12 were
   built ahead of schedule against `ALLOW_DEV_AUTH` and still need to integrate with real cookie
-  auth (**W-02–W-05**, not yet done). **W-13, W-15, W-16** are also outstanding. CI is green on all jobs.
-- **Frontend** (F-series): **F-01 (scaffold), F-02 (fetch wrapper), F-06 (GameView integration), and
-  F-07 (HUD overlay, merged via [PR #35](https://github.com/samatsum/ft_Transcendence/pull/35)) are
-  complete and merged to main.** F-03, F-04, F-05, F-08–F-12 are not started. Next milestone is
-  **Gate 2** (2 browsers, 2v2 RSP match working end-to-end), which needs F-05 and F-08 (both not
-  started — F-06/F-07 currently have no lobby to launch from).
+  auth (**B-02–B-05**, not yet done). **B-13, I-15, I-16** are also outstanding. CI is green on all jobs.
+- **Frontend** (F-/GV-series): **F-01 (scaffold), F-02 (fetch wrapper), GV-06 (GameView integration), and
+  GV-07 (HUD overlay, merged via [PR #35](https://github.com/samatsum/ft_Transcendence/pull/35)) are
+  complete and merged to main.** F-03, F-04, F-05, GV-08・F-09・F-10・F-11・GV-12 are not started. Next milestone is
+  **Gate 2** (2 browsers, 2v2 RSP match working end-to-end), which needs F-05 and GV-08 (both not
+  started — GV-06/GV-07 currently have no lobby to launch from).
 
 ## Team status (important — read before assuming a multi-person workflow)
 
@@ -48,7 +48,7 @@ As of 2026-08-05 the former 4-person team (torinoue / mamiyaza / hminemur, plus 
 | [requirements.md](./requirements.md) | The 42-school "ft_transcendence" subject: all 42 requirement items. Ground truth for whether an implementation is compliant. |
 | [architecture.md](./architecture.md) | Overall architecture: tech stack selection, module boundaries, module structure. The §7 schedule table is flagged inline as stale/historical — do not treat it as a current plan. |
 | [engine-separation.md](./engine-separation.md) | cub3D engine separation design: the `pf_*` platform-abstraction layer, the sim API, the 3 build targets (native / web / sim). |
-| [ws-protocol.md](./ws-protocol.md) | WebSocket protocol: GameRoom, matchmaking, disconnect/reconnect (W-12). Ends with a dedicated **W-10 (GameRoom + sim.wasm integration) implementation notes** section — a 9-item list of implementation-detail caveats carried over from the original Phase 3 report. |
+| [ws-protocol.md](./ws-protocol.md) | WebSocket protocol: GameRoom, matchmaking, disconnect/reconnect (B-12). Ends with a dedicated **B-10 (GameRoom + sim.wasm integration) implementation notes** section — a 9-item list of implementation-detail caveats carried over from the original Phase 3 report. |
 | [rest-api.md](./rest-api.md) | REST API: auth, users, friends, matches/stats, maps. Includes the Prisma schema. |
 | [frontend.md](./frontend.md) | Frontend design: SPA screens, HUD, WS hooks, Privacy/ToS pages. |
 | [backlog.md](./backlog.md) | The full issue backlog — every E/G/W/F issue, gate criteria, and the project's decision log. Check this first for current implementation status. |
@@ -79,7 +79,7 @@ code comments, or these documents' own prose all refer to the same content now l
 | `CODING_RULES.md` / `04_エンジン資料/コーディング規約.md` | [coding-rules.md](./coding-rules.md) |
 | `DEV_DOC.md` / `04_エンジン資料/開発ドキュメント.md` | [dev-doc.md](./dev-doc.md) |
 | `01_課題/ft_トランセンデンス.md` | [requirements.md](./requirements.md) |
-| `03_実装レポート/3-エンジンPhase3レポート.md` §W-10申し送り | ws-protocol.md's "Implementation notes: W-10" section |
+| `03_実装レポート/3-エンジンPhase3レポート.md` §B-10申し送り | ws-protocol.md's "Implementation notes: B-10" section |
 
 ⑥ (`02_設計書/6-チーム分担計画.md`, the old team-assignment plan) has no AI-doc counterpart — it
 was human-facing organizational content and was rewritten for the solo-dev era as

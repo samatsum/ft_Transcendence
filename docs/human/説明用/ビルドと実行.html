@@ -279,7 +279,7 @@ flowchart BT
 						<tr>
 							<td>server</td>
 							<td>Node</td>
-							<td><code>setInterval</code>（JS。W-10 で実装済み）</td>
+							<td><code>setInterval</code>（JS。B-10 で実装済み）</td>
 							<td><code>game_step</code> のみ（描画しない）</td>
 						</tr>
 					</tbody>
@@ -305,8 +305,8 @@ flowchart BT
 
 			<p style="margin-top: 24px"><strong>server の実物（本番は<code>app/backend</code>、参照実装は web/sim_demo/record.mjs）</strong></p>
 			<p class="section-intro">
-				本番の Node サーバ（W-10）は<strong>実装済み</strong>です。以下は同じ構造を単体で確認するために
-				開発初期に作ったデモで、W-10完了後も参照実装として残しています。
+				本番の Node サーバ（B-10）は<strong>実装済み</strong>です。以下は同じ構造を単体で確認するために
+				開発初期に作ったデモで、B-10完了後も参照実装として残しています。
 			</p>
 			<pre><code>let tick = 0;
 while (tick < MAX_SECONDS * TICK_HZ) {       // TICK_HZ = 30
@@ -478,7 +478,7 @@ M._free(mapPtr);                               // 使い終わったら解放</c
 			</p>
 			<div class="callout" style="margin-top: 16px">
 				<p style="margin: 0">
-					<strong>W-10 の実装で、この writeCString の作法がそのまま使われています。</strong>
+					<strong>B-10 の実装で、この writeCString の作法がそのまま使われています。</strong>
 					<code>record.mjs</code> のひな型がそのまま流用できました。
 				</p>
 			</div>
@@ -556,7 +556,7 @@ M._free(mapPtr);                               // 使い終わったら解放</c
 					<h3>Q. native / web / server で 1 フレームを「回す人」は誰？</h3>
 					<p>
 						A. native=MLX（<code>mlx_loop</code>）、web=ブラウザ（<code>requestAnimationFrame</code>）、
-						server=Node（<code>setInterval</code>。W-10 で実装済み）。
+						server=Node（<code>setInterval</code>。B-10 で実装済み）。
 						<strong>呼ばれる <code>game_step</code> は 3 つとも同一</strong>。
 					</p>
 				</article>

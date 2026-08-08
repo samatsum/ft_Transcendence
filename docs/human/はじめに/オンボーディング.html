@@ -121,8 +121,10 @@
 					<tbody>
 						<tr><td><code>E-xx</code></td><td>Engine（エンジン分離）。<strong>完了済み</strong></td><td>E-11 = sim.wasm</td></tr>
 						<tr><td><code>G-xx</code></td><td>Gameplay（対戦ルール等）。<strong>完了済み</strong></td><td>G-01 = 戦闘員統合</td></tr>
-						<tr><td><code>W-xx</code></td><td>Backend / DevOps側のIssue（Web層のサーバ寄りの作業）</td><td>W-04 = 認証、W-10 = GameRoom</td></tr>
-						<tr><td><code>F-xx</code></td><td>Frontend側のIssue</td><td>F-05 = ロビーUI、F-06 = GameView</td></tr>
+						<tr><td><code>B-xx</code></td><td>Backendのissue（Fastify・認証・REST・WS・GameRoom・DB）</td><td>B-04 = 認証、B-10 = GameRoom</td></tr>
+						<tr><td><code>I-xx</code></td><td>Infra / DevOpsのIssue（リポジトリ骨格・Docker/nginx/TLS・CI）</td><td>I-15 = compose起動</td></tr>
+						<tr><td><code>F-xx</code></td><td>Frontendのissue（認証画面・レイアウト・ロビー・レスポンシブ）</td><td>F-05 = ロビーUI</td></tr>
+						<tr><td><code>GV-xx</code></td><td>GameViewのissue（Canvas＋render.wasm・HUD・試合遷移・観戦）</td><td>GV-06 = GameView</td></tr>
 						<tr><td>ゲート</td><td>結合デモのgo/no-go関門（連番の課題番号ではない）</td><td>ゲート2 = 対人戦成立</td></tr>
 						<tr><td>RSP</td><td>じゃんけん鬼ごっこモード（ゲート2の題材）</td><td>—</td></tr>
 						<tr><td>WS</td><td>WebSocket（常時双方向）。契約の正本は<a href="../../ai/ws-protocol.md">② WSプロトコル設計</a></td><td>—</td></tr>

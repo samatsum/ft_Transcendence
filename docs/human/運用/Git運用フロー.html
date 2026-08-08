@@ -32,6 +32,7 @@
 			<a href="#naming">命名規約</a>
 			<a href="#merge">マージ戦略</a>
 			<a href="#cleanup">後片付け</a>
+			<a href="#lanes">レーン接頭辞</a>
 			<a href="#issues">Issue併用</a>
 			<a href="#donts">やってはいけないこと</a>
 			<button class="print-button" type="button" onclick="window.print()">印刷 / PDF</button>
@@ -197,6 +198,56 @@ git push origin --delete feat/xxx       # リモート（gh pr merge --delete-br
 				（<code>git branch --merged</code>・<code>git diff --stat</code>・
 				<code>gh pr list</code>でのPR状態確認）を後から1本ずつ手作業で調べる羽目になりました。
 				マージした直後に消せば、この調査は不要です。
+			</div>
+		</section>
+
+		<section id="lanes">
+			<p class="section-kicker">05.5 · Lane prefixes</p>
+			<h2>レーン接頭辞と、2026-08-08の改名</h2>
+			<p class="section-intro">
+				Issue番号の頭文字はレーンを表します。<strong>レーンは「どこで動くか」ではなく
+				「何のコードで、誰が保守するか」で分けています。</strong>
+				<code>render.wasm</code>はブラウザで動きますがEngineレーンなのはこのためです——
+				同じ<code>raycast.c</code>がnativeバイナリと<code>render.wasm</code>の両方にコンパイルされるので、
+				実行場所で線を引くと1つのソースファイルが2レーンに割れてしまい、担当境界として機能しません。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>接頭辞</th><th>レーン</th><th>範囲</th></tr></thead>
+					<tbody>
+						<tr><td><code>E-</code> / <code>G-</code></td><td><strong>Engine</strong></td><td><code>codes/</code>と<code>web/</code>のCエンジン。接頭辞は2つだがレーンは1つ（<code>E-</code>は移植・基盤、<code>G-</code>はゲームルール）。完了済みの作業を振り直す利益が無いため分けたまま</td></tr>
+						<tr><td><code>B-</code></td><td><strong>Backend</strong></td><td>Fastify・認証・REST・WS・GameRoom・DB（Prisma/SQLite）</td></tr>
+						<tr><td><code>I-</code></td><td><strong>Infra / DevOps</strong></td><td>リポジトリ骨格とツーリング、Docker/nginx/TLS、CI</td></tr>
+						<tr><td><code>F-</code></td><td><strong>Frontend</strong></td><td>一般Web画面: 認証・レイアウト・ロビー・レスポンシブ</td></tr>
+						<tr><td><code>GV-</code></td><td><strong>GameView</strong></td><td>ゲーム画面: Canvasと<code>render.wasm</code>統合・HUD・試合遷移・観戦UI</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<h3 style="margin-top: 30px">旧IDとの対応</h3>
+			<p class="section-intro">
+				2026-08-08まで、バックエンド・DB・インフラは全て<code>W-</code>（Web）1つに詰め込まれており、
+				接頭辞が中身を何も表していませんでした。フロントエンドも一般画面とwasm/WS依存のゲーム画面が同居していました。
+				<strong>改名では番号を保持した</strong>ので対応は機械的ですが、
+				<strong>約85件のコミットメッセージと過去のGitHub Issueは書き換え不可能</strong>なため、
+				新旧の語彙は履歴上ずっと共存します。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>旧</th><th>新</th></tr></thead>
+					<tbody>
+						<tr><td><code>W-01</code></td><td><code>I-01</code></td></tr>
+						<tr><td><code>W-02</code>〜<code>W-14</code></td><td><code>B-02</code>〜<code>B-14</code>（番号そのまま）</td></tr>
+						<tr><td><code>W-15</code>・<code>W-16</code></td><td><code>I-15</code>・<code>I-16</code></td></tr>
+						<tr><td><code>F-06</code>・<code>F-07</code>・<code>F-08</code>・<code>F-12</code></td><td><code>GV-06</code>・<code>GV-07</code>・<code>GV-08</code>・<code>GV-12</code></td></tr>
+						<tr><td>他の<code>F-</code></td><td>変更なし</td></tr>
+						<tr><td><code>E-</code>・<code>G-</code></td><td>変更なし</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<div class="callout" style="margin-top: 18px">
+				<strong>古いコミットの読み方:</strong> 接頭辞だけ置き換え、番号はそのまま。
+				2026年7月のコミットにある<code>W-12</code>は今の<code>B-12</code>、
+				<a href="https://github.com/samatsum/ft_Transcendence/pull/35">PR #35</a>の<code>F-07</code>は今の<code>GV-07</code>です。
 			</div>
 		</section>
 
