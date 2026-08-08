@@ -2,7 +2,7 @@
 
 > Source: translated from the Japanese originals at md_files/02_設計書/2-WSプロトコル設計.md and md_files/03_実装レポート/3-エンジンPhase3レポート.md (both archived).
 
-**Position**: A detailing of [ARCHITECTURE_DESIGN.md](./architecture.md) §2.3 / §3.1. Aligned with [ENGINE_SEPARATION_DESIGN.md](./engine-separation.md) §3-B (sim public API) and §3-D (snapshot structure). This is the authoritative work order for the Backend/DevOps lane's WS / GameRoom / matchmaking work (W-09, implemented by samatsum). The GameView work (F-06) and HUD work (F-07, merged via [PR #35](https://github.com/samatsum/ft_Transcendence/pull/35)) consume this document as the client implementation contract; both are **done**, also implemented by samatsum.
+**Position**: A detailing of [ARCHITECTURE_DESIGN.md](./architecture.md) §2.3 / §3.1. Aligned with [ENGINE_SEPARATION_DESIGN.md](./engine-separation.md) §3-B (sim public API) and §3-D (snapshot structure). This is the authoritative work order for the Backend/DevOps lane's WS / GameRoom / matchmaking work (B-09, implemented by samatsum). The GameView work (GV-06) and HUD work (GV-07, merged via [PR #35](https://github.com/samatsum/ft_Transcendence/pull/35)) consume this document as the client implementation contract; both are **done**, also implemented by samatsum.
 **Principle**: This document contains no implementation code (wire format, state machines, and acceptance criteria only). The implementation source of truth for message schemas is the zod definitions in `shared/`; if implementation diverges from this document, revise this document first, then implement.
 
 ---
@@ -19,17 +19,17 @@ Newly finalized decisions made while writing this document (team agreement 2026-
 | D-2 | Starting when under capacity | **Manual + timeout combined**: a "Fill with AI and start now" button for the queue leader, plus automatic AI fill-in after 60 seconds |
 | D-3 | Reconnect grace period | **30 seconds** (RSP: AI substitute → returns to human on reconnect / FPS: forfeit after 30 seconds elapse. Same value for both) |
 
-### 0-A. Design principles inherited by W-08 from the W-01-onward implementation (finalized 2026-07-30)
+### 0-A. Design principles inherited by B-08 from the I-01-onward implementation (finalized 2026-07-30)
 
-W-08 introduces no new approach; it extends horizontally to the lobby the boundaries that samatsum implemented and verified in W-01 / W-10 / W-11 / W-14. Concretely, the following five points are fixed:
+B-08 introduces no new approach; it extends horizontally to the lobby the boundaries that samatsum implemented and verified in I-01 / B-10 / B-11 / B-14. Concretely, the following five points are fixed:
 
-| Existing implementation | Principle W-08 inherits |
+| Existing implementation | Principle B-08 inherits |
 |---|---|
-| W-01 `app/{backend,frontend,shared}` | The wire contract is single-sourced from the zod definitions in `app/shared/src/ws/lobby.ts`; BE/FE do not define their own types. The browser connects to both REST and WS on the same origin |
-| W-10 `room.ts` / `rooms.ts` | The state machine lives in a pure layer that knows nothing about WS. Time, randomness, and external processing are injectable so it can be tested deterministically. Duplicate async creation is prevented via `reserved` / state reservation |
-| W-11 `game/ws.ts` | Only the gateway layer knows about WebSocket. Messages received before authentication completes are held with a bound; shape is validated by zod, meaning/authorization/current-state are validated in code. Replacing the same user's connection neutralizes the old connection's close |
-| W-14 `maps.ts` / `createRoomFromRules` | The client's map ID is resolved via a static whitelist and never accepts a path. The lobby passes finalized rules to W-09, and GameRoom only ever sees `.cub` text |
-| W-10/W-11 acceptance checks | Real-time end-to-end checks are separated from deterministic checks using a fake clock. "Passing by checking zero occurrences" is prohibited; under contention, checks confirm processing happens **exactly once** by count |
+| I-01 `app/{backend,frontend,shared}` | The wire contract is single-sourced from the zod definitions in `app/shared/src/ws/lobby.ts`; BE/FE do not define their own types. The browser connects to both REST and WS on the same origin |
+| B-10 `room.ts` / `rooms.ts` | The state machine lives in a pure layer that knows nothing about WS. Time, randomness, and external processing are injectable so it can be tested deterministically. Duplicate async creation is prevented via `reserved` / state reservation |
+| B-11 `game/ws.ts` | Only the gateway layer knows about WebSocket. Messages received before authentication completes are held with a bound; shape is validated by zod, meaning/authorization/current-state are validated in code. Replacing the same user's connection neutralizes the old connection's close |
+| B-14 `maps.ts` / `createRoomFromRules` | The client's map ID is resolved via a static whitelist and never accepts a path. The lobby passes finalized rules to B-09, and GameRoom only ever sees `.cub` text |
+| B-10/B-11 acceptance checks | Real-time end-to-end checks are separated from deterministic checks using a fake clock. "Passing by checking zero occurrences" is prohibited; under contention, checks confirm processing happens **exactly once** by count |
 
 Following this inheritance, lobby implementation lives at `app/backend/src/lobby/`, game execution stays in the existing `app/backend/src/game/`, and shared contracts live in `app/shared/src/ws/`. LobbyRoom and GameRoom are not unified into a single `Room` type: the former is a waiting room managing invitations, seats, and rules; the latter is one `sim.wasm` execution unit per match, and the two have different lifecycles.
 
@@ -103,9 +103,9 @@ Opened once, persistently, by the SPA after successful login. Used for (1) prese
 | `lobby_hello` | `v:1`, `online_count:int`, `self:{status}` | Always sent exactly once, immediately after authentication and connection registration. `online_count` is the number of unique users with a lobby WS |
 | `presence_update` | `user_id:int`, `status: online\|in_queue\|in_game\|offline` | On status change. Delivered **only to accepted friends' connections**, never broadcast globally |
 | `queue_state` | `mode`, `position:int` (1-based), `waiting:int`, `auto_fill_in_ms:int`, `is_leader:bool` | On queue change + once per second while non-empty. Sent individually only to queue members |
-| `match_found` | `room_id:string`, `mode`, `slot:int` | After successful GameRoom creation in W-09. Sent individually only to human participants |
+| `match_found` | `room_id:string`, `mode`, `slot:int` | After successful GameRoom creation in B-09. Sent individually only to human participants |
 | `room_state` | `code`, `mode`, `state:open\|starting`, `host_id:int`, `rules`, `seats[]` | Resent in full to all members every time the LobbyRoom changes |
-| `match_result` | `match_id:int`, `mode`, `end_reason`, `winner_team:0\|1\|null`, `winner_user_id:int\|null`, `players[]` | After W-13 persists the match, broadcast the same string **to all lobby connections** |
+| `match_result` | `match_id:int`, `mode`, `end_reason`, `winner_team:0\|1\|null`, `winner_user_id:int\|null`, `players[]` | After B-13 persists the match, broadcast the same string **to all lobby connections** |
 | `error` | §2-C | Sent only to the sender whose operation could not be accepted |
 
 `room_state.seats[]` is `{slot:int, user_id:int|null, display_name:string|null, is_ai:bool}`. An empty seat is `user_id=null, display_name=null, is_ai=false`; an AI seat is `user_id=null, display_name="AI", is_ai=true` — state is never left to be inferred from optional fields.
@@ -151,7 +151,7 @@ Internal GameRoom-creation failures send the existing `internal_error` to every 
 
 ### 3-D. Connection setup, heartbeat, session expiry
 
-The connection sequence proven in W-11 is applied to the lobby as well.
+The connection sequence proven in B-11 is applied to the lobby as well.
 
 1. Validate `Origin` via `isAllowedOrigin`. Mismatch closes with `4003`.
 2. Attach the message listener before authentication completes, holding up to 16 frames and 64KB total, in order. Exceeding that closes with `4001`. After authentication, the same frames flow into the same dispatcher.
@@ -162,15 +162,15 @@ The connection sequence proven in W-11 is applied to the lobby as well.
 
 Connections carry a monotonically increasing `connection_id`. The close handler performs state cleanup only if "the currently registered `connection_id` matches its own." A delayed close on a replaced old connection must never wipe out the new connection's queue or LobbyRoom membership.
 
-The server pings every 10 seconds and clears the alive flag on receiving a pong. If pong is missing for two consecutive cycles, it calls `terminate()`, which funnels into the normal close handler. The timer stops when the connection set is empty and is `unref()`'d so it never keeps the Node process alive. W-08 introduces a shared heartbeat helper, and the existing game WS is migrated to the same helper (applying the same convention to both endpoints in §1).
+The server pings every 10 seconds and clears the alive flag on receiving a pong. If pong is missing for two consecutive cycles, it calls `terminate()`, which funnels into the normal close handler. The timer stops when the connection set is empty and is `unref()`'d so it never keeps the Node process alive. B-08 introduces a shared heartbeat helper, and the existing game WS is migrated to the same helper (applying the same convention to both endpoints in §1).
 
-To make immediate logout invalidation apply even to open WS connections, connections are also indexed by `session_id`. W-04's logout calls the shared `closeSessionConnections(sessionId)` right after deleting the Session row, closing both lobby and game with `4000`. Every unique connected Session is re-validated once every 60 seconds: if valid, extend the D-5 sliding expiry; if invalid, perform the same close. The re-validation and logout hook are owned by W-04/W-05; the connection index and close API are owned by W-08's shared WS infrastructure. So W-08's feature implementation can proceed ahead using an auth stub, but its completion criteria include the W-05 Origin check and this session-expiry path.
+To make immediate logout invalidation apply even to open WS connections, connections are also indexed by `session_id`. B-04's logout calls the shared `closeSessionConnections(sessionId)` right after deleting the Session row, closing both lobby and game with `4000`. Every unique connected Session is re-validated once every 60 seconds: if valid, extend the D-5 sliding expiry; if invalid, perform the same close. The re-validation and logout hook are owned by B-04/B-05; the connection index and close API are owned by B-08's shared WS infrastructure. So B-08's feature implementation can proceed ahead using an auth stub, but its completion criteria include the B-05 Origin check and this session-expiry path.
 
 In development, too, the browser uses `location.host` to connect same-origin to `/ws/lobby`. Vite proxies `/ws` to the backend with `ws: true`, in addition to `/api`. In production, nginx routes the same two paths. No port number is ever embedded in the client.
 
 ### 3-E. UserContextRegistry (the source of truth for one-user-one-context)
 
-W-08 holds a single module-scoped Map from userId → context. queue / LobbyRoom / W-09 must not maintain their own "user membership map" as a source of truth.
+B-08 holds a single module-scoped Map from userId → context. queue / LobbyRoom / B-09 must not maintain their own "user membership map" as a source of truth.
 
 | context | values held | allowed next operations | published presence |
 |---|---|---|---|
@@ -182,7 +182,7 @@ W-08 holds a single module-scoped Map from userId → context. queue / LobbyRoom
 
 State changes are made by **comparing the expected context value within a synchronous section, then writing once**. Any commit / rollback that happens after `await`-ing external I/O only proceeds if `token` matches, so a stale async completion never overwrites newer state.
 
-Presence state is never duplicated in a separate Map; it's derived from context and the current lobby connection. W-08 owns the `FriendResolver.getAcceptedFriendIds(userId)` interface. A version counter increments on every state change, and if that version is stale by the time an async result returns, the send is discarded. This ensures that even if DB lookups for an `online → in_queue` transition complete out of order, a stale `online` is never delivered after the fact. W-08 alone tests "delivered only to friends" using a fake resolver; the later W-07 plugs a Prisma adapter into the same interface, preserving the W-08→W-07 dependency direction. `GET /api/friends` reads this Registry's `getPresence(userId)`.
+Presence state is never duplicated in a separate Map; it's derived from context and the current lobby connection. B-08 owns the `FriendResolver.getAcceptedFriendIds(userId)` interface. A version counter increments on every state change, and if that version is stale by the time an async result returns, the send is discarded. This ensures that even if DB lookups for an `online → in_queue` transition complete out of order, a stale `online` is never delivered after the fact. B-08 alone tests "delivered only to friends" using a fake resolver; the later B-07 plugs a Prisma adapter into the same interface, preserving the B-08→B-07 dependency direction. `GET /api/friends` reads this Registry's `getPresence(userId)`.
 
 `match_result` alone bypasses the friend restriction and is sent as a single pre-stringified string, once, to every current lobby connection. A send buffer over 1MB closes with `4005`. Unlike a snapshot, a lobby notification has no resend source, so intermediate messages are never trimmed to 64KB.
 
@@ -196,7 +196,7 @@ Handling by close reason and context is fixed as follows.
 | `queued` | Leave immediately as specified. Recompute the queue and send `queue_state` to remaining members |
 | `in_room` (ordinary disconnect / heartbeat timeout) | Hold the seat for 10 seconds. On reconnect, cancel the timer and resend `room_state`. On expiry, perform the same host handoff / dissolution as `room_leave` |
 | `in_room` (explicit logout / session expiry) | Leave immediately with no grace period, so no ghost seat is left after logout |
-| `starting_match` / `in_match` | Not cancelled on the lobby side. Handled by the 10-second GameRoom join wait / the W-12 game-WS 30-second grace |
+| `starting_match` / `in_match` | Not cancelled on the lobby side. Handled by the 10-second GameRoom join wait / the B-12 game-WS 30-second grace |
 | `idle` | Only a presence update to offline |
 
 LobbyRoom's 10 seconds is **a different value from the 30-second in-match reconnect grace**. The front end's 1s→2s→5s backoff can recover within 3 tries, and 10 seconds also avoids creating an indefinite ghost seat.
@@ -232,16 +232,16 @@ After reconnect / replacement, the current context is resent right after `lobby_
 - **Code issuance is atomic**: generate → `Map.has` → `Map.set` complete within a single synchronous section with no `await`. On collision, regenerate; after 32 failures, `internal_error` plus structured logging. The RNG is injectable so tests can deliberately force collisions and confirm retry behavior.
 - Host privileges: change `rules`, `room_start`, and (implicitly) dissolve. If the host leaves, **host handoff goes to the oldest remaining member**; if everyone leaves, the room dissolves immediately.
 - LobbyRoom holds `state: open|starting`. A human takes the lowest open slot, and `joined_at / sequence` is tracked separately to determine host-handoff order.
-- Rules (the substance of #11 customization; W-09 uses the finalized values, and W-13 stores them verbatim in `Match.settingsJson`):
+- Rules (the substance of #11 customization; B-09 uses the finalized values, and B-13 stores them verbatim in `Match.settingsJson`):
 
 | field | type / range | default | applies to |
 |---|---|---|---|
 | `map` | ID from the server's map list (`GET /api/maps`, defined in ③) | mode's default map | both |
 | `target_score` | int 3-21 | 10 | RSP only (G-05's `match_rules.target_score`) |
 
-- **Trimmed after implementation review (2026-07-30)**: the earlier table's `move_speed_mult / enemy_speed_mult / ai_level` have no application point anywhere in the current `t_match_rules`, `GameRoom.create`, or `createRoomFromRules`. Accepting and merely storing them would mean "changed in the UI but has no effect on the match," so they are removed from the W-08 wire. If added in future, extend in the order engine API → GameRoom → shared schema → this table.
+- **Trimmed after implementation review (2026-07-30)**: the earlier table's `move_speed_mult / enemy_speed_mult / ai_level` have no application point anywhere in the current `t_match_rules`, `GameRoom.create`, or `createRoomFromRules`. Accepting and merely storing them would mean "changed in the UI but has no effect on the match," so they are removed from the B-08 wire. If added in future, extend in the order engine API → GameRoom → shared schema → this table.
 - Canonical rules are RSP=`{map, target_score}`, FPS=`{map}`. Fields omitted on `room_create` are filled with server defaults; thereafter `room_state` / `room_update_rules` / MatchPlan require every field. The zod object is `strict`, so a removed field is never silently dropped.
-- `map` is validated for shape as a zod string, then semantically validated against existence and mode match via W-14's `findMap`. A mismatch yields `invalid_rules`. Arbitrary paths or a client-supplied `.cub` are never accepted.
+- `map` is validated for shape as a zod string, then semantically validated against existence and mode match via B-14's `findMap`. A mismatch yields `invalid_rules`. Arbitrary paths or a client-supplied `.cub` are never accepted.
 - Quick match always uses the default canonical rules (RSP=`rsp/10`, FPS=`fps_duel`), which eliminates any "rule agreement among queue participants" problem (the intent behind D-1).
 - Seats: `seats[]` sized to the mode's capacity. Any seat a human doesn't fill is AI-ified at start. **At least one human (the host) is required to start** (an all-AI match cannot be created).
 - Joins / leaves / rule updates while `open` each send the same updated `room_state` to all members once complete. No seat, host, or rules change is allowed while `starting`.
@@ -252,7 +252,7 @@ After reconnect / replacement, the current context is resent right after `lobby_
 [synchronous claim] Queue full / fill-start / timeout / room_start
    │  target users → starting_match, LobbyRoom → starting, rules/seats frozen
    ▼
-[W-09 async] GameRoom creation (§6): game_create → game_add_combatant for human/AI seats
+[B-09 async] GameRoom creation (§6): game_create → game_add_combatant for human/AI seats
    │  success: token-verified commit / failure: rollback to original context
    ▼
 [match_found delivery] over lobby WS, individually to each human participant: { room_id, mode, slot }
@@ -273,7 +273,7 @@ After reconnect / replacement, the current context is resent right after `lobby_
 ### 4-D. Matchmaking state machine (user's perspective)
 
 ```text
-idle ──queue_join──► queued ──sync claim──► starting_match ──W-09 success──► in_match
+idle ──queue_join──► queued ──sync claim──► starting_match ──B-09 success──► in_match
   ▲                    │                       │failure rollback               │
   └──queue_leave/disconnect──┘                 └──connected───► queued        │
   ▲                                            └──not connected───► idle      │
@@ -287,9 +287,9 @@ idle ──room_create/room_join──► in_room ──room_start claim──�
 
 Out of scope (not implemented): simultaneous party queueing, rate/rank-aware matching, tournaments, spectator queueing. Spectating is only the §5-E hook.
 
-### 4-E. The sole W-08 → W-09 handoff: immutable MatchPlan
+### 4-E. The sole B-08 → B-09 handoff: immutable MatchPlan
 
-W-08 never creates a GameRoom directly. The result of a synchronous claim is passed exactly once, as the following immutable data, into W-09's `prepareMatch`.
+B-08 never creates a GameRoom directly. The result of a synchronous claim is passed exactly once, as the following immutable data, into B-09's `prepareMatch`.
 
 | field | contents |
 |---|---|
@@ -308,15 +308,15 @@ Every array and the rules are copied and frozen at claim time; the original queu
 2. Move all target users into `starting_match` with the same token.
 3. Remove the quick entry from the queue, or set the LobbyRoom to `starting`.
 4. Build the immutable MatchPlan.
-5. Exit the synchronous section, then `await` W-09.
+5. Exit the synchronous section, then `await` B-09.
 
-W-09 calls the existing `createRoomFromRules({mode, rules, participants, humanSlots})`. On success, it verifies the `token` matches, moves all users to `in_match`, deletes the custom LobbyRoom (invalidating the code), then sends `match_found`. On failure, only users with that same token are rolled back. For quick match, only users with a current lobby connection are reinserted at their original position; a user who disconnected or logged out during generation is not reinserted and instead returns to `idle` (auto-requeueing a disconnected user's queue slot is prohibited). For custom, the room returns to `open`; a participant with no connection due to an ordinary disconnect is given a 10-second room reconnect grace measured from the rollback point. A participant with explicit logout / session expiry leaves immediately, and then host handoff or dissolution proceeds. Connected targets receive `internal_error` plus the latest state. A double `room_start`, a simultaneous fill-start and timeout, or a simultaneous full-join and timeout — in every case only the first claim succeeds; later ones get `room_starting` / `already_in_game`.
+B-09 calls the existing `createRoomFromRules({mode, rules, participants, humanSlots})`. On success, it verifies the `token` matches, moves all users to `in_match`, deletes the custom LobbyRoom (invalidating the code), then sends `match_found`. On failure, only users with that same token are rolled back. For quick match, only users with a current lobby connection are reinserted at their original position; a user who disconnected or logged out during generation is not reinserted and instead returns to `idle` (auto-requeueing a disconnected user's queue slot is prohibited). For custom, the room returns to `open`; a participant with no connection due to an ordinary disconnect is given a 10-second room reconnect grace measured from the rollback point. A participant with explicit logout / session expiry leaves immediately, and then host handoff or dissolution proceeds. Connected targets receive `internal_error` plus the latest state. A double `room_start`, a simultaneous fill-start and timeout, or a simultaneous full-join and timeout — in every case only the first claim succeeds; later ones get `room_starting` / `already_in_game`.
 
-`prepareMatch(plan, {signal})` has a 5-second deadline and accepts an injected fake timer. On timeout it calls `AbortController.abort()` and performs a failure rollback. W-09 changes the existing `reserved Set` into a `Map<roomId, reservationToken>`, and on abort removes **only the reservation matching its own token**. Since a Promise itself can't be cancelled, if GameRoom creation succeeds after the deadline, it is never registered into the registry and is closed immediately instead. Even on ordinary success, all participants' token match is verified **as a single batch** before commit; on any mismatch, `closeRoom(roomId)` discards the already-created GameRoom. Partial commits, orphaned GameRooms, and lingering `reserved` entries are never permitted.
+`prepareMatch(plan, {signal})` has a 5-second deadline and accepts an injected fake timer. On timeout it calls `AbortController.abort()` and performs a failure rollback. B-09 changes the existing `reserved Set` into a `Map<roomId, reservationToken>`, and on abort removes **only the reservation matching its own token**. Since a Promise itself can't be cancelled, if GameRoom creation succeeds after the deadline, it is never registered into the registry and is closed immediately instead. Even on ordinary success, all participants' token match is verified **as a single batch** before commit; on any mismatch, `closeRoom(roomId)` discards the already-created GameRoom. Partial commits, orphaned GameRooms, and lingering `reserved` entries are never permitted.
 
-To return `in_match → idle` when a match ends, W-09 subscribes to the GameRoom lifecycle. Participants are released on either `match_end` (finished) or "closed after 10 seconds with zero humans." Since current GameRoom has no notification for a pre-start close, W-09 adds an `onLifecycle(state, reason)` hook to RoomOptions / the rooms registry. The lobby must never poll GameRoom internal state. When `finished`, user context is set to `idle` even while the result screen holds the connection open for 60 seconds, so the user can immediately join a new queue.
+To return `in_match → idle` when a match ends, B-09 subscribes to the GameRoom lifecycle. Participants are released on either `match_end` (finished) or "closed after 10 seconds with zero humans." Since current GameRoom has no notification for a pre-start close, B-09 adds an `onLifecycle(state, reason)` hook to RoomOptions / the rooms registry. The lobby must never poll GameRoom internal state. When `finished`, user context is set to `idle` even while the result screen holds the connection open for 60 seconds, so the user can immediately join a new queue.
 
-### 4-F. W-08 implementation layout
+### 4-F. B-08 implementation layout
 
 | file | responsibility |
 |---|---|
@@ -369,7 +369,7 @@ The formalization of the 5 message families `join / input / snapshot / event / s
 | `player_status` | `slot`, `state: connected\|ai\|grace` (grace = in disconnect grace period) | On a seat's human/AI switch |
 | `error` | §2-C | — |
 
-> **On the `resume` determination (added 2026-07-27)**: `resume=true` can only be set when the seat is known to be **in the §7 grace state** — and per-seat grace state is owned by **W-12**. So **in W-11 alone, `resume` is structurally always `false`**. This is documented explicitly so a reader of the implementation doesn't mistake it for a bug. It's correctly populated only once W-12 adds the per-seat status table.
+> **On the `resume` determination (added 2026-07-27)**: `resume=true` can only be set when the seat is known to be **in the §7 grace state** — and per-seat grace state is owned by **B-12**. So **in B-11 alone, `resume` is structurally always `false`**. This is documented explicitly so a reader of the implementation doesn't mistake it for a bug. It's correctly populated only once B-12 adds the per-seat status table.
 
 **Map-distribution decision**: `welcome.map_text` **bundles the server's already-loaded `.cub` text**.
 
@@ -482,7 +482,7 @@ created ──all humans join, or 10s──► countdown(3s) ──► playing �
 >
 > The table above holds only the **overall room state** (created / countdown / playing / finished / closed). Separately, §5-B's `player_status` carries a per-seat 3-value state, `connected` / `ai` / `grace`, and §7-A defines a **per-seat transition**: disconnect → 30s grace → ai_takeover. When grace expires, the seat transitions to `ai` (its input source switches to AI) and is simultaneously recorded as `abandoned` for that seat. `abandoned` is a flag separate from `player_status`, used in the end-of-match outcome (`endReason: 'abandon'`). §6-A's `finished(abandon)` refers to the room-level transition that occurs when "all human seats become abandoned."
 >
-> **These are two separate dimensions — grace is not being added to the room state machine.** It is entirely normal for the room to remain `playing` while seat 1 is `grace`, seat 2 is `ai`, and seat 3 is `connected`. §6-A's "playing ──(all human seats grace-expired/abandoned)──► finished" arrow expresses that **an aggregate over the seat dimension triggers a room-level transition**. W-12 must implement this as a new per-seat status table (not as an extension of the room state machine).
+> **These are two separate dimensions — grace is not being added to the room state machine.** It is entirely normal for the room to remain `playing` while seat 1 is `grace`, seat 2 is `ai`, and seat 3 is `connected`. §6-A's "playing ──(all human seats grace-expired/abandoned)──► finished" arrow expresses that **an aggregate over the seat dimension triggers a room-level transition**. B-12 must implement this as a new per-seat status table (not as an extension of the room state machine).
 >
 > ---
 >
@@ -492,8 +492,8 @@ created ──all humans join, or 10s──► countdown(3s) ──► playing �
 >
 > | | |
 > |---|---|
-> | passed by | matchmaking (W-09). For quick match, derived from the head of the queue; for custom room, derived from `seats[]` |
-> | received by | GameRoom (W-10). Stored as `humanSlots: number[]` |
+> | passed by | matchmaking (B-09). For quick match, derived from the head of the queue; for custom room, derived from `seats[]` |
+> | received by | GameRoom (B-10). Stored as `humanSlots: number[]` |
 > | used for | the early transition to countdown (**once every slot in this list has joined, proceed without waiting the full 10 seconds**) |
 > | if omitted | all seats are treated as human (same as the quick-match case where capacity is filled exactly) |
 > | `[]` (empty array) | no human seats (an AI-only room). The early-countdown condition does not apply; transitions to countdown on the default 10-second timeout instead. The countdown check must verify `humanSlots.length > 0` |
@@ -504,7 +504,7 @@ created ──all humans join, or 10s──► countdown(3s) ──► playing �
 
 | room event | sim API called | notes |
 |---|---|---|
-| room creation | `game_create(cub_text, mode, match_rules)` | §4-B's `map` is resolved to cub_text by W-14; only RSP's `target_score` goes into the current `match_rules`. `humanSlots` is GameRoom-side application metadata, not added to the sim API |
+| room creation | `game_create(cub_text, mode, match_rules)` | §4-B's `map` is resolved to cub_text by B-14; only RSP's `target_score` goes into the current `match_rules`. `humanSlots` is GameRoom-side application metadata, not added to the sim API |
 | seat finalization | `game_add_combatant(game, slot, is_ai)` × capacity | Unconnected human seats are **also generated as AI first**, and switched to input source EXTERNAL on join (addendum below) |
 | `input` received | held in the seat's buffer → applied via `game_set_input(game, combatant_id, t_input)` every tick | Mapping `mv`/`yaw`/`act` → `t_input` is the responsibility of the platform/headless layer (`hand` was already removed from `input` per D-17 — hand is decided server-side by the engine). The implemented wrapper is `sim_set_input(game, id, forward, backward, strafe_left, strafe_right, yaw)` |
 | tick | `game_step(game, dt=1/30)` | the return value (in-progress/decided) determines the `finished` transition |
@@ -513,7 +513,7 @@ created ──all humans join, or 10s──► countdown(3s) ──► playing �
 
 > **§3-B addendum request (the sole engine-API addition originating from this document)**: the design in §3-C for AI substitute ⇔ restore on disconnect is "just a swap of input source," but §3-B's public API table has no matching function. **`game_set_input_source(game, combatant_id, AI|EXTERNAL)` must be added to the public API.** Include this function in the acceptance criteria for E-10 (sim public API) and G-02 (input source abstraction) (reflected in the ⑤ backlog).
 >
-> **Resolved (2026-07-23)**. This addendum request has been implemented on the engine side and is exposed as `game_set_input_source` in [`codes/includes/platform/sim.h`](../../codes/includes/platform/sim.h). **No remaining work on the engine side.** All six sim APIs in the table above are implemented; the concrete call-order procedure is written up in the "handoff to W-10" section of [3-エンジンPhase3レポート](../../archive/03_実装レポート/3-エンジンPhase3レポート.md).
+> **Resolved (2026-07-23)**. This addendum request has been implemented on the engine side and is exposed as `game_set_input_source` in [`codes/includes/platform/sim.h`](../../codes/includes/platform/sim.h). **No remaining work on the engine side.** All six sim APIs in the table above are implemented; the concrete call-order procedure is written up in the "handoff to B-10" section of [3-エンジンPhase3レポート](../../archive/03_実装レポート/3-エンジンPhase3レポート.md).
 
 ### 6-C. Persistence and result delivery at match end
 
@@ -531,13 +531,13 @@ created ──all humans join, or 10s──► countdown(3s) ──► playing �
 4. `match_result` is broadcast over the lobby WS (§3-A) only on successful persistence, including the same `match_id` as the DB row, sent after the game WS's `match_end`. On failure, since there is no DB row or ID, `match_result` is never fabricated.
 5. Close with 1000 after 60 seconds → `game_destroy`. Result-screen details (history, stats reflection) are fetched via REST (③). **The 60-second count starts at the moment `event(match_end)` fires** (to avoid a truncated window if persistence takes a long time).
 
-W-09 hands GameRoom a persistence closure that captures the MatchPlan. Since the `PersistedMatchContext` outcome alone (winner/reason/score/tick) can't build `MatchPlayer`, map, and settings, the closure combines it with the MatchPlan's `seats / participants / rules`. `createRoomFromRules` currently forwards `persistMatch` and `onMatchResult` straight through to RoomOptions. `persistMatch` returns `{matchId:int, result:match_result payload}`, and GameRoom calls `onMatchResult(result)` immediately after sending `event(match_end).d.match_id=matchId` over the game WS. W-09/W-13 wire that hook to the `match_result` broadcast to all lobby connections. On null/exception, `match_end` is sent with null and the hook is never called.
+B-09 hands GameRoom a persistence closure that captures the MatchPlan. Since the `PersistedMatchContext` outcome alone (winner/reason/score/tick) can't build `MatchPlayer`, map, and settings, the closure combines it with the MatchPlan's `seats / participants / rules`. `createRoomFromRules` currently forwards `persistMatch` and `onMatchResult` straight through to RoomOptions. `persistMatch` returns `{matchId:int, result:match_result payload}`, and GameRoom calls `onMatchResult(result)` immediately after sending `event(match_end).d.match_id=matchId` over the game WS. B-09/B-13 wire that hook to the `match_result` broadcast to all lobby connections. On null/exception, `match_end` is sent with null and the hook is never called.
 
 ---
 
 ## 7. Disconnect, reconnect, and AI takeover (the core demo for the "Remote players" module)
 
-> **W-12 implementation complete (2026-07-30)**: `GameRoom` holds, as the source of truth, each participant seat's `connected / grace / ai` state and whether restoration is allowed. An ordinary close switches to AI input immediately and starts a 30-second grace; the same user rejoining gets `welcome.resume=true` plus an immediate snapshot restoring them; after expiry, restoring as a player is refused. Full RSP grace-expiry is an abandon; FPS expiry / explicit leave is a forfeit. The real-WebSocket check in `game/ws-check.ts` confirms §10-B #4 and the handoff of departed seats to the persistence callback.
+> **B-12 implementation complete (2026-07-30)**: `GameRoom` holds, as the source of truth, each participant seat's `connected / grace / ai` state and whether restoration is allowed. An ordinary close switches to AI input immediately and starts a 30-second grace; the same user rejoining gets `welcome.resume=true` plus an immediate snapshot restoring them; after expiry, restoring as a player is refused. Full RSP grace-expiry is an abandon; FPS expiry / explicit leave is a forfeit. The real-WebSocket check in `game/ws-check.ts` confirms §10-B #4 and the handoff of departed seats to the persistence callback.
 
 ### 7-A. Flow (RSP example)
 
@@ -603,13 +603,13 @@ Closing a tab → logging in from another tab → re-entering `/game/:roomId` �
 | one-user-one-context / presence | §3-E (derived from UserContextRegistry; queue/room never a duplicate source of truth) |
 | no contention or double-forming under concurrent operations | §4-E (synchronous claim + token-based commit/rollback) |
 | immediate logout invalidation / WS Origin | §3-D (both WS closed via session_id index) + §1 |
-| W-08/W-09 responsibility boundary | §4-E (W-08 = immutable MatchPlan; W-09 = GameRoom creation and lifecycle integration) |
+| B-08/B-09 responsibility boundary | §4-E (B-08 = immutable MatchPlan; B-09 = GameRoom creation and lifecycle integration) |
 | JSON to start, binary is YAGNI | §2-A + §5-C size budget (under 1KB/message as an acceptance criterion) |
 | game_create/add_combatant/set_input/step/snapshot/apply_snapshot/destroy | §6-B correspondence table (the sole addendum = `game_set_input_source`) |
 
 ## 10. Acceptance criteria (seeds for ⑤ backlog W-xx/B-xx)
 
-### 10-A. Completion criteria for W-08 alone
+### 10-A. Completion criteria for B-08 alone
 
 `app/backend/src/lobby/lobby-check.ts` automatically checks the following; a zero observation count on even one item is a fail.
 
@@ -617,16 +617,16 @@ Closing a tab → logging in from another tab → re-entering `/game/:roomId` �
 2. **heartbeat/session**: cleaned up after 2 missing-pong cycles; the logout hook closes both lobby and game for the same session with 4000. Timer/connection Maps are empty (0 entries) after the test.
 3. **FIFO**: RSP/FPS are independent, and same-timestamp entries are ordered by sequence. On every join/leave, all remaining members' `position/waiting/is_leader` are correct. A disconnected entry leaves immediately.
 4. **forming claim**: across the 3 paths — full capacity, leader-manual, and fake-clock 60-second timeout — exactly one MatchPlan each. Even under simultaneous fill-start/timeout, double room_start, or simultaneous full-join/timeout, the total is 1.
-5. **rollback**: deliberately fail W-09 and confirm connected quick participants return to their original FIFO order, custom rooms return to `open` with the same host/rules/seats, and a stale token's delayed completion never changes state. A quick participant who disconnected during generation is not reinserted; a custom room's ordinary disconnect gets a 10-second grace; logout leaves immediately. No GameRoom / `reserved` entry / timer remains after a delayed success following the 5-second timeout.
+5. **rollback**: deliberately fail B-09 and confirm connected quick participants return to their original FIFO order, custom rooms return to `open` with the same host/rules/seats, and a stale token's delayed completion never changes state. A quick participant who disconnected during generation is not reinserted; a custom room's ordinary disconnect gets a 10-second grace; logout leaves immediately. No GameRoom / `reserved` entry / timer remains after a delayed success following the 5-second timeout.
 6. **LobbyRoom**: code-collision retry, lowercase join, full room, non-host rejection, `target_score=2/22` rejection, mode-mismatched map rejection, host handoff, deletion when everyone leaves.
 7. **reconnect**: a room member restores to the same seat at 9.9 seconds and leaves at 10 seconds expired. A `queued` context never auto-restores on reconnect; `in_match` gets `match_found` resent.
 8. **presence**: with a fake friend relation A-B and non-friend A-C, A's 4 state changes reach only B. Even with an async resolver completing out of order, a stale version is never delivered after the fact. `online_count` is unaffected by replacement.
 9. **wire**: reparse every sent/received message against `lobbyClientMessageSchema` / `lobbyServerMessageSchema`; `room_state` uniquely distinguishes empty/AI seats via null and is_ai. Every ID's type matches ③ D-10.
 10. **dev path**: a Cookie-bearing connection succeeds even through Vite's same-origin `/ws` proxy.
 
-W-08's completion is not "the match runs" — it's the above, plus **exactly one immutable MatchPlan generated via both start paths**. GameRoom creation, `match_found`, and releasing a pre-start close are W-09's integration criteria.
+B-08's completion is not "the match runs" — it's the above, plus **exactly one immutable MatchPlan generated via both start paths**. GameRoom creation, `match_found`, and releasing a pre-start close are B-09's integration criteria.
 
-### 10-B. Full E2E criteria including W-09 and beyond
+### 10-B. Full E2E criteria including B-09 and beyond
 
 1. With 2 browsers + 2 AI seats, an RSP quick match forms, reaches the target score → `match_end` → DB row → receiving `match_result` in the lobby, all working end to end.
 2. A match forms via both the "Fill with AI and start now" button and the 60-second auto-start path.
@@ -647,7 +647,7 @@ W-08's completion is not "the match runs" — it's the above, plus **exactly one
    >
    > **The key point of Demo B is that it's 2 rooms** — the headcount per room isn't the point. III.2's "concurrent user actions must not cause data corruption or race conditions" can **only be demonstrated by two independent rooms writing to the same DB and the same lobby at the same time** (with a single room there's no scenario for contention to occur — it would only show "nothing broke" because no breaking situation was ever created, not that it can't break).
    >
-   > **Connect from 4 separate physical machines if at all possible.** Core #2, remote players (Major, 2pt), explicitly requires the subject spec IV.6's "real-time play **between separate machines**"; a single machine with 8 windows makes this 2pt claim weak. Separate machines let #2, #3, and III.2 all be demonstrated simultaneously, and rendering load drops to one window per machine. **In that case, install the mkcert CA on every machine** (per ⓪ §9.1). nginx must be listening on the LAN name, and `ALLOWED_ORIGIN` (W-05) must allow it — also within W-15's scope.
+   > **Connect from 4 separate physical machines if at all possible.** Core #2, remote players (Major, 2pt), explicitly requires the subject spec IV.6's "real-time play **between separate machines**"; a single machine with 8 windows makes this 2pt claim weak. Separate machines let #2, #3, and III.2 all be demonstrated simultaneously, and rendering load drops to one window per machine. **In that case, install the mkcert CA on every machine** (per ⓪ §9.1). nginx must be listening on the LAN name, and `ALLOWED_ORIGIN` (B-05) must allow it — also within I-15's scope.
 6. Malformed messages (schema violations, oversized payloads, seq going backward, out-of-range rules) all produce the specified error/discard behavior.
 
 ---
@@ -658,22 +658,22 @@ W-08's completion is not "the match runs" — it's the above, plus **exactly one
 |---|---|
 | 2026-07-11 | §5-A/§9: removed `input.hand` (⑤ [BACKLOG.md](./backlog.md) D-17; alternatives comparison in ⑤ §0) |
 | 2026-07-23 | §6-B: noted that the "§3-B addendum request" is **implemented** (`game_set_input_source`). Corrected the leftover `hand` reference in that table (already removed per D-17) to `act`, and added the implemented wrapper `sim_set_input`'s arguments. Reflowed long lines for readability |
-| 2026-07-29 | Resolved 4 design gaps (filling holes before the W-08-W-13 implementations): added addenda for room-code issuance atomicity, freezing expected human seats, snapshot's mode, and firing match_end after persistence. Reflected in `room.ts` and `game.ts` |
-| 2026-07-30 | **W-08 design complete**: fixed the W-01/W-10/W-11/W-14 implementation patterns into §0-A. Added the full lobby wire type set, UserContextRegistry, friend-restricted presence, 10-second replacement/room reconnect, heartbeat/session expiry, FIFO deadline, LobbyRoom canonical rules, synchronous claim + token rollback, the immutable-MatchPlan-based W-09 boundary, implementation layout, and the 10-item W-08 acceptance list. Removed the unimplemented speed multipliers/AI strength from the wire. Corrected the old "restoration allowed after grace expiry" note and the impossible old note about "rescuing a persistence failure via match_result" |
-| 2026-07-30 | **W-08 core implementation**: implemented `shared/ws/lobby.ts`, `backend/src/lobby/`, the shared `ws/connection.ts`, `/ws/lobby`, and the Vite `/ws` proxy. `npm run check:lobby` checks FIFO / the 3 forming paths / rollback / LobbyRoom / grace / presence / real WS / heartbeat / session index. Real Cookie authentication, DB profile lookup, and the logout hook call await integration with W-04/W-05 |
-| 2026-07-30 | **W-09 implementation complete**: `lobby/match.ts` connects the immutable MatchPlan to a real GameRoom. Implemented token commit/rollback, the 5-second abort, reservation tokens, discarding delayed successes, `match_found`, and context release via GameRoom lifecycle. `npm run check:lobby` automatically checks manual/60-second/full-capacity forming, the 10-second zero-human close, generation failure, timeout, and zero lingering reservations |
-| 2026-07-30 | **W-12 implementation complete**: implemented per-participant seat state in GameRoom, wiring up immediate AI substitution + 30-second grace on ordinary close, same-user restoration, refusing restoration after expiry, RSP abandon, FPS forfeit, explicit leave, and handing departed seats off to the persistence boundary. A real-WebSocket check automatically confirms §10-B #4 |
+| 2026-07-29 | Resolved 4 design gaps (filling holes before the B-08-W-13 implementations): added addenda for room-code issuance atomicity, freezing expected human seats, snapshot's mode, and firing match_end after persistence. Reflected in `room.ts` and `game.ts` |
+| 2026-07-30 | **B-08 design complete**: fixed the I-01/B-10/B-11/B-14 implementation patterns into §0-A. Added the full lobby wire type set, UserContextRegistry, friend-restricted presence, 10-second replacement/room reconnect, heartbeat/session expiry, FIFO deadline, LobbyRoom canonical rules, synchronous claim + token rollback, the immutable-MatchPlan-based B-09 boundary, implementation layout, and the 10-item B-08 acceptance list. Removed the unimplemented speed multipliers/AI strength from the wire. Corrected the old "restoration allowed after grace expiry" note and the impossible old note about "rescuing a persistence failure via match_result" |
+| 2026-07-30 | **B-08 core implementation**: implemented `shared/ws/lobby.ts`, `backend/src/lobby/`, the shared `ws/connection.ts`, `/ws/lobby`, and the Vite `/ws` proxy. `npm run check:lobby` checks FIFO / the 3 forming paths / rollback / LobbyRoom / grace / presence / real WS / heartbeat / session index. Real Cookie authentication, DB profile lookup, and the logout hook call await integration with B-04/B-05 |
+| 2026-07-30 | **B-09 implementation complete**: `lobby/match.ts` connects the immutable MatchPlan to a real GameRoom. Implemented token commit/rollback, the 5-second abort, reservation tokens, discarding delayed successes, `match_found`, and context release via GameRoom lifecycle. `npm run check:lobby` automatically checks manual/60-second/full-capacity forming, the 10-second zero-human close, generation failure, timeout, and zero lingering reservations |
+| 2026-07-30 | **B-12 implementation complete**: implemented per-participant seat state in GameRoom, wiring up immediate AI substitution + 30-second grace on ordinary close, same-user restoration, refusing restoration after expiry, RSP abandon, FPS forfeit, explicit leave, and handing departed seats off to the persistence boundary. A real-WebSocket check automatically confirms §10-B #4 |
 
-## Implementation notes: W-10 (GameRoom + sim.wasm integration)
+## Implementation notes: B-10 (GameRoom + sim.wasm integration)
 
-These are retained implementation-detail notes carried over from the original Phase 3 report; W-10 itself is complete.
+These are retained implementation-detail notes carried over from the original Phase 3 report; B-10 itself is complete.
 
 1. **Authoritative call order**: `createCub3DSimModule()` → `sim_create(cub_text_ptr, is_rsp, target_score, seed)` → `game_add_combatant(game, slot, is_ai)` × capacity (RSP=4 / FPS=2, **returns a `combatant_id`, distinct from `slot`**) → (on join) `game_set_input_source(game, combatant_id, EXTERNAL=1)` **using the id returned by `game_add_combatant`, not the raw seat `slot`** → every tick `sim_set_input` → `game_step(game, 1/30)` (return value 1 means transition to finished) → on even ticks `game_snapshot` → JSON-encoded and tick-stamped on the Node side → distributed → `game_destroy` at closed.
 2. **The flat-array layout is authoritatively defined in `codes/includes/platform/sim.h`** (5 header fields + 9 per combatant, all f64). `record.mjs`'s `takeSnapshot()` is the reference implementation for JSON encoding, as-is.
-3. **The seat-to-team mapping is fixed**: RSP slot 0,1 = red / 2,3 = blue. The map must have 2 red spawns (N/W) and 2 blue spawns (S/E); if not, `sim_create` returns NULL (must align with W-14's map-whitelist validation).
+3. **The seat-to-team mapping is fixed**: RSP slot 0,1 = red / 2,3 = blue. The map must have 2 red spawns (N/W) and 2 blue spawns (S/E); if not, `sim_create` returns NULL (must align with B-14's map-whitelist validation).
 4. **`combatant_id` has no relation to snapshot array order** (the internal list is in reverse creation order). Both client and server must always match by id. Map-derived enemy hazards use id=8 and up.
-5. `target_score` accepts only 3-21 (anything else defaults to 10). W-11's schema validation (#6) must reject outside this same range. `match_rules.seed` is **0 = time-derived (production) / non-zero = fixed RNG sequence**, and the entire match is deterministically reproducible for the same input sequence (usable in W-10's integration tests; the demo's record.mjs is fixed at seed=42, and two runs' snapshots.json have been confirmed byte-identical).
+5. `target_score` accepts only 3-21 (anything else defaults to 10). B-11's schema validation (#6) must reject outside this same range. `match_rules.seed` is **0 = time-derived (production) / non-zero = fixed RNG sequence**, and the entire match is deterministically reproducible for the same input sequence (usable in B-10's integration tests; the demo's record.mjs is fixed at seed=42, and two runs' snapshots.json have been confirmed byte-identical).
 6. After a decision, further `game_step` calls stop advancing state and keep returning 1. Detect `finished` via the return value, and ticking may be halted from then on (per ② §6-A).
-7. yaw is client-authoritative (per ② §5-C): `sim_set_input` directly overwrites the seat's facing. Server-side yaw range validation is unnecessary (harmless as an angle), but NaN/Inf must be rejected at the JSON schema layer (W-11).
+7. yaw is client-authoritative (per ② §5-C): `sim_set_input` directly overwrites the seat's facing. Server-side yaw range validation is unnecessary (harmless as an angle), but NaN/Inf must be rejected at the JSON schema layer (B-11).
 8. Running multiple games from a single module instance has been confirmed to work, but **the design recommendation of "1 room = 1 instance" still stands** (for memory growth and crash isolation).
-9. E-12's client side is `web_apply_snapshot(flat_ptr, len, view_id)` + `web_render_frame()` + `web/snapshot_interp.js`. W-11/F-06 only need to feed the WS receive buffer into the same path in place of snapshots.json.
+9. E-12's client side is `web_apply_snapshot(flat_ptr, len, view_id)` + `web_render_frame()` + `web/snapshot_interp.js`. B-11/GV-06 only need to feed the WS receive buffer into the same path in place of snapshots.json.

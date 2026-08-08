@@ -49,10 +49,10 @@
 					<thead><tr><th>領域</th><th>状態</th></tr></thead>
 					<tbody>
 						<tr><td>エンジン（<code>codes/</code> + <code>web/</code>）— 描画・物理・両モード・AI・サーバ権威シム</td><td><span class="tag status-done">完了</span></td></tr>
-						<tr><td>サーバー（<code>app/backend/</code>）— ロビーWS・マッチング・GameRoom・切断復帰・マップ配布</td><td><span class="tag status-partial">コア完了</span>（W-01・W-08コア・W-09〜W-12・W-14）。本認証（W-04/05）待ちで最終結合は未了。永続化（W-13）・Docker配信（W-15）・CI拡張（W-16）は未着手</td></tr>
-						<tr><td>認証・DB・フレンド・アバター（<code>app/backend/</code>）</td><td><span class="tag status-todo">未着手</span>（W-02〜W-07）。開発用ヘッダースタブ（<code>ALLOW_DEV_AUTH</code>）で代用中</td></tr>
-						<tr><td>フロント（<code>app/frontend/</code>）— 雛形・APIクライアント・GameView・HUD</td><td><span class="tag status-done">完了</span>（F-01・F-02・F-06・F-07）</td></tr>
-						<tr><td>フロント — ロビー・認証画面・試合遷移・プロフィール</td><td><span class="tag status-todo">未着手</span>（F-03〜F-05・F-08〜F-12）。<code>/lobby</code>は開発用リンクだけのスタブ</td></tr>
+						<tr><td>サーバー（<code>app/backend/</code>）— ロビーWS・マッチング・GameRoom・切断復帰・マップ配布</td><td><span class="tag status-partial">コア完了</span>（I-01・B-08コア・B-09〜B-12・B-14）。本認証（B-04/05）待ちで最終結合は未了。永続化（B-13）・Docker配信（I-15）・CI拡張（I-16）は未着手</td></tr>
+						<tr><td>認証・DB・フレンド・アバター（<code>app/backend/</code>）</td><td><span class="tag status-todo">未着手</span>（B-02〜B-07）。開発用ヘッダースタブ（<code>ALLOW_DEV_AUTH</code>）で代用中</td></tr>
+						<tr><td>フロント（<code>app/frontend/</code>）— 雛形・APIクライアント・GameView・HUD</td><td><span class="tag status-done">完了</span>（F-01・F-02・GV-06・GV-07）</td></tr>
+						<tr><td>フロント — ロビー・認証画面・試合遷移・プロフィール</td><td><span class="tag status-todo">未着手</span>（F-03〜F-05・GV-08・F-09・F-10・F-11・GV-12）。<code>/lobby</code>は開発用リンクだけのスタブ</td></tr>
 						<tr><td><strong>通しの体験</strong>：ログイン→マッチング→対戦→結果</td><td><span class="tag status-todo">まだ不可能</span>。マッチングするロビーも、本物のログインも無い</td></tr>
 					</tbody>
 				</table>
@@ -123,7 +123,7 @@ flowchart LR
 
     client -- "REST: 認証・プロフィール・マップ" --> BE
     client -- "WebSocket: input →<br/>← snapshot (15Hz)" --> GR
-    BE -.->|"未結線 (W-03)"| DB
+    BE -.->|"未結線 (B-03)"| DB
 			</pre>
 			<p class="section-intro" style="margin-top: 16px;">
 				図解付きの詳しい説明は<a href="../説明用/サーバ権威モデル.html">サーバ権威モデル.html</a>、
@@ -142,9 +142,9 @@ flowchart LR
 						<tr><td>フロントエンド</td><td>React + Vite + TypeScript + Tailwind CSS</td><td>SSR不要のSPAで十分。TailwindでCSSフレームワーク要件を満たす</td></tr>
 						<tr><td>バックエンド</td><td>Fastify + TypeScript</td><td>Node上で<code>sim.wasm</code>を直接実行できる。公式WSプラグインあり</td></tr>
 						<tr><td>リアルタイム通信</td><td>生WebSocket（<code>@fastify/websocket</code>）</td><td>Socket.IOの抽象化は不要</td></tr>
-						<tr><td>DB</td><td>SQLite + Prisma（<strong>未結線, W-03</strong>）</td><td>単一ホスト評価に適合。ORM要件を満たす</td></tr>
-						<tr><td>認証</td><td>argon2id + opaque httpOnlyセッションCookie（JWTではない）（<strong>未結線, W-04</strong>）</td><td>ステートレスJWTの利点（サーバ側失効不可）がこの規模では不要</td></tr>
-						<tr><td>配信</td><td>nginx + Docker Compose（<strong>未結線, W-15</strong>）</td><td>単一コマンド起動の要件</td></tr>
+						<tr><td>DB</td><td>SQLite + Prisma（<strong>未結線, B-03</strong>）</td><td>単一ホスト評価に適合。ORM要件を満たす</td></tr>
+						<tr><td>認証</td><td>argon2id + opaque httpOnlyセッションCookie（JWTではない）（<strong>未結線, B-04</strong>）</td><td>ステートレスJWTの利点（サーバ側失効不可）がこの規模では不要</td></tr>
+						<tr><td>配信</td><td>nginx + Docker Compose（<strong>未結線, I-15</strong>）</td><td>単一コマンド起動の要件</td></tr>
 						<tr><td>共有契約</td><td><code>app/shared/</code>のzodスキーマ</td><td>1つの定義でFE/BE両方のバリデーションを満たす</td></tr>
 					</tbody>
 				</table>

@@ -23,12 +23,12 @@ All work described in this document has been completed. It is written in the for
 | §6 | Issue backlog E-01–E-14 / G-01–G-10 | All 24 items closed |
 
 **No work remains on the engine (C) side.**
-What remains is only the TypeScript server and frontend (W-02–W-16 / F-01–F-12).
+What remains is only the TypeScript server and frontend (B-02〜B-14・I-15・I-16 / F系・GV系).
 
 - Detailed implementation records: [3-エンジンPhase3レポート](../../archive/03_実装レポート/3-エンジンPhase3レポート.md)
   / [4-エンジンE13E14レポート](../../archive/03_実装レポート/4-エンジンE13E14レポート.md)
-- Handover notes for the next person to use this engine (the W-10 owner):
-  the "Handover to W-10" section of [3-エンジンPhase3レポート](../../archive/03_実装レポート/3-エンジンPhase3レポート.md)
+- Handover notes for the next person to use this engine (the B-10 owner):
+  the "Handover to B-10" section of [3-エンジンPhase3レポート](../../archive/03_実装レポート/3-エンジンPhase3レポート.md)
 - Overall progress: [5-バックログ](./backlog.md) / ownership: [6-チーム分担計画](../human/はじめに/チーム体制.html)
 
 ---
@@ -167,7 +167,7 @@ Breakdown of the inspected `main_loop` and its migration target:
 | **A thin JS wrapper was added** | `sim_create(...)` / `sim_set_input(..., yaw)` | So JS doesn't need to assemble struct pointers itself. The `mv`/`yaw` → `t_input` mapping is the responsibility of platform/headless (② §6-B) |
 | **`game_snapshot` returns a flat f64 array instead of a struct** | 5 header fields + 9 fields per combatant | Avoids sharing struct layout across the WASM boundary; the JS side can read it straight from `HEAPF64`. **JSON encoding and tick numbering are Node's responsibility** (② §5-B) |
 | **`game_apply_snapshot` lives on the client side, not in the sim layer** | `codes/srcs/platform/web/web_snapshot.c` | The server does not use this function (it is not linked into `sim.wasm`). Interpolation is handled by `web/snapshot_interp.js` |
-| **`seed` was added to `match_rules`** | A non-zero value fixes the RNG sequence | So a match is deterministically reproducible given the same input sequence (required for demo recording and W-10 integration tests) |
+| **`seed` was added to `match_rules`** | A non-zero value fixes the RNG sequence | So a match is deterministically reproducible given the same input sequence (required for demo recording and B-10 integration tests) |
 
 ### 3-C. Multiplayer generalization (`t_game` change policy)
 
@@ -212,7 +212,7 @@ plan; in practice, samatsum carried out both ([6-チーム分担計画](../human
 - The sim does not hold `tick`. **Tick numbering is owned by Node (the server)**
   (② §5-C). What sim returns is just a flat f64 array of 5 header fields + 9 fields per combatant.
 - **Only `world_delta` is unimplemented** (the sole intentional deferral).
-  It was skipped because it is not needed for the Gate 2 RSP 2v2 milestone. It will be added when FPS goes online (W-14), via
+  It was skipped because it is not needed for the Gate 2 RSP 2v2 milestone. It will be added when FPS goes online (B-14), via
   "accumulating the list of collected coordinates + sending the full set on the initial message"
   (handover item #2 in [3-エンジンPhase3レポート](../../archive/03_実装レポート/3-エンジンPhase3レポート.md)).
 - "Under 1KB per message" and "no win/loss judgment code on the client" have both been achieved.
@@ -251,7 +251,7 @@ All 5 items above are implemented (G-05 / G-06 / G-07 / G-08 / G-10). Details de
 
 - **The lower bound of `target_score` is 1**. The "default 10" is `RSP_SCORE_LIMIT` (the default used when a value ≤ 0 is passed).
   The product-level range of 3–21 is not validated by the engine. **Range checking is the WS layer's responsibility**
-  (② W-11 #6); the engine, as a mechanism, also runs short test matches (N=1, N=2).
+  (② B-11 #6); the engine, as a mechanism, also runs short test matches (N=1, N=2).
 - **The map character `G` was not newly introduced.** Goal detection (the `IS_GOAL` cell + `goal_tex`) was
   already implemented beforehand (see the table in §0), so G-06 only required
   "attributing the winner to a combatant ID."

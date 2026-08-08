@@ -20,7 +20,7 @@
 	</p>
 
 	<section class="section">
-		<div class="section-head"><span class="section-num">1</span><span class="section-title">データベース — 未着手 W-03</span></div>
+		<div class="section-head"><span class="section-num">1</span><span class="section-title">データベース — 未着手 B-03</span></div>
 		<table>
 			<thead><tr><th>技術</th><th>どのようなものか</th><th>なぜ選んだか（比較対象）</th></tr></thead>
 			<tbody>
@@ -48,7 +48,7 @@
 	</section>
 
 	<section class="section">
-		<div class="section-head"><span class="section-num">2</span><span class="section-title">認証 — 未着手 W-04 / W-05</span></div>
+		<div class="section-head"><span class="section-num">2</span><span class="section-title">認証 — 未着手 B-04 / B-05</span></div>
 		<table>
 			<thead><tr><th>技術</th><th>どのようなものか</th><th>なぜ選んだか（比較対象）</th></tr></thead>
 			<tbody>
@@ -83,7 +83,7 @@
 	</section>
 
 	<section class="section">
-		<div class="section-head"><span class="section-num">3</span><span class="section-title">配信・起動 — 未着手 W-15</span></div>
+		<div class="section-head"><span class="section-num">3</span><span class="section-title">配信・起動 — 未着手 I-15</span></div>
 		<table>
 			<thead><tr><th>技術</th><th>どのようなものか</th><th>なぜ選んだか（比較対象）</th></tr></thead>
 			<tbody>
@@ -101,7 +101,7 @@
 					<td class="why">
 						比較対象は無い——課題書が<span class="accent">単一コマンドでの起動を必須</span>としている。
 						現状 <code>docker-compose.yml</code> には Emscripten ビルド用の <code>engine-build</code> サービスしかなく、
-						nginx・app・証明書生成・マイグレーションを起動経路に組み込むのが W-15。
+						nginx・app・証明書生成・マイグレーションを起動経路に組み込むのが I-15。
 					</td>
 				</tr>
 				<tr>
@@ -117,7 +117,7 @@
 		</table>
 		<p class="note">
 			<strong>ここが評価上いちばん危ない。</strong>
-			W-15 が未着手なので、現状は <code>git clone</code> → <code>docker compose up</code> をしても
+			I-15 が未着手なので、現状は <code>git clone</code> → <code>docker compose up</code> をしても
 			アプリは起動せず、アドレスバーで HTTPS を確認することもできない。
 			これは課題書の必須要件（単一コマンド起動・全接続 HTTPS）に直接かかる。
 		</p>

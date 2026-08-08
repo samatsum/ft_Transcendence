@@ -21,11 +21,11 @@ This document is a record from the design phase. The items below are already com
 |---|---|---|
 | §2.1 | Engine porting strategy (Option A: C → WASM) | Complete. Gate 1 passed. All 3 targets (native / `render.wasm` / `sim.wasm`) work |
 | §2.2 | C refactor (split into platform layer / `game_step` / rendering layer) | Complete. Related items (busy-wait removal, key-code abstraction, XPM pipeline, multiplayer support) are all implemented as well |
-| §2.3 | Network model (server-authoritative + snapshot distribution) | Approach finalized; W-08 lobby WS core, W-09 match formation, W-10 GameRoom, W-11 game WS, and W-12 disconnect grace period are all complete. W-08 is still waiting to be wired up to the real Cookie authentication from W-04/W-05 |
-| §2.4 | Web stack (selection across 9 layers) | All 9 selections finalized. 5 of the 9 are already integrated (React+Vite+TS / Tailwind / Fastify+TS / zod shared schema = W-01, WebSocket = W-11). The remaining layers are handled in W-03, W-04, W-15. The §2.4 table below includes an "Integrated" column |
+| §2.3 | Network model (server-authoritative + snapshot distribution) | Approach finalized; B-08 lobby WS core, B-09 match formation, B-10 GameRoom, B-11 game WS, and B-12 disconnect grace period are all complete. B-08 is still waiting to be wired up to the real Cookie authentication from B-04/B-05 |
+| §2.4 | Web stack (selection across 9 layers) | All 9 selections finalized. 5 of the 9 are already integrated (React+Vite+TS / Tailwind / Fastify+TS / zod shared schema = I-01, WebSocket = B-11). The remaining layers are handled in B-03, B-04, I-15. The §2.4 table below includes an "Integrated" column |
 | §1.2 | Two games (RSP 2v2 / FPS 1v1 race) | Engine side complete. Both games run natively and in the browser. Only online multiplayer remains |
-| §3.1 | Server-authoritative sim + snapshot distribution | Lobby WS core (W-08), match formation (W-09), GameRoom (W-10), game WS (W-11), and disconnect grace period (W-12) are all complete. What remains is wiring in real authentication (W-04/W-05 → W-08) and W-13 persistence |
-| §3.2 | Repository layout (monorepo) | Complete (W-01) |
+| §3.1 | Server-authoritative sim + snapshot distribution | Lobby WS core (B-08), match formation (B-09), GameRoom (B-10), game WS (B-11), and disconnect grace period (B-12) are all complete. What remains is wiring in real authentication (B-04/B-05 → B-08) and B-13 persistence |
+| §3.2 | Repository layout (monorepo) | Complete (I-01) |
 | §4 | Module selection, 19pt | Selection finalized; implementation status varies per module (see the list at [the top of the requirements doc](./requirements.md)) |
 | §6 §7 | Team structure & schedule | Actual operations have since changed. [6-チーム分担計画](../human/はじめに/チーム体制.html) is now the authoritative source |
 | §8 | Risks | Engine-related risks (porting difficulty, pthread, state inconsistency) have been resolved |
@@ -137,10 +137,10 @@ No binary encoding initially — starts as JSON, moving to ArrayBuffer only if b
 > | Snapshot generation | `game_snapshot` (flat f64 array → serialized to JSON by Node) |
 > | Receive-side application + 100ms interpolation | `game_apply_snapshot` + [`web/snapshot_interp.js`](../../web/snapshot_interp.js) (shortest-arc angle interpolation) |
 > | Client-immediate view rotation only | Implemented with `yaw` treated as an absolute angle taken directly from the client's reported value |
-> | AI takeover of disconnected seats ⇔ handback | Mechanism complete (`game_set_input_source`). When to switch is a room-layer (W-12) operational concern |
+> | AI takeover of disconnected seats ⇔ handback | Mechanism complete (`game_set_input_source`). When to switch is a room-layer (B-12) operational concern |
 > | One-way connectivity check | Established via [`web/sim_demo/`](../../web/sim_demo/) (`record.mjs` records, `replay.html` replays) |
-> | **Sending/receiving the 5 WS message kinds** | Game WS done in W-11; lobby presence/queue/LobbyRoom done in the W-08 core. The lobby is still waiting on real Cookie authentication from W-04/W-05. Spec: [2-WSプロトコル設計](./ws-protocol.md) §3–§5 |
-> | **Reconnect grace period / forfeit determination** | **Complete (W-12)**. 30-second grace, AI takeover ⇔ human handback, RSP abandon, FPS forfeit all verified via real WebSocket tests |
+> | **Sending/receiving the 5 WS message kinds** | Game WS done in B-11; lobby presence/queue/LobbyRoom done in the B-08 core. The lobby is still waiting on real Cookie authentication from B-04/B-05. Spec: [2-WSプロトコル設計](./ws-protocol.md) §3–§5 |
+> | **Reconnect grace period / forfeit determination** | **Complete (B-12)**. 30-second grace, AI takeover ⇔ human handback, RSP abandon, FPS forfeit all verified via real WebSocket tests |
 >
 > Note: in the finalized spec, `input(seq, keys, yaw)`'s `keys` field is `mv` (a 4-bit bitmask) (see design doc 2, §5-A). `hand` was removed in D-17 (the server-side engine determines the hand).
 
@@ -150,19 +150,19 @@ All 9 layers have finalized selections. The table below includes an "Integrated"
 
 | Layer | Selection | Alternative considered | Rationale | Integrated |
 |---|---|---|---|---|
-| Frontend | **React + Vite + TypeScript (SPA)** | Next.js / SvelteKit | SSR not required (the SSR module isn't being pursued). SPA is simplest, and React qualifies as a framework per the subject's definition. AI code-generation quality is also top-tier for React | W-01 |
-| Styling | **Tailwind CSS** | Bootstrap | Satisfies the "use a CSS framework" requirement. Pairs well with a component-oriented approach | W-01 |
-| Backend | **Fastify + TypeScript** | NestJS / Express / Django | With Node, `sim.wasm` can be executed directly (the deciding factor). Fastify has an official WS plugin and is lightweight. NestJS would be overkill for this schedule | W-01 |
-| DB | **SQLite + Prisma (ORM)** | PostgreSQL | Evaluation is a single local host (A1). One fewer container; backups = a file copy. Prisma satisfies the ORM Minor requirement, and migrating to Postgres later remains easy | Pending — W-03 |
-| Realtime | **WebSocket (@fastify/websocket)** | Socket.IO | Raw WS is sufficient; Socket.IO's abstraction isn't needed here | Integrated in W-11 (originally planned for W-08, but the game WS landed first) |
-| Auth | Email + password (argon2id) + **opaque session token via httpOnly cookie** (not JWT — see [rest-api.md](./rest-api.md) D-4) | — | Ensures the required minimum baseline. OAuth/2FA are not declared under the current lineup (§4.3) | Pending — W-04 |
-| Input validation | **zod schema shared between FE and BE** | — | Satisfies the "validate on both frontend and backend" requirement with a single schema definition | W-01 |
-| Reverse proxy / TLS | **nginx** (HTTPS termination via self-signed cert, static file serving, WS proxy) | Caddy | Track record and available documentation. Internal backend traffic can be plaintext (allowed by the subject) | Pending — W-15 |
-| Container | **Docker Compose** (`docker compose up` as a single command) | — | Required. Composition: `nginx` + `app` (Fastify + sim.wasm) + a volume (SQLite/avatars) | Pending — W-15 |
+| Frontend | **React + Vite + TypeScript (SPA)** | Next.js / SvelteKit | SSR not required (the SSR module isn't being pursued). SPA is simplest, and React qualifies as a framework per the subject's definition. AI code-generation quality is also top-tier for React | I-01 |
+| Styling | **Tailwind CSS** | Bootstrap | Satisfies the "use a CSS framework" requirement. Pairs well with a component-oriented approach | I-01 |
+| Backend | **Fastify + TypeScript** | NestJS / Express / Django | With Node, `sim.wasm` can be executed directly (the deciding factor). Fastify has an official WS plugin and is lightweight. NestJS would be overkill for this schedule | I-01 |
+| DB | **SQLite + Prisma (ORM)** | PostgreSQL | Evaluation is a single local host (A1). One fewer container; backups = a file copy. Prisma satisfies the ORM Minor requirement, and migrating to Postgres later remains easy | Pending — B-03 |
+| Realtime | **WebSocket (@fastify/websocket)** | Socket.IO | Raw WS is sufficient; Socket.IO's abstraction isn't needed here | Integrated in B-11 (originally planned for B-08, but the game WS landed first) |
+| Auth | Email + password (argon2id) + **opaque session token via httpOnly cookie** (not JWT — see [rest-api.md](./rest-api.md) D-4) | — | Ensures the required minimum baseline. OAuth/2FA are not declared under the current lineup (§4.3) | Pending — B-04 |
+| Input validation | **zod schema shared between FE and BE** | — | Satisfies the "validate on both frontend and backend" requirement with a single schema definition | I-01 |
+| Reverse proxy / TLS | **nginx** (HTTPS termination via self-signed cert, static file serving, WS proxy) | Caddy | Track record and available documentation. Internal backend traffic can be plaintext (allowed by the subject) | Pending — I-15 |
+| Container | **Docker Compose** (`docker compose up` as a single command) | — | Required. Composition: `nginx` + `app` (Fastify + sim.wasm) + a volume (SQLite/avatars) | Pending — I-15 |
 
 > **Notes on the pending items** (easy to misread):
 >
-> - The root `docker-compose.yml` already exists but currently contains only the Emscripten build service (`engine-build`). The evaluation requirement of "`docker compose up` brings everything up" will be delivered in W-15.
+> - The root `docker-compose.yml` already exists but currently contains only the Emscripten build service (`engine-build`). The evaluation requirement of "`docker compose up` brings everything up" will be delivered in I-15.
 > - `infra/` similarly is currently just a skeleton with a README (listing what will go there); `nginx.conf` does not exist yet.
 > - Prisma is not yet integrated (`schema.prisma` does not exist yet).
 
@@ -211,7 +211,7 @@ ft_transcendence/
 └── infra/             # nginx config, cert generation, monitoring (optional) — new
 ```
 
-> **Revision (2026-07-27)**: The tree above originally placed `backend/`, `frontend/`, `shared/` directly at the repository root, but the actual implementation consolidated them under `app/` on 2026-07-24 (commit `41aeda2`). The D-18/W-01 rows in doc 5 had already been updated but this tree had been left stale, so it's now brought in line with the implementation. **When writing TypeScript-side paths, always prefix with `app/`** (e.g. `app/shared/src/`).
+> **Revision (2026-07-27)**: The tree above originally placed `backend/`, `frontend/`, `shared/` directly at the repository root, but the actual implementation consolidated them under `app/` on 2026-07-24 (commit `41aeda2`). The D-18/I-01 rows in doc 5 had already been updated but this tree had been left stale, so it's now brought in line with the implementation. **When writing TypeScript-side paths, always prefix with `app/`** (e.g. `app/shared/src/`).
 
 ### 3.3 Database schema (conceptual design)
 
@@ -249,9 +249,9 @@ Statistics (win rate, match history, leaderboard) are derived via aggregate quer
 | 2 | Remote players | Gaming Major | 2 | Server-authoritative sim + WS; explicitly demonstrates latency interpolation and disconnect/reconnect (AI takeover → handback) |
 | 3 | Multiplayer (3+ players) | Gaming Major | 2 | RSP 2v2 = 4 players in the same match |
 | 4 | Frameworks on both FE and BE | Web Major | 2 | React (FE) + Fastify (BE) |
-| 5 | Real-time functionality via WebSockets | Web Major | 2 | Game sync (input/snapshot at 30Hz/15Hz), connect/disconnect handling (W-12's 30s grace + AI takeover), and broadcasting — the subject's three sub-requirements are met by the game WS alone; lobby presence is additional, not load-bearing |
+| 5 | Real-time functionality via WebSockets | Web Major | 2 | Game sync (input/snapshot at 30Hz/15Hz), connect/disconnect handling (B-12's 30s grace + AI takeover), and broadcasting — the subject's three sub-requirements are met by the game WS alone; lobby presence is additional, not load-bearing |
 | 6 | AI opponent | AI Major | 2 | **Already complete.** RSP rock-paper-scissors AI ("chase a winning hand, flee a losing hand") and the FPS chase AI. Fills empty/disconnected seats and serves as a single-player opponent |
-| 7 | Use of an ORM | Web Minor | 1 | Prisma + SQLite. A DB is mandatory under Chapter III regardless, so this module costs nothing beyond W-03 |
+| 7 | Use of an ORM | Web Minor | 1 | Prisma + SQLite. A DB is mandatory under Chapter III regardless, so this module costs nothing beyond B-03 |
 | 8 | Game customization options | Gaming Minor | 1 | Map selection (.cub assets) + points-to-win. **Engine-side parameters already exist**; only the selection UI remains |
 | | **Subtotal** | | **14** | |
 
@@ -261,7 +261,7 @@ Statistics (win rate, match history, leaderboard) are derived via aggregate quer
 |---|---|---|---|---|
 | 9 | Advanced 3D graphics | Gaming Major | 2 | The hand-written C raycaster (texture mapping, depth buffer, sprite rendering), compiled to WASM. E-13 measured 112fps @960×540. **Zero additional code — only a README justification.** Placed in the bonus deliberately: the subject phrases this as "using a library like Three.js or Babylon.js", and if an evaluator reads the library as mandatory, this is the module that gets rejected. In the bonus, that costs 2 of 5 bonus points and does not touch the pass line |
 | 10 | Custom-made design system | Web Minor | 1 | The subject requires 10+ reusable components plus a color palette, typography and icons. `app/frontend/src/components/` already has 9 (Button, Card, Modal, Toast, FormField, Input, Header, Footer, Layout) |
-| 11 | Spectator mode | Gaming Minor | 1 | F-06 already handles `welcome.role === 'spectator'` (input suppressed, "観戦中" shown). Remaining: the WS `spectate` action (currently a `not_participant` stub) and the viewpoint-switch UI (F-12) |
+| 11 | Spectator mode | Gaming Minor | 1 | GV-06 already handles `welcome.role === 'spectator'` (input suppressed, "観戦中" shown). Remaining: the WS `spectate` action (currently a `not_participant` stub) and the viewpoint-switch UI (GV-12) |
 | 12 | Health check / status page | DevOps Minor | 1 | `GET /api/health` already exists and is used by CI. Remaining: the status page plus automated backup and recovery procedures |
 | | **Subtotal** | | **+5** | |
 
@@ -274,10 +274,10 @@ they should be reconsidered if time frees up.
 
 | Priority | Module | pt | What it would take |
 |---|---|---|---|
-| 1 | **Another game (FPS) with history + matchmaking** | Gaming Major 2 | The FPS engine is **already complete** and matchmaking is shared with RSP (W-08/W-09, done). The only blocker is user history → **W-13 alone**. Since W-13 also revives #2 below, that one issue is worth 3pt — this is the first thing to restore |
-| 2 | Game stats and match history | UserMgmt Minor 1 | W-13 (match persistence) + F-09 (profile/history screen) |
-| 3 | Standard user management and auth | UserMgmt Major 2 | Requires **all five** of profile update / avatar upload / friend add / online status / profile page (subject IV.3 — missing one means 0pt): W-06 + W-07 + F-09 + F-10. Note that auth itself is still built regardless, because Chapter III mandates it; only these five extras are module-only work |
-| 4 | Public API | Web Major 2 | API-key auth layer + documentation. Rate limiting is already designed (③§1-C) and the endpoint count clears 5 once W-02–W-07 land. Never formally evaluated before 2026-08-08 |
+| 1 | **Another game (FPS) with history + matchmaking** | Gaming Major 2 | The FPS engine is **already complete** and matchmaking is shared with RSP (B-08/B-09, done). The only blocker is user history → **B-13 alone**. Since B-13 also revives #2 below, that one issue is worth 3pt — this is the first thing to restore |
+| 2 | Game stats and match history | UserMgmt Minor 1 | B-13 (match persistence) + F-09 (profile/history screen) |
+| 3 | Standard user management and auth | UserMgmt Major 2 | Requires **all five** of profile update / avatar upload / friend add / online status / profile page (subject IV.3 — missing one means 0pt): B-06 + B-07 + F-09 + F-10. Note that auth itself is still built regardless, because Chapter III mandates it; only these five extras are module-only work |
+| 4 | Public API | Web Major 2 | API-key auth layer + documentation. Rate limiting is already designed (③§1-C) and the endpoint count clears 5 once B-02–B-07 land. Never formally evaluated before 2026-08-08 |
 | 5 | OAuth 2.0 / 2FA / Prometheus+Grafana | 1/1/2 | Entirely unstarted. Only worth revisiting if everything above is secure |
 
 ### 4.4 Dependency / consistency check
@@ -296,7 +296,7 @@ Two structural problems with the original selection, both found by auditing all 
 The original core 14 included Standard user management (2pt, not a line written) and Game stats (1pt,
 same), while AI opponent (2pt, complete and demonstrable) sat in the bonus. Since the bonus exists to
 absorb a rejection, this was backwards: a finished module was insuring an unfinished one. Swapping AI
-opponent into the core and dropping the two unstarted UserMgmt modules removes **W-06, W-07, W-13,
+opponent into the core and dropping the two unstarted UserMgmt modules removes **B-06, B-07, B-13,
 F-09 and F-10** from the critical path.
 
 **Problem 2 — modules that were already satisfied were never counted.**
@@ -305,7 +305,7 @@ design system (1pt) is 9/10 of the way there. Health check (1pt) already has its
 these had been evaluated. Together they replace the dropped points at a fraction of the cost.
 
 **What this does not change:** the Chapter III mandatory requirements are independent of module choice.
-W-02–W-05 (validation, DB, auth, Origin), W-15 (compose/TLS), F-03 (login screens), F-04 (Privacy/ToS)
+B-02–B-05 (validation, DB, auth, Origin), I-15 (compose/TLS), F-03 (login screens), F-04 (Privacy/ToS)
 and F-11 (responsive) are built either way. The revision only rearranges what sits on top of that floor.
 
 **The real critical path is unchanged and is not about module selection:** 8pt of game modules
@@ -372,7 +372,7 @@ The subject's mandatory roles (PO / PM / Tech Lead / Developer) are assigned acr
 
 > **Note: this schedule is stale.** The 14-day table below reflects the original 2-week plan. The project's actual duration is now 5 days, and this table is no longer an accurate schedule — it is retained purely for historical reference. See [6-チーム分担計画 §5.1「5日間の日割り」](../human/はじめに/チーム体制.html) for the schedule that is currently in effect.
 >
-> **Progress (2026-08-07)**: of the original plan's 4 parallel lanes, the **entire Engine and Gameplay schedules are complete** (E-01–E-14 / G-01–G-10; Gate 1 passed). Backend/DevOps has completed W-01/W-08 core/W-09/W-10/W-11/W-12/W-14; Frontend has F-01/F-02/F-06/F-07 done (F-07 merged via [PR #35](https://github.com/samatsum/ft_Transcendence/pull/35)). **Gate 2 is not yet met** — what remains server-side is wiring W-04/W-05 into W-08, and frontend-side is F-05 (lobby, not started) and F-08 (match transition, not started).
+> **Progress (2026-08-07)**: of the original plan's 4 parallel lanes, the **entire Engine and Gameplay schedules are complete** (E-01–E-14 / G-01–G-10; Gate 1 passed). Backend/DevOps has completed I-01/B-08 core/B-09/B-10/B-11/B-12/B-14; Frontend has F-01/F-02/GV-06/GV-07 done (GV-07 merged via [PR #35](https://github.com/samatsum/ft_Transcendence/pull/35)). **Gate 2 is not yet met** — what remains server-side is wiring B-04/B-05 into B-08, and frontend-side is F-05 (lobby, not started) and GV-08 (match transition, not started).
 
 (The following is the original 2-week plan.) 4 parallel lanes. **Bold marks a gate** (if not cleared, the fallback for that gate triggers).
 
@@ -400,7 +400,7 @@ The subject's mandatory roles (PO / PM / Tech Lead / Developer) are assigned acr
 |---|---|---|---|
 | ~~Emscripten porting proves unexpectedly difficult~~ **Resolved** | Whole project | Day 2 Gate 1 | Spike first, fallback to Option B, keep the MLX replacement layer to a minimal interface (buffer/input/time only) → **Gate 1 passed with a go decision; 3 targets are running. Fallback Option B is no longer needed** |
 | ~~pthread parallel renderer doesn't work in WASM~~ **Resolved** | Render performance | Day 2–3 | Single-threaded, low internal resolution from the start. Avoid COOP/COEP → **measured 112fps single-threaded at 960×540 on web (E-13). About 1.8× headroom over the 60fps requirement; internal resolution can also be scaled down via an argument if ever needed** |
-| Browser/server state inconsistency | Match quality | Day 6–7 | Client is display-only (does not simulate), which structurally prevents inconsistency by design → **Engine side is already guaranteed (client has no win/loss-determination code). W-11/F-06 integration is now done (F-06 merged); re-verify once F-05 lets a real lobby drive it end-to-end** |
+| Browser/server state inconsistency | Match quality | Day 6–7 | Client is display-only (does not simulate), which structurally prevents inconsistency by design → **Engine side is already guaranteed (client has no win/loss-determination code). B-11/GV-06 integration is now done (GV-06 merged); re-verify once F-05 lets a real lobby drive it end-to-end** |
 | "Zero console errors" requirement not met | **Project disqualification** | Continuous CI | Suppress WASM build warnings via flags established on day one. Dedicated Day 12 hardening day |
 | Privacy/ToS judged too thin | **Project disqualification** | Day 12 review | Start on content matching real data flows early (not a copy-pasted template) once frontend work resumes — F-04 is currently unassigned/未完成 |
 | Team's inexperience with Web tech | Velocity | Daily | Standardize on AI pair-programming + fix each person's area (narrow the learning surface) + primary-owner/reviewer pairs |
@@ -453,7 +453,7 @@ Mapped 1:1 to the inspection steps on the evaluation sheet (42evalhub / ft_trans
 | HTTPS confirmed **via the browser address bar** | Pre-install mkcert's local CA on **every machine that will connect**, showing a warning-free lock icon (avoids the self-signed warning derailing the demo). **Caution: if demoing a connection from a separate PC, forgetting to install the CA on that machine will fail this whole check** | torinoue |
 | Modules demoed **individually**, one at a time, with dependencies confirmed | A rehearsed script for each of §4's #1–#12: how to show it, under 2 minutes each, assigned presenter. State the dependency (RSP is the first game) verbally up front. For #9 (advanced 3D) be ready to justify the hand-written raycaster against the subject's "using a library like Three.js" wording — see §4.2 | torinoue writes the script; presenters per §4 |
 | Everyone can explain each other's area (teamwork check) | Cross-training exercise at the Day 5 rehearsal — each person explains one area that isn't their own | Everyone |
-| Multi-user concurrency / multiplayer 3+ | **Two 4-window demos** prepared (see design doc 2 §10-5; revised down from the original "8 windows"). **Demo A**: 1 room, 4 humans, 0 AI seats (demonstrates core #3's 2pt with humans only). **Demo B**: 2 rooms, each "2 humans + 2 AI" = 4 windows total (demonstrates no conflicts, per III.2). **If possible, connecting from 4 separate physical machines** would simultaneously demonstrate core #2's "across separate PCs" requirement | samatsum (owns the W-11 distribution side) |
+| Multi-user concurrency / multiplayer 3+ | **Two 4-window demos** prepared (see design doc 2 §10-5; revised down from the original "8 windows"). **Demo A**: 1 room, 4 humans, 0 AI seats (demonstrates core #3's 2pt with humans only). **Demo B**: 2 rooms, each "2 humans + 2 AI" = 4 windows total (demonstrates no conflicts, per III.2). **If possible, connecting from 4 separate physical machines** would simultaneously demonstrate core #2's "across separate PCs" requirement | samatsum (owns the B-11 distribution side) |
 | Bonuses only demoed if the core is fully working; capped at 5pt | Script always runs "core 14pt demo → complete → then bonus." If a core issue surfaces, bonus demos are cancelled in favor of fixing the core | torinoue makes the go/no-go call |
 
 ---

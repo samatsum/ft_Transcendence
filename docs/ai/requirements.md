@@ -26,7 +26,7 @@
 > - **The AI opponent is also complete.** The RSP AI "chases when it holds a winning move, flees when it holds a losing move"; the FPS AI has search, patrol, and pathfinding-based pursuit.
 > - **The server-authoritative simulation (`sim.wasm`) and the snapshot-delivery entry point are complete.** The engine-side components needed for online play are in place.
 > - 4 battle maps, acceptance tests (`make test`, 85 checks), and CI (all jobs green) are also complete.
-> - On the web-app side, the skeleton (W-01) is complete.
+> - On the web-app side, the skeleton (I-01) is complete.
 >
 > **What remains is the TypeScript server and frontend** (the part that connects online play).
 > For detailed progress, see [5-Backlog §1](./backlog.md); for role assignments, see [6-Team Assignment Plan](../human/はじめに/チーム体制.html).
@@ -38,12 +38,12 @@
 > | Module | pt | Status |
 > |---|---|---|
 > | Fully web-based game (RSP) | 2 | Engine complete. Online-play conversion remains |
-> | Remote players | 2 | Engine + WS complete (incl. W-12 reconnect). Real-login path remains |
+> | Remote players | 2 | Engine + WS complete (incl. B-12 reconnect). Real-login path remains |
 > | Multiplayer (3+ players) | 2 | RSP 2v2 = 4 players works engine-side. Lobby UI remains |
-> | Framework on both FE and BE | 2 | **Complete** (W-01 / F-01) |
-> | WebSockets | 2 | Game WS complete (W-11). Lobby WS integration remains |
+> | Framework on both FE and BE | 2 | **Complete** (I-01 / F-01) |
+> | WebSockets | 2 | Game WS complete (B-11). Lobby WS integration remains |
 > | AI opponent | 2 | **Complete** |
-> | ORM (Prisma) | 1 | Not yet started (W-03 — a DB is mandatory under Chapter III anyway) |
+> | ORM (Prisma) | 1 | Not yet started (B-03 — a DB is mandatory under Chapter III anyway) |
 > | Game customization | 1 | Engine side (win condition / maps) complete. Selection UI remains |
 >
 > **Bonus +5pt** — cheap, or safe to lose:
@@ -52,13 +52,13 @@
 > |---|---|---|
 > | Advanced 3D graphics | 2 | **Implementation complete** (raycaster, 112fps @960×540). Needs only a README justification. Carries interpretive risk — see architecture.md §4.2 |
 > | Custom-made design system | 1 | 9 of the required 10 components already exist |
-> | Spectator mode | 1 | F-06 handles the spectator display path. `spectate` WS action + F-12 remain |
+> | Spectator mode | 1 | GV-06 handles the spectator display path. `spectate` WS action + GV-12 remain |
 > | Health check / status page | 1 | `GET /api/health` exists. Status page + backup/recovery remain |
 >
 > **Dropped from the previous lineup**: standard user management (2pt), game statistics (1pt),
 > add another game (2pt), OAuth / 2FA / Prometheus+Grafana. The FPS engine and matchmaking are
-> already built, so **W-13 alone restores "add another game" (2pt)** — that is the cheapest thing to
-> restore if time frees up. "Game statistics" (1pt) needs **W-13 plus F-09** (the profile/history
+> already built, so **B-13 alone restores "add another game" (2pt)** — that is the cheapest thing to
+> restore if time frees up. "Game statistics" (1pt) needs **B-13 plus F-09** (the profile/history
 > screen), so it costs more than the FPS module and should be judged separately.
 >
 > ### What declaring a module commits you to
@@ -270,7 +270,7 @@ Also, in case some modules are not validated during evaluation, **it is a good i
 - [ ] **Major (2pt)**: standard user management and authentication
   (profile updates, avatar upload, adding friends and checking online status, profile page).
 - [ ] **Minor (1pt)**: game statistics and match history (**requires a game module**).
-  *(dropped 2026-08-08; first candidate to restore alongside "add another game" — both unlock from W-13)*
+  *(dropped 2026-08-08; first candidate to restore alongside "add another game" — both unlock from B-13)*
 - [ ] **Minor (1pt)**: remote authentication via OAuth 2.0 (Google, GitHub, 42, etc.).
 - [ ] **Major (2pt)**: advanced permission system (user CRUD, role management, role-based views and actions).
 - [ ] **Major (2pt)**: organization system (organization CRUD, adding/removing users, in-organization actions).
@@ -295,7 +295,7 @@ Also, in case some modules are not validated during evaluation, **it is a good i
 - [◎] **Major (2pt)**: remote players (real-time play across separate PCs, latency/disconnect/reconnect handling).
 - [◎] **Major (2pt)**: multiplayer game (3+ players) (**requires at least one game implementation**).
 - [ ] **Major (2pt)**: add another game with user history and matchmaking (**requires the first game to be implemented**).
-  *(FPS engine is complete; dropped only because "user history" needs W-13. Top priority to restore)*
+  *(FPS engine is complete; dropped only because "user history" needs B-13. Top priority to restore)*
 - [◎] **Major (2pt)**: implement advanced 3D graphics (e.g., Three.js or Babylon.js).
   *(bonus. Hand-written C raycaster, no library — see architecture.md §4.2 for the interpretive risk this carries)*
 - [ ] **Minor (1pt)**: advanced chat features (blocking, game invites, notifications, history, etc.
@@ -304,7 +304,7 @@ Also, in case some modules are not validated during evaluation, **it is a good i
 - [◎] **Minor (1pt)**: game customization options (power-ups, maps, settings, etc. **requires a game implementation**).
 - [ ] **Minor (1pt)**: gamification system (3 or more of achievements, badges, leaderboards, etc. Must be stored in the database. Quality over quantity).
 - [◎] **Minor (1pt)**: implement a spectator mode for games (**requires a game implementation**).
-  *(bonus. F-06 already handles the spectator display path)*
+  *(bonus. GV-06 already handles the spectator display path)*
 
 ## IV.7 DevOps
 - [ ] **Major (2pt)**: log-management infrastructure using ELK (Elasticsearch, Logstash, Kibana).

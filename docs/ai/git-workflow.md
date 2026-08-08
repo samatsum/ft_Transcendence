@@ -64,6 +64,42 @@ several days, so an entire branch of work (`samatsum/refactor-project-docs-77671
 `samatsum/md-files-docs-update-2f94f3`) was built on a stale base and had to be reconciled by hand
 against `origin/main` afterward.
 
+## Lane prefixes, and the 2026-08-08 rename
+
+Issue ids carry a lane prefix. **Lanes are divided by what the code is and who maintains it — not by
+where it runs.** That is why `render.wasm` belongs to the Engine lane even though it executes in the
+browser: the exact same `raycast.c` compiles into both the native binary and `render.wasm`, so a
+boundary drawn by runtime location would split one source file across two lanes and stop working as
+an ownership boundary.
+
+| Prefix | Lane | Scope |
+|---|---|---|
+| `E-` / `G-` | **Engine** | The C engine in `codes/` + `web/`. Two prefixes, one lane: `E-` was the porting/platform work, `G-` the game rules. Kept separate only because renumbering finished work buys nothing |
+| `B-` | **Backend** | Fastify, auth, REST, WS, GameRoom, and the database (Prisma/SQLite) |
+| `I-` | **Infra / DevOps** | Repo skeleton and tooling, Docker/nginx/TLS, CI |
+| `F-` | **Frontend** | General web screens: auth, layout, lobby, responsive work |
+| `GV-` | **GameView** | Game screens: Canvas + `render.wasm` integration, HUD, match transition, spectator UI |
+
+### Mapping from the old ids
+
+Before 2026-08-08 the backend, database and infra work all shared a single `W-` prefix ("Web"),
+which said nothing about what an issue actually was, and the frontend lane mixed ordinary screens
+with the wasm/WebSocket game view. **Numbers were preserved through the rename**, so the mapping is
+mechanical — but roughly 85 commit messages and several closed GitHub issues still use the old ids
+and can never be rewritten, so both vocabularies will coexist in the history permanently.
+
+| Old | New |
+|---|---|
+| `W-01` | `I-01` |
+| `W-02` – `W-14` | `B-02` – `B-14` (same number) |
+| `W-15`, `W-16` | `I-15`, `I-16` |
+| `F-06`, `F-07`, `F-08`, `F-12` | `GV-06`, `GV-07`, `GV-08`, `GV-12` |
+| every other `F-` | unchanged |
+| `E-`, `G-` | unchanged |
+
+Reading an old commit: substitute the prefix, keep the number. `W-12` in a 2026-07 commit is today's
+`B-12`; `F-07` in [PR #35](https://github.com/samatsum/ft_Transcendence/pull/35) is today's `GV-07`.
+
 ## Branch naming
 
 Match the convention already established across 35+ PRs in this repo's history — `<type>/<slug>`:

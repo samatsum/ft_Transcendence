@@ -18,10 +18,10 @@ frontend — is partially built. Read this table before trying to demo anything:
 | Area | Status |
 |---|---|
 | **Engine** (`codes/` + `web/`) — rendering, physics, both game modes, AI, server-authoritative sim | ✅ **Complete** |
-| **Server** (`app/backend/`) — lobby WS, matchmaking, GameRoom driving `sim.wasm`, disconnect/reconnect, map whitelist | ✅ **Core complete** (W-01, W-08 core, W-09–W-12, W-14). Blocked on real Cookie auth (W-04/W-05) for final integration; persistence (W-13), Docker/nginx delivery (W-15), and CI extension (W-16) not started |
-| **Auth / DB / friends / avatar** (`app/backend/`) | ❌ **Not started** (W-02–W-07). A dev-only header-based auth stub (`ALLOW_DEV_AUTH`) stands in for it |
-| **Frontend** (`app/frontend/`) — scaffold, API client, GameView, HUD | ✅ Scaffold, fetch layer, GameView, and HUD are done (F-01, F-02, F-06, F-07) |
-| **Frontend — lobby, auth screens, match transition, profile** | ❌ **Not started** (F-03–F-05, F-08–F-12). The lobby route is currently a stub with a dev-only link straight into a match |
+| **Server** (`app/backend/`) — lobby WS, matchmaking, GameRoom driving `sim.wasm`, disconnect/reconnect, map whitelist | ✅ **Core complete** (I-01, B-08 core, B-09–B-12, B-14). Blocked on real Cookie auth (B-04/B-05) for final integration; persistence (B-13), Docker/nginx delivery (I-15), and CI extension (I-16) not started |
+| **Auth / DB / friends / avatar** (`app/backend/`) | ❌ **Not started** (B-02–B-07). A dev-only header-based auth stub (`ALLOW_DEV_AUTH`) stands in for it |
+| **Frontend** (`app/frontend/`) — scaffold, API client, GameView, HUD | ✅ Scaffold, fetch layer, GameView, and HUD are done (F-01, F-02, GV-06, GV-07) |
+| **Frontend — lobby, auth screens, match transition, profile** | ❌ **Not started** (F-03–F-05, GV-08・F-09・F-10・F-11・GV-12). The lobby route is currently a stub with a dev-only link straight into a match |
 | **End-to-end result**: log in → find a match → play → see results | ❌ **Not yet possible.** There is no lobby to matchmake from and no real login |
 
 What *is* demoable today: the native/browser engine standalone (single player, both modes), and a
@@ -70,7 +70,7 @@ flowchart LR
 
     client -- "REST: auth, profile, maps" --> BE
     client -- "WebSocket: input →<br/>← snapshot (15Hz)" --> GR
-    BE -.->|"not yet wired (W-03)"| DB
+    BE -.->|"not yet wired (B-03)"| DB
 ```
 
 The server is the sole authority: `sim.wasm` computes the real match state at 30Hz, and the
@@ -151,7 +151,7 @@ npm run dev:frontend       # Vite on :5173, proxies /api to :3000
 ```
 
 Open `http://localhost:5173`. With `NODE_ENV=development` and `ALLOW_DEV_AUTH=true` set (see
-`.env.example`), an `x-dev-user` header stands in for real auth, which doesn't exist yet (W-04).
+`.env.example`), an `x-dev-user` header stands in for real auth, which doesn't exist yet (B-04).
 There is no lobby yet, so `/lobby` is a stub with a dev-only link straight into `/game/dev-room`
 for exercising the GameView/HUD.
 
@@ -184,9 +184,9 @@ RSP mode disables `1`/`2`/`3`/`Space` — hand-to-hand contact is resolved autom
 | Frontend | React + Vite + TypeScript + Tailwind CSS | SPA is sufficient (no SSR module); React code-gen quality is strong; Tailwind satisfies the CSS-framework requirement |
 | Backend | Fastify + TypeScript | Runs `sim.wasm` directly under Node; official WS plugin; lighter than Nest for this scope |
 | Realtime | Raw WebSocket (`@fastify/websocket`) | Socket.IO's abstraction isn't needed |
-| DB | SQLite + Prisma (not yet wired, W-03) | Single-host evaluation target; satisfies the ORM requirement |
-| Auth | argon2id password hashing + opaque httpOnly session cookie (not JWT) (not yet wired, W-04) | Stateless JWT gives up server-side revocation for no benefit here |
-| Delivery | nginx (TLS termination, static + WS proxy) + Docker Compose (not yet wired, W-15) | Single-command startup requirement |
+| DB | SQLite + Prisma (not yet wired, B-03) | Single-host evaluation target; satisfies the ORM requirement |
+| Auth | argon2id password hashing + opaque httpOnly session cookie (not JWT) (not yet wired, B-04) | Stateless JWT gives up server-side revocation for no benefit here |
+| Delivery | nginx (TLS termination, static + WS proxy) + Docker Compose (not yet wired, I-15) | Single-command startup requirement |
 | Shared contracts | zod schemas in `app/shared/` | One schema, validated on both frontend and backend |
 
 Full rationale and trade-off comparisons: [`docs/ai/architecture.md`](./docs/ai/architecture.md).

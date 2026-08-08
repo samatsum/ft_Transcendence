@@ -75,7 +75,7 @@
 					<h3>Q. native / web / server で1フレームを「回す人」は誰？</h3>
 					<p>
 						A. native=MLX（<code>mlx_loop</code>）、web=ブラウザ（<code>requestAnimationFrame</code>）、
-						server=Node（<code>setInterval</code>。W-10で実装済み）。
+						server=Node（<code>setInterval</code>。B-10で実装済み）。
 						<strong>呼ばれる<code>game_step</code>は3つとも同一</strong>。
 					</p>
 					<p style="margin-top: 10px; font-size: 0.86rem;">
@@ -275,7 +275,7 @@
 					<h3>Q. <code>world_delta</code>（FPSの収集/扉）は実装済み？</h3>
 					<p>
 						A. <strong>未実装</strong>（唯一の意図的な後送り）。ゲート2のRSPに不要なため。
-						FPSオンライン化（W-14）で追加予定だったが、W-14自体は既に完了済み——
+						FPSオンライン化（B-14）で追加予定だったが、B-14自体は既に完了済み——
 						この項目自体の要否は現状のバックログで再確認が必要（要出典再確認）。
 					</p>
 					<p style="margin-top: 10px; font-size: 0.86rem;">
@@ -329,7 +329,7 @@
 			<p class="section-kicker">H · When stuck</p>
 			<h2>「詰まったら」テクニカルリードの動き方</h2>
 			<ol class="path-list">
-				<li><div><strong>合流点を先に紙合わせする</strong><span>レーンの境界（例: W-11×F-06のsnapshot JSON形）は、実装前に契約を文書化してから着手する。</span></div></li>
+				<li><div><strong>合流点を先に紙合わせする</strong><span>レーンの境界（例: B-11×GV-06のsnapshot JSON形）は、実装前に契約を文書化してから着手する。</span></div></li>
 				<li><div><strong>Cを触るPRが来たら必ず見る</strong><span>原則Cは凍結。触る必要＝設計の見落としのサイン。</span></div></li>
 				<li><div><strong>「これ何？」にはまず該当の説明用ドキュメントを指す</strong><span>無ければ1本書く（それがTech Leadの文書化）。</span></div></li>
 				<li><div><strong>迷ったらこのQ&amp;Aの「確認」リンクを開いて実物で答え合わせする</strong><span>憶測で答えない。</span></div></li>

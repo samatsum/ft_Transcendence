@@ -129,12 +129,12 @@ ft_transcendence/
 │   └── PythonCodes/                  # clint (custom C coding-rule linter) and migration scripts
 ├── web/                              # HTML/JS for the web target
 │   ├── engine_demo.html / engine_demo.js         # local-play verification page (supports ?map= and ?res=)
-│   ├── snapshot_interp.js            # interpolation between two snapshots (reused by F-06)
+│   ├── snapshot_interp.js            # interpolation between two snapshots (reused by GV-06)
 │   ├── bench_render.mjs              # per-resolution throughput measurement
 │   ├── sim_demo/{record.mjs, replay.html, replay.js}  # one-way sim→JSON→render demo
 │   └── build/ assets/                # generated output (not tracked by git)
-├── app/{backend,frontend,shared}/    # web app (npm workspaces, added in W-01)
-├── infra/                            # nginx, certificates, docker/ (W-15)
+├── app/{backend,frontend,shared}/    # web app (npm workspaces, added in I-01)
+├── infra/                            # nginx, certificates, docker/ (I-15)
 ├── maps/                             # maps (fps_map/ and rsp_map/)
 ├── screenshot/                       # BMP output location for result screens (native only)
 └── textures/                         # XPM assets (wall/object/enemy/hand/arm/interact/full...)
@@ -403,7 +403,7 @@ python3 codes/PythonCodes/lint.py --fix      # inserts missing separators / comm
 
 When a match reaches clear/win-loss determination, the result screen is automatically saved by `common/core/bmp.c::save_result_screenshot`. The save happens exactly once, on the first frame that draws the result screen.
 
-> **native only (G-10).** The web build excludes the save path via `#ifndef WEB_BUILD` (writing to wasm's MEMFS would only be volatile), and the sim build does not link `bmp.c` / `screen.c` at all, so **file I/O structurally cannot occur**. For online match results, the DB (W-13) is the source of truth.
+> **native only (G-10).** The web build excludes the save path via `#ifndef WEB_BUILD` (writing to wasm's MEMFS would only be volatile), and the sim build does not link `bmp.c` / `screen.c` at all, so **file I/O structurally cannot occur**. For online match results, the DB (B-13) is the source of truth.
 
 | Mode | Save Location |
 |---|---|
