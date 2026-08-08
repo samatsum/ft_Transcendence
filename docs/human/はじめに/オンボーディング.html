@@ -63,7 +63,7 @@
 				<strong>ゲート2の定義:</strong>
 				複数ブラウザでRSP（じゃんけん鬼ごっこ）対戦が最後まで成立すること。
 				これが結合デモのgo/no-go関門であり、連番の課題番号ではない。
-				日程の正本は<a href="./チーム体制.html">⑥ チーム分担計画</a> §5.1。
+				日程の正本は<a href="../../ai/backlog.md">⑤ バックログ</a> §6（Gate/schedule mapping）。
 			</div>
 			<p class="section-intro" style="margin-top: 18px">
 				要件の一次情報: <a href="../../ai/requirements.md">ai/requirements.md</a>（旧 <code>01_課題/ft_トランセンデンス.md</code>）
@@ -76,7 +76,7 @@
 			<p class="section-intro">
 				このプロジェクトの実装は4つの開発レーンに分かれる。誰が何を担当するかは体制によって変わるが、
 				レーンの境界そのものは変わらない共通の地図として使える。詳細の正本は
-				<a href="./チーム体制.html">⑥ チーム分担計画</a> §3。
+				<a href="./チーム体制.html#lanes">⑥ チーム体制</a> §03（開発レーン構成）。
 			</p>
 			<div class="grid grid-2">
 				<article class="card">
@@ -161,7 +161,7 @@
 			<p class="section-kicker">04 · Boundaries</p>
 			<h2>モジュール境界（ここだけ合意すれば並行できる）</h2>
 			<p class="section-intro">
-				正本: <a href="./チーム体制.html">⑥ チーム分担計画</a> §4。
+				正本はこのページ（旧「⑥チーム分担計画」§4の内容を移設）。
 				担当者が誰であっても、この契約の境界自体は変わらない。
 			</p>
 			<div class="table-wrap">
@@ -198,8 +198,10 @@
 				Auth/REST/DBレーン ⇄ 非ゲームUIレーンのエラーエンベロープとCookie。
 			</div>
 			<p class="section-intro" style="margin-top: 18px">
-				契約を変えるときは所有レーンの担当者に相談し、<strong>設計書を先に直してから</strong>実装する
-				（<a href="./チーム体制.html">⑥ チーム分担計画</a> §7）。
+				契約を変えるときは<strong>設計書を先に直してから</strong>実装する
+				（<a href="../../ai/ws-protocol.md">②WSプロトコル設計</a>自身が「実装が本書と食い違ったら、まず本書を直してから実装せよ」と明記している通り）。
+				元は「所有レーンの担当者に相談してから」というルールだったが、samatsum単独稼働の現状では
+				相談する相手が別にいないため、この原則だけが残っている。
 			</p>
 		</section>
 
@@ -220,16 +222,15 @@
 					<h3>Q. <code>codes/</code>（C）を直してよいか？</h3>
 					<p>
 						<strong>A.</strong>
-						原則凍結。変更が必要な場合は、ゲームサーバーレーンの担当者と合意したうえで
-						（<a href="./チーム体制.html">⑥ チーム分担計画</a> §7の手順に従い）進める。
+						原則凍結。変更が必要な場合は、<a href="#boundaries">上の「モジュール境界」</a>にある契約表を先に更新し、
+						設計書を直してから実装する（<a href="../../ai/ws-protocol.md">②WSプロトコル設計</a>の原則に従う）。
 					</p>
 				</article>
 				<article class="card">
 					<h3>Q. 進捗の正本はどれか？</h3>
 					<p>
 						<strong>A.</strong>
-						Issue受入・ゲート定義 → <a href="../../ai/backlog.md">⑤ バックログ</a>。
-						日程 → <a href="./チーム体制.html">⑥ チーム分担計画</a> §5.1。
+						Issue受入・ゲート定義・日程（Gate/schedule mapping） → <a href="../../ai/backlog.md">⑤ バックログ</a> §6。
 						<a href="../../ai/architecture.md">0-全体アーキテクチャ設計.md</a>の14日表は<strong>日程としては無効</strong>。
 					</p>
 				</article>
