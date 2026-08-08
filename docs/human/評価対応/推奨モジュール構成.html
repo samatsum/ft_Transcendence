@@ -4,23 +4,26 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="color-scheme" content="dark">
-	<title>推奨モジュール構成（提案） — ft_transcendence</title>
+	<title>モジュール構成の改訂（採用済み） — ft_transcendence</title>
 	<link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
 	<header class="hero">
 		<div class="shell">
-			<p class="eyebrow">42評価 · 提案（未採用）</p>
+			<p class="eyebrow">42評価 · D-19（2026-08-08 採用）</p>
 			<h1>残作業を最小にして<br>14pt＋5ptを取る構成。</h1>
 			<p class="hero-lead">
 				<a href="./モジュール全カタログ.html">全55モジュールの洗い出し</a>で見つかった候補を踏まえて、
-				<strong>「同じ14ptなら、残っている作業が一番少ない組み合わせはどれか」</strong>という観点で組み直した提案。
+				<strong>「同じ14ptなら、残っている作業が一番少ない組み合わせはどれか」</strong>という観点で組み直した構成。
 				現行計画（<a href="./42モジュール対応表.html">42モジュール対応表.html</a>）との違いは、
 				<strong>高価なモジュールを、すでに完成しているもの・ほぼ完成しているものへ差し替える</strong>点にある。
+				<strong>この構成は2026-08-08に正式採用された</strong>ため、
+				<a href="./42モジュール対応表.html">42モジュール対応表.html</a>と
+				<a href="../../ai/architecture.md">architecture.md §4</a>も、すでにこの内容へ更新済み。
 			</p>
 			<div class="hero-note">
-				<strong>これは提案であり、採用済みの構成ではない</strong>
-				<span>正本は今も architecture.md §4。採用するならそちらを先に更新すること</span>
+				<strong>2026-08-08に正式採用された（D-19）</strong>
+				<span>正本の <a href="../../ai/architecture.md">architecture.md §4</a> は更新済み。このページは「なぜそう変えたか」の記録</span>
 			</div>
 		</div>
 	</header>
@@ -66,13 +69,13 @@
 				課題書 第III章の必須要件（FE+BE+DBのWebアプリ、メール+パスワード認証のハッシュ化、
 				単一コマンド起動、全接続HTTPS、Privacy/ToS、レスポンシブ）は<strong>モジュールとは無関係に必須</strong>。
 				つまり <code>W-02</code>〜<code>W-05</code>・<code>W-15</code>・<code>F-03</code>・<code>F-04</code>・<code>F-11</code>
-				は、どの構成を選んでも必ずやる。この提案はその「必ずやる分」の外側だけを組み替えている。
+				は、どの構成を選んでも必ずやる。この改訂はその「必ずやる分」の外側だけを組み替えている。
 			</div>
 		</section>
 
 		<section id="core">
 			<p class="section-kicker">02 · Recommended core</p>
-			<h2>推奨・必須14pt</h2>
+			<h2>採用した必須14pt</h2>
 			<p class="section-intro">
 				8モジュールで14pt。<strong>4モジュール（8pt）がすでに完成またはエンジン側完成</strong>で、
 				残り4モジュールも「必ずやる認証・ロビー作業」が終われば自動的に成立する。
@@ -103,7 +106,7 @@
 
 		<section id="bonus">
 			<p class="section-kicker">03 · Recommended bonus</p>
-			<h2>推奨・目指せ追加5pt</h2>
+			<h2>採用した追加5pt</h2>
 			<p class="section-intro">
 				ボーナスは上限+5pt。ここには<strong>「安い」か「落ちても構わない」</strong>ものを置く。
 				4モジュールで5pt、いずれも新規サブシステムを必要としない。
@@ -127,10 +130,10 @@
 
 		<section id="diff">
 			<p class="section-kicker">04 · Diff</p>
-			<h2>現行計画（19pt）との差分</h2>
+			<h2>旧構成（19pt）からの差分</h2>
 			<div class="table-wrap">
 				<table>
-					<thead><tr><th>モジュール</th><th>pt</th><th>現行</th><th>提案</th><th>理由</th></tr></thead>
+					<thead><tr><th>モジュール</th><th>pt</th><th>旧</th><th>新</th><th>理由</th></tr></thead>
 					<tbody>
 						<tr><td>AI対戦相手</td><td>2</td><td>ボーナス</td><td><strong>必須へ昇格</strong></td><td>完成済み。合格ラインは確実なもので固める</td></tr>
 						<tr><td>標準的なユーザー管理・認証</td><td>2</td><td>必須</td><td><span class="tag status-todo">外す</span></td><td>アバター・フレンド・プロフィール画面まで要求され高価。認証自体は第III章で必須なので実装は残る</td></tr>
@@ -148,7 +151,7 @@
 
 		<section id="saved">
 			<p class="section-kicker">05 · What this saves</p>
-			<h2>この構成なら、着手しなくてよくなるIssue</h2>
+			<h2>この改訂で、着手しなくてよくなったIssue</h2>
 			<p class="section-intro">
 				下のIssueは、上の構成を採る限り<strong>モジュール獲得のためには不要</strong>になる。
 				（製品として作りたいなら別の理由で作ればよいが、点数のためには要らない。）
@@ -211,15 +214,15 @@
 
 		<section id="references">
 			<p class="section-kicker">07 · Sources of truth</p>
-			<h2>このHTMLは提案。正本は設計書</h2>
+			<h2>この改訂の正本は設計書。ここは判断の記録</h2>
 			<div class="grid grid-3">
 				<article class="card">
 					<h3><a href="../../ai/architecture.md">architecture.md §4</a></h3>
-					<p>現行のモジュール選定（19pt）の正本。<strong>この提案を採用するなら、まずここを更新する</strong>。</p>
+					<p>モジュール選定（19pt）の正本。<strong>D-19としてこの構成に更新済み</strong>——同じ判断が§4.5に英語で記録されている。</p>
 				</article>
 				<article class="card">
 					<h3><a href="./モジュール全カタログ.html">モジュール全カタログ</a></h3>
-					<p>全55モジュールの一覧。この提案で使った候補の出どころ。</p>
+					<p>全55モジュールの一覧。この改訂で採用した候補の出どころ。チェック状態も改訂後に更新済み。</p>
 				</article>
 				<article class="card">
 					<h3><a href="./42モジュール対応表.html">42モジュール対応表</a></h3>
@@ -243,9 +246,9 @@
 
 	<footer>
 		<div class="shell">
-			提案資料 · 2026-08-08作成。<strong>採用されていない</strong>——採用する場合は
-			<code>architecture.md</code> §4を先に更新し、その後このページと
-			<code>42モジュール対応表.html</code>を追従させてください。
+			決定記録 · 2026-08-08作成、同日採用（D-19）。<strong>正本は<code>architecture.md</code> §4</strong>で、
+			§4.5に同じ判断が英語で記録されています。今後さらに構成を変える場合も、まず§4を更新してから
+			このページと<code>42モジュール対応表.html</code>を追従させてください。
 			<p>samatsumの「初期チェック24ptのうち、必須でなく未着手のものは何か」という問いから、
 			「では残作業を最小にする構成は何か」へ発展して作成したもの。</p>
 		</div>

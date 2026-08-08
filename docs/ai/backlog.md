@@ -198,22 +198,29 @@ development. `GameView`/`HudOverlay` currently have no lobby to be launched from
 
 **Gate 3 = the core 14pt work "module by module."** Doubles as a dry run of ⓪§9.1's "demo each module individually."
 
-> **Note: Gate 3 is not a re-confirmation of Gate 2.** As the table below shows, **#6 and #8 (3pt total) have
-> not had a single line running as of Gate 2.** Day 4 is not a "confirmation day" — it's the day
-> 3 people add new functionality simultaneously.
+> **Module lineup revised 2026-08-08 (D-19).** The table below reflects the new selection — see
+> [architecture.md §4](./architecture.md) for the authoritative list and §4.5 for why it changed.
+> The previous lineup put two entirely-unstarted modules (standard user management, game stats) on the
+> pass line while a finished one (AI opponent) sat in the bonus; that is now inverted.
 
 | # | Module | pt | What is being judged | Status |
 |---|---|---|---|---|
 | 1 | Web game | 2 | RSP works as a real match | To be confirmed at Gate 2 (not yet run) |
-| 2 | Remote players | 2 | Cross-browser match + disconnect/reconnect (W-12) | Gate 2 + (W-12 carried out on Day 4) |
+| 2 | Remote players | 2 | Cross-browser match + disconnect/reconnect (W-12) | Gate 2 (W-12 itself is **done**) |
 | 3 | 3+ player multiplayer | 2 | **4 humans in the same match** (no AI seats) | To be confirmed at Gate 2 (not yet run) |
-| 4 | Frameworks on both FE/BE | 2 | React + Fastify demonstrable in code | To be confirmed at Gate 2 (not yet run) |
-| 5 | WebSockets | 2 | Game sync + lobby presence + live reflection of `match_result` | Through Day 4, including W-13's broadcast |
-| **6** | **Standard user management and authentication** | **2** | **All 5 of: profile update / avatar upload / add friend / online status / profile page** (as enumerated in subject IV.3 — missing even one means 0pt) | **New work on Day 4** (W-06/W-07/F-09/F-10) |
+| 4 | Frameworks on both FE/BE | 2 | React + Fastify demonstrable in code | **Done** (W-01 / F-01) |
+| 5 | WebSockets | 2 | Game sync, connect/disconnect handling, broadcasting — all three satisfied by the game WS alone | W-11 **done**; lobby WS integration remains |
+| **6** | **AI opponent** | **2** | RSP hand-based AI and FPS chase AI; AI fills disconnected seats | **Done** (promoted from bonus into the core) |
 | 7 | ORM | 1 | Prisma's schema and migrations run on compose first startup | W-03 + W-15 |
-| **8** | **Game stats and match history** | **1** | **Matches become DB rows; win rate and history show on screen** | **New work on Day 4** (W-13 + F-09) |
+| **8** | **Game customization** | **1** | Map selection + points-to-win, with defaults available | Engine params **done**; selection UI remains (promoted from bonus) |
 | — | **Mandatory requirement** (not a module) | — | **Responsive at 2 sizes (375px and desktop width) / reachable up to match start using keyboard only** (subject III.3. **not a "nice to have"**) | F-11 |
-| 9/10/11 | Bonus | +5 | Only declare items that are **fully working** (never declare something that doesn't work) | AI / FPS / customization |
+| 9/10/11/12 | Bonus | +5 | Only declare items that are **fully working** (never declare something that doesn't work) | Advanced 3D (done, needs README justification) / design system (9 of 10 components exist) / spectator (F-06 path exists) / health-check page (`/api/health` exists) |
+
+> **No longer on the critical path:** W-06 (avatar), W-07 (friends API), W-13 (match persistence),
+> F-09 (profile screen) and F-10 (friends UI) were only required by the dropped modules. W-13 remains
+> the highest-value optional issue — **on its own it restores "add another game" (2pt)**, since the FPS
+> engine and matchmaking are already complete and only user history is missing. "Game statistics" (1pt)
+> needs **W-13 and F-09 together**, so it is a separate, larger decision.
 
 **Critical path (updated 2026-07-30)**: the original core chain, E-08/E-09 → E-10 → E-11, is complete, and
 **W-01/W-09/W-10/W-11/W-12/W-14 are done**, so the remaining work on the game-server side is now
