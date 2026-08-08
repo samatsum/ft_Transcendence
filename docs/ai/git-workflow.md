@@ -176,7 +176,7 @@ for why nobody was doing that cleanup as it happened.
 
 ## Tracking work: backlog.md + GitHub Issues (added 2026-08-08)
 
-`docs/ai/backlog.md` remains the authoritative source of truth for every E-/G-/W-/F- item —
+`docs/ai/backlog.md` remains the authoritative source of truth for every `E-`/`G-`/`B-`/`I-`/`F-`/`GV-` item —
 acceptance criteria, dependencies, and status live there first. As of 2026-08-08, samatsum also
 wants newly discovered gaps mirrored as real GitHub Issues, for the visual open/closed tracking the
 Issues tab gives (backlog.md's git-log-buried rows don't show that at a glance). By agreement,
@@ -188,8 +188,9 @@ When filing one:
 
 - **Title**: `<Issue-ID>: <short description>` (e.g. "G-11: FPS's shoot mechanic can eliminate the
   other seat").
-- **Labels**: one `lane:engine` / `lane:backend` / `lane:infra` / `lane:frontend` / `lane:gameview` matching the
-  E/G/W/F prefix, plus `backlog-tracked`, plus `bug` or `enhancement` as fits.
+- **Labels**: one lane label matching the prefix — `E-`/`G-` → `lane:engine`, `B-` → `lane:backend`,
+  `I-` → `lane:infra`, `F-` → `lane:frontend`, `GV-` → `lane:gameview` (six prefixes, five labels, because
+  `E-` and `G-` share one lane). Plus `backlog-tracked`, plus `bug` or `enhancement` as fits.
 - **Body**: cite file:line with **absolute GitHub URLs**
   (`https://github.com/samatsum/ft_Transcendence/blob/main/...`), never repo-relative paths — an
   Issue body isn't part of the file tree, so `../../` links silently fail to resolve there even
