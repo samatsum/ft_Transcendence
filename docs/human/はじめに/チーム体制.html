@@ -98,36 +98,68 @@
 
 <section id="lanes">
 	<p class="section-kicker">03 — Development Lanes</p>
-	<h2>開発レーン構成（Engine / Backend・DevOps / Frontend / Gameplay）</h2>
-	<p class="section-intro">
-		4レーン構成そのものは課題書の想定に沿った枠組みとして維持する。
-		現状は全レーンを samatsum が兼務しており、Backend・DevOps と Frontend は
-		本来複数人で分担する前提だったレーンのため、空きスロットが大きい。
-	</p>
-	<div class="grid grid-2">
-		<div class="card">
-			<p class="card-label">Engine</p>
-			<h3>Cエンジン本体</h3>
-			<p>native / web / sim の3ターゲット、sim 公開 API、snapshot 受け口など。現在は samatsum が担当。</p>
-		</div>
-		<div class="card">
-			<p class="card-label">Backend・DevOps</p>
-			<h3>サーバー基盤・ゲームサーバー・インフラ</h3>
-			<p>Auth / REST / DB / DevOps と、WS・GameRoom・sim.wasm 駆動。現在は samatsum が兼務。
-			<span class="tag">空きスロットあり</span></p>
-		</div>
-		<div class="card">
-			<p class="card-label">Frontend</p>
-			<h3>フロント基盤・フロントゲーム</h3>
-			<p>認証・ロビー・プロフィール画面と、GameView / HUD / ゲーム統合。現在は samatsum が兼務。
-			<span class="tag">空きスロットあり</span></p>
-		</div>
-		<div class="card">
-			<p class="card-label">Gameplay</p>
-			<h3>対戦ロジック・マップ</h3>
-			<p>戦闘員統合・先取点・対戦マップなど。現在は samatsum が担当。</p>
-		</div>
+	<h2>各レーンの稼働状況</h2>
+	<div class="callout">
+		<strong>レーンの定義はこのページには置いていない。</strong>
+		2026-08-08に<a href="../運用/Git運用フロー.html#lanes">Git運用フロー §05.5</a>へ一本化した。
+		どのレーンがどこまでを持つか、Issue番号の接頭辞が何を表すか、旧<code>W-</code>との対応は
+		すべてそちらが正本。このページが扱うのは<strong>「今そのレーンに誰がいるか」だけ</strong>。
 	</div>
+	<p class="section-intro">
+		現状は全レーンを samatsum が兼務している。Backend・Infra・Frontend・GameView は
+		本来複数人で分担する前提だったため、空きスロットが大きい。
+		<strong>2026-08-08時点で新規メンバー4名の参加が決まっているが、参加時期も経験も揃っていないため、
+		担当の割り振りはまだ行っていない。</strong>
+	</p>
+	<div class="table-wrap">
+		<table>
+			<thead><tr><th>レーン</th><th>Issue</th><th>現在の担当</th><th>状況</th></tr></thead>
+			<tbody>
+				<tr>
+					<td><strong>Engine</strong></td>
+					<td><code>E-</code> / <code>G-</code></td>
+					<td>samatsum</td>
+					<td>E-01〜E-14 / G-01〜G-10 すべて完了。原則として今後は触らない</td>
+				</tr>
+				<tr>
+					<td><strong>Backend</strong></td>
+					<td><code>B-</code></td>
+					<td>samatsum（兼務）</td>
+					<td>ゲームサーバー側（B-08〜B-12）とマップ配布（B-14）は完了。基盤側（B-02〜B-05）と観戦（B-17）が未着手
+					<span class="tag">空きスロットあり</span></td>
+				</tr>
+				<tr>
+					<td><strong>Infra / DevOps</strong></td>
+					<td><code>I-</code></td>
+					<td>samatsum（兼務）</td>
+					<td>I-01 完了。I-15（Docker/TLS）・I-16（CI拡張）が未着手
+					<span class="tag">空きスロットあり</span></td>
+				</tr>
+				<tr>
+					<td><strong>Frontend</strong></td>
+					<td><code>F-</code></td>
+					<td>samatsum（兼務）</td>
+					<td>F-01・F-02 完了。F-03〜F-05・F-11 が未着手
+					<span class="tag">空きスロットあり</span></td>
+				</tr>
+				<tr>
+					<td><strong>GameView</strong></td>
+					<td><code>GV-</code></td>
+					<td>samatsum（兼務）</td>
+					<td>GV-06・GV-07 完了。GV-08・GV-12 が未着手
+					<span class="tag">空きスロットあり</span></td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+	<p class="section-intro">
+		課題書 II 章が想定する4レーン（Engine / Backend・DevOps / Frontend / Gameplay）との対応は、
+		<code>B-</code>＋<code>I-</code>＝Backend・DevOps、<code>F-</code>＋<code>GV-</code>＝Frontend。
+		<code>E-</code>と<code>G-</code>は<strong>運用上は1本のEngineレーン</strong>だが、課題書の枠に当てはめると
+		<code>G-</code>の中身がGameplayに相当する（上の表がレーンを5行で示しているのは運用の単位、
+		課題書の4本は科目としての枠、という違い）。
+		上の5本は課題書の4本をより細かく割ったもので、枠組みを外れたわけではない。
+	</p>
 </section>
 
 <section id="risk">

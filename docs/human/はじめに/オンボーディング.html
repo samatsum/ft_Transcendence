@@ -74,31 +74,63 @@
 			<p class="section-kicker">02 · Lanes &amp; roles</p>
 			<h2>開発レーンと管理役割</h2>
 			<p class="section-intro">
-				このプロジェクトの実装は4つの開発レーンに分かれる。誰が何を担当するかは体制によって変わるが、
-				レーンの境界そのものは変わらない共通の地図として使える。詳細の正本は
-				<a href="./チーム体制.html#lanes">⑥ チーム体制</a> §03（開発レーン構成）。
+				このプロジェクトの実装は5つの開発レーンに分かれる。<strong>レーンは「どこで動くか」ではなく
+				「何のコードで、誰が保守するか」で分けている。</strong>
+				誰が何を担当するかは体制によって変わるが、境界そのものは変わらない共通の地図として使える。
+				定義の正本は<a href="../運用/Git運用フロー.html#lanes">Git運用フロー §05.5</a>、
+				今そのレーンに誰がいるかは<a href="./チーム体制.html#lanes">⑥ チーム体制</a> §03。
 			</p>
 			<div class="grid grid-2">
 				<article class="card">
-					<p class="card-label">Lane · Game server</p>
-					<h3>ゲームサーバーレーン</h3>
-					<p><code>sim.wasm</code>駆動・WS・GameRoom。対戦の心臓部を動かす。</p>
+					<p class="card-label">Lane · <code>E-</code> / <code>G-</code></p>
+					<h3>Engine</h3>
+					<p><code>codes/</code>と<code>web/</code>のCエンジン。native / <code>render.wasm</code> / <code>sim.wasm</code>の3ターゲット、
+					対戦ルール、AI、マップ。<strong>全件完了済みで、原則としてもう触らない。</strong></p>
 				</article>
 				<article class="card">
-					<p class="card-label">Lane · Backend foundation</p>
-					<h3>Auth / REST / DB / Dockerレーン</h3>
-					<p>身元確認、REST API、DB、起動基盤を担う。</p>
+					<p class="card-label">Lane · <code>B-</code></p>
+					<h3>Backend</h3>
+					<p>Fastify・認証・REST・WS・GameRoom・DB。
+					<strong>中身は性質の違う2種類に分かれる</strong>——基盤（<code>B-02</code>〜<code>B-05</code>: 普通のWebアプリのCRUDと認証）と、
+					ゲームサーバー（<code>B-08</code>〜<code>B-12</code>・<code>B-17</code>: 30Hz tick・snapshot・再接続）。
+					必要な経験が違うので、着手先を選ぶときはここを見る。</p>
 				</article>
 				<article class="card">
-					<p class="card-label">Lane · Non-game UI</p>
-					<h3>非ゲームUIレーン</h3>
-					<p>認証画面・ロビーなど、対戦そのものではない画面を担う。</p>
+					<p class="card-label">Lane · <code>I-</code></p>
+					<h3>Infra / DevOps</h3>
+					<p>リポジトリ骨格とツーリング、Docker / nginx / TLS、CI。
+					「空のcloneから<code>docker compose up</code>だけで起動する」を成立させる担当。</p>
 				</article>
 				<article class="card">
-					<p class="card-label">Lane · GameView</p>
-					<h3>GameViewレーン</h3>
-					<p>GameView / HUD / マッチ遷移。対戦画面の体験を担う。</p>
+					<p class="card-label">Lane · <code>F-</code></p>
+					<h3>Frontend</h3>
+					<p>一般Web画面。認証画面、共通レイアウト、ロビー、レスポンシブ。
+					対戦そのものではない画面を担う。</p>
 				</article>
+				<article class="card">
+					<p class="card-label">Lane · <code>GV-</code></p>
+					<h3>GameView</h3>
+					<p>ゲーム画面。Canvasと<code>render.wasm</code>の統合、HUD、試合遷移、観戦UI。
+					<code>F-</code>と分けてあるのは、<strong>WASMとWebSocketに触るかどうかで必要な知識が大きく違う</strong>ため。</p>
+				</article>
+			</div>
+			<div class="callout" style="margin-top: 18px">
+				<strong>なぜ<code>render.wasm</code>がFrontendではなくEngineなのか:</strong>
+				ブラウザで動くのにEngineなのは、レーンを実行場所ではなくコードの正体で分けているから。
+				同じ<code>raycast.c</code>がnativeバイナリと<code>render.wasm</code>の両方にコンパイルされるので、
+				実行場所で線を引くと1つのソースファイルが2レーンに割れてしまい、担当境界として機能しない。
+			</div>
+			<div class="callout" style="margin-top: 18px">
+				<strong>課題書の4レーンとの対応:</strong>
+				課題書 II 章が想定するのは Engine / Backend・DevOps / Frontend / Gameplay の4本。
+				<strong>運用上のレーンと、課題書の科目としての枠は別物</strong>という点に注意。
+				<code>E-</code>と<code>G-</code>は<strong>運用上は1本のEngineレーン</strong>（接頭辞が2つあるのは、完了済みの作業を振り直す利益が無いから）だが、
+				課題書の枠に当てはめると<code>G-</code>の中身がGameplayに相当する。
+				残りは<code>B-</code>＋<code>I-</code>＝Backend・DevOps、<code>F-</code>＋<code>GV-</code>＝Frontend。
+				<strong>2026-08-08まではさらに別の呼び方（「ゲームサーバーレーン」「非ゲームUIレーン」など）も並立していた</strong>が、
+				3種類の語彙が混在して分かりにくかったため上の1本へ統一した。
+				古いコミットやIssueに残る<code>W-</code>の読み方は
+				<a href="../運用/Git運用フロー.html#lanes">Git運用フロー §05.5</a>の対応表を参照。
 			</div>
 			<div class="callout" style="margin-top: 18px">
 				<strong>管理役割（課題書 II.1.1）:</strong>
@@ -152,7 +184,7 @@
 				用語の詳細は<a href="../専門用語/全体-専門用語.html">専門用語/全体-専門用語.html</a>と、
 				レーン別の<a href="../専門用語/E-専門用語.html">E</a>・
 				<a href="../専門用語/G-専門用語.html">G</a>・
-				<a href="../専門用語/W-専門用語.html">W</a>・
+				<a href="../専門用語/B・I-専門用語.html">B・I</a>・
 				<a href="../専門用語/F-専門用語.html">F</a>用語集を参照（契約の正本は各設計書）。
 				旧個人用語集（zod・ロビー・snapshot等の学習メモ）は
 				<a href="../../../archive/torinoue/torinoue_用語集.md">archive/torinoue/torinoue_用語集.md</a>に残っています。
@@ -172,32 +204,32 @@
 					<tbody>
 						<tr>
 							<td><code>app/shared/</code>のzod（型の単一情報源）</td>
-							<td>Auth/REST/DBレーン（非ゲームUIレーンが必須レビュアー）</td>
+							<td><code>B-</code> Backend（<code>F-</code> Frontendが必須レビュアー）</td>
 							<td>全レーン</td>
 						</tr>
 						<tr>
 							<td>REST API</td>
-							<td>Auth/REST/DBレーン</td>
-							<td>非ゲームUIレーン</td>
+							<td><code>B-</code> Backend（基盤側）</td>
+							<td><code>F-</code> Frontend</td>
 						</tr>
 						<tr>
 							<td>WSプロトコル（メッセージ形・GameRoom）</td>
-							<td>ゲームサーバーレーン</td>
-							<td>GameViewレーン（＋ロビーは非ゲームUIレーン）</td>
+							<td><code>B-</code> Backend（ゲームサーバー側）</td>
+							<td><code>GV-</code> GameView（＋ロビーWSは<code>F-</code> Frontend）</td>
 						</tr>
 						<tr>
 							<td>sim公開API / snapshot受信・補間（C側）</td>
-							<td>完了・原則不変</td>
-							<td>ゲームサーバーレーン / GameViewレーン</td>
+							<td><code>E-</code> Engine（完了・原則不変）</td>
+							<td><code>B-</code> Backend / <code>GV-</code> GameView</td>
 						</tr>
 					</tbody>
 				</table>
 			</div>
 			<div class="callout" style="margin-top: 18px">
 				<strong>最優先の同期:</strong>
-				ゲームサーバーレーン ⇄ GameViewレーンのsnapshot JSON形（<a href="../../ai/ws-protocol.md">②WSプロトコル設計</a>のsnapshot節）。<br>
+				<code>B-</code>（ゲームサーバー側） ⇄ <code>GV-</code> GameView のsnapshot JSON形（<a href="../../ai/ws-protocol.md">②WSプロトコル設計</a>のsnapshot節）。<br>
 				<strong>次点:</strong>
-				Auth/REST/DBレーン ⇄ 非ゲームUIレーンのエラーエンベロープとCookie。
+				<code>B-</code>（基盤側） ⇄ <code>F-</code> Frontend のエラーエンベロープとCookie。
 			</div>
 			<p class="section-intro" style="margin-top: 18px">
 				契約を変えるときは<strong>設計書を先に直してから</strong>実装する
@@ -216,7 +248,7 @@
 					<h3>Q. Cub3D / レイキャスタの数学まで読むか？</h3>
 					<p>
 						<strong>A.</strong>
-						ゲート2前は、ゲームサーバーレーン（エンジン駆動）以外は不要。
+						ゲート2前は、<code>B-</code>のゲームサーバー側（エンジン駆動）以外は不要。
 						説明用の深いエンジン資料や、印刷用全記録のレイキャスタ章は後回しでよい。
 					</p>
 				</article>

@@ -204,6 +204,13 @@ git push origin --delete feat/xxx       # リモート（gh pr merge --delete-br
 		<section id="lanes">
 			<p class="section-kicker">05.5 · Lane prefixes</p>
 			<h2>レーン接頭辞と、2026-08-08の改名</h2>
+			<div class="callout">
+				<strong>この節がレーン定義の正本です。</strong>
+				以前は<a href="../はじめに/チーム体制.html#lanes">⑥ チーム体制</a>§03と
+				<a href="../はじめに/オンボーディング.html#lanes">オンボーディング</a>にも別の語彙でレーンの定義が置かれ、
+				3つの語彙が並立していました。2026-08-08にここへ一本化し、他の2ページからはこの節を参照する形にしています。
+				レーンを増やす・境界を動かす場合は、まずここを直してください。
+			</div>
 			<p class="section-intro">
 				Issue番号の頭文字はレーンを表します。<strong>レーンは「どこで動くか」ではなく
 				「何のコードで、誰が保守するか」で分けています。</strong>
@@ -223,6 +230,43 @@ git push origin --delete feat/xxx       # リモート（gh pr merge --delete-br
 					</tbody>
 				</table>
 			</div>
+			<h3 style="margin-top: 30px">Bレーンの中には、性質の違う仕事が2種類ある</h3>
+			<p class="section-intro">
+				<code>B-</code>は1レーンですが、<strong>中身は「普通のWebアプリ」と「リアルタイム対戦サーバー」に分かれます。</strong>
+				必要な経験がかなり違うため、着手先を選ぶときはこの区別が効きます。
+				<strong>これはレーンではなく、Bレーン内部の読み分けです</strong>——Issue番号の接頭辞はどちらも<code>B-</code>のままです。
+			</p>
+			<div class="table-wrap">
+				<table>
+					<thead><tr><th>区分</th><th>Issue</th><th>中身</th><th>性質</th></tr></thead>
+					<tbody>
+						<tr>
+							<td><strong>基盤</strong></td>
+							<td><code>B-02</code>〜<code>B-05</code></td>
+							<td>Fastify共通処理、Prisma+SQLite、認証（argon2id・Cookie）、Origin検証</td>
+							<td>一般的なWebアプリのCRUDと認証。教材や記事が豊富で、Web開発の経験がそのまま効く</td>
+						</tr>
+						<tr>
+							<td><strong>ゲームサーバー</strong></td>
+							<td><code>B-08</code>〜<code>B-12</code>・<code>B-17</code></td>
+							<td>ロビーWS、マッチ成立、GameRoom、ゲームWS、切断/AI代替、観戦配信</td>
+							<td>30Hz tick・15Hz snapshot・状態機械・再接続。<code>sim.wasm</code>の挙動を理解している必要があり、既存実装を読むところから入る</td>
+						</tr>
+						<tr>
+							<td>（どちらでもない）</td>
+							<td><code>B-14</code></td>
+							<td><code>GET /api/maps</code>とマップ本文の配布</td>
+							<td>完了済み。基盤とゲームサーバーの両方から使われる</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			<p class="section-intro">
+				<code>F-</code>と<code>GV-</code>も同じ理由で分かれています——一般Web画面（<code>F-</code>）と、
+				<code>render.wasm</code>やWebSocketに触るゲーム画面（<code>GV-</code>）。
+				こちらは性質の差が大きいので、内部区分ではなく<strong>別レーン</strong>にしてあります。
+			</p>
+
 			<h3 style="margin-top: 30px">旧IDとの対応</h3>
 			<p class="section-intro">
 				2026-08-08まで、バックエンド・DB・インフラは全て<code>W-</code>（Web）1つに詰め込まれており、
@@ -268,7 +312,7 @@ git push origin --delete feat/xxx       # リモート（gh pr merge --delete-br
 					<thead><tr><th>項目</th><th>ルール</th></tr></thead>
 					<tbody>
 						<tr><td>タイトル</td><td><code>&lt;Issue番号&gt;: &lt;短い説明&gt;</code>（例:「G-11: FPSの射撃機構がプレイヤー同士を排除できてしまう」）</td></tr>
-						<tr><td>ラベル</td><td>E/G/W/Fに対応する<code>lane:engine</code>／<code>lane:gameplay</code>／<code>lane:backend</code>／<code>lane:frontend</code>のいずれか1つ＋<code>backlog-tracked</code>＋<code>bug</code>か<code>enhancement</code></td></tr>
+						<tr><td>ラベル</td><td>接頭辞に対応するレーンラベルを1つ——<code>E-</code>/<code>G-</code>→<code>lane:engine</code>、<code>B-</code>→<code>lane:backend</code>、<code>I-</code>→<code>lane:infra</code>、<code>F-</code>→<code>lane:frontend</code>、<code>GV-</code>→<code>lane:gameview</code>（接頭辞6つに対しラベル5つなのは、<code>E-</code>と<code>G-</code>が同じ1レーンだから）。＋<code>backlog-tracked</code>＋<code>bug</code>か<code>enhancement</code></td></tr>
 						<tr><td>本文中のコード引用</td><td><strong>絶対URL</strong>（<code>https://github.com/samatsum/ft_Transcendence/blob/main/...</code>）を使う。<code>../../</code>のような相対パスは、Issue本文がリポジトリのファイルツリーの外にあるため<strong>静かに解決しません</strong>（docs/内では同じ書き方が問題なく動くので特に注意）</td></tr>
 						<tr><td>相互リンク</td><td>backlog.mdの行からIssue番号へ、Issue本文からbacklog.mdの節へ、両方向にリンクする</td></tr>
 						<tr><td>クローズのタイミング</td><td>対応するbacklog.mdの行がマージ済みPRで完了マークされた時だけ閉じる（両者がズレないように）</td></tr>

@@ -66,6 +66,11 @@ against `origin/main` afterward.
 
 ## Lane prefixes, and the 2026-08-08 rename
 
+> **This section is the canonical lane definition.** Until 2026-08-08 the lanes were also defined —
+> in two *different* vocabularies — in [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html)
+> §03 and [`../human/はじめに/オンボーディング.html`](../human/はじめに/オンボーディング.html), so three
+> competing vocabularies coexisted. They now point here instead. Change a lane boundary here first.
+
 Issue ids carry a lane prefix. **Lanes are divided by what the code is and who maintains it — not by
 where it runs.** That is why `render.wasm` belongs to the Engine lane even though it executes in the
 browser: the exact same `raycast.c` compiles into both the native binary and `render.wasm`, so a
@@ -79,6 +84,22 @@ an ownership boundary.
 | `I-` | **Infra / DevOps** | Repo skeleton and tooling, Docker/nginx/TLS, CI |
 | `F-` | **Frontend** | General web screens: auth, layout, lobby, responsive work |
 | `GV-` | **GameView** | Game screens: Canvas + `render.wasm` integration, HUD, match transition, spectator UI |
+
+### Inside `B-` there are two different kinds of work
+
+`B-` is one lane, but its contents split into "an ordinary web app" and "a realtime game server." The
+experience each needs is quite different, so the distinction matters when choosing where to start.
+**This is a reading aid inside the Backend lane, not a lane of its own** — both keep the `B-` prefix.
+
+| Group | Issues | Content | Character |
+|---|---|---|---|
+| **Foundation** | `B-02`–`B-05` | Fastify common layer, Prisma+SQLite, auth (argon2id/cookie), Origin validation | Ordinary web-app CRUD and auth. Well covered by tutorials; general web experience transfers directly |
+| **Game server** | `B-08`–`B-12`, `B-17` | Lobby WS, match formation, GameRoom, game WS, disconnect/AI takeover, spectator fan-out | 30Hz tick, 15Hz snapshot, state machines, reconnection. Requires understanding how `sim.wasm` behaves; you start by reading the existing implementation |
+| (neither) | `B-14` | `GET /api/maps` and map-text distribution | Done. Used by both groups |
+
+`F-` and `GV-` are split for the same reason — ordinary web screens versus screens that touch
+`render.wasm` and WebSockets. There the gap is wide enough that they are **separate lanes** rather than
+groups inside one.
 
 ### Mapping from the old ids
 
@@ -155,7 +176,7 @@ for why nobody was doing that cleanup as it happened.
 
 ## Tracking work: backlog.md + GitHub Issues (added 2026-08-08)
 
-`docs/ai/backlog.md` remains the authoritative source of truth for every E-/G-/W-/F- item —
+`docs/ai/backlog.md` remains the authoritative source of truth for every `E-`/`G-`/`B-`/`I-`/`F-`/`GV-` item —
 acceptance criteria, dependencies, and status live there first. As of 2026-08-08, samatsum also
 wants newly discovered gaps mirrored as real GitHub Issues, for the visual open/closed tracking the
 Issues tab gives (backlog.md's git-log-buried rows don't show that at a glance). By agreement,
@@ -167,8 +188,9 @@ When filing one:
 
 - **Title**: `<Issue-ID>: <short description>` (e.g. "G-11: FPS's shoot mechanic can eliminate the
   other seat").
-- **Labels**: one `lane:engine` / `lane:backend` / `lane:infra` / `lane:frontend` / `lane:gameview` matching the
-  E/G/W/F prefix, plus `backlog-tracked`, plus `bug` or `enhancement` as fits.
+- **Labels**: one lane label matching the prefix — `E-`/`G-` → `lane:engine`, `B-` → `lane:backend`,
+  `I-` → `lane:infra`, `F-` → `lane:frontend`, `GV-` → `lane:gameview` (six prefixes, five labels, because
+  `E-` and `G-` share one lane). Plus `backlog-tracked`, plus `bug` or `enhancement` as fits.
 - **Body**: cite file:line with **absolute GitHub URLs**
   (`https://github.com/samatsum/ft_Transcendence/blob/main/...`), never repo-relative paths — an
   Issue body isn't part of the file tree, so `../../` links silently fail to resolve there even
