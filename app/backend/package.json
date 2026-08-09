@@ -1,29 +1,36 @@
 {
-  "name": "@ft/backend",
-  "version": "0.0.0",
-  "private": true,
-  "type": "module",
-  "description": "Fastify + TypeScript。REST API / WS ゲートウェイ / GameRoom（sim.wasm）の置き場",
-  "scripts": {
-    "dev": "tsx watch --env-file-if-exists=../../.env src/index.ts",
-    "start": "tsx --env-file-if-exists=../../.env src/index.ts",
-    "check:lobby": "node --import tsx src/lobby/lobby-check.ts",
-    "check:http": "node --import tsx src/http/http-check.ts",
-    "typecheck": "tsc --noEmit",
-    "build": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@fastify/rate-limit": "^11.2.0",
-    "@fastify/websocket": "^11.3.0",
-    "@ft/shared": "*",
-    "fastify": "^5.10.0",
-    "zod": "^4.4.3"
-  },
-  "devDependencies": {
-    "@types/node": "^26.1.1",
-    "@types/ws": "^8.18.1",
-    "tsx": "^4.23.1",
-    "typescript": "^5.9.3",
-    "ws": "^8.21.1"
-  }
+	"name": "@ft/backend",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"description": "Fastify + TypeScript。REST API / WS ゲートウェイ / GameRoom（sim.wasm）の置き場",
+	"scripts": {
+		"dev": "tsx watch --env-file-if-exists=../../.env src/index.ts",
+		"start": "tsx --env-file-if-exists=../../.env src/index.ts",
+		"check:lobby": "node --import tsx src/lobby/lobby-check.ts",
+		"check:http": "node --import tsx src/http/http-check.ts",
+		"check:db": "node --import tsx src/db/db-check.ts",
+		"typecheck": "prisma generate && tsc --noEmit",
+		"build": "prisma generate && tsc --noEmit",
+		"db:generate": "prisma generate",
+		"db:migrate": "prisma migrate dev",
+		"db:deploy": "prisma migrate deploy"
+	},
+	"dependencies": {
+		"@fastify/rate-limit": "^11.2.0",
+		"@fastify/websocket": "^11.3.0",
+		"@ft/shared": "*",
+		"@prisma/adapter-better-sqlite3": "^7.9.1",
+		"@prisma/client": "^7.9.1",
+		"fastify": "^5.10.0",
+		"prisma": "^7.9.1",
+		"zod": "^4.4.3"
+	},
+	"devDependencies": {
+		"@types/node": "^26.1.1",
+		"@types/ws": "^8.18.1",
+		"tsx": "^4.23.1",
+		"typescript": "^5.9.3",
+		"ws": "^8.21.1"
+	}
 }

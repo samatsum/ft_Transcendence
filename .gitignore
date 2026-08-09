@@ -39,10 +39,18 @@ dist/
 *.tsbuildinfo
 .vite/
 
-# W-03 以降: SQLite の実データ（スキーマ・マイグレーションは追跡する）
-backend/data/
+# B-03 以降: SQLite の実データ（スキーマ・マイグレーションは追跡する）
+# 旧 `backend/data/` はリポジトリ直下にアンカーされていて実際のパス
+# `app/backend/data/` に効いていなかったため、B-03 で正しい位置へ直した。
+app/backend/data/
 *.db
 *.db-journal
+*.db-wal
+*.db-shm
+
+# B-03: prisma generate の生成物（Prisma 7 は TypeScript ソースを吐く）。
+# `npm run typecheck` / `build` が実行前に生成するので、追跡しない。
+app/backend/src/generated/
 
 # W-15: 自己署名証明書（初回 compose 起動時に生成）
 infra/certs/

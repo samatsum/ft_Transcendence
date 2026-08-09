@@ -19,7 +19,7 @@ material that didn't carry forward into either the AI or human doc set) live und
 - **C engine** (Engine E-01–E-14 / Gameplay G-01–G-10): planned backlog closed. **G-11** ([#46](https://github.com/samatsum/ft_Transcendence/issues/46)) and **G-12** ([#47](https://github.com/samatsum/ft_Transcendence/issues/47)) — the two post-backlog FPS defects — were both fixed 2026-08-09.
 - **Server** (B-/I-series): I-01, **B-02** (2026-08-09), B-09, B-10, B-11, B-12, B-14 complete (**7**); **B-08 is core-complete, not complete** — it still needs the real cookie auth from B-04/B-05, so backlog.md counts it separately. B-08–B-12 were
   built ahead of schedule against `ALLOW_DEV_AUTH` and still need to integrate with real cookie
-  auth (**B-03–B-05**, not yet done). **B-17 (spectator server side), I-15, I-16** are also outstanding.
+  auth (**B-04–B-05**, not yet done; **B-03** landed the Prisma schema on 2026-08-09). **B-17 (spectator server side), I-15, I-16** are also outstanding.
   **B-06, B-07 and B-13 were dropped on 2026-08-08** by the D-19 module revision. CI is green on all jobs.
 - **Frontend** (F-/GV-series): **F-01 (scaffold), F-02 (fetch wrapper), GV-06 (GameView integration), and
   GV-07 (HUD overlay, merged via [PR #35](https://github.com/samatsum/ft_Transcendence/pull/35)) are

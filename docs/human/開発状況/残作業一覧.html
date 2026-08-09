@@ -21,7 +21,7 @@
 			</p>
 			<div class="hero-note">
 				<strong>更新: 2026-08-09</strong>
-				<span>採用51件中、完了37・部分1・未着手13</span>
+				<span>採用51件中、完了38・部分1・未着手12</span>
 			</div>
 		</div>
 	</header>
@@ -32,7 +32,7 @@
 			<a href="#why">番号が飛ぶ理由</a>
 			<a href="#totals">全体の残り</a>
 			<a href="#lanes">レーン別</a>
-			<a href="#remaining">残り14件</a>
+			<a href="#remaining">残り13件</a>
 			<a href="#dropped">不採用6件</a>
 			<button class="print-button" type="button" onclick="window.print()">印刷 / PDF</button>
 		</div>
@@ -89,7 +89,7 @@
 						<tr>
 							<td><strong>B-</strong></td>
 							<td>—</td>
-							<td><span class="dot done"></span>済</td><td><span class="dot todo"></span>未</td>
+							<td><span class="dot done"></span>済</td><td><span class="dot done"></span>済</td>
 							<td><span class="dot todo"></span>未</td><td><span class="dot todo"></span>未</td>
 							<td><span class="dot dropped"></span>不</td><td><span class="dot dropped"></span>不</td>
 							<td><span class="dot partial"></span>部分</td>
@@ -204,14 +204,14 @@
 				</div>
 				<div class="card">
 					<p class="card-label">完了</p>
-					<p class="metric">37<small> / 51</small></p>
-					<p class="metric-note">72.5%。うち26件はCエンジン（E・G）。</p>
-					<div class="progress" role="progressbar" aria-label="全体72.5%完了" aria-valuenow="72.5" aria-valuemin="0" aria-valuemax="100"><span style="width:72.5%"></span></div>
+					<p class="metric">38<small> / 51</small></p>
+					<p class="metric-note">74.5%。うち26件はCエンジン（E・G）。</p>
+					<div class="progress" role="progressbar" aria-label="全体74.5%完了" aria-valuenow="74.5" aria-valuemin="0" aria-valuemax="100"><span style="width:74.5%"></span></div>
 				</div>
 				<div class="card">
 					<p class="card-label">残り</p>
-					<p class="metric">14<small> 件</small></p>
-					<p class="metric-note">未着手13 + 部分完了1（B-08）。</p>
+					<p class="metric">13<small> 件</small></p>
+					<p class="metric-note">未着手12 + 部分完了1（B-08）。</p>
 				</div>
 				<div class="card">
 					<p class="card-label">不採用</p>
@@ -220,11 +220,11 @@
 				</div>
 			</div>
 			<div class="callout warning" style="margin-top:18px;">
-				<strong>「完了37件」の内訳は偏っています。</strong>
+				<strong>「完了38件」の内訳は偏っています。</strong>
 				37件のうち<strong>26件がCエンジン</strong>で、うち24件は元から完成していた資産、
 				2件（G-11・G-12）は2026-08-09にFPSの後発バグを直したものです。
 				TypeScript側（Backend・Infra・Frontend）は
-				<strong>24件中11件しか終わっていません</strong>——残り14件のうち13件がここに集中しています。
+				<strong>24件中12件しか終わっていません</strong>——残り14件のうち13件がここに集中しています。
 			</div>
 		</section>
 
@@ -246,8 +246,8 @@
 						<tr>
 							<td><strong>Backend / Infra</strong></td>
 							<td><code>B-</code> <code>I-</code></td>
-							<td>14</td><td>7</td><td>1</td><td>6</td><td>3</td>
-							<td><span class="tag status-partial">50.0%</span></td>
+							<td>14</td><td>8</td><td>1</td><td>5</td><td>3</td>
+							<td><span class="tag status-partial">57.1%</span></td>
 						</tr>
 						<tr>
 							<td><strong>Frontend / GameView</strong></td>
@@ -264,15 +264,15 @@
 						<tr>
 							<td><strong>合計</strong></td>
 							<td>—</td>
-							<td><strong>51</strong></td><td><strong>37</strong></td><td><strong>1</strong></td>
-							<td><strong>13</strong></td><td><strong>6</strong></td>
-							<td><span class="tag status-partial">72.5%</span></td>
+							<td><strong>51</strong></td><td><strong>38</strong></td><td><strong>1</strong></td>
+							<td><strong>12</strong></td><td><strong>6</strong></td>
+							<td><span class="tag status-partial">74.5%</span></td>
 						</tr>
 					</tbody>
 				</table>
 			</div>
 			<p class="section-intro" style="margin-top:16px;">
-				Backend/Infraの50.0%とFrontendの40.0%は、
+				Backend/Infraの57.1%とFrontendの40.0%は、
 				<a href="./サーバー開発工程.html">サーバー開発工程.html</a>・
 				<a href="./フロントエンド開発工程.html">フロントエンド開発工程.html</a>が出している数字と同じです
 				（このページはそれを足し合わせているだけで、別集計ではありません）。
@@ -281,14 +281,13 @@
 
 		<section id="remaining">
 			<p class="section-kicker">05 · What is left</p>
-			<h2>残り14件を、全部並べる</h2>
+			<h2>残り13件を、全部並べる</h2>
 			<p class="section-intro">
 				番号順ではなく<strong>着手できる順</strong>に並べています。上から順に、前が終わらないと後ろが始められません。
 			</p>
 
 			<h3>サーバー基盤 — 直列。ここが全部の上流</h3>
 			<div class="issue-grid">
-				<div class="issue-card"><span class="issue-id">B-03</span><div><strong>Prisma + SQLite</strong><p>5テーブルのスキーマとmigration。ORMモジュール（1pt）本体でもある。</p><div class="issue-meta"><span class="tag status-todo">未着手</span></div></div></div>
 				<div class="issue-card"><span class="issue-id">B-04</span><div><strong>認証一式</strong><p>signup/login/logout/me、argon2id、Session Cookie。<strong>最大の上流ブロッカー</strong>。</p><div class="issue-meta"><span class="tag status-todo">未着手</span></div></div></div>
 				<div class="issue-card"><span class="issue-id">B-05</span><div><strong>Origin検証</strong><p>RESTの変更系とWS接続を、別サイトからの要求で叩けないようにする。</p><div class="issue-meta"><span class="tag status-todo">未着手</span></div></div></div>
 				<div class="issue-card"><span class="issue-id">B-08</span><div><strong>ロビーWSの最終結合</strong><p>コア実装は完了済み。B-04/B-05の本認証と繋ぐ作業だけが残っている。</p><div class="issue-meta"><span class="tag status-partial">部分完了</span></div></div></div>
@@ -385,7 +384,7 @@
 				</article>
 				<article class="card">
 					<h3><a href="../はじめに/チーム体制.html">チーム体制</a></h3>
-					<p>誰がどのレーンにいるか。残り14件を今は1人で持っている、という前提条件。</p>
+					<p>誰がどのレーンにいるか。残り13件を今は1人で持っている、という前提条件。</p>
 				</article>
 			</div>
 		</section>

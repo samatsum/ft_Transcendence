@@ -6,8 +6,8 @@
 Includes the definitions of the three items that [WS_PROTOCOL_DESIGN.md](./ws-protocol.md) (②)
 delegated to REST (presence initial list / `GET /api/maps` / match detail).
 Of the Backend/DevOps lanes, this is the Auth / REST / DB work order. **B-02** (③§1 common
-error-envelope/validation/rate-limit processing) is **done**; the rest of it (B-03–B-05) is
-**未完成 (not yet started/not done)**; see [backlog.md](./backlog.md) for per-issue status.
+error-envelope/validation/rate-limit processing) and **B-03** (Prisma schema v1 + migration) are **done**;
+the rest of it (B-04–B-05) is **未完成 (not yet started/not done)**; see [backlog.md](./backlog.md) for per-issue status.
 **Sections covering B-06 (avatar), B-07 (friends) and B-13 (match persistence/stats) describe work that is no
 longer declared** as of 2026-08-08 (D-19, architecture.md §4.3). They are kept, not deleted, because they are the
 specification a restore would start from — B-13 in particular is restore candidate №1. Auth and the database
@@ -15,8 +15,8 @@ specification a restore would start from — B-13 in particular is restore candi
 as the source of truth for the REST API contract consumed by the frontend. The frontend-foundation work
 (F-01 scaffold, F-02 fetch wrapper) that consumes this contract is **done** (implemented solo by samatsum);
 F-03–F-05 (auth screens, layout, lobby) are not started. This REST work and the original frontend-foundation
-plan were assigned to torinoue and mamiyaza respectively; as of 2026-08-05 neither is active. B-02 was
-completed solo by samatsum; B-03–B-05 and F-03–F-05 remain unassigned — see
+plan were assigned to torinoue and mamiyaza respectively; as of 2026-08-05 neither is active. B-02 and B-03 were
+completed solo by samatsum; B-04–B-05 and F-03–F-05 remain unassigned — see
 [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html).
 **Principle**: This document contains no implementation code.
 The implementation source of truth for message schemas is the zod definitions in `shared/api/`; if this document
@@ -209,10 +209,18 @@ Schema chapter and ER diagram are generated from this table.
 | id | Int | PK, autoincrement |
 | email | String | unique (stored lower-cased) |
 | passwordHash | String | argon2id string |
-| displayName | String | unique (matched via a lower-cased unique index) |
+| displayName | String | unique (exact match) |
+| **displayNameLower** | String | unique. The lower-cased copy of `displayName`, added by B-03 — see below |
 | avatarPath | String? | relative name under `/data/avatars` |
 | createdAt | DateTime | default(now) |
 | lastSeenAt | DateTime? | updated on authenticated requests / WS disconnect |
+
+> **Why `displayNameLower` exists (added 2026-08-09 by B-03).** §1-B requires `display_name` to be unique
+> *case-insensitively*. This column used to be specified as "`displayName` unique, matched via a lower-cased
+> index", but a Prisma schema cannot declare an expression index or `COLLATE NOCASE` on the SQLite provider,
+> so there is nothing to attach that index to. The normalized value is therefore stored in its own column with
+> its own `@unique`. **Whatever writes `displayName` must write `displayNameLower` in the same statement**
+> (B-04's signup/profile paths). `email` needs no equivalent because §1-B already stores it lower-cased.
 
 ### `Session`
 
