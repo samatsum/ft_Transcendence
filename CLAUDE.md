@@ -38,9 +38,17 @@ Issue ID の接頭辞。**レーンは「どこで動くか」ではなく「何
 | `docs/ai/` | AI | 英語 Markdown |
 | `docs/human/` | 人間 | 日本語 HTML |
 
-同じ事実を2言語で持つのは意図的ですが、**内容が食い違ったらそれは不整合**です。片方だけ直した
-場合は、なぜ片方だけなのかをコミット本文に書くこと。書式の正本は
+同じ事実を2言語で持つのは意図的ですが、**内容が食い違ったらそれは不整合**です。書式の正本は
 [`docs/ai/doc-style-guide.md`](docs/ai/doc-style-guide.md)。
+
+> **`docs/` を編集する前に、必ず
+> [`docs/ai/doc-style-guide.md` §Before editing](docs/ai/doc-style-guide.md) を読むこと**
+> （日本語版は [`docs/human/運用/ドキュメント作法.html#pitfalls`](docs/human/運用/ドキュメント作法.html)）。
+> 2026-08 の監査で見つかった24件の不整合の大半が、そこに書かれた5つの落とし穴から生まれています。
+>
+> **そのうち最重要の1つだけ、ここにも書いておきます——1つの事実は `docs/ai/` + `docs/human/` +
+> README 3種 + コードのコメントに散らばっています。直す前に grep して件数を数えること。
+> 1箇所だけ直すのは修正ではなく、矛盾の作成です。** 実際に4回連続でこれをやりました。
 
 `docs/human/` は共有スタイルシート `docs/human/assets/style.css` を使います。唯一の例外は
 `docs/human/説明用/技術スタック/印刷用.css`（カラー印刷用）。

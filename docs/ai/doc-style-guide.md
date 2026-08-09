@@ -259,6 +259,91 @@ A new `docs/human/*.html` page is invisible until it's linked from somewhere. At
 
 A new `docs/ai/*.md` file: add a row to [README.md](./README.md)'s Documents table.
 
+## Before editing: the five ways doc edits actually go wrong
+
+Written 2026-08-09 after a run of documentation work in which an external audit (Codex) found 13
+defects, then 10 more on re-audit, then 1 more after that. **The same failure mode produced most of
+them, four rounds in a row.** Read this before touching `docs/`.
+
+### 1. The same fact lives in N places. Count them before you edit.
+
+This repo stores one fact across `docs/ai/` (English) + `docs/human/` (Japanese) + up to three
+READMEs + code comments. Editing one of them is not "fixing" it — it is *creating a contradiction*.
+
+Real examples from that run: "F-05 has 5 lobby areas" was corrected in `backlog.md` and left wrong in
+`frontend.md` and two Japanese pages. "The engine is complete" was corrected in
+`engine-separation.md` and left wrong in **six** other files. "GV-06 is done" was qualified in
+`backlog.md` and left unqualified in **six** status pages.
+
+**Do this first**: grep the fact you are about to change and count the hits. If the count is > 1,
+fix them in the same commit or explicitly say in the commit body why you did not.
+
+### 2. Your sweep pattern is narrower than you think.
+
+Twice in that run a sweep was reported as "0 remaining" and a later audit found 5 more. Causes:
+
+- Only the literal form was searched. `W-` also appears as `E/G/W/F`, `W-series`, `W/F-series`,
+  「Wの保証」, 「Wは」.
+- Only body text was searched. Page **footers**, `<title>`, nav labels and `card-label`s were missed.
+- The pattern assumed a delimiter that isn't there in Japanese (see the `\b` note in `CLAUDE.md`).
+
+**Do this**: search 3–4 spellings of the thing, not one. Then re-run the sweep after editing and
+paste the count into the commit body.
+
+### 3. A dropped issue still has live dependents.
+
+When a module is un-declared, the issues that *consumed* it stay in the plan and quietly become
+unbuildable. F-05 kept two of its five lobby areas after B-07 and B-13 were dropped — the Friends
+area had no API and the match feed had no `match_result` source. Nobody noticed until an audit
+traced the data flow.
+
+**Do this**: after dropping anything, grep for its ID and read every consumer, not just the row you
+dropped.
+
+### 4. A "verified" claim must name the artifact that proves it.
+
+The worst defect of the run was a *fix* that introduced a new false claim: GV-06/GV-07 were
+described as "verified through `ws-check.ts`". `ws-check.ts` is a B-11/B-12/B-14 backend check that
+never loads the frontend, Canvas, or `render.wasm`.
+
+**Do this**: never write "done" / "verified" / "measured" without naming the test, script, or run
+that produced it — and open that artifact to confirm it covers what you are claiming. If nothing
+proves it, write that instead. "Code merged, acceptance not currently reproducible" is a legitimate
+status.
+
+### 5. Your own previous edit may now be the stale fact.
+
+`backlog.md` justified creating B-17 by stating that `app/shared/src/ws/game.ts` "still says
+implementation is optional" — true when written, false one PR later because that comment was fixed.
+
+**Do this**: when a doc cites the *current state of a file*, re-check that citation any time you
+touch the file it cites.
+
+### The sweep to run after any factual edit
+
+```bash
+# 1. dead links (see the fuller script below)
+# 2. HTML tag balance
+for f in $(find docs -name '*.html'); do
+  for tag in div section article table thead tbody tr td th p a code span strong li em; do
+    o=$(grep -o "<$tag[ >]" "$f" | wc -l); c=$(grep -o "</$tag>" "$f" | wc -l)
+    [ "$o" != "$c" ] && echo "IMBALANCE $(basename $f) <$tag> $o/$c"
+  done
+done
+# 3. MD028 (blank line inside a blockquote) — use `>` instead of an empty line
+python3 -c "
+import io,os
+for dp,_,fs in os.walk('docs'):
+    for fn in [f for f in fs if f.endswith('.md')]:
+        p=os.path.join(dp,fn); L=io.open(p,encoding='utf-8').read().split(chr(10))
+        for i in range(1,len(L)-1):
+            if L[i].strip()=='' and L[i-1].startswith('>') and L[i+1].startswith('>'): print('MD028',p,i+1)"
+# 4. the fact you just changed — re-grep it, in several spellings
+```
+
+Japanese companion (principles, for human editors):
+[`../human/運用/ドキュメント作法.html`](../human/運用/ドキュメント作法.html).
+
 ## Before committing: check for dead links
 
 Same discipline that caught real broken links across four separate docs PRs — run this after any
