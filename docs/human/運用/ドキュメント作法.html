@@ -31,6 +31,7 @@
 			<a href="#css">共通CSS</a>
 			<a href="#mermaid">図：Mermaid vs テキスト</a>
 			<a href="#nav">ナビゲーション組み込み</a>
+			<a href="#pitfalls">編集前の落とし穴</a>
 			<a href="#links">リンク切れ確認</a>
 			<a href="#status">担当・進捗表記</a>
 			<button class="print-button" type="button" onclick="window.print()">印刷 / PDF</button>
@@ -248,6 +249,84 @@ flowchart TD
 			<p>
 				<code>docs/ai/*.md</code>を追加した場合は<code>docs/ai/README.md</code>のDocuments表に行を足します。
 			</p>
+		</section>
+
+		<section id="pitfalls">
+			<p class="section-kicker">05.5 · Pitfalls</p>
+			<h2>編集を始める前に — 実際に何度も踏んだ5つの落とし穴</h2>
+			<p class="section-intro">
+				2026-08-09、外部監査（Codex）がドキュメントの不整合を13件、再監査でさらに10件、
+				その後さらに1件見つけました。<strong>そのうち大半が、同じ1つの失敗パターンから生まれています。</strong>
+				4回連続で同じことをやりました。<code>docs/</code>を触る前にここを読んでください。
+				実行するコマンドの一覧は
+				<a href="../../ai/doc-style-guide.md">doc-style-guide.md</a>（英語・AI向け）にあります。
+			</p>
+
+			<div class="callout warning">
+				<strong>最大の落とし穴:</strong>
+				1つの事実が<strong>何箇所に書かれているか数えずに直す</strong>こと。
+				このリポジトリは同じ事実を <code>docs/ai/</code>（英語）＋<code>docs/human/</code>（日本語）
+				＋README 3種＋コードのコメントに持っています。
+				1箇所だけ直すのは「修正」ではなく<strong>矛盾の作成</strong>です。
+			</div>
+
+			<div class="grid grid-2" style="margin-top: 18px">
+				<article class="card">
+					<p class="card-label">Pitfall 1 · 波及漏れ</p>
+					<h3>同じ事実が何箇所にあるか数える</h3>
+					<p>
+						実例:「F-05は5領域」を<code>backlog.md</code>で直し、<code>frontend.md</code>と
+						日本語2ページを放置。「エンジンは完成」を1ファイルで直し、<strong>他6ファイル</strong>を放置。
+						「GV-06は完了」を1箇所で限定し、<strong>ステータス表6箇所</strong>を放置。<br>
+						<strong>対策:</strong> 直す前に grep して件数を数える。2件以上なら同じコミットで全部直すか、
+						直さない理由をコミット本文に書く。
+					</p>
+				</article>
+				<article class="card">
+					<p class="card-label">Pitfall 2 · 走査漏れ</p>
+					<h3>検索パターンは思っているより狭い</h3>
+					<p>
+						2回、「残り0件」と報告した後に監査が5件見つけました。原因は
+						<strong>表記ゆれ</strong>（<code>W-</code>は<code>E/G/W/F</code>・<code>W-series</code>・
+						「Wの保証」とも書かれる）、<strong>本文以外</strong>（フッタ・<code>&lt;title&gt;</code>・
+						ナビ・<code>card-label</code>）の見落とし。<br>
+						<strong>対策:</strong> 3〜4通りの表記で検索する。編集後に再走査し、件数をコミット本文に書く。
+					</p>
+				</article>
+				<article class="card">
+					<p class="card-label">Pitfall 3 · 依存の切断</p>
+					<h3>不採用にしたIssueには、まだ生きた依存元がある</h3>
+					<p>
+						モジュールを取り下げると、<strong>それを消費していたIssueが静かに実装不能になります</strong>。
+						F-05はB-07とB-13を落とした後も5領域のままで、フレンド領域にはAPIが無く、
+						試合フィードには<code>match_result</code>の供給源が無い状態でした。<br>
+						<strong>対策:</strong> 何かを落としたら、そのIDでgrepして<strong>消費側を全部読む</strong>。
+					</p>
+				</article>
+				<article class="card">
+					<p class="card-label">Pitfall 4 · 根拠なき完了宣言</p>
+					<h3>「検証済み」は、証拠となる成果物を名指しする</h3>
+					<p>
+						この期間で最悪の欠陥は、<strong>修正そのものが作った新しい嘘</strong>でした。
+						GV-06/GV-07を「<code>ws-check.ts</code>で検証済み」と書きましたが、
+						<code>ws-check.ts</code>はB-11/B-12/B-14を検査するバックエンド用で、
+						Frontendも Canvas も<code>render.wasm</code>も読み込みません。<br>
+						<strong>対策:</strong>「完了」「検証済み」「実測」と書くときは、
+						根拠となるテスト・スクリプト・実行を名指しし、<strong>実際に開いて</strong>
+						主張範囲をカバーしているか確認する。証拠が無いならそう書く。
+						「コードはマージ済み、受入は未再現」は正当なステータスです。
+					</p>
+				</article>
+			</div>
+
+			<div class="callout" style="margin-top: 18px">
+				<strong>Pitfall 5 · 自分の過去の編集が古くなる:</strong>
+				<code>backlog.md</code>はB-17新設の根拠として「<code>ws/game.ts</code>はいまだに
+				『実装は余力時』と書いている」と述べていました。書いた時点では正しく、
+				<strong>1つ後のPRでそのコメントを直した瞬間に嘘になりました</strong>。
+				ドキュメントが<strong>他ファイルの現在の状態</strong>を引用しているときは、
+				引用先を触るたびに引用元も確認してください。
+			</div>
 		</section>
 
 		<section id="links">
