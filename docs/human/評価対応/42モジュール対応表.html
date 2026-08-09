@@ -143,7 +143,7 @@
 						<tr><td>1</td><td>別のゲーム（履歴+マッチメイキング付き、FPS）</td><td>Gaming Major 2</td><td><strong>B-13＋G-11＋G-12</strong>。マッチメイキングはRSPと共通（B-08はコア実装済み、B-09は完了）。ただしFPSには未修正の欠陥が2件残る——G-11（射撃で相手席を消せる）とG-12（相手の見た目が無い）。<strong>B-13だけでは成立しない</strong></td></tr>
 						<tr><td>2</td><td>ゲーム統計・対戦履歴</td><td>UserMgmt Minor 1</td><td><strong>B-13＋F-09</strong>。B-13は上の「別のゲーム」と共用できるが、<strong>このモジュールにはプロフィール/履歴画面（F-09）も要る</strong>ため、上より1段階コストが高い</td></tr>
 						<tr><td>3</td><td>標準的なユーザー管理・認証</td><td>UserMgmt Major 2</td><td>B-06＋B-07＋F-09＋F-10。課題書IV.3は<strong>5項目すべて</strong>（プロフィール更新・アバター・フレンド追加・オンライン状態・プロフィールページ）を要求し、1つ欠けると0pt。なお認証自体は第III章で必須なので実装は残る</td></tr>
-						<tr><td>4</td><td>公開API</td><td>Web Major 2</td><td>APIキー認証層＋ドキュメント。レート制限は<a href="../../ai/rest-api.md">rest-api.md §1-C</a>で設計済み、エンドポイント数もB-02〜B-07で5本を超える</td></tr>
+						<tr><td>4</td><td>公開API</td><td>Web Major 2</td><td>APIキー認証層＋ドキュメント。レート制限は<a href="../../ai/rest-api.md">rest-api.md §1-C</a>の設計通りB-02で実装済み、エンドポイント数もB-02〜B-07で5本を超える</td></tr>
 						<tr><td>5</td><td>OAuth 2.0 / 2FA / Prometheus+Grafana</td><td>1 / 1 / 2</td><td>完全未着手。上4つが確実になってから検討</td></tr>
 					</tbody>
 				</table>
@@ -172,7 +172,7 @@
 						<tr><td>envをGit管理外に + env.example</td><td><span class="tag status-done">完了</span></td><td><a href="../../../.env.example"><code>.env.example</code></a> / <a href="../../../.gitignore"><code>.gitignore</code></a></td></tr>
 						<tr><td>明確なスキーマとリレーション</td><td><span class="tag status-partial">部分完了</span></td><td>概念設計は<a href="../../ai/architecture.md">architecture.md §3.3</a>にある。実際の<code>schema.prisma</code>・ER図は未作成（B-03）</td></tr>
 						<tr><td>メール+パスワード認証（ハッシュ+ソルト）</td><td><span class="tag status-todo">未着手</span></td><td>argon2id採用は設計決定済みだが未実装（B-04）</td></tr>
-						<tr><td>FE/BE双方での入力検証</td><td><span class="tag status-partial">部分完了</span></td><td>WS側は<a href="../../../app/shared/src/ws/"><code>app/shared/src/ws/</code></a>の共有zodスキーマで運用中。REST側検証（B-02）は未着手</td></tr>
+						<tr><td>FE/BE双方での入力検証</td><td><span class="tag status-partial">部分完了</span></td><td>WS側は<a href="../../../app/shared/src/ws/"><code>app/shared/src/ws/</code></a>の共有zodスキーマで運用中。REST側は<strong>B-02が完了</strong>し共通のzod検証パイプライン＋エラーエンベロープが動いているが、適用先は現状<code>/api/maps</code>のみ（他の書き込み系エンドポイントはB-04/B-05待ち）</td></tr>
 						<tr><td>外部接続はすべてHTTPS</td><td><span class="tag status-todo">未着手</span></td><td>nginx TLS終端が未構築（I-15）</td></tr>
 					</tbody>
 				</table>

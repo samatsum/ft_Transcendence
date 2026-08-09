@@ -126,7 +126,7 @@ Numbered items in the acceptance-criteria column indicate mapping to acceptance 
 | Issue | Title | Acceptance criteria | Dependency | Day (14-day schedule; the 5-day-schedule day-equivalences are inline in §6's Gate table below) |
 |---|---|---|---|---|
 | I-01 (done) | Add repository skeleton (`app/backend/`, `app/frontend/`, `app/shared/`, `infra/`, TS tooling, `env.example`+`.gitignore`) | backend/frontend start up under D-18's layout (keep current layout + add) → **achieved** (§1) | — | 1 |
-| B-02 | Fastify startup configuration (TS, pino, zod validation pipeline, ③§1 error-envelope/rate-limit middleware) | Invalid input returns 400/429 in the ③§1-A shape | I-01 | 2 |
+| B-02 (done) | Fastify startup configuration (TS, pino, zod validation pipeline, ③§1 error-envelope/rate-limit middleware) | **Achieved**: `npm run check:http` confirms an invalid `/api/maps?mode=` value returns 400 `validation_failed` in the ③§1-A shape (a global `setErrorHandler` converts the zod `.parse()` `ZodError` automatically), and rate limiting (③§1-C: GET 120/min, other mutating 30/min) returns 429 `rate_limited` with independent per-method counters (`OPTIONS` counted as safe, not mutating — a review catch). Reuses `app/shared/src/error.ts`'s ③§1-A envelope from I-01 rather than redefining it. pino logging is now level-configurable and redacts `Cookie`/`Authorization` ([PR #72](https://github.com/samatsum/ft_Transcendence/pull/72)) | I-01 | 2 |
 | B-03 | Prisma + SQLite schema v1 (the 5 tables in ③§3) + migration | `prisma migrate` is wired into the compose first-run | I-01 | 2 |
 | B-04 | Full auth suite (signup/login/logout/me, argon2id, session cookie, ③ D-4–D-8) | All ③§2-A behaviors + login-failure responses are indistinguishable | B-02, B-03 | 2–3 |
 | B-05 | Origin validation (REST mutating routes + WS upgrade) and shared cookie authorization | Mutating routes/WS from a different Origin are rejected | B-04 | 3 |
@@ -319,9 +319,9 @@ development. `GameView`/`HudOverlay` currently have no lobby to be launched from
 > incomplete declared module scores 0 for that module (Chapter VII), so this pair is not optional
 > polish. It is still a much smaller amount of work than the 5 issues it replaces.
 
-**Critical path (updated 2026-08-08)**: the original core chain, E-08/E-09 → E-10 → E-11, is complete, and
-**I-01/B-09/B-10/B-11/B-12/B-14 are done**, so the remaining work on the game-server side is
-**B-02→B-03→B-04→B-05→B-08** (Fastify, Prisma, auth, Origin, and the final integration of real cookie
+**Critical path (updated 2026-08-09)**: the original core chain, E-08/E-09 → E-10 → E-11, is complete, and
+**I-01/B-02/B-09/B-10/B-11/B-12/B-14 are done**, so the remaining work on the game-server side is
+**B-03→B-04→B-05→B-08** (Prisma, auth, Origin, and the final integration of real cookie
 auth into the lobby WS), plus **B-17** for the declared spectator bonus. B-13 is no longer on this path.
 In parallel on the frontend side: F-01, F-02, GV-06, and GV-07 are done. F-05 + GV-08 (both not started,
 unassigned) are what's left to converge on Gate 2.
