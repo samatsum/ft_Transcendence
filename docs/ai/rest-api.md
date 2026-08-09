@@ -5,7 +5,8 @@
 **Position**: A detailing of [ARCHITECTURE_DESIGN.md](./architecture.md) §2.4 / §3.3.
 Includes the definitions of the three items that [WS_PROTOCOL_DESIGN.md](./ws-protocol.md) (②)
 delegated to REST (presence initial list / `GET /api/maps` / match detail).
-Of the Backend/DevOps lanes, this is the Auth / REST / DB work order — most of it (B-02–B-05) is
+Of the Backend/DevOps lanes, this is the Auth / REST / DB work order. **B-02** (③§1 common
+error-envelope/validation/rate-limit processing) is **done**; the rest of it (B-03–B-05) is
 **未完成 (not yet started/not done)**; see [backlog.md](./backlog.md) for per-issue status.
 **Sections covering B-06 (avatar), B-07 (friends) and B-13 (match persistence/stats) describe work that is no
 longer declared** as of 2026-08-08 (D-19, architecture.md §4.3). They are kept, not deleted, because they are the
@@ -14,8 +15,9 @@ specification a restore would start from — B-13 in particular is restore candi
 as the source of truth for the REST API contract consumed by the frontend. The frontend-foundation work
 (F-01 scaffold, F-02 fetch wrapper) that consumes this contract is **done** (implemented solo by samatsum);
 F-03–F-05 (auth screens, layout, lobby) are not started. This REST work and the original frontend-foundation
-plan were assigned to torinoue and mamiyaza respectively; as of 2026-08-05 neither is active, so B-02–B-05
-and F-03–F-05 are unassigned — see [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html).
+plan were assigned to torinoue and mamiyaza respectively; as of 2026-08-05 neither is active. B-02 was
+completed solo by samatsum; B-03–B-05 and F-03–F-05 remain unassigned — see
+[`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html).
 **Principle**: This document contains no implementation code.
 The implementation source of truth for message schemas is the zod definitions in `shared/api/`; if this document
 and the implementation diverge, this document is revised first and the implementation follows (same operating rule as ②).

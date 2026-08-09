@@ -17,7 +17,7 @@
 > [architecture.md §4.5](./architecture.md); the human-readable version with implementation status is
 > [`../human/評価対応/42モジュール対応表.html`](../human/評価対応/42モジュール対応表.html).
 >
-> ### Parts already complete (as of 2026-07-23)
+> ### Parts already complete (as of 2026-07-23, plus two later dated exceptions called out inline below: B-02 and G-11, both 2026-08-09)
 >
 > **The game engine's planned work is complete.** Not everything remains "to be built."
 >
@@ -26,7 +26,7 @@
 >   (G-12; G-11 was fixed 2026-08-09) that breaks online 1v1 — see backlog.md §3.1.
 > - **The AI opponent is also complete.** The RSP AI "chases when it holds a winning move, flees when it holds a losing move"; the FPS AI has search, patrol, and pathfinding-based pursuit.
 > - **The server-authoritative simulation (`sim.wasm`) and the snapshot-delivery entry point are complete.** The engine-side components needed for online play are in place.
-> - 4 battle maps, acceptance tests (`make test`, 85 checks), and CI (all jobs green) are also complete.
+> - 4 battle maps, acceptance tests (`make test`, 96 checks), and CI (all jobs green) are also complete.
 > - On the web-app side, the skeleton (I-01) is complete.
 >
 > **What remains is the TypeScript server and frontend** (the part that connects online play).
