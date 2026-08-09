@@ -22,8 +22,13 @@ All work described in this document has been completed. It is written in the for
 | §5 | Phased migration steps S1–S7 | Complete (all of S1–S7). native was reached without ever being broken throughout the entire process |
 | §6 | Issue backlog E-01–E-14 / G-01–G-10 | All 24 items closed |
 
-**No work remains on the engine (C) side.**
-What remains is only the TypeScript server and frontend (B-02〜B-14・I-15・I-16 / F系・GV系).
+**No *planned* work remains on the engine (C) side** — every E-/G- issue in §6 is closed.
+Two defects were found afterwards and are still open, so "closed backlog" is not the same as
+"defect-free": **G-11** (FPS shooting can eliminate the other seat —
+[#46](https://github.com/samatsum/ft_Transcendence/issues/46)) and **G-12** (remote players have no
+appearance in FPS — [#47](https://github.com/samatsum/ft_Transcendence/issues/47)). Both are real and
+reproducible in the current code; see [backlog.md §3.1](./backlog.md).
+Apart from those, what remains is the TypeScript server and frontend (B-02〜B-14・B-17・I-15・I-16 / F系・GV系).
 
 - Detailed implementation records: [3-エンジンPhase3レポート](../../archive/03_実装レポート/3-エンジンPhase3レポート.md)
   / [4-エンジンE13E14レポート](../../archive/03_実装レポート/4-エンジンE13E14レポート.md)

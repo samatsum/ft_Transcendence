@@ -211,7 +211,7 @@
 				</article>
 				<article class="issue-card" data-status="todo">
 					<div class="issue-id">F-05</div>
-					<div><h3>ロビー一式</h3><p>5領域（キュー/ルーム/フレンド/試合フィード等）と<code>useLobbySocket</code>。<code>LobbyPage.tsx</code>はGV-06動作確認用の暫定リンクのみ。</p><div class="issue-meta"><span class="tag status-todo">未着手（担当未定・B-08/B-09待ち）</span></div></div>
+					<div><h3>ロビー一式</h3><p><strong>3領域</strong>（Quick Match / カスタムルーム / ルームビュー）と<code>useLobbySocket</code>。フレンド領域はB-07、試合フィードはB-13に依存するため2026-08-08に対象外。<code>LobbyPage.tsx</code>はGV-06動作確認用の暫定リンクのみ。</p><div class="issue-meta"><span class="tag status-todo">未着手（担当未定・B-08/B-09待ち）</span></div></div>
 				</article>
 				<article class="issue-card" data-status="done" data-owner="samatsum">
 					<div class="issue-id">GV-06</div>
@@ -302,7 +302,7 @@
 		</section>
 
 		<section id="backend">
-			<p class="section-kicker">07 · Boundary with W</p>
+			<p class="section-kicker">07 · Boundary with B / I</p>
 			<h2>Fが消費するのは「Wの保証」、Fが作るのは「体験」</h2>
 			<p class="section-intro">
 				Backendが完成すればFrontendは実装しやすくなりますが、F側にはWSの張り替え、
@@ -338,7 +338,7 @@
 						snapshotを補間する対戦画面）とGV-07（スコア・切断猶予・AI代替を見せるHUD）を完成させました。
 					</p>
 					<p>
-						その結果、今は開発用の固定URLから2ブラウザ間で1試合を最後まで見せられます。
+						ただし<strong>ブラウザからは今のところ実演できません</strong>——通常起動のサーバーはルームを1つも作らず（4002）、ブラウザの<code>WebSocket</code>は開発用認証の<code>x-dev-user</code>ヘッダを送れない（4000）ためです。検証は<code>ws-check.ts</code>というNode製の検査ハーネスで行いました。ブラウザで触れるようになるのは、本認証（B-04）とロビー起点のルーム生成（F-05＋B-09）が入ってからです。
 						一方でログイン画面・ロビー・プロフィールはまだstub（受け皿だけ）の状態です。
 					</p>
 					<p>
