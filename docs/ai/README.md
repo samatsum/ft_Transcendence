@@ -14,7 +14,7 @@ Superseded/original documents (the Japanese Markdown these files were translated
 material that didn't carry forward into either the AI or human doc set) live under
 [`../../archive/`](../../archive/) for historical reference. They are not maintained.
 
-## Project status (implementation as of 2026-08-07, reconciled against `origin/main` @ `40acdee`; module lineup as of the 2026-08-08 D-19 revision)
+## Project status (implementation as of 2026-07-30, reconciled against `origin/main` @ `40acdee`; module lineup as of the 2026-08-08 D-19 revision)
 
 - **C engine** (Engine E-01–E-14 / Gameplay G-01–G-10): complete.
 - **Server** (B-/I-series): I-01, B-09, B-10, B-11, B-12, B-14 complete (**6**); **B-08 is core-complete, not complete** — it still needs the real cookie auth from B-04/B-05, so backlog.md counts it separately. B-08–B-12 were

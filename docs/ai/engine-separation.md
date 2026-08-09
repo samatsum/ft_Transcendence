@@ -23,7 +23,7 @@ All work described in this document has been completed. It is written in the for
 | §6 | Issue backlog E-01–E-14 / G-01–G-10 | All 24 items closed |
 
 **No *planned* work remains on the engine (C) side** — every E-/G- issue in §6 is closed.
-Two defects were found afterwards and are still open, so "closed backlog" is not the same as
+Two defects were found afterward and are still open, so "closed backlog" is not the same as
 "defect-free": **G-11** (FPS shooting can eliminate the other seat —
 [#46](https://github.com/samatsum/ft_Transcendence/issues/46)) and **G-12** (remote players have no
 appearance in FPS — [#47](https://github.com/samatsum/ft_Transcendence/issues/47)). Both are real and

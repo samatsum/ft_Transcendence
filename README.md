@@ -158,15 +158,19 @@ Open `http://localhost:5173`. The auth screens and lobby are stubs, so there is 
 yet.
 
 > **The `/game/dev-room` link on `/lobby` does not currently work from a browser**, despite what its
-> label says. Two independent blockers, both waiting on B-04:
+> label says. Two independent blockers, and they are waiting on *different* issues:
 >
-> 1. **No room is ever created.** `createRoom()` is called only from
->    `app/backend/src/game/dev-run.ts` and `app/backend/src/game/ws-check.ts`; the normally started
->    server (`app/backend/src/index.ts`) registers the WS route but creates nothing, so
->    `/ws/game/dev-room` closes with **4002 room-not-found**.
-> 2. **The dev-auth stub cannot be satisfied from a browser.** `authenticateRequest()` accepts an
->    `x-dev-user` *header*, but the browser `WebSocket` constructor cannot set request headers and
->    the Vite proxy does not inject any — so the socket closes with **4000 unauthenticated** first.
+> 1. **The dev-auth stub cannot be satisfied from a browser** (blocked on **B-04**).
+>    `authenticateRequest()` accepts an `x-dev-user` *header*, but the browser `WebSocket`
+>    constructor cannot set request headers and the Vite proxy does not inject any — so the socket
+>    closes with **4000 unauthenticated**. This one is hit first. Real cookie auth (B-04) removes it,
+>    because a cookie *is* sent on the WS upgrade.
+> 2. **No room is ever created** (blocked on **F-05 + B-09**, not B-04). `createRoom()` is called only
+>    from `app/backend/src/game/dev-run.ts` and `app/backend/src/game/ws-check.ts`; the normally
+>    started server (`app/backend/src/index.ts`) registers the WS route but creates nothing, so
+>    `/ws/game/dev-room` closes with **4002 room-not-found**. Rooms are meant to come from lobby
+>    matchmaking (F-05 drives B-08, B-09 turns a MatchPlan into a GameRoom) — fixing auth alone does
+>    not make this route reachable.
 >
 > **GV-06 and GV-07 are nonetheless genuinely done.** They were verified through
 > `app/backend/src/game/ws-check.ts`, a Node harness that creates real rooms and connects as a WS

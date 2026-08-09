@@ -60,7 +60,7 @@ C エンジンを `emcc` で WASM にビルドした成果物（`build/`）と�
 | オンラインで使う | 使わない |
 |---|---|
 | `render.wasm`（同じ C エンジン。描画用） | `engine_demo.js`（ローカル駆動のため） |
-| `snapshot_interp.js`（補間） | `web_render`（ローカルで `game_step` してしまう） |
+| `snapshot_interp.js`（補間）※オンラインで実際に使うのは TS 移植版 `app/frontend/src/engine/snapshotInterp.ts`。この JS は `sim_demo/replay.html` 専用 | `web_render`（ローカルで `game_step` してしまう） |
 | `game_apply_snapshot`（表示専用の受け口） | — |
 
 つまりオンラインは「`sim_demo/replay.html` の作り（snapshot 駆動）」を TypeScript で
