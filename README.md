@@ -16,7 +16,7 @@ The C engine's planned backlog is closed, and its two post-backlog FPS defects (
 frontend — is partially built. Read this table before trying to demo anything.
 
 Two dates on purpose: as of 2026-07-30 nothing had been *completed* beyond what's listed here, **except
-two later, individually-dated exceptions called out inline below — B-02 and G-11, both landed
+three later, individually-dated exceptions called out inline below — B-02, G-11, and G-12, all landed
 2026-08-09**. The **declared module lineup was rewritten on 2026-08-08** (decision D-19), which is why
 several rows below say "not declared" for work that older commits still describe as planned.
 
@@ -198,8 +198,9 @@ yet.
 
 ### Generated files
 
-`web/build/` (wasm), `web/assets/` (converted textures), and `web/sim_demo/snapshots.json` are all
-`.gitignore`d — generate them locally with the steps above, they aren't in `git pull`.
+`web/build/` (wasm), `web/assets/` (converted textures), and `web/sim_demo/snapshots.json` /
+`snapshots_fps.json` are all `.gitignore`d — generate them locally with the steps above, they
+aren't in `git pull`.
 
 ## Controls
 

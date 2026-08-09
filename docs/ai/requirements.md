@@ -17,7 +17,7 @@
 > [architecture.md §4.5](./architecture.md); the human-readable version with implementation status is
 > [`../human/評価対応/42モジュール対応表.html`](../human/評価対応/42モジュール対応表.html).
 >
-> ### Parts already complete (as of 2026-07-23, plus two later dated exceptions called out inline below: B-02 and G-11, both 2026-08-09)
+> ### Parts already complete (as of 2026-07-23, plus three later dated exceptions called out inline below: B-02, G-11, and G-12, all 2026-08-09)
 >
 > **The game engine's planned work is complete.** Not everything remains "to be built."
 >

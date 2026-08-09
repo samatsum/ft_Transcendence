@@ -14,7 +14,11 @@ const require = createRequire(import.meta.url);
 const here = (p) => fileURLToPath(new URL(p, import.meta.url));
 const createSim = require(here('../build/sim.js'));
 
-const MODE = process.argv[2] === 'fps' ? 'fps' : 'rsp';
+const MODE_ARG = process.argv[2];
+if (MODE_ARG !== undefined && MODE_ARG !== 'rsp' && MODE_ARG !== 'fps') {
+	throw new Error(`unknown mode "${MODE_ARG}" (expected "rsp" or "fps")`);
+}
+const MODE = MODE_ARG ?? 'rsp';
 const MAP = MODE === 'fps' ? 'fps_map/fps_duel.cub' : 'rsp_map/rsp.cub';
 const OUT_FILE = MODE === 'fps' ? 'snapshots_fps.json' : 'snapshots.json';
 const SEAT_COUNT = MODE === 'fps' ? 2 : 4;
