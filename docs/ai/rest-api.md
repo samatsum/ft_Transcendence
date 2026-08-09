@@ -92,7 +92,7 @@ battery in ARCHITECTURE §9.1).
 
 ## 2. Endpoint list
 
-### 2-A. Auth (`/api/auth`) — Day 2–3
+### 2-A. Auth (`/api/auth`)
 
 | Method / Path | Auth | Request | Response |
 |---|---|---|---|
@@ -108,7 +108,7 @@ battery in ARCHITECTURE §9.1).
 - Passwords use argon2id (memory 19MiB / iterations 2 / parallelism 1 — the OWASP-recommended line).
   This is a place where the evaluation may ask for an explanation of "hash + salt" (§9.1).
 
-### 2-B. Users (`/api/users`) — Day 10
+### 2-B. Users (`/api/users`)
 
 | Method / Path | Auth | Content |
 |---|---|---|
@@ -121,7 +121,7 @@ battery in ARCHITECTURE §9.1).
 - Image re-encoding/resizing is not performed (out of scope for this project; defended only via the size cap, and
   documented as a limitation in the README).
 
-### 2-C. Friends (`/api/friends`) — Day 10
+### 2-C. Friends (`/api/friends`)
 
 The concrete realization of "adding friends and checking online status" from the Standard user management module.
 **Note the numbering**: this was core #6 under the *pre-D-19* lineup. Standard user management is no longer declared
@@ -143,7 +143,7 @@ labor with ② §3).
   checks the state version and sends diffs only to friend connections, so the REST layer does not hold a WebSocket
   directly, and the dependency direction does not create a cycle with the B-08→B-07 implementation order.
 
-### 2-D. Matches & Stats (`/api/matches`, `/api/users/:id/stats`) — Day 8–9
+### 2-D. Matches & Stats (`/api/matches`, `/api/users/:id/stats`)
 
 The concrete realization of the Game statistics and match history module.
 **Note the numbering**: this was core #8 under the *pre-D-19* lineup. Game statistics is no longer declared, and
@@ -164,7 +164,7 @@ ARCHITECTURE §3.3):
   with the attribution rule in ② §6-C). Draws are excluded from the denominator.
 - Rows where `isAi = true` are excluded from individual statistics (used only for displaying match detail).
 
-### 2-E. Maps (`/api/maps`) — Day 8
+### 2-E. Maps (`/api/maps`)
 
 The source of truth for the ID space referenced by ② §4-B's `rules.map`.
 
