@@ -152,7 +152,7 @@ Numbered items in the acceptance-criteria column indicate mapping to acceptance 
 > `docker-compose.yml` currently has **only** the `engine-build` service (no backend, frontend, nginx or
 > db), so `docker compose up` builds assets and serves them over `python3 -m http.server` — it does not
 > start the product.
-
+>
 > **Asset delivery is a separate constraint for I-15 (measured 2026-08-09).** `web/assets/textures/` is
 > **212 MB** and must not be shipped naively.
 >
@@ -240,7 +240,7 @@ Numbered items in the acceptance-criteria column indicate mapping to acceptance 
 > restore exists** if the feed is wanted later: broadcast `match_result` straight from GameRoom's in-memory
 > outcome instead of after a DB write. That is a small backend change and does **not** require B-13, but it
 > is not currently declared or planned — do not start it without a decision.
-
+>
 > **What D-19 changed in this lane (2026-08-08).** F-09 and F-10 are **not declared** and are out of the
 > completion-rate denominator on
 > [`../human/開発状況/フロントエンド開発工程.html`](../human/開発状況/フロントエンド開発工程.html); the rows

@@ -6,13 +6,9 @@
 ## このリポジトリは何か
 
 42 課題 ft_transcendence。C 製 cub3D エンジンを WebAssembly 化し、TypeScript の
-サーバー権威モデルでオンライン対戦にしたもの。同じ C ソースが3ターゲットへコンパイルされます。
-
-| ターゲット | 用途 |
-|---|---|
-| native バイナリ | ローカル実行・受入テスト |
-| `render.wasm` | ブラウザで描画するだけ |
-| `sim.wasm` | サーバーで判定するだけ |
+サーバー権威モデルでオンライン対戦にしたもの。**同じ C ソースが native / `render.wasm` /
+`sim.wasm` の3ターゲットへコンパイルされます**——この事実が下のレーン分割の根拠になります。
+構成の詳細は [`docs/ai/architecture.md`](docs/ai/architecture.md)。
 
 ## レーン記号
 
@@ -65,7 +61,7 @@ Issue ID の接頭辞。**レーンは「どこで動くか」ではなく「何
 
 件名は [Conventional Commits](https://www.conventionalcommits.org/)。scope に Issue ID を入れる。
 
-```
+```text
 fix(B-12): 再接続時に seat が解放されない問題を直す
 ```
 
@@ -116,9 +112,9 @@ docker compose run --rm engine-build make frontend-engine-assets
 | 画面仕様 | [`docs/ai/frontend.md`](docs/ai/frontend.md) |
 | 誰がどのレーンにいるか | [`docs/human/はじめに/チーム体制.html`](docs/human/はじめに/チーム体制.html) |
 
-**モジュール構成は 2026-08-08 の D-19 改訂が現行です。** `B-06` `B-07` `B-13` `F-09` `F-10` は
-**不採用**（削除せず「不採用」と明記して残す方針）。逆に `GV-12` は必須へ昇格、`B-17` は新設。
-古いドキュメントやコミットが「予定」と書いていても、`architecture.md` §4 が優先します。
+**採用モジュールは改訂されることがあります。** 不採用にした Issue は削除せず「不採用」と明記して
+残す方針なので、バックログに行があること＝作業予定があること**ではありません**。
+古いドキュメントやコミットが「予定」と書いていても、`architecture.md` §4 の現行の宣言が優先します。
 
 ## 作業上の注意
 
