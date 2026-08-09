@@ -21,8 +21,13 @@ const GET_MAX = 120; // ③§1-C: GET endpoints
 const MUTATING_MAX = 30; // ③§1-C: Other mutating endpoints
 const WINDOW = '1 minute';
 
+const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+// OPTIONS は安全メソッド（状態を変えない）なので GET 側の枠として扱う。
+// ここを「GET/HEAD 以外は mutating」にすると CORS プリフライトの OPTIONS が
+// 書き込み系の30/分を消費し、実際の POST/PUT より先に枠を使い切ってしまう
 function isMutating(method: string): boolean {
-	return method !== 'GET' && method !== 'HEAD';
+	return MUTATING_METHODS.has(method);
 }
 
 export async function registerRateLimit(app: FastifyInstance): Promise<void> {

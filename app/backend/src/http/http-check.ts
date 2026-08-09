@@ -83,7 +83,7 @@ async function checkGetRateLimit(): Promise<void> {
 
 /**
  * ③§1-C: 書き込み系は 30/分 で、GET のカウンタとは独立している。
- * `/api/__check_mut` はこの検査専用の POST ルート（本番の index.ts には無い）。
+ * `/api/__check_mut` はこの検査専用の POST/OPTIONS ルート（本番の index.ts には無い）。
  * B-04/B-05 が実 POST ルートを追加するまでの代役として、
  * registerRateLimit のメソッド別カウンタ分離を検証する
  */
@@ -91,11 +91,19 @@ async function checkMutatingRateLimit(): Promise<void> {
 	await withServer(
 		(app) => {
 			app.post('/api/__check_mut', async () => ({ ok: true }));
+			app.options('/api/__check_mut', async () => ({ ok: true }));
 		},
 		async (base) => {
 			// GET を先に何度か叩いても mutating 側のカウンタは減らない（キー分離の確認）
 			for (let i = 0; i < 10; i++) {
 				const res = await fetch(`${base}/api/health`);
+				assert.equal(res.status, 200);
+			}
+
+			// OPTIONS（安全メソッド）を先に何度叩いても mutating 側の枠は減らない。
+			// CORS プリフライトが書き込み系の30/分を消費しないことの確認
+			for (let i = 0; i < 10; i++) {
+				const res = await fetch(`${base}/api/__check_mut`, { method: 'OPTIONS' });
 				assert.equal(res.status, 200);
 			}
 
