@@ -12,7 +12,7 @@ tag") team battle and an FPS collect-and-race mode.
 
 ## Current status (implementation 2026-07-30 / module lineup 2026-08-08)
 
-The C engine's planned backlog is closed, though **one FPS defect (G-12) remains unfixed** (G-11 was fixed 2026-08-09) — see the Engine row below. The online product layer around it — auth, matchmaking, and most of the
+The C engine's planned backlog is closed, and its two post-backlog FPS defects (**G-11**, **G-12**) were both fixed 2026-08-09 — see the Engine row below. The online product layer around it — auth, matchmaking, and most of the
 frontend — is partially built. Read this table before trying to demo anything.
 
 Two dates on purpose: as of 2026-07-30 nothing had been *completed* beyond what's listed here, **except
@@ -22,7 +22,7 @@ several rows below say "not declared" for work that older commits still describe
 
 | Area | Status |
 |---|---|
-| **Engine** (`codes/` + `web/`) — rendering, physics, both game modes, AI, server-authoritative sim | ✅ **Planned backlog closed** (E-01–E-14 / G-01–G-10). ✅ **G-11** (FPS shooting could eliminate the other seat, [#46](https://github.com/samatsum/ft_Transcendence/issues/46)) fixed 2026-08-09 — shooting now costs hp (default 3, `.cub` `PH`) and a lethal hit is a respawn delay, not elimination. ⚠️ **G-12** (remote players have no appearance in FPS, [#47](https://github.com/samatsum/ft_Transcendence/issues/47)) still open. FPS online play does not currently hold up |
+| **Engine** (`codes/` + `web/`) — rendering, physics, both game modes, AI, server-authoritative sim | ✅ **Planned backlog closed** (E-01–E-14 / G-01–G-10). ✅ **G-11** (FPS shooting could eliminate the other seat, [#46](https://github.com/samatsum/ft_Transcendence/issues/46)) fixed 2026-08-09 — shooting now costs hp (default 3, `.cub` `PH`) and a lethal hit is a respawn delay, not elimination. ✅ **G-12** (remote players had no appearance in FPS, [#47](https://github.com/samatsum/ft_Transcendence/issues/47)) fixed 2026-08-09 — deliberately the opposite of the issue's original ask: the opponent now renders identically to a hazard monster (design call, not a bug), verified via a `record.mjs fps` + headless-browser screenshot. FPS online play is still blocked, but only by auth/lobby (B-04/F-05/B-09), not by these two |
 | **Server** (`app/backend/`) — lobby WS, matchmaking, GameRoom driving `sim.wasm`, disconnect/reconnect, map whitelist | ✅ **Core complete** (I-01, B-08 core, B-09–B-12, B-14). Blocked on real Cookie auth (B-04/B-05) for final integration; the spectator server side (B-17), Docker/nginx delivery (I-15), and CI extension (I-16) not started. Persistence (B-13) was **not declared** as of 2026-08-08 (D-19) |
 | **Auth / DB** (`app/backend/`) | ⚠️ **B-02 done** (Fastify common processing: ③§1 error envelope/zod validation/rate limit). B-03–B-05 not started. A dev-only header-based auth stub (`ALLOW_DEV_AUTH`) stands in for real auth. Auth and the database are Chapter III mandatory requirements, so they are built regardless of module choice; friends (B-07) and avatar (B-06) are **not declared** |
 | **Frontend** (`app/frontend/`) — scaffold, API client, GameView, HUD | ✅ Scaffold and fetch layer are done (F-01, F-02). GameView and HUD (GV-06, GV-07) are **code-complete but their browser acceptance is not currently reproducible** — see the dev-server note below |
@@ -128,6 +128,12 @@ http://localhost:8000/web/sim_demo/replay.html
 **This is not a video.** The file holds only numbers (position, facing, hand, score); the browser
 re-renders the 3D scene from those numbers every frame, interpolating between snapshots. **There is
 no win/loss-determination code in the browser** — see [Architecture](#architecture).
+
+`node web/sim_demo/record.mjs fps` records an FPS 1vs1 the same way (writes
+`web/sim_demo/snapshots_fps.json`; open `replay.html?feed=snapshots_fps.json`). Since FPS doesn't
+finish deterministically from scripted wandering input, this recording runs a fixed 20s rather than
+waiting for a decision — its purpose is watching the other seat render (G-12: on purpose
+indistinguishable from a hazard, see the Engine row above), not seeing a full match.
 
 ### C. Engine, native (Linux/X11)
 
