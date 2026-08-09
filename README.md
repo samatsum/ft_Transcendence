@@ -39,9 +39,12 @@ capacity and the reason online play isn't finished yet: [`docs/human/はじめ�
 ## Team
 
 ft_transcendence is a 4-person group project per the subject (Chapter II). **As of 2026-08-05 the
-team has dissolved to a single active contributor; this is an open, unresolved gap against the
-subject's 4–5 person requirement** (see [`docs/human/はじめに/チーム体制.html`](./docs/human/はじめに/チーム体制.html) for
-the full writeup — it is not resolved by this README, only accurately reported here).
+team has dissolved to a single active contributor. 4 new members are confirmed to join (joining date
+not set), which will meet the subject's 4–5 person requirement — but until they start, the gap is
+open** (see [`docs/human/はじめに/チーム体制.html`](./docs/human/はじめに/チーム体制.html) §04 for the full writeup —
+it is not resolved by this README, only accurately reported here). Both the opening declaration at the
+top of this file and the table below **must be rewritten to the actual membership once the new members
+join**.
 
 | Required role (subject II.1.1) | Current holder | Notes |
 |---|---|---|
