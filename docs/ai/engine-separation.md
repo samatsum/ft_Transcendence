@@ -3,7 +3,7 @@
 > Source: translated from the Japanese original at md_files/02_設計書/1-エンジン分離設計.md (archived).
 
 **Position**: A detailed elaboration of [ARCHITECTURE_DESIGN.md](./architecture.md) §2.1–2.2.
-Corresponds to the work order for the Engine lane's Day 1–5 and the Gameplay lane's Day 4–9 (**both lanes were carried out and completed by samatsum**).
+Corresponds to the work order for the Engine and Gameplay lanes (**both lanes were carried out and completed by samatsum**).
 **Principle**: Separate the engine in stages while **always keeping the native build (MiniLibX/X11) working**.
 This document contains no implementation code (interface specifications and acceptance criteria only).
 
@@ -99,11 +99,10 @@ Apart from those, what remains is the TypeScript server and frontend (B-02〜B-1
 | Target | Layers linked | Purpose | Completion gate |
 |---|---|---|---|
 | `cub3D` (native) | sim + render + platform/native | Regression checks, minor fixes during evaluation, the team's dev environment | Buildable and runnable at all times throughout |
-| `render.wasm` | sim (display support only) + render + platform/web | Browser rendering. **Does not simulate** (draws the server's snapshots) | Gate 1 (Day 2) |
-| `sim.wasm` | sim + platform/headless | Server-authoritative simulation (30Hz) | Day 5 |
+| `render.wasm` | sim (display support only) + render + platform/web | Browser rendering. **Does not simulate** (draws the server's snapshots) | Gate 1 |
+| `sim.wasm` | sim + platform/headless | Server-authoritative simulation (30Hz) | Completed |
 
-**All 3 targets are complete and running.**
-The "Day" figures in the "Completion gate" column were rough estimates made before work began. Gate 1 was passed on 2026-07-11.
+**All 3 targets are complete and running.** Gate 1 was passed on 2026-07-11.
 Build commands are `make` (native) / `make web` (`render.wasm`) / `make sim` (`sim.wasm`), and [CI](../../.github/workflows/ci.yml) automatically builds all three on every push.
 
 ---
@@ -285,20 +284,18 @@ a `make test` target (links directly with gcc, no emcc required).
 
 ## 5. Phased migration steps (an order that never breaks native)
 
-**S1 through S7 are all complete.**
-The "estimate" column reflects the schedule drawn up before work began, not actuals.
-The completion condition for each row has been fully met, and **native was never broken even once throughout the entire process**
+**S1 through S7 are all complete**, and **native was never broken even once throughout the entire process**
 (a startup check against `maps/fps_map/1.cub` and `maps/rsp_map/rsp.cub` was performed after each step).
 
-| Step | Content | Completion condition (acceptance criteria) | Estimate |
-|---|---|---|---|
-| S1 | Introduce `platform.h`. Rewrite the 6 files with MLX calls to go through `pf_*` (the native implementation is just relocating existing code) | native works with all maps as before. No `mlx.h` include remains in the sim/render layers | Day 1 |
-| S2 | Separate time measurement out of `main_loop`, inverting it into "a one-frame function + external driving." Remove `usleep` | native works as before (driving still via `mlx_loop_hook`, only the internals inverted) | Day 1–2 |
-| S3 | **Emscripten spike**: display a single static map on Canvas via the render layer + platform/web | Walls, floor, and ceiling render in the browser with no console errors = **Gate 1** | Day 2 |
-| S4 | Wire up input and time to the web implementation | First-person movement and rotation work in the browser (standalone, local) | Day 3 |
-| S5 | `.cub` memory-reader-ification + APIfication of `game_create`/`game_step`/`game_snapshot` | The headless build (`sim.wasm`) runs RSP for 1000 ticks on Node with no errors and returns snapshots | Day 4–5 |
-| S6 | Combatant unification (§3-C): input-source abstraction, movement unification, per-combatant death/spawn | No regression in native RSP/FPS (play feel unchanged). A mixed test with 3 AI slots + 1 external-input slot passes | Day 4–5 (in parallel with S5, merged in by Gameplay) |
-| S7 | `game_apply_snapshot` + the client-side interpolation receiver | A one-way demo of "Node's sim.wasm → JSON → the browser's render.wasm" is achieved | Day 5–6 |
+| Step | Content | Completion condition (acceptance criteria) |
+|---|---|---|
+| S1 | Introduce `platform.h`. Rewrite the 6 files with MLX calls to go through `pf_*` (the native implementation is just relocating existing code) | native works with all maps as before. No `mlx.h` include remains in the sim/render layers |
+| S2 | Separate time measurement out of `main_loop`, inverting it into "a one-frame function + external driving." Remove `usleep` | native works as before (driving still via `mlx_loop_hook`, only the internals inverted) |
+| S3 | **Emscripten spike**: display a single static map on Canvas via the render layer + platform/web | Walls, floor, and ceiling render in the browser with no console errors = **Gate 1** |
+| S4 | Wire up input and time to the web implementation | First-person movement and rotation work in the browser (standalone, local) |
+| S5 | `.cub` memory-reader-ification + APIfication of `game_create`/`game_step`/`game_snapshot` | The headless build (`sim.wasm`) runs RSP for 1000 ticks on Node with no errors and returns snapshots |
+| S6 | Combatant unification (§3-C): input-source abstraction, movement unification, per-combatant death/spawn | No regression in native RSP/FPS (play feel unchanged). A mixed test with 3 AI slots + 1 external-input slot passes |
+| S7 | `game_apply_snapshot` + the client-side interpolation receiver | A one-way demo of "Node's sim.wasm → JSON → the browser's render.wasm" is achieved |
 
 **Regression-check criteria**: After each Step, launch native against `maps/fps_map/1.cub` and `maps/rsp_map/rsp.cub` and
 confirm that the operations and rules described in the existing USER_DOC §2–5 are unchanged (the `make check` lint gate is also kept in force).
@@ -310,7 +307,7 @@ confirm that the operations and rules described in the existing USER_DOC §2–5
 Granularity that can be transcribed directly into GitHub Issues. Numbers in the Dependencies column refer to Issue numbers within this table.
 
 **All 24 items are closed** (E-01–E-14 / G-01–G-10). The table below is the pre-work plan;
-the "Acceptance criteria," "Dependencies," and "Estimate" columns reflect the state at that time. **No open Issues remain.**
+the "Acceptance criteria" and "Dependencies" columns reflect the state at that time. **No open Issues remain.**
 
 - "Engine owner" / "Gameplay owner" reflect the original division-of-labor plan under the initial 4-lane structure.
   In practice, samatsum completed both lanes solo.
@@ -320,41 +317,40 @@ the "Acceptance criteria," "Dependencies," and "Estimate" columns reflect the st
 
 ### Engine lane (in practice: samatsum)
 
-| # | Title | Acceptance criteria | Dependencies | Estimate |
-|---|---|---|---|---|
-| E-01 | Finalize the `platform.h` interface (dependency sites verified against HEAD) | The function list matches §2's table and is approved in header review | — | 0.5 day |
-| E-02 | Implement the native platform layer (relocating existing MLX code) | native regression-clean on all maps. Zero `mlx.h` includes in the sim/render layers | E-01 | 1 day |
-| E-03 | `t_window.screen` → `t_framebuffer`-ify, and switch `draw_pixel`'s references | native regression-clean | E-02 | 0.5 day |
-| E-04 | Invert the loop (one-frame function, `usleep` removal, `dt` as an argument) | native regression-clean. The one-frame function contains no I/O or sleep | E-02 | 0.5 day |
-| E-05 | Emscripten build environment and a minimal `render.wasm` build | Build succeeds, `.wasm` is produced | E-03 | 0.5 day |
-| E-06 | XPM → RGBA conversion script and asset loading (web) | All textures (walls/objects/8-direction enemy sprites/6 hand frames/weapons/death screen) load on web | E-05 | 0.5 day |
-| E-07 | **Gate 1**: static map rendering on Canvas (including BGRA → RGBA absorption) | Renders in Chrome with zero console errors | E-05, E-06 | 0.5 day |
-| E-08 | web input (KeyboardEvent → logical axis) and time wiring | Movement, rotation, and UI toggles work in the browser | E-07 | 0.5 day |
-| E-09 | `.cub` memory-reader-ification | native and headless produce identical parse results for the same `.cub` | E-04 | 0.5 day |
-| E-10 | sim public API (`game_create`/`set_input`/`step`/`snapshot`/`destroy`) | 1000 consecutive ticks run on Node; leak check passes | E-09 | 1 day |
-| E-11 | `sim.wasm` headless build (rendering symbols not linked) | Multiple instances can be created from Node | E-10 | 0.5 day |
-| E-12 | `game_apply_snapshot` and the display-state receiver | A one-way demo of sim.wasm → JSON → render.wasm is achieved | E-10, E-08 | 1 day |
-| E-13 | Rendering-performance hardening (parameterized internal resolution, measurement) | 60fps at 960×540 (on the dev machine baseline). If not met, present data justifying staged resolution reduction | E-07 | 0.5 day |
-| E-14 | Add 3-target builds + native startup smoke test to CI | Runs automatically on every PR | E-05, E-11 | 0.5 day |
+| # | Title | Acceptance criteria | Dependencies |
+|---|---|---|---|
+| E-01 | Finalize the `platform.h` interface (dependency sites verified against HEAD) | The function list matches §2's table and is approved in header review | — |
+| E-02 | Implement the native platform layer (relocating existing MLX code) | native regression-clean on all maps. Zero `mlx.h` includes in the sim/render layers | E-01 |
+| E-03 | `t_window.screen` → `t_framebuffer`-ify, and switch `draw_pixel`'s references | native regression-clean | E-02 |
+| E-04 | Invert the loop (one-frame function, `usleep` removal, `dt` as an argument) | native regression-clean. The one-frame function contains no I/O or sleep | E-02 |
+| E-05 | Emscripten build environment and a minimal `render.wasm` build | Build succeeds, `.wasm` is produced | E-03 |
+| E-06 | XPM → RGBA conversion script and asset loading (web) | All textures (walls/objects/8-direction enemy sprites/6 hand frames/weapons/death screen) load on web | E-05 |
+| E-07 | **Gate 1**: static map rendering on Canvas (including BGRA → RGBA absorption) | Renders in Chrome with zero console errors | E-05, E-06 |
+| E-08 | web input (KeyboardEvent → logical axis) and time wiring | Movement, rotation, and UI toggles work in the browser | E-07 |
+| E-09 | `.cub` memory-reader-ification | native and headless produce identical parse results for the same `.cub` | E-04 |
+| E-10 | sim public API (`game_create`/`set_input`/`step`/`snapshot`/`destroy`) | 1000 consecutive ticks run on Node; leak check passes | E-09 |
+| E-11 | `sim.wasm` headless build (rendering symbols not linked) | Multiple instances can be created from Node | E-10 |
+| E-12 | `game_apply_snapshot` and the display-state receiver | A one-way demo of sim.wasm → JSON → render.wasm is achieved | E-10, E-08 |
+| E-13 | Rendering-performance hardening (parameterized internal resolution, measurement) | 60fps at 960×540 (on the dev machine baseline). If not met, present data justifying staged resolution reduction | E-07 |
+| E-14 | Add 3-target builds + native startup smoke test to CI | Runs automatically on every PR | E-05, E-11 |
 
 ### Gameplay lane (in practice: samatsum)
 
-| # | Title | Acceptance criteria | Dependencies | Estimate |
-|---|---|---|---|---|
-| G-01 | Spec review for combatant unification (elaboration of the 4 items in §3-C) | Agreement reached with Engine on a change spec (struct field table) | E-04 | 0.5 day |
-| G-02 | Introduce input-source abstraction (AI / EXTERNAL) | A native mixed test with 3 AI slots + 1 external slot behaves the same as current RSP | G-01 | 1 day |
-| G-03 | Unify movement/collision (integrate player/enemy, parameterize radius) | native regression-clean (confirmed no wall-sliding issues or clipping on existing maps) | G-02 | 1 day |
-| G-04 | Per-combatant death/spawn/respawn_timer | RSP's instant respawn and FPS's death penalty both work per-combatant | G-03 | 0.5 day |
-| G-05 | Make first-to-N score configurable via `match_rules` (scoring/first-to-N/winner determination already implemented) | Make the fixed `RSP_SCORE_LIMIT` value configurable per match. Also works with N=2 for testing | G-02 | 0.25 day |
-| G-06 | 1v1-ify the FPS goal (goal detection / `goal_tex` already implemented) | Winner is attributed based on which of the 2 combatants reaches the `IS_GOAL` cell first. `D`-gate/collection rules stay as-is | G-03 | 0.25 day |
-| G-07 | FPS multi-spawn support (simultaneous 1v1 spawning) | 2 combatants can start simultaneously from different points | G-06 | 0.5 day |
-| G-08 | Hazard-ify enemies (contact = respawn penalty) | Match continues after the death animation; the match does not end | G-04 | 0.5 day |
-| G-09 | Create 2 online-match maps each for RSP/FPS | Approved via startup verification + in-team playtesting | G-06 | 1 day |
-| G-10 | Disable BMP saving on web/server and clean up result data | No file I/O occurs during headless execution | E-10 | 0.5 day |
+| # | Title | Acceptance criteria | Dependencies |
+|---|---|---|---|
+| G-01 | Spec review for combatant unification (elaboration of the 4 items in §3-C) | Agreement reached with Engine on a change spec (struct field table) | E-04 |
+| G-02 | Introduce input-source abstraction (AI / EXTERNAL) | A native mixed test with 3 AI slots + 1 external slot behaves the same as current RSP | G-01 |
+| G-03 | Unify movement/collision (integrate player/enemy, parameterize radius) | native regression-clean (confirmed no wall-sliding issues or clipping on existing maps) | G-02 |
+| G-04 | Per-combatant death/spawn/respawn_timer | RSP's instant respawn and FPS's death penalty both work per-combatant | G-03 |
+| G-05 | Make first-to-N score configurable via `match_rules` (scoring/first-to-N/winner determination already implemented) | Make the fixed `RSP_SCORE_LIMIT` value configurable per match. Also works with N=2 for testing | G-02 |
+| G-06 | 1v1-ify the FPS goal (goal detection / `goal_tex` already implemented) | Winner is attributed based on which of the 2 combatants reaches the `IS_GOAL` cell first. `D`-gate/collection rules stay as-is | G-03 |
+| G-07 | FPS multi-spawn support (simultaneous 1v1 spawning) | 2 combatants can start simultaneously from different points | G-06 |
+| G-08 | Hazard-ify enemies (contact = respawn penalty) | Match continues after the death animation; the match does not end | G-04 |
+| G-09 | Create 2 online-match maps each for RSP/FPS | Approved via startup verification + in-team playtesting | G-06 |
+| G-10 | Disable BMP saving on web/server and clean up result data | No file I/O occurs during headless execution | E-10 |
 
 **Critical path**: E-01 → E-02 → (E-03/E-04) → E-05 → E-07 (Gate 1) → E-08, and E-09 → E-10 → E-11 → E-12.
 The G series can start in parallel once E-04 is agreed upon.
-Engine totals ≈ 8.5 person-days, Gameplay totals ≈ 6.5 person-days, fitting within the 2 lanes across Day 1–9 (including buffer).
 
 **This critical path has been walked to completion.** Gate 1 (E-07) was passed on 2026-07-11, and
 the final item, E-13, was completed on 2026-07-23.

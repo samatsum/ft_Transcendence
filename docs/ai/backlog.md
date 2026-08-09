@@ -41,7 +41,7 @@ An input channel that accepts state as input is itself an entry point for cheati
 | B. Restructure under an `engine/` subtree (original proposal in ARCHITECTURE §3.2) | Move the entire cub3D tree under `engine/` | Tidier directory appearance | Requires fixing every path reference (Makefile, lint, CI, all design docs, `web/`'s serving paths), and history tracking degrades to relying on `git log --follow`. **The only gain is aesthetics** | Rejected |
 | C. Split the engine into a separate repository | Separate via submodule / subtree | Independent versioning | The subject premise is a single-repo submission and "clone into an empty folder → single-command startup" (§9.1). Splitting it is nothing but an evaluation risk | Rejected |
 
-**Reason for adoption**: Restructuring is "stopping something that works in order to buy aesthetics." We chose the option with the smallest change volume for I-01 (Day 1), freeing up effort for the core 14pt.
+**Reason for adoption**: Restructuring is "stopping something that works in order to buy aesthetics." We chose the option with the smallest change volume for I-01, freeing up effort for the core 14pt.
 **Reflected in**: ARCHITECTURE §3.2, already revised.
 
 ## 1. Done
@@ -258,21 +258,21 @@ development. `GameView`/`HudOverlay` currently have no lobby to be launched from
 
 ## 6. Gate/schedule mapping (update to ARCHITECTURE §7)
 
-> **The `Day N` numbers below are historical labels, not dates (noted 2026-08-09).** Both plans they come from
-> are superseded: the 14-day plan by the 5-day one, and the 5-day daily breakdown by its own deletion on
-> 2026-08-05, when the team dissolved and every per-person assignment was removed
-> ([architecture.md §7](./architecture.md)). Nothing replaced it, so **no calendar schedule is in effect**.
-> What still holds is the **order** of the gates and the pass criteria in §6.1 / §6.2 — read the Day numbers
-> as "which gate comes before which," not as a deadline.
+> **No calendar schedule is in effect (noted 2026-08-09).** The 14-day and 5-day plans that used to attach
+> dates to these gates are both gone — the 5-day daily breakdown was deleted on 2026-08-05, when the team
+> dissolved and every per-person assignment was removed, and the day numbers this table used to carry were
+> removed on the same day as this note for the same reason ([architecture.md §7](./architecture.md) has the
+> full history). What still holds is the **order** of the gates — Gate 1 → Gate 2 → Gate 3 → hardening —
+> and the pass criteria in §6.1 / §6.2.
 
 | Gate | Content | Issues that converge here | Status |
 |---|---|---|---|
-| Gate 1 (Day 2) | Canvas rendering of a static map | E-01–E-07 | **Passed (go)**, 2026-07-11 |
-| Gate 2 (Day 7 → **Day 3 under the 5-day schedule**) | **A 2v2 RSP match is playable start to finish between 2 browsers** | E-08–E-12 / G-01–G-05 / B-08–B-11 / F-05・GV-06・GV-07・GV-08 | Not yet (**E, G, B-08 core, B-09–B-12, and GV-06/GV-07 are done**. What remains on the server side is B-08 integration with B-04/B-05; on the frontend side, F-05 (lobby, not started — GV-06/GV-07 currently have no lobby to launch from) and GV-08 (match transition, not started))<br>**B-12 (disconnect/reconnect/AI takeover) is not counted toward Gate 2 — it was carried out and completed on Day 4 instead** (consistent with the 5-day-schedule mapping in this same table). B-12 is ②§10-B №4 and is not something to be dropped |
-| Gate 3 (Day 11 → **Day 4 under the 5-day schedule**) | Core 14pt fully working in the integrated environment | B-14, F-11, B-17・GV-12 (spectator bonus), G-06–G-09 (FPS-related), and everything else. **Revised 2026-08-08**: B-13 and F-09/F-10 no longer converge here | Not yet (**G-06–G-09 and B-14 are done**) |
-| Day 12 (→ **Day 5**) | Hardening day (every item per the ARCHITECTURE §9.1 script) | Turned into a single Issue, H-01 ([Issue #89](https://github.com/samatsum/ft_Transcendence/issues/89); whole team) | Not yet |
+| Gate 1 | Canvas rendering of a static map | E-01–E-07 | **Passed (go)**, 2026-07-11 |
+| Gate 2 | **A 2v2 RSP match is playable start to finish between 2 browsers** | E-08–E-12 / G-01–G-05 / B-08–B-11 / F-05・GV-06・GV-07・GV-08 | Not yet (**E, G, B-08 core, B-09–B-12, and GV-06/GV-07 are done**. What remains on the server side is B-08 integration with B-04/B-05; on the frontend side, F-05 (lobby, not started — GV-06/GV-07 currently have no lobby to launch from) and GV-08 (match transition, not started))<br>**B-12 (disconnect/reconnect/AI takeover) is not counted toward Gate 2 — it wasn't part of Gate 2's original scope (it belonged to Gate 3's window under the old plan) and was completed ahead of that**. B-12 is ②§10-B №4 and is not something to be dropped |
+| Gate 3 | Core 14pt fully working in the integrated environment | B-14, F-11, B-17・GV-12 (spectator bonus), G-06–G-09 (FPS-related), and everything else. **Revised 2026-08-08**: B-13 and F-09/F-10 no longer converge here | Not yet (**G-06–G-09 and B-14 are done**) |
+| Hardening | Hardening day (every item per the ARCHITECTURE §9.1 script) | Turned into a single Issue, H-01 ([Issue #89](https://github.com/samatsum/ft_Transcendence/issues/89); whole team) | Not yet |
 
-### 6.1 Gate 2 pass criteria (end of Day 3)
+### 6.1 Gate 2 pass criteria
 
 **Gate 2 = human-vs-human play works.** Go once every item below is satisfied. (All items below are currently unchecked / not yet confirmed.)
 
@@ -284,9 +284,9 @@ development. `GameView`/`HudOverlay` currently have no lobby to be launched from
 > **Why the 4-browser check is placed here**: increasing the player count requires **no new code** (B-11 doesn't depend on connection count).
 > If 2 browsers already work, it costs almost nothing to open 2 more tabs.
 > Meanwhile, broadcast fan-out and tick overload only show up **once player count increases**.
-> If found at Gate 3 (Day 4), only Day 5 would be left to fix it; found here, it can be fixed on Day 4.
+> If found at Gate 3, only the hardening gate would be left to fix it; found here (at Gate 2), a full gate's worth of runway remains.
 
-### 6.2 Gate 3 pass criteria (end of Day 4)
+### 6.2 Gate 3 pass criteria
 
 **Gate 3 = the core 14pt work "module by module."** Doubles as a dry run of ⓪§9.1's "demo each module individually."
 
