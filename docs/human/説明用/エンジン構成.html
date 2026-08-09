@@ -517,7 +517,7 @@ README.md             プロジェクトの顔</code></pre>
 						<code>app/</code>の中はレーン分担そのままです。<code>app/backend/</code>＝
 						Auth / REST / DB（未完成）、<code>app/frontend/</code>＝画面（F-01・F-02・GV-06は完了、
 						残りは未完成）、<code>app/shared/</code>＝全員が使うzod契約、<code>codes/</code>＝エンジン本体
-						（予定作業は完了。ただしG-11・G-12の修正は残る）。複数人で並行作業する体制になったときも、
+						（予定作業は完了。G-11は修正済み、G-12の修正は残る）。複数人で並行作業する体制になったときも、
 						この対応がそのまま効きます（現在はsamatsum単独稼働。<a href="../はじめに/チーム体制.html">チーム体制.html</a>参照）。
 					</p>
 				</article>
@@ -625,7 +625,7 @@ README.md             プロジェクトの顔</code></pre>
 				<table>
 					<thead><tr><th>半分</th><th>実体</th><th>状態</th><th>役割</th></tr></thead>
 					<tbody>
-						<tr><td><strong>エンジン</strong></td><td><code>codes/</code>（C）+ <code>web/</code>（WASMとデモ）</td><td><strong>予定作業は完了</strong>（Engine E-01〜E-14 / Gameplay G-01〜G-10）。ただし<strong>後から見つかった未修正の欠陥 G-11・G-12 が残る</strong></td><td>移動・衝突・敵AI・じゃんけん・描画。単体で動く。G-11＝FPSの射撃が相手プレイヤーを排除できてしまう、G-12＝FPSで相手プレイヤーの見た目が無い</td></tr>
+						<tr><td><strong>エンジン</strong></td><td><code>codes/</code>（C）+ <code>web/</code>（WASMとデモ）</td><td><strong>予定作業は完了</strong>（Engine E-01〜E-14 / Gameplay G-01〜G-10）。後から見つかった欠陥のうち<strong>G-11は2026-08-09に修正済み、G-12は未修正のまま残る</strong></td><td>移動・衝突・敵AI・じゃんけん・描画。単体で動く。G-11＝FPSの射撃で相手プレイヤーを排除できてしまう問題（修正済み・現在は撃たれるとHPが減り一時退場するだけ）、G-12＝FPSで相手プレイヤーの見た目が無い（未修正）</td></tr>
 						<tr><td><strong>製品層</strong></td><td><code>app/</code>（backend / frontend / shared）</td><td>I-01完了時点ではほぼ未着手（骨格のみ）</td><td>認証・ロビー・オンライン対戦・履歴。エンジンをネット越しの製品にする</td></tr>
 					</tbody>
 				</table>

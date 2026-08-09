@@ -163,6 +163,17 @@
 					</p>
 				</article>
 				<article class="card">
+					<p class="card-label">Friendly Fire</p>
+					<h3>対戦相手を撃つとどうなるか</h3>
+					<p>
+						1vs1 では相手プレイヤーもピストルの的になります。相手にも HP（既定 3、<code>.cub</code> の
+						<code>PH</code> で変更可。敵の HP とは別枠）があり、尽きると<strong>敵に接触したときと同じ死亡演出・
+						約 5 秒後に自分のスタート地点へ復帰</strong>します。<strong>試合が終わるわけではありません</strong>——
+						勝敗は従来通り「収集 → 扉開放 → ゴール到達」だけで決まり、相手を倒すこと自体に勝敗上の意味はありません。
+						復帰待ちの相手を追い撃ちしてもダメージは通りません。
+					</p>
+				</article>
+				<article class="card">
 					<p class="card-label">Goal</p>
 					<h3>ゴール</h3>
 					<p>
@@ -227,7 +238,8 @@ RS 0.05                                     # 回転速度     (任意, 0 より
 FOV 0.66                                    # 視野角       (任意, 大きいほど広角。既定 0.66)
 ET 5.0                                      # 敵の追跡秒数 (任意, 見失うまでの秒数。既定 5.0)
 ES 0.1                                      # 敵の移動速度 (任意, 0 より大。既定 0.1, 移動速度と独立)
-EH 5                                        # 敵のHP       (任意, 0 より大の整数。撃破に要するヒット数。既定 5)</code></pre>
+EH 5                                        # 敵のHP       (任意, 0 より大の整数。撃破に要するヒット数。既定 5)
+PH 3                                        # 席(プレイヤー)のHP (任意, 0 より大の整数。既定 3。EHとは別枠)</code></pre>
 			<p>サポートされる画像形式は <code>.xpm</code> のみです。</p>
 
 			<h3 style="margin-top: 28px;">設定キー一覧</h3>
@@ -247,6 +259,7 @@ EH 5                                        # 敵のHP       (任意, 0 より�
 						<tr><td><code>OC1</code>〜<code>OC5</code></td><td>収集アイテムのテクスチャ（最大 5 種）</td><td>任意</td></tr>
 						<tr><td><code>MS</code> / <code>RS</code> / <code>FOV</code></td><td>移動速度 / 回転速度 / 視野角</td><td>任意（既定値で動作）</td></tr>
 						<tr><td><code>ET</code> / <code>ES</code> / <code>EH</code></td><td>敵の追跡秒数 / 移動速度 / HP</td><td>任意（既定値で動作）</td></tr>
+						<tr><td><code>PH</code></td><td>席（プレイヤー）のHP（<code>EH</code>とは別枠。FPSで撃たれて0になると自スポーンへ復帰）</td><td>任意（既定値 3 で動作）</td></tr>
 					</tbody>
 				</table>
 			</div>

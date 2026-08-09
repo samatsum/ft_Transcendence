@@ -12,7 +12,7 @@ tag") team battle and an FPS collect-and-race mode.
 
 ## Current status (implementation 2026-07-30 / module lineup 2026-08-08)
 
-The C engine's planned backlog is closed, though **two FPS defects (G-11, G-12) remain unfixed** — see the Engine row below. The online product layer around it — auth, matchmaking, and most of the
+The C engine's planned backlog is closed, though **one FPS defect (G-12) remains unfixed** (G-11 was fixed 2026-08-09) — see the Engine row below. The online product layer around it — auth, matchmaking, and most of the
 frontend — is partially built. Read this table before trying to demo anything.
 
 Two dates on purpose: nothing has been *completed* since 2026-07-30, but the **declared module lineup was
@@ -21,7 +21,7 @@ that older commits still describe as planned.
 
 | Area | Status |
 |---|---|
-| **Engine** (`codes/` + `web/`) — rendering, physics, both game modes, AI, server-authoritative sim | ✅ **Planned backlog closed** (E-01–E-14 / G-01–G-10). ⚠️ Two defects found afterward are still open: **G-11** (FPS shooting can eliminate the other seat, [#46](https://github.com/samatsum/ft_Transcendence/issues/46)) and **G-12** (remote players have no appearance in FPS, [#47](https://github.com/samatsum/ft_Transcendence/issues/47)). FPS online play does not currently hold up |
+| **Engine** (`codes/` + `web/`) — rendering, physics, both game modes, AI, server-authoritative sim | ✅ **Planned backlog closed** (E-01–E-14 / G-01–G-10). ✅ **G-11** (FPS shooting could eliminate the other seat, [#46](https://github.com/samatsum/ft_Transcendence/issues/46)) fixed 2026-08-09 — shooting now costs hp (default 3, `.cub` `PH`) and a lethal hit is a respawn delay, not elimination. ⚠️ **G-12** (remote players have no appearance in FPS, [#47](https://github.com/samatsum/ft_Transcendence/issues/47)) still open. FPS online play does not currently hold up |
 | **Server** (`app/backend/`) — lobby WS, matchmaking, GameRoom driving `sim.wasm`, disconnect/reconnect, map whitelist | ✅ **Core complete** (I-01, B-08 core, B-09–B-12, B-14). Blocked on real Cookie auth (B-04/B-05) for final integration; the spectator server side (B-17), Docker/nginx delivery (I-15), and CI extension (I-16) not started. Persistence (B-13) was **not declared** as of 2026-08-08 (D-19) |
 | **Auth / DB** (`app/backend/`) | ❌ **Not started** (B-02–B-05). A dev-only header-based auth stub (`ALLOW_DEV_AUTH`) stands in for it. Auth and the database are Chapter III mandatory requirements, so they are built regardless of module choice; friends (B-07) and avatar (B-06) are **not declared** |
 | **Frontend** (`app/frontend/`) — scaffold, API client, GameView, HUD | ✅ Scaffold and fetch layer are done (F-01, F-02). GameView and HUD (GV-06, GV-07) are **code-complete but their browser acceptance is not currently reproducible** — see the dev-server note below |
