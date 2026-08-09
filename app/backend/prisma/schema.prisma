@@ -129,7 +129,10 @@ model Match {
 model MatchPlayer {
   id           Int     @id @default(autoincrement())
   matchId      Int
-  /// **null = AI席**。
+  /// AI席は常に null。**ただし null が AI席を意味するとは限らない**——
+  /// User を消すと `onDelete: SetNull` で人間席の userId も null になるため。
+  /// **席が AI かどうかの判定は `isAi` を見ること**（③§3 の「null = AI席」は
+  /// 行を作る時点の話で、退会後の行までは含意していない。2026-08-09、B-03 で明確化）。
   userId       Int?
   isAi         Boolean
   team         Int

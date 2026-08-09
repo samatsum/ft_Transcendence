@@ -259,7 +259,7 @@ Schema chapter and ER diagram are generated from this table.
 |---|---|---|
 | id | Int | PK |
 | matchId | Int | FK → Match, index |
-| userId | Int? | FK → User, index. **null = AI seat** (kept as a row for statistics consistency) |
+| userId | Int? | FK → User, index. AI seats are always null (the row is kept for statistics consistency). **Read `isAi`, not the null-ness, to tell whether a seat was AI** — `onDelete: SetNull` also nulls a *human* seat's `userId` when that user is deleted, so null alone is ambiguous after an account is removed (clarified 2026-08-09 in B-03) |
 | isAi | Boolean | |
 | team / slot | Int | `@@unique([matchId, slot])` |
 | pointsScored | Int | |

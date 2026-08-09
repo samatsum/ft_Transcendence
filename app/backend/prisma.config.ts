@@ -7,7 +7,27 @@
 //
 // `DATABASE_URL` の相対パスは **このファイルの位置（app/backend/）が基準**。
 // 既定値は `file:./data/dev.db` = `app/backend/data/dev.db`。
+import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
 import { defineConfig } from 'prisma/config';
+
+/**
+ * リポジトリ直下の `.env` を読む。
+ *
+ * サーバー側は `tsx --env-file-if-exists=../../.env`（package.json の dev / start）で
+ * これを読むが、**Prisma CLI は読まない**。放っておくと `npm run db:migrate` が
+ * 下の既定値の DB を触り、`npm run dev` は `.env` の DATABASE_URL を見る、という
+ * ズレが起きる——「マイグレーションしたのに反映されない」の典型形。
+ *
+ * dotenv は入れない。Node 22 に `process.loadEnvFile` があり、CI もローカルも
+ * Node 22 で動いている（.github/workflows/ci.yml の setup-node）。
+ * `.env` が無い環境（CI・初回 clone）では黙って既定値へ落ちる。
+ */
+const repoRootEnv = fileURLToPath(new URL('../../.env', import.meta.url));
+if (existsSync(repoRootEnv)) {
+	process.loadEnvFile(repoRootEnv);
+}
 
 /**
  * Prisma の `env()` ヘルパは未設定だと例外を投げるため、ここでは使わない。

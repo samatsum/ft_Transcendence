@@ -110,16 +110,26 @@ async function main(): Promise<void> {
 		console.log('  OK');
 
 		console.log('B-03 検査6: Session は tokenHash 一意、User 削除で連鎖削除される');
+		const expiresAt = new Date(Date.now() + 3600_000);
 		await prisma.session.create({
-			data: { userId: user.id, tokenHash: 'sha256-placeholder', expiresAt: new Date(Date.now() + 3600_000) },
+			data: { userId: user.id, tokenHash: 'sha256-placeholder', expiresAt },
 		});
+		await assert.rejects(
+			prisma.session.create({
+				data: { userId: user.id, tokenHash: 'sha256-placeholder', expiresAt },
+			}),
+			'同じ tokenHash の Session は作れない（③§3）',
+		);
 		await prisma.user.delete({ where: { id: user.id } });
 		assert.equal(await prisma.session.count(), 0, 'User を消すと Session も消える');
-		assert.equal(
-			(await prisma.matchPlayer.findFirst({ where: { slot: 0 } }))?.userId,
-			null,
-			'MatchPlayer は残り、userId だけ null になる（統計行を消さない）',
-		);
+
+		// **退会後の行は「userId=null だが AI席ではない」。** null を AI席の判定に
+		// 使うと、退会した人間の席が AI 扱いになる（B-13 が復帰したときの統計バグ）。
+		const humanSeat = await prisma.matchPlayer.findFirst({ where: { slot: 0 } });
+		assert.equal(humanSeat?.userId, null, 'MatchPlayer は残り、userId だけ null になる（統計行を消さない）');
+		assert.equal(humanSeat?.isAi, false, '人間席は退会後も isAi=false のまま（AI席と区別できる）');
+		const aiSeat = await prisma.matchPlayer.findFirst({ where: { slot: 1 } });
+		assert.equal(aiSeat?.isAi, true, 'AI席は isAi=true');
 		console.log('  OK');
 
 		console.log('B-03: ③§3 の schema v1 が設計どおり生成・適用できています');

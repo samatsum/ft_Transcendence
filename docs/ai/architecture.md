@@ -175,7 +175,7 @@ All 9 layers have finalized selections. The table below includes an "Integrated"
 >
 > - The root `docker-compose.yml` already exists but currently contains only the Emscripten build service (`engine-build`). The evaluation requirement of "`docker compose up` brings everything up" will be delivered in I-15.
 > - `infra/` similarly is currently just a skeleton with a README (listing what will go there); `nginx.conf` does not exist yet.
-> - Prisma is not yet integrated (`schema.prisma` does not exist yet).
+> - Prisma's schema and migration landed in B-03 (`app/backend/prisma/schema.prisma`, verified by `npm run check:db`). **The server does not open a connection yet** — `src/db/client.ts` only exports a factory, and B-04 is its first caller. Running the migration from `docker compose up` is I-15's half.
 
 ---
 

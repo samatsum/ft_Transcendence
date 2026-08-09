@@ -184,8 +184,9 @@ Issues tab gives (backlog.md's git-log-buried rows don't show that at a glance).
 with G-11/G-12 ([#46](https://github.com/samatsum/ft_Transcendence/issues/46),
 [#47](https://github.com/samatsum/ft_Transcendence/issues/47)). **Superseded 2026-08-09**: samatsum
 requested every remaining not-yet-started (未着手) backlog row be filed as a GitHub Issue too, for
-Kanban-style tracking via GitHub Projects — B-04/B-05/B-17, F-03/F-04/F-05/F-11, GV-08/GV-12,
+Kanban-style tracking via GitHub Projects — B-03/B-04/B-05/B-17, F-03/F-04/F-05/F-11, GV-08/GV-12,
 I-15/I-16, and H-01 were backfilled as [#77](https://github.com/samatsum/ft_Transcendence/issues/77)–[#89](https://github.com/samatsum/ft_Transcendence/issues/89).
+That list is a record of the backfill as it happened; **B-03 ([#77](https://github.com/samatsum/ft_Transcendence/issues/77)) has since been completed**, so the open ones now start at [#78](https://github.com/samatsum/ft_Transcendence/issues/78).
 Partially-done rows (e.g. B-08) and already-`(done)` rows were not filed — only 未着手 items were in
 scope for this backfill. `H-01` doesn't get a `lane:*` label (it isn't on the lane table — it's the
 final cross-cutting hardening gate, not one lane's work). Two lane labels were created for this pass
