@@ -57,6 +57,7 @@ static const t_key_def	g_keys[] = {
 	{"ET", C_ET},    // 敵の追跡秒数    : 任意 (見失うまでの秒数)
 	{"ES", C_ES},    // 敵の移動速度    : 任意 (0 より大, move_speed と独立)
 	{"EH", C_EH},    // 敵のHP          : 任意 (0 より大の整数)
+	{"PH", C_PH},    // 席(プレイヤー)のHP : 任意 (0 より大の整数。enemy_hp とは別枠。G-11)
 };
 
 /* ************************************************************************** */
@@ -118,6 +119,7 @@ void
 	config->enemy_track_seconds = DEFAULT_ENEMY_TRACK_SECONDS;
 	config->enemy_speed = DEFAULT_ENEMY_SPEED;
 	config->enemy_hp = DEFAULT_ENEMY_HP;
+	config->player_hp = DEFAULT_PLAYER_HP;
 	i = 0;
 	while (i < C_LAST) {
 		config->set[i++] = 0;
@@ -360,7 +362,7 @@ static int
 		return (parse_texture(config, key, line));
 	} else if (key == C_F || key == C_C) {
 		return (parse_color(config, key, line));
-	} else if (key >= C_MS && key <= C_EH) {
+	} else if (key >= C_MS && key <= C_PH) {
 		return (parse_scalar(config, key, line));
 	}
 	config->set[key] = 1;

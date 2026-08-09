@@ -8,12 +8,14 @@
 //   G-07  FPS 複数スポーン（別地点から同時開始・自スポーンへの復帰）
 //   G-08  敵ハザード化（接触は死亡ペナルティで試合は続行する）
 //   G-09  オンライン対戦マップの起動検証（席の成立・関門→ゴールの完走可能性）
+//   G-11  FPS の射撃は席を delete_enemy しない（ハザード接触死と同じ一時退場に統一）
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "core/core.h"
 #include "core/respawn.h"
+#include "enemy/enemy.h"
 #include "platform/sim.h"
 #include "rsp/rsp_game.h"
 
@@ -753,6 +755,123 @@ static void
 	game_destroy(game);
 }
 
+// マップ由来の敵ハザードの現在数を数える（複数体のマップでも1体分の増減が拾えるように）
+static int
+	count_hazards(t_game* game)
+{
+	t_enemy*	cur;
+	int			n;
+
+	n = 0;
+	cur = game->world.enemies;
+	while (cur) {
+		if (cur->is_hazard) {
+			n++;
+		}
+		cur = cur->next;
+	}
+	return (n);
+}
+
+// G-11: ハザードは従来通り撃破で消える（damage_enemy の is_hazard 分岐の回帰確認）。
+// マップに複数体いてもよいよう、狙った1体ぶんの増減で判定する
+static void
+	test_g11_hazard_still_deletable_by_shooting(const char* map_text)
+{
+	t_game*		game;
+	t_sprite*	hazard_sprite;
+	int			before;
+	int			hp;
+
+	game = create_fps_duel(map_text);
+	if (!game) {
+		printf("  FAIL cannot stage FPS duel\n");
+		g_failures++;
+		g_checks++;
+		return ;
+	}
+	before = count_hazards(game);
+	hazard_sprite = first_hazard(game)->sprite;
+	hp = (int)game->config.enemy_hp;
+	while (hp-- > 0) {
+		damage_enemy(game, hazard_sprite);
+	}
+	expect_int("既定HP分撃つとハザードが1体消える", count_hazards(game), before - 1);
+	game_destroy(game);
+}
+
+// G-11: 相手を撃ってHPが尽きても、delete_enemy はされず、ハザード接触死と同じ
+// death_timer 経由の一時退場になること（Issue #46）。相方は巻き添えにならず、
+// 試合も終わらない。復帰は自スポーンで、HPは player_hp（.cub の PH）まで戻る
+static void
+	test_g11_seat_survives_lethal_shots(const char* map_text)
+{
+	t_game*		game;
+	t_enemy*	victim;
+	t_enemy*	other;
+	t_pos		anchor;
+	int			hp;
+	int			guard;
+
+	game = create_fps_duel(map_text);
+	if (!game) {
+		printf("  FAIL cannot stage FPS duel\n");
+		g_failures++;
+		g_checks++;
+		return ;
+	}
+	victim = combatant_by_id(game, 0);
+	other = combatant_by_id(game, 1);
+	copy_pos(&anchor, &victim->spawn.pos);
+	hp = (int)game->config.player_hp;
+	while (hp-- > 0) {
+		damage_enemy(game, victim->sprite);
+	}
+	expect_int("HPが尽きても消えず存在し続ける", combatant_by_id(game, 0) != NULL, 1);
+	expect_int("delete_enemyではなく死亡演出になる", victim->death_timer > 0.0, 1);
+	expect_int("撃たれても試合は終わらない", game->cleared, 0);
+	expect_int("勝者は確定しない", game->fps.winner, -1);
+	expect_int("相方は巻き添えにならない", other->death_timer <= 0.0, 1);
+	guard = 0;
+	while (victim->death_timer > 0.0 && guard < MAX_TICKS) {
+		game_step(game, TICK_DT);
+		guard++;
+	}
+	expect_int("死亡演出は有限時間で終わる", guard < MAX_TICKS, 1);
+	expect_int("自スポーンへ復帰する", same_cell(&victim->sprite->pos, &anchor), 1);
+	expect_int("復帰後はHPが満タンに戻る", victim->hp, (int)game->config.player_hp);
+	game_destroy(game);
+}
+
+// G-11: 死亡中（復帰待ち）の席は追い撃ちされてもダメージを受けない
+// （① §4-C「死亡中は世界へ干渉しない」の一貫性。撃たれ続けて復帰が延び続けない）
+static void
+	test_g11_dead_seat_ignores_further_shots(const char* map_text)
+{
+	t_game*		game;
+	t_enemy*	victim;
+	int			hp;
+	double		timer_before;
+
+	game = create_fps_duel(map_text);
+	if (!game) {
+		printf("  FAIL cannot stage FPS duel\n");
+		g_failures++;
+		g_checks++;
+		return ;
+	}
+	victim = combatant_by_id(game, 0);
+	hp = (int)game->config.player_hp;
+	while (hp-- > 0) {
+		damage_enemy(game, victim->sprite);
+	}
+	timer_before = victim->death_timer;
+	damage_enemy(game, victim->sprite);
+	expect_int("死亡中に撃っても死亡タイマーは変わらない", victim->death_timer == timer_before, 1);
+	expect_int("死亡中に撃ってもHPは満タンのまま", victim->hp, (int)game->config.player_hp);
+	game_destroy(game);
+}
+
 // ハザードを指定セルへ退避し、外部入力（無入力）へ切り替えて動かなくする。
 // マップの完走可能性だけを検査したいときに、ハザードとの偶発接触を排除する
 static void
@@ -900,6 +1019,10 @@ int
 	test_g08_dead_seat_cannot_goal(fps_map);
 	test_g08_snapshot_alive_tracks_death(fps_map);
 	test_g08_headless_soak(fps_map);
+	printf("G-11 射撃は席を削除しない（ハザード接触死と同じ一時退場）\n");
+	test_g11_hazard_still_deletable_by_shooting(fps_map);
+	test_g11_seat_survives_lethal_shots(fps_map);
+	test_g11_dead_seat_ignores_further_shots(fps_map);
 	printf("G-09 オンライン対戦マップの起動検証\n");
 	test_g09_rsp_map(rsp_map, "rsp");
 	test_g09_rsp_map(rsp_map_2, "rsp_pillars");

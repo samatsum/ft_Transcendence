@@ -6,7 +6,7 @@
 // 上書き可能なスカラー設定のレジストリ（キー→t_configフィールド→許容範囲）。
 // 新しいスカラー設定を増やすときは、この配列に1行追加し、対応キーを enum と
 // config_key に足すだけでよい（パーサ本体の分岐を増やす必要はない）。
-// enemy_hp は double で受け、生成時に int へ縮小する（範囲検証は下限 0 超のみ）
+// enemy_hp / player_hp は double で受け、生成時に int へ縮小する（範囲検証は下限 0 超のみ）
 typedef struct s_scalar_def
 {
 	int		key;
@@ -22,6 +22,7 @@ static const t_scalar_def	g_scalars[] = {
 	{C_ET, 0.0, 3600.0, offsetof(t_config, enemy_track_seconds)},
 	{C_ES, 0.0, 100.0, offsetof(t_config, enemy_speed)},
 	{C_EH, 0.0, 100000.0, offsetof(t_config, enemy_hp)},
+	{C_PH, 0.0, 100000.0, offsetof(t_config, player_hp)},
 };
 
 /* ************************************************************************** */
@@ -132,7 +133,7 @@ int
 }
 
 /* ************************************************************************** */
-// .cub のスカラー設定(MS/RS/FOV/ET/ES/EH)を解析し、対応フィールドを上書きする。レジストリ
+// .cub のスカラー設定(MS/RS/FOV/ET/ES/EH/PH)を解析し、対応フィールドを上書きする。レジストリ
 // g_scalars からキーの定義（許容範囲とフィールドのオフセット）を引き、行頭の英字キーを飛ばして
 // 残りが空白・小数点・数字のみかを検査。自作の parse_double で数値化し、数字を1つも消費しなければ
 // (ok==0)失敗、範囲外(min_exclusive 以下／max_inclusive 超)も失敗。書き込みは config 先頭から

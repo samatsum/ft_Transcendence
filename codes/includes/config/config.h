@@ -77,7 +77,7 @@
 /* ************************************************************************** */
 // 設定ファイルの行種別キー（順序・値はパーサの範囲判定に依存するため変更不可。
 // テクスチャ群 C_NO..C_ST（オブジェクト系 C_OI1..C_OC5 を含む）と
-// スカラー群 C_MS..C_EH はそれぞれ連続させること。
+// スカラー群 C_MS..C_PH はそれぞれ連続させること。
 // C_MAP はマップ本体、C_LAST は set[] の要素数を兼ねるため必ず末尾に置く）
 typedef enum e_config_key
 {
@@ -111,6 +111,7 @@ typedef enum e_config_key
 	C_ET,
 	C_ES,
 	C_EH,
+	C_PH,
 	C_MAP,
 	C_LAST
 }				t_config_key;
@@ -162,7 +163,8 @@ typedef struct s_map
 }				t_map;
 
 // 解像度・色・テクスチャパス・速度・マップなど全設定を集約する構造体
-// （enemy_speed / enemy_hp は敵専用。move_speed とは独立に .cub の ES / EH で上書き）
+// （enemy_speed / enemy_hp は敵専用。move_speed とは独立に .cub の ES / EH で上書き。
+// player_hp は席（プレイヤー）専用の別枠で、.cub の PH で上書き。G-11）
 typedef struct s_config
 {
 	char*			tex_path[TEXTURES];
@@ -172,6 +174,7 @@ typedef struct s_config
 	double			enemy_track_seconds;
 	double			enemy_speed;
 	double			enemy_hp;
+	double			player_hp;
 	unsigned int	requested_width;
 	unsigned int	requested_height;
 	unsigned int	colors[TEXTURES];
