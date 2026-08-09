@@ -1,15 +1,18 @@
-// I-01: Fastify の起動骨格。ここに B-02 で zod 検証パイプライン・
-// ③§1 エラーエンベロープ/レート制限、B-03 で Prisma、B-08〜B-12 で WS と
-// GameRoom（sim.wasm）が載る。現時点は「起動して疎通する」ことだけを担う。
+// I-01 の起動骨格に B-02 で zod 検証パイプライン・③§1 エラーエンベロープ/
+// レート制限を配線した。B-03 で Prisma、B-08〜B-12 で WS と GameRoom
+// （sim.wasm）が載る。
 import { pathToFileURL } from 'node:url';
 
 import Fastify from 'fastify';
 import fastifyWebsocket from '@fastify/websocket';
-import { healthSchema, makeError } from '@ft/shared';
+import { healthSchema, listMapsQuerySchema, makeError } from '@ft/shared';
 
-import { listMaps, type GameMode } from './game/maps.js';
+import { listMaps } from './game/maps.js';
 import { closeAllRooms } from './game/rooms.js';
 import { registerGameWs } from './game/ws.js';
+import { registerErrorHandler } from './http/errors.js';
+import { loggerOptions } from './http/logger.js';
+import { registerRateLimit } from './http/rate-limit.js';
 import { registerLobbyWs } from './lobby/ws.js';
 import { ConnectionManager } from './ws/connection.js';
 
@@ -41,9 +44,14 @@ export interface BuildServerOptions {
 
 /** Fastify serverと、そのserver専用のWebSocket接続管理を構築する */
 export async function buildServer(options: BuildServerOptions = {}) {
-	// pino のログ設定は B-02 で本格化する（開発中は既定の JSON ログ）
-	const app = Fastify({ logger: true });
+	const app = Fastify({ logger: loggerOptions() });
 	const connectionManager = options.connectionManager ?? new ConnectionManager();
+
+	// ③§1-A: 全ルート共通のエラーエンベロープ。ZodError の自動変換もここに載る
+	registerErrorHandler(app);
+	// ③§1-C: レート制限（GET 120/分・その他の書き込み 30/分。既定値の上書きは
+	// ルート追加時に `config.rateLimit` で行う）
+	await registerRateLimit(app);
 
 	// 疎通確認。返す形は shared の zod スキーマで自己検証し、
 	// FE/BE が同じ契約を共有していることを起動時に保証する
@@ -56,13 +64,12 @@ export async function buildServer(options: BuildServerOptions = {}) {
 	});
 
 	// B-14: ③ §2-E のマップ一覧。**本文（.cub）は返さない** — マップ本文は
-	// welcome.map_text で配るので（② §5-B）、ここは選択 UI 用のメタデータだけ
-	app.get('/api/maps', async (request, reply) => {
-		const mode = (request.query as { mode?: string }).mode;
-		if (mode !== undefined && mode !== 'rsp' && mode !== 'fps') {
-			return reply.code(400).send(makeError('validation_failed', `unknown mode: ${mode}`));
-		}
-		return listMaps(mode as GameMode | undefined);
+	// welcome.map_text で配るので（② §5-B）、ここは選択 UI 用のメタデータだけ。
+	// クエリの検証は B-02 の zod パイプライン: `.parse()` が投げた ZodError は
+	// registerErrorHandler が 400 validation_failed に変換する
+	app.get('/api/maps', async (request) => {
+		const { mode } = listMapsQuerySchema.parse(request.query);
+		return listMaps(mode);
 	});
 
 	// B-11: ゲーム WS（② §5）。ロビー WS（B-08）も同じプラグインに載る
