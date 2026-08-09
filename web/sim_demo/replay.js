@@ -82,9 +82,12 @@
 	}
 
 	async function main() {
-		const feedResponse = await fetch('snapshots.json');
+		// ?feed=snapshots_fps.json で G-12 の FPS 記録を再生できる（既定は RSP）。
+		// record.mjs fps が書き出すファイル名と揃えてある
+		const feedFile = new URLSearchParams(location.search).get('feed') || 'snapshots.json';
+		const feedResponse = await fetch(feedFile);
 		if (!feedResponse.ok) {
-			throw new Error('snapshots.json が無い（先に `make sim && node web/sim_demo/record.mjs` を実行）');
+			throw new Error(`${feedFile} が無い（先に \`make sim && node web/sim_demo/record.mjs [rsp|fps]\` を実行）`);
 		}
 		const feed = await feedResponse.json();
 		const snaps = feed.snapshots.map((s) => s.d);

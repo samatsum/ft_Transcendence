@@ -25,6 +25,7 @@ __pycache__/
 
 # E-12 デモの記録（record.mjs が生成）
 /web/sim_demo/snapshots.json
+/web/sim_demo/snapshots_fps.json
 
 # Local Docker/compose overrides
 .env

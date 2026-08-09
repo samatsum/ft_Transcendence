@@ -2,6 +2,7 @@
 
 #include "core/core.h"
 #include "engine/raycast/raycast.h"
+#include "enemy/enemy_utils.h"
 #include "platform/platform.h"
 #include "platform/sim.h"
 #include "rsp/rsp.h"
@@ -202,11 +203,18 @@ static void
 
 /* ************************************************************************** */
 // 他人の席（リモート人間・AI・敵ハザード共通）を1ノードへ反映する。RSP は
-// チーム×手のハンドテクスチャへ差し替える（AI 更新が走らない表示専用モードでは
-// ここが唯一の反映点）
+// チーム×手のハンドテクスチャへ差し替える。FPS は意図的にハザードと見分けが
+// つかない見た目にする（G-12。「探索者は恐怖で幻覚を見ており、全員がMonster
+// に見える」という設計判断）ため、ハザードAIが使うのと同じ8方向テクスチャ・
+// 同じ相対角度の式で選ぶ（fps_enemy_ai.c の view_angle 計算と同一）。
+// is_hazard での分岐は無い——この関数はハザード自身の表示ノードにも呼ばれて
+// おり、同じ経路を通すことで「席もハザードも同じ見た目になる」が両方で成立する
+// （AI 更新が走らない表示専用モードでは、ここが唯一のテクスチャ反映点）
 static void
 	apply_remote_combatant(t_game* game, t_enemy* node, const double* entry)
 {
+	double	view_angle;
+
 	node->combatant_id = (int)entry[0];
 	node->rsp.team = (t_team)(int)entry[1];
 	node->rsp.hand = (t_hand)(int)entry[2];
@@ -217,6 +225,10 @@ static void
 	if (game->mode == MODE_RSP) {
 		node->sprite->tex
 			= &game->assets.hand_tex[HAND_SLOT(node->rsp.team, node->rsp.hand)];
+	} else if (game->mode == MODE_FPS) {
+		view_angle = atan2(game->camera.pos.y - node->sprite->pos.y,
+				game->camera.pos.x - node->sprite->pos.x);
+		update_texture(node, game, view_angle);
 	}
 }
 
