@@ -88,11 +88,11 @@ The biggest asset is that RSP already has a "1 human + 3 NPC = 4 combatants" str
 
 | Option | Summary | Pros | Cons | Feasibility within the schedule |
 |---|---|---|---|---|
-| **A. Port C → WASM via Emscripten (adopted)** | Replace MiniLibX with a thin platform layer (framebuffer + input + time); the client renders via WASM. The same C sim also runs headless as WASM inside the Node server, making the server the sole authority | Zero duplicated logic. Maximizes reuse of C assets (renderer/physics/AI/RSP rules/.cub parser). Strongest technical appeal at evaluation | Learning cost of Emscripten. Requires a refactor to strip MLX dependencies. Adds a build pipeline | Good — the renderer is structured as "just write to a pixel buffer," which pairs well with Canvas. Porting feasibility to be judged by a Day 2 spike |
+| **A. Port C → WASM via Emscripten (adopted)** | Replace MiniLibX with a thin platform layer (framebuffer + input + time); the client renders via WASM. The same C sim also runs headless as WASM inside the Node server, making the server the sole authority | Zero duplicated logic. Maximizes reuse of C assets (renderer/physics/AI/RSP rules/.cub parser). Strongest technical appeal at evaluation | Learning cost of Emscripten. Requires a refactor to strip MLX dependencies. Adds a build pipeline | Good — the renderer is structured as "just write to a pixel buffer," which pairs well with Canvas. Porting feasibility to be judged by a spike |
 | B. Full rewrite in TypeScript | Rewrite the raycaster and rules in TS | Simpler toolchain, familiar to Web developers | Discards the C assets. Reimplementing renderer + AI + physics is a quality risk. Loses the "evolving cub3D" narrative | Fair — feasible with AI assistance, but discarding a validated C implementation is a large loss |
 | C. Native C execution on the server + frame streaming | Server renders and streams video | Minimal client implementation | Bandwidth/latency/scaling are unrealistic. Weak case for being a "Web app" | Rejected |
 
-> **Conclusion: Option A.** Implementation complete. Gate 1 (the Day 2 spike) passed with a go decision on 2026-07-11; all 3 targets — native / `render.wasm` / `sim.wasm` — are now working.
+> **Conclusion: Option A.** Implementation complete. Gate 1 (the spike) passed with a go decision on 2026-07-11; all 3 targets — native / `render.wasm` / `sim.wasm` — are now working.
 
 **Option A's build targets** (implemented as 3 targets, native plus the original two):
 
@@ -336,7 +336,7 @@ lineup, decide whether this project passes.
 | Commits from everyone with clear messages | Conventional Commits + required PRs + 1 reviewer | Audited by PM |
 | Single-command container startup | `docker compose up` (bundles cert generation, migrations, asset conversion on first run) | Backend/DevOps |
 | Latest stable Chrome compatibility | Chrome fixed as the sole target, checked daily | Everyone |
-| **No console warnings or errors** | WASM build flags and React strict-mode warnings checked in CI. A dedicated hardening day scheduled for the final stretch (originally Day 12) | Frontend + Engine |
+| **No console warnings or errors** | WASM build flags and React strict-mode warnings checked in CI. A dedicated hardening gate (H-01) scheduled for the final stretch | Frontend + Engine |
 | Privacy policy / terms of service pages | Persistent SPA footer links. Content matches real data flows (account info and session cookies only — **not** match history or avatars; B-06/B-13 are not declared as of D-19). **No placeholder content allowed** | Frontend |
 | Multi-user concurrent usage | Multiple concurrent GameRooms + lobby online status. **Planned as "2 rooms, each 2 humans + 2 AI = 4 windows total"** — *not yet measured in browsers*; `ws-check.ts` exercises this at the WS layer with Node clients only (see design doc 2 §10-5; revised down from the original "8 simultaneous browsers") | Backend |
 | Responsive, accessible FE | Tailwind breakpoints. Since the game itself requires a keyboard, the auth / layout / lobby screens get the primary responsive focus (stats and profile screens are not declared — F-09 was dropped by D-19) | Frontend |
@@ -384,40 +384,23 @@ The subject's mandatory roles (PO / PM / Tech Lead / Developer) are assigned acr
 
 ## 7. Schedule (with gates)
 
-> **Note: no schedule is currently in effect (verified 2026-08-09).** The 14-day table below is the original
-> 2-week plan, retained purely for historical reference. It was superseded in 2026-07 by a 5-day daily
-> breakdown in 6-チーム分担計画 §5.1 — but **that section no longer exists**. It was deleted on 2026-08-05
-> together with every per-person assignment when the team dissolved, and the page that carried it,
-> [`チーム体制.html`](../human/はじめに/チーム体制.html), now covers team status only (its own lead paragraph says
-> the 日割り was removed deliberately). Two links here used to point at that deleted section; they were
-> corrected on 2026-08-09.
->
-> A pre-deletion copy survives at [`../../archive/02_設計書/6-チーム分担計画.md`](../../archive/02_設計書/6-チーム分担計画.md)
-> §5.1, but **do not use it as a plan**: `archive/` is unmaintained, and that table allocates each day across
-> 4 named people ("1日 = 4人 × 1営業日。1人でも丸1日欠けると Day 3 のゲート2 が崩れます"), uses the
-> pre-2026-08-08 `W-`/`F-` ids, and assumes the pre-D-19 module lineup.
+> **No schedule is currently in effect (verified 2026-08-09).** This section used to carry a detailed
+> day-by-day table (originally 14 days, later revised to a 5-day daily breakdown). Both are gone: the
+> 5-day breakdown was deleted entirely on 2026-08-05 together with every per-person assignment when the
+> team dissolved, and the 14-day table that used to sit below this note was removed for the same reason
+> on 2026-08-09 — a calendar plan nobody is following isn't documentation, it's clutter that costs
+> explanation time and invites the next reader to trust a number that no longer means anything. A
+> pre-deletion copy of the 5-day breakdown survives at
+> [`../../archive/02_設計書/6-チーム分担計画.md`](../../archive/02_設計書/6-チーム分担計画.md) §5.1 for anyone who
+> wants the historical detail, but **do not use it as a plan**: `archive/` is unmaintained, and that table
+> allocates each day across 4 named people, uses the pre-2026-08-08 `W-`/`F-` ids, and assumes the
+> pre-D-19 module lineup.
 >
 > **What is still in effect** is the gate *sequence* and each gate's pass criteria — Gate 1 → Gate 2 → Gate 3
 > → hardening, defined in [backlog.md §6](./backlog.md) with §6.1/§6.2 spelling out the criteria. No dates are
 > attached to them.
 >
 > **Progress (2026-08-07)**: of the original plan's 4 parallel lanes, the **entire Engine and Gameplay schedules are complete** (E-01–E-14 / G-01–G-10; Gate 1 passed). Backend/DevOps has completed I-01/B-08 core/B-09/B-10/B-11/B-12/B-14; Frontend has F-01/F-02/GV-06/GV-07 done (GV-07 merged via [PR #35](https://github.com/samatsum/ft_Transcendence/pull/35)). **Gate 2 is not yet met** — what remains server-side is wiring B-04/B-05 into B-08, and frontend-side is F-05 (lobby, not started) and GV-08 (match transition, not started).
-
-(The following is the original 2-week plan.) 4 parallel lanes. **Bold marks a gate** (if not cleared, the fallback for that gate triggers).
-
-| Day | First: Engine | Second: Backend/DevOps | Third: Frontend | Fourth: Gameplay/PM |
-|---|---|---|---|---|
-| 1 | Inventory MLX call sites, define platform-layer interface | Monorepo, Docker skeleton, CI, env setup | Vite+React+Tailwind scaffold, screen-flow design | Finalize rule spec (RSP scoring / FPS goal), backlog it |
-| 2 | **Gate 1: Emscripten spike** (static map renders to Canvas) | Fastify boot, Prisma schema v1, auth design | Auth screens, footer/Privacy/ToS skeleton | .cub map design (2 for RSP, 2 for FPS) |
-| 3 | Wire up input and time (walkable in first person) | Signup/login complete (argon2 + cookie) | Lobby screen, start API integration | `game_step` split spec review, QA environment |
-| 4–5 | Headless `sim.wasm`, support multi-player input arrays | GameRoom, WS gateway, snapshot distribution | GameView (Canvas+WASM integration, input send) | Implement RSP team score / first-to-10 / respawn in the sim |
-| 6–7 | Interpolation, immediate view rotation, render optimization | Reconnect token, AI-seat swap-in mechanism | Score HUD, match-end screen | **Gate 2: 2 browsers can play a full 2v2 RSP match** (Day 7 mid-project review) |
-| 8–9 | FPS-mode render differences (goal effects, etc.) | Matchmaking queue (shared across both games), match persistence | Matchmaking UI, match-history/stats pages | FPS race conversion (goal detection, 1v1, forfeit), #9 AI difficulty tuning |
-| 10 | Performance hardening (internal resolution tuning) | Friends/online-status API | Profile/avatar/friends UI | #11 Customization (map, points-to-win, speed) implementation |
-| 11 | (only if time remains) insurance-1 spectator viewpoint switching | (only if time remains) insurance-2 OAuth / insurance-4 monitoring | (only if time remains) spectator UI / design polish | **Gate 3: core 14pt fully working end-to-end** (only completed bonuses get declared) |
-| 12 | **Hardening day (everyone)**: zero console warnings, 2 responsive sizes, 8 simultaneous browsers, HTTPS end to end (mkcert CA install), SQLi/XSS attack battery, full-history secret scan of the repo, measure empty-folder `git clone` → single-command startup (per §9.1) | | | |
-| 13 | Code freeze. README (English, full chapter VI structure), ER diagram, AI usage log, demo script, evaluation rehearsal | | | |
-| 14 | Buffer (fixes from rehearsal only), submission | | | |
 
 **Fallbacks**: If Gate 1 fails → fall back to Option B (TS raycaster, using the C implementation as a spec; First and Fourth join the port). If Gate 2 fails → the game modules (#1/#2/#3/#5, 8pt) are what's at risk, and no substitution recovers that much; the response is to fix F-05/F-03 rather than re-pick modules (§4.5). If Gate 3 fails → drop non-working modules from the declaration (never declare a 0pt module).
 
@@ -427,14 +410,14 @@ The subject's mandatory roles (PO / PM / Tech Lead / Developer) are assigned acr
 
 | Risk | Impact | Detection signal | Mitigation |
 |---|---|---|---|
-| ~~Emscripten porting proves unexpectedly difficult~~ **Resolved** | Whole project | Day 2 Gate 1 | Spike first, fallback to Option B, keep the MLX replacement layer to a minimal interface (buffer/input/time only) → **Gate 1 passed with a go decision; 3 targets are running. Fallback Option B is no longer needed** |
-| ~~pthread parallel renderer doesn't work in WASM~~ **Resolved** | Render performance | Day 2–3 | Single-threaded, low internal resolution from the start. Avoid COOP/COEP → **measured 112fps single-threaded at 960×540 on web (E-13). About 1.8× headroom over the 60fps requirement; internal resolution can also be scaled down via an argument if ever needed** |
-| Browser/server state inconsistency | Match quality | Day 6–7 | Client is display-only (does not simulate), which structurally prevents inconsistency by design → **Engine side is already guaranteed (client has no win/loss-determination code). B-11/GV-06 integration is now done (GV-06 merged); re-verify once F-05 lets a real lobby drive it end-to-end** |
-| "Zero console errors" requirement not met | **Project disqualification** | Continuous CI | Suppress WASM build warnings via flags established on day one. Dedicated Day 12 hardening day |
-| Privacy/ToS judged too thin | **Project disqualification** | Day 12 review | Start on content matching real data flows early (not a copy-pasted template) once frontend work resumes — F-04 is currently unassigned/未完成 |
-| Team's inexperience with Web tech | Velocity | Daily | Standardize on AI pair-programming + fix each person's area (narrow the learning surface) + primary-owner/reviewer pairs |
+| ~~Emscripten porting proves unexpectedly difficult~~ **Resolved** | Whole project | Gate 1 | Spike first, fallback to Option B, keep the MLX replacement layer to a minimal interface (buffer/input/time only) → **Gate 1 passed with a go decision; 3 targets are running. Fallback Option B is no longer needed** |
+| ~~pthread parallel renderer doesn't work in WASM~~ **Resolved** | Render performance | Gate 1 spike | Single-threaded, low internal resolution from the start. Avoid COOP/COEP → **measured 112fps single-threaded at 960×540 on web (E-13). About 1.8× headroom over the 60fps requirement; internal resolution can also be scaled down via an argument if ever needed** |
+| Browser/server state inconsistency | Match quality | Gate 2 | Client is display-only (does not simulate), which structurally prevents inconsistency by design → **Engine side is already guaranteed (client has no win/loss-determination code). B-11/GV-06 integration is now done (GV-06 merged); re-verify once F-05 lets a real lobby drive it end-to-end** |
+| "Zero console errors" requirement not met | **Project disqualification** | Continuous CI | Suppress WASM build warnings via flags established from the start. Dedicated hardening-gate (H-01) pass |
+| Privacy/ToS judged too thin | **Project disqualification** | Hardening-gate review | Start on content matching real data flows early (not a copy-pasted template) once frontend work resumes — F-04 is currently unassigned/未完成 |
+| Team's inexperience with Web tech | Velocity | Continuous | Standardize on AI pair-programming + fix each person's area (narrow the learning surface) + primary-owner/reviewer pairs |
 | A module judged incomplete at evaluation | Points | Gate 3 | Declare 19pt + 4 insurance items + the principle of "never declare something that doesn't work" |
-| Minor fix requests during evaluation (Chapter VIII) | Evaluation | — | Cross-training rehearsal on Day 13 so everyone can explain areas outside their own. Tunables centralized in `tuning.h` / settingsJson to make fixes easy |
+| Minor fix requests during evaluation (Chapter VIII) | Evaluation | — | Cross-training rehearsal at the hardening gate so everyone can explain areas outside their own. Tunables centralized in `tuning.h` / settingsJson to make fixes easy |
 
 ---
 
@@ -446,11 +429,10 @@ The subject's mandatory roles (PO / PM / Tech Lead / Developer) are assigned acr
 > cell in §9 and §9.1 as "unassigned — samatsum covers it solo until a role is reassigned," not as a live task
 > handout. See [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html) for the authoritative current team status.
 >
-> **"Day 5" below is a gate label, not a date.** It means the hardening / rehearsal / submission gate —
-> [backlog.md §6](./backlog.md)'s `H-01` row — which is the last gate in the sequence. No calendar schedule is
-> currently in effect (§7), so read every `Day 5` in §9 and §9.1 as "at the hardening gate."
+> **No calendar schedule is in effect (§7).** Below, "the hardening gate" means the hardening / rehearsal /
+> submission gate — [backlog.md §6](./backlog.md)'s `H-01` row, the last gate in the sequence — not a date.
 
-Ownership and source material for Chapter VI's required README sections. The README is written in English and finalized on **Day 5**.
+Ownership and source material for Chapter VI's required README sections. The README is written in English and finalized at **the hardening gate**.
 
 | README section | Source | Owner |
 |---|---|---|
@@ -465,27 +447,27 @@ Ownership and source material for Chapter VI's required README sections. The REA
 
 ### 9.1 Evaluation-day checklist (demo script mapped to the evaluation sheet)
 
-Mapped 1:1 to the inspection steps on the evaluation sheet (42evalhub / ft_transcendence). The **Day 5** rehearsal runs through this exact script.
+Mapped 1:1 to the inspection steps on the evaluation sheet (42evalhub / ft_transcendence). **The hardening-gate rehearsal** runs through this exact script.
 
 | Evaluation-sheet check | Response on the day | Prep (owner) |
 |---|---|---|
-| Everyone present; each explains their role and "at least one feature they personally implemented" | Everyone prepares a memorized 60-second speech on their role + one feature | Everyone (peer-reviewed at the Day 5 rehearsal) |
+| Everyone present; each explains their role and "at least one feature they personally implemented" | Everyone prepares a memorized 60-second speech on their role + one feature | Everyone (peer-reviewed at the hardening-gate rehearsal) |
 | **2 or more** people can explain the whole project (concept, tech, team operations) | **samatsum (Tech Lead)** as primary, **torinoue (PM)** as secondary explainer; mamiyaza and hminemur available as backups | samatsum, torinoue |
 | FE/BE/DB each explained by a **different member** | **FE = mamiyaza, BE = samatsum, DB = torinoue**, pre-assigned (backup: FE = hminemur). BE is split between samatsum (WS/GameRoom) and torinoue (REST/Auth) in practice, but samatsum is the designated explainer for evaluation purposes | mamiyaza, samatsum, torinoue |
-| Empty-folder `git clone` → single-command startup | Measure a clean-machine-equivalent (no cache) `git clone` → `docker compose up` on **Day 5**, including first-build time so it can be communicated | torinoue |
+| Empty-folder `git clone` → single-command startup | Measure a clean-machine-equivalent (no cache) `git clone` → `docker compose up` **at the hardening gate**, including first-build time so it can be communicated | torinoue |
 | Malicious-alias / repository-ownership check | Canonical repo URL stated at the top of the README; demo runs from a default shell | torinoue |
 | Git history (commits from everyone, clear messages) | Prepared to show `git shortlog -sn` and Conventional Commits usage; audited daily for any single-person skew | torinoue |
-| No errors/warnings in the DevTools console | Run through every screen transition plus one full match with the console open, on **Day 5**. If any third-party warning remains, document the cause so it can be explained (per the evaluation sheet, explainable minor warnings are tolerated) | mamiyaza (all screens), hminemur (match screen) |
+| No errors/warnings in the DevTools console | Run through every screen transition plus one full match with the console open, **at the hardening gate**. If any third-party warning remains, document the cause so it can be explained (per the evaluation sheet, explainable minor warnings are tolerated) | mamiyaza (all screens), hminemur (match screen) |
 | Privacy/ToS reachable from the footer, real content | Content matches real data flows (account and session cookies; **no** match history or avatar under the D-19 lineup). No placeholders | mamiyaza |
 | Responsive (checked at a **minimum of 2 screen sizes**) | Verify every screen at desktop and mobile widths. Be ready to explain that the game screen itself is spectate/view-focused on mobile | mamiyaza |
 | CSS framework usage shown in code | Have a representative file ready to open instantly showing Tailwind usage | mamiyaza |
-| Zero secrets in env / .gitignore / repository | **Full-history secret scan of the repo on Day 5** (a leaked secret in past commits is near-automatic disqualification) | torinoue |
+| Zero secrets in env / .gitignore / repository | **Full-history secret scan of the repo at the hardening gate** (a leaked secret in past commits is near-automatic disqualification) | torinoue |
 | DB schema explanation | Walk through the README's ER diagram + the Prisma schema | torinoue |
 | Password hash+salt explanation | Be ready to explain the choice of argon2id (memory-hard, salt built in) in 30 seconds | torinoue |
-| Form validation checked via **live SQLi/XSS/invalid-input testing** | Run an attack battery on **Day 5**: empty input, type mismatches, SQLi strings, XSS payloads (against chat-equivalent fields, display name, avatar filename). Explain the defense-in-depth of zod + Prisma (prepared-statement equivalent) + React's auto-escaping | torinoue, mamiyaza |
+| Form validation checked via **live SQLi/XSS/invalid-input testing** | Run an attack battery **at the hardening gate**: empty input, type mismatches, SQLi strings, XSS payloads (against chat-equivalent fields, display name, avatar filename). Explain the defense-in-depth of zod + Prisma (prepared-statement equivalent) + React's auto-escaping | torinoue, mamiyaza |
 | HTTPS confirmed **via the browser address bar** | Pre-install mkcert's local CA on **every machine that will connect**, showing a warning-free lock icon (avoids the self-signed warning derailing the demo). **Caution: if demoing a connection from a separate PC, forgetting to install the CA on that machine will fail this whole check** | torinoue |
 | Modules demoed **individually**, one at a time, with dependencies confirmed | A rehearsed script for each of §4's #1–#12: how to show it, under 2 minutes each, assigned presenter. State the dependency (RSP is the first game) verbally up front. For #9 (advanced 3D) be ready to justify the hand-written raycaster against the subject's "using a library like Three.js" wording — see §4.2 | torinoue writes the script; presenters per §4 |
-| Everyone can explain each other's area (teamwork check) | Cross-training exercise at the Day 5 rehearsal — each person explains one area that isn't their own | Everyone |
+| Everyone can explain each other's area (teamwork check) | Cross-training exercise at the hardening-gate rehearsal — each person explains one area that isn't their own | Everyone |
 | Multi-user concurrency / multiplayer 3+ | **Two 4-window demos** prepared (see design doc 2 §10-5; revised down from the original "8 windows"). **Demo A**: 1 room, 4 humans, 0 AI seats (demonstrates core #3's 2pt with humans only). **Demo B**: 2 rooms, each "2 humans + 2 AI" = 4 windows total (demonstrates no conflicts, per III.2). **If possible, connecting from 4 separate physical machines** would simultaneously demonstrate core #2's "across separate PCs" requirement | samatsum (owns the B-11 distribution side) |
 | Bonuses only demoed if the core is fully working; capped at 5pt | Script always runs "core 14pt demo → complete → then bonus." If a core issue surfaces, bonus demos are cancelled in favor of fixing the core | torinoue makes the go/no-go call |
 
@@ -495,11 +477,11 @@ Mapped 1:1 to the inspection steps on the evaluation sheet (42evalhub / ft_trans
 
 | Topic | Decision |
 |---|---|
-| Engine strategy | **C → Emscripten/WASM, 2 targets** (server-authoritative `sim.wasm` + client-rendering `render.wasm`). Day 2 go/no-go **passed 2026-07-11 (go)**; the TS-rewrite fallback was never needed and is no longer relevant |
+| Engine strategy | **C → Emscripten/WASM, 2 targets** (server-authoritative `sim.wasm` + client-rendering `render.wasm`). Gate 1 go/no-go **passed 2026-07-11 (go)**; the TS-rewrite fallback was never needed and is no longer relevant |
 | Networking | **Server-authoritative + JSON snapshots** (30Hz sim / 15–20Hz distribution / 100ms interpolation). Only view rotation is predicted client-side. Disconnected seats are taken over by AI |
 | Stack | React+Vite+Tailwind / Fastify+TS / Prisma+SQLite / nginx TLS / Docker Compose |
 | Main game | RSP 2v2, first to 10 points (a rock-paper-scissors win = +1 point). Human/AI input is swapped into the existing 4-combatant structure |
 | Second game | FPS 1v1 race (collect → door → first to goal). Enemies act as hazards |
 | Modules | **Mandatory target is core 14pt**, holding only modules that are hard to reject and cheap to finish. The 4 bonus items (+5pt) count as points and also absorb a rejection; advanced 3D sits there deliberately because its "library" wording carries interpretive risk. Revised 2026-08-08 (D-19, §4.5) after auditing all 55 subject modules. No custom Major is declared |
 | Team structure (as planned; superseded 2026-08-05) | **samatsum** = Tech Lead / Engine + Gameplay (complete) + game server, **torinoue** = PM / Backend foundation, **mamiyaza** = PO / Frontend foundation, **hminemur** = Developer / Frontend game screens. Critical areas use a two-person model. Task management via GitHub, communication via Discord. **The team has since dissolved; samatsum is now the sole active contributor covering every role** (current authoritative source: [チーム体制.html](../human/はじめに/チーム体制.html)) |
-| Quality gates | Day 2 (WASM rendering) / Day 7 (full 2v2 RSP playthrough) / Day 11 (all 19pt working) / Day 12 (disqualification-risk hardening) — **these numbers are from the original 14-day plan; the later 5-day plan renumbered them Gate 2 = Day 3 / Gate 3 = Day 4 / hardening = Day 5. Both are historical: no calendar schedule is in effect (see §7). The live definition of each gate, and the criteria for passing it, is [backlog.md §6](./backlog.md)** |
+| Quality gates | Gate 1 (WASM rendering) → Gate 2 (full 2v2 RSP playthrough) → Gate 3 (all 19pt working) → hardening (H-01, disqualification-risk checks). **No calendar schedule is in effect (see §7); the live definition of each gate, and the criteria for passing it, is [backlog.md §6](./backlog.md)** |
