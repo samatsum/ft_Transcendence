@@ -194,7 +194,7 @@ int
 	if (!sprite) {
 		return (-1);
 	}
-	node = add_enemy(&game->world.enemies, sprite, (int)game->config.enemy_hp);
+	node = add_enemy(&game->world.enemies, sprite, (int)game->config.player_hp);
 	if (!node) {
 		delete_sprite_node(&game->world.sprites, sprite);
 		return (-1);

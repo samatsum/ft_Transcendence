@@ -86,7 +86,7 @@ ft_transcendence/
 │   │   │   │   │                     # parse_config_text = the path that reads from an in-memory text buffer
 │   │   │   │   ├── parse_map.c       # map body → int array, assigns CELL_PATROL to P cells
 │   │   │   │   ├── check_map.c       # bounds / column count / character-set checks (VALID_MAP_CHARACTERS)
-│   │   │   │   ├── parse_params.c    # R / F / C and scalars (MS/RS/FOV/ET/ES/EH). g_scalars[]
+│   │   │   │   ├── parse_params.c    # R / F / C and scalars (MS/RS/FOV/ET/ES/EH/PH). g_scalars[]
 │   │   │   │   └── parse_texture.c   # NO/SO/WE/EA/ST/FT and OI1..5 / OP1..5 / OC1..5
 │   │   │   ├── core/
 │   │   │   │   ├── loop.c            # main_loop / game_frame / ★game_step (the core of state updates)
@@ -347,6 +347,7 @@ To avoid hardcoding, values are grouped by purpose.
 | `DEFAULT_ENEMY_TRACK_SECONDS` | 5.0 | `ET` |
 | `DEFAULT_ENEMY_SPEED` | 0.1 | `ES` |
 | `DEFAULT_ENEMY_HP` | 5.0 | `EH` (number of hits required to defeat; treated as an integer) |
+| `DEFAULT_PLAYER_HP` | 3.0 | `PH` (seat hp, independent of `EH`; G-11. hp0 triggers the same death/respawn as a hazard contact, not `delete_enemy`) |
 
 ### Perception Constants Inside `fps_enemy_sense.c` (self-contained in that file)
 

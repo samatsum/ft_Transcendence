@@ -80,7 +80,7 @@ t_enemy*
 	sprite->tex = NULL;
 	sprite->next = NULL;
 	sprite->sorted = NULL;
-	node = add_enemy(&game->world.enemies, sprite, 1);
+	node = add_enemy(&game->world.enemies, sprite, (int)game->config.player_hp);
 	if (!node) {
 		free(sprite);
 		return (NULL);
@@ -163,7 +163,14 @@ void
 }
 
 /* ************************************************************************** */
-// ヒットしたスプライトから敵を特定し、ダメージを与える
+// ヒットしたスプライトから敵を特定し、ダメージを与える。
+// マップ由来のハザード（is_hazard）は従来通り hp0 で delete_enemy（撃破して消す）。
+// **席（人間・AI 問わず、ハザードでない戦闘員）は削除しない**（G-11）。
+// hp0 になったら hazard 接触死と同じ death_timer 経由の一時退場にし、
+// update_death → mode_ops.respawn（自スポーン復帰）へ委ねる。プレイヤーの hp は
+// 死亡と同時に player_hp（.cub の PH）で満タンに戻し、復帰後すぐまた撃たれても
+// 通常通り機能するようにする。死亡中（death_timer > 0）の席はダメージを受けない
+// （① §4-C「死亡中は世界へ干渉しない」— 撃たれ続けて復帰が延び続けるのを防ぐ）
 void
 	damage_enemy(t_game* game, t_sprite* hit_sprite)
 {
@@ -172,10 +179,18 @@ void
 	current = game->world.enemies;
 	while (current) {
 		if (current->sprite == hit_sprite) {
-			if (current->hp > 0) {
+			if (current->is_hazard) {
+				if (current->hp > 0) {
+					current->hp -= 1;
+					if (current->hp <= 0) {
+						delete_enemy(&game->world.enemies, &game->world.sprites, hit_sprite);
+					}
+				}
+			} else if (current->death_timer <= 0.0 && current->hp > 0) {
 				current->hp -= 1;
 				if (current->hp <= 0) {
-					delete_enemy(&game->world.enemies, &game->world.sprites, hit_sprite);
+					current->death_timer = DEATH_DURATION;
+					current->hp = (int)game->config.player_hp;
 				}
 			}
 			return ;
