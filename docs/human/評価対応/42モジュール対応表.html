@@ -19,7 +19,7 @@
 				<a href="../../ai/architecture.md">architecture.md §4</a>が正本、ここはその「今の実装状況」版です。
 			</p>
 			<div class="hero-note">
-				<strong>2026-08-07時点</strong>
+				<strong>実装は2026-07-30時点／モジュール構成は2026-08-08のD-19改訂</strong>
 				申告予定は必須14pt＋ボーナス5pt＝19pt。ただし<strong>下の「重要な注意」を必ず先に読んでください</strong>
 				——多くのモジュールが、正規のログインを迂回する開発用フラグ経由でしか動作確認できていません。
 			</div>
@@ -121,7 +121,7 @@
 					<thead><tr><th>#</th><th>モジュール</th><th>区分</th><th>pt</th><th>状態</th><th>コード入口</th><th>備考</th></tr></thead>
 					<tbody>
 						<tr><td>9</td><td><strong>高度な3Dグラフィックス</strong></td><td>Gaming Major</td><td>2</td><td><span class="tag status-done">実装完了</span></td><td><a href="../../../codes/"><code>codes/</code></a>（レイキャスター）</td><td><strong>追加コードゼロ</strong>。READMEの正当化のみ。E-13で112fps@960×540を実測。<br>ただし課題書の「Three.js等のライブラリを使用して」をライブラリ必須と読まれる可能性があり、<strong>あえてボーナス側に置いている</strong>（却下されても合格ラインに影響しない）</td></tr>
-						<tr><td>10</td><td><strong>カスタムデザインシステム</strong></td><td>Web Minor</td><td>1</td><td><span class="tag status-partial">部品9個が存在</span></td><td><a href="../../../app/frontend/src/components/"><code>src/components/</code></a></td><td>要件は再利用可能部品10個以上＋パレット/タイポグラフィ。Button・Card・Modal・Toast・FormField・Input・Header・Footer・Layoutの9個が既存</td></tr>
+						<tr><td>10</td><td><strong>カスタムデザインシステム</strong></td><td>Web Minor</td><td>1</td><td><span class="tag status-partial">再利用可能な部品9個</span></td><td><a href="../../../app/frontend/src/components/"><code>src/components/</code></a></td><td>要件は再利用可能部品10個以上＋パレット/タイポグラフィ。Button・Card・Modal・Toast・FormField・Input・Header・Footer・Layoutの9個が既存</td></tr>
 						<tr><td>11</td><td><strong>観戦モード</strong></td><td>Gaming Minor</td><td>1</td><td><span class="tag status-partial">土台のみ</span></td><td><a href="../../../app/frontend/src/pages/GameView.tsx"><code>GameView.tsx</code></a>・<a href="../../../app/backend/src/game/ws.ts"><code>game/ws.ts</code></a></td><td><strong>予備から昇格</strong>。<code>welcome.role==='spectator'</code>の表示はGV-06で完了済み。WSの<code>spectate</code>アクション（現在<code>not_participant</code>を返すスタブ）＝<strong>B-17</strong>と、視点切替UI＝<strong>GV-12</strong>が残る。<strong>+5点枠で残作業がある3項目のうち、最も大きいもの</strong>（他は#10のコンポーネント1個＋パレット/タイポグラフィ/アイコン、#12のステータスページ＋バックアップ手順）</td></tr>
 						<tr><td>12</td><td><strong>ヘルスチェック/ステータスページ</strong></td><td>DevOps Minor</td><td>1</td><td><span class="tag status-partial"><code>/api/health</code>済</span></td><td><a href="../../../app/backend/src/index.ts"><code>backend/src/index.ts</code></a></td><td>エンドポイントはI-01で実装済み（CIも起動確認に使用中）。ステータスページ＋自動バックアップ・復旧手順が残る</td></tr>
 					</tbody>
@@ -140,7 +140,7 @@
 				<table>
 					<thead><tr><th>優先</th><th>モジュール</th><th>pt</th><th>戻すのに必要なもの</th></tr></thead>
 					<tbody>
-						<tr><td>1</td><td>別のゲーム（履歴+マッチメイキング付き、FPS）</td><td>Gaming Major 2</td><td><strong>B-13のみ</strong>。FPSエンジンは完成済み、マッチメイキングもRSPと共通（B-08/B-09完了済み）。唯一の欠けは対戦履歴</td></tr>
+						<tr><td>1</td><td>別のゲーム（履歴+マッチメイキング付き、FPS）</td><td>Gaming Major 2</td><td><strong>B-13＋G-11＋G-12</strong>。マッチメイキングはRSPと共通（B-08はコア実装済み、B-09は完了）。ただしFPSには未修正の欠陥が2件残る——G-11（射撃で相手席を消せる）とG-12（相手の見た目が無い）。<strong>B-13だけでは成立しない</strong></td></tr>
 						<tr><td>2</td><td>ゲーム統計・対戦履歴</td><td>UserMgmt Minor 1</td><td><strong>B-13＋F-09</strong>。B-13は上の「別のゲーム」と共用できるが、<strong>このモジュールにはプロフィール/履歴画面（F-09）も要る</strong>ため、上より1段階コストが高い</td></tr>
 						<tr><td>3</td><td>標準的なユーザー管理・認証</td><td>UserMgmt Major 2</td><td>B-06＋B-07＋F-09＋F-10。課題書IV.3は<strong>5項目すべて</strong>（プロフィール更新・アバター・フレンド追加・オンライン状態・プロフィールページ）を要求し、1つ欠けると0pt。なお認証自体は第III章で必須なので実装は残る</td></tr>
 						<tr><td>4</td><td>公開API</td><td>Web Major 2</td><td>APIキー認証層＋ドキュメント。レート制限は<a href="../../ai/rest-api.md">rest-api.md §1-C</a>で設計済み、エンドポイント数もB-02〜B-07で5本を超える</td></tr>
@@ -219,7 +219,7 @@
 				</article>
 				<article class="card">
 					<h3><a href="../../ai/backlog.md">⑤ バックログ</a></h3>
-					<p>各モジュールを支えるE/G/W/F Issueの受入条件・進捗の正本（英語MD。AI向け資料）。</p>
+					<p>各モジュールを支えるE-/G-/B-/I-/F-/GV- Issueの受入条件・進捗の正本（英語MD。AI向け資料）。</p>
 				</article>
 				<article class="card">
 					<h3><a href="../開発状況/サーバー開発工程.html">サーバー開発工程</a></h3>
@@ -247,7 +247,7 @@
 
 	<footer>
 		<div class="shell">
-			説明用資料 · 2026-08-07時点。
+			説明用資料 · 実装は2026-07-30時点、モジュール構成は2026-08-08のD-19改訂。
 			モジュールの状態が変わったら、まずバックログ（⑤）とarchitecture.md（①）を更新し、その後このHTMLを追従させてください。
 			<p>samatsumからの依頼（2026-08-07）を受けて新規作成。<code>docs/human/評価対応/</code>を新設し、他の「進捗」系ドキュメント（開発状況/）とは
 			内容の種類が違う（実装Issueの進捗ではなく、42の採点項目への対応状況）ため独立したカテゴリにしています。</p>

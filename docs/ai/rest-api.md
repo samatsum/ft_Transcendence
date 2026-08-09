@@ -121,8 +121,9 @@ battery in ARCHITECTURE §9.1).
 
 ### 2-C. Friends (`/api/friends`) — Day 10
 
-The concrete realization of "adding friends and checking online status" from the Standard user management module
-(core #6).
+The concrete realization of "adding friends and checking online status" from the Standard user management module.
+**Note the numbering**: this was core #6 under the *pre-D-19* lineup. Standard user management is no longer declared
+(architecture.md §4.3), and today's core #6 is the AI opponent.
 **The initial presence list is returned here; subsequent diffs come via the lobby WS `presence_update`** (division of
 labor with ② §3).
 
@@ -142,7 +143,9 @@ labor with ② §3).
 
 ### 2-D. Matches & Stats (`/api/matches`, `/api/users/:id/stats`) — Day 8–9
 
-The concrete realization of the Game statistics and match history module (core #8).
+The concrete realization of the Game statistics and match history module.
+**Note the numbering**: this was core #8 under the *pre-D-19* lineup. Game statistics is no longer declared, and
+today's core #8 is game customization.
 The path by which ② §6-C's `match_end.match_id` leads the results screen to call `GET /api/matches/:id`.
 
 | Method / Path | Content |

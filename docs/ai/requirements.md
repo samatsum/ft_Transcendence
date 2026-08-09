@@ -19,10 +19,11 @@
 >
 > ### Parts already complete (as of 2026-07-23)
 >
-> **The game engine itself is complete.** Not everything remains "to be built."
+> **The game engine's planned work is complete.** Not everything remains "to be built."
 >
-> - **Both games are complete** and run both natively and in the browser (WASM):
->   RSP (rock-paper-scissors tag) and FPS (collect → door → goal race).
+> - **Both games are implemented** and run both natively and in the browser (WASM):
+>   RSP (rock-paper-scissors tag) and FPS (collect → door → goal race). **FPS has two open defects**
+>   (G-11, G-12) that break online 1v1 — see backlog.md §3.1.
 > - **The AI opponent is also complete.** The RSP AI "chases when it holds a winning move, flees when it holds a losing move"; the FPS AI has search, patrol, and pathfinding-based pursuit.
 > - **The server-authoritative simulation (`sim.wasm`) and the snapshot-delivery entry point are complete.** The engine-side components needed for online play are in place.
 > - 4 battle maps, acceptance tests (`make test`, 85 checks), and CI (all jobs green) are also complete.
@@ -57,7 +58,7 @@
 >
 > **Dropped from the previous lineup**: standard user management (2pt), game statistics (1pt),
 > add another game (2pt), OAuth / 2FA / Prometheus+Grafana. The FPS engine and matchmaking are
-> already built, so **B-13 alone restores "add another game" (2pt)** — that is the cheapest thing to
+> already built, so **B-13 plus the G-11/G-12 fixes restores "add another game" (2pt)** — that is the cheapest thing to
 > restore if time frees up. "Game statistics" (1pt) needs **B-13 plus F-09** (the profile/history
 > screen), so it costs more than the FPS module and should be judged separately.
 >

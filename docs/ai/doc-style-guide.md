@@ -42,7 +42,7 @@ category directory (samatsum's explicit instruction, 2026-08-07, after the origi
 |---|---|
 | `はじめに/` | Orientation for a newcomer: project overview, team structure, common-knowledge onboarding |
 | `運用/` | Process rules for contributing (git workflow, this style guide) — not about the product |
-| `開発状況/` | Living progress-tracking documents (currently just the W-series status page) |
+| `開発状況/` | Living progress-tracking documents (the B-/I- and F-/GV- lane status pages) |
 | `説明用/` | Conceptual "why is it built this way" deep-dives, plus the TL self-check Q&A |
 | `専門用語/` | The lane-by-lane terminology glossary |
 | `プレイヤー向け/` | Product documentation for the people who *play* the game (players/evaluators), not the people who build it |
