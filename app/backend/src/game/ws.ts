@@ -286,7 +286,9 @@ function handleMessage(
 			conn.lastSeq = -1;
 			return;
 		case 'spectate':
-			// 保1（② §5-E）。設計コストのみ先払いで、実装は余力時
+			// ② §5-E。**2026-08-08 のD-19で観戦モジュールを+5pt枠に採用したため必須へ昇格**
+			// （旧「保1・実装は余力時」ではない）。このスタブを塞ぐのが B-17、観戦UIが GV-12。
+			// 申告したモジュールが動かないとその分は0点（課題書 第VII章）。
 			conn.socket.send(JSON.stringify(makeWsError('not_participant', 'spectate is not implemented', 'spectate')));
 			return;
 	}

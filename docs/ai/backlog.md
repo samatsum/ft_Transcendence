@@ -175,8 +175,9 @@ Numbered items in the acceptance-criteria column indicate mapping to acceptance 
 
 > **Why B-17 is new**: the spectator module is part of the adopted +5pt bonus as of D-19, but the
 > server side was never an issue — [`app/backend/src/game/ws.ts`](../../app/backend/src/game/ws.ts)
-> answers `spectate` with `makeWsError('not_participant', 'spectate is not implemented')`, and
-> `app/shared/src/ws/game.ts` still labels the message "実装は余力時のみ" (only if there's slack).
+> answers `spectate` with `makeWsError('not_participant', 'spectate is not implemented')`. The shared
+> contract in `app/shared/src/ws/game.ts` used to label the message "実装は余力時のみ" (only if there's
+> slack); that wording was corrected on 2026-08-09, but **the handler itself is still a stub**.
 > The wire contract already exists (`role: 'player' | 'spectator'` in `welcome`), so this is
 > implementation, not design. Filed under `B-` rather than `GV-` per the lane rule in
 > [`./git-workflow.md`](./git-workflow.md): lanes follow **what the code is**, and `ws.ts` is Fastify
