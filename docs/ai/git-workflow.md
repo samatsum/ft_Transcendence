@@ -176,21 +176,31 @@ for why nobody was doing that cleanup as it happened.
 
 ## Tracking work: backlog.md + GitHub Issues (added 2026-08-08)
 
-`docs/ai/backlog.md` remains the authoritative source of truth for every `E-`/`G-`/`B-`/`I-`/`F-`/`GV-` item —
+`docs/ai/backlog.md` remains the authoritative source of truth for every `E-`/`G-`/`B-`/`I-`/`F-`/`GV-`/`H-` item —
 acceptance criteria, dependencies, and status live there first. As of 2026-08-08, samatsum also
 wants newly discovered gaps mirrored as real GitHub Issues, for the visual open/closed tracking the
-Issues tab gives (backlog.md's git-log-buried rows don't show that at a glance). By agreement,
-**pre-2026-08-08 backlog rows were not backfilled** — this applies going forward only, starting with
-G-11/G-12 ([#46](https://github.com/samatsum/ft_Transcendence/issues/46),
-[#47](https://github.com/samatsum/ft_Transcendence/issues/47)).
+Issues tab gives (backlog.md's git-log-buried rows don't show that at a glance). Initially,
+**pre-2026-08-08 backlog rows were not backfilled** and this applied going forward only, starting
+with G-11/G-12 ([#46](https://github.com/samatsum/ft_Transcendence/issues/46),
+[#47](https://github.com/samatsum/ft_Transcendence/issues/47)). **Superseded 2026-08-09**: samatsum
+requested every remaining not-yet-started (未着手) backlog row be filed as a GitHub Issue too, for
+Kanban-style tracking via GitHub Projects — B-03/B-04/B-05/B-17, F-03/F-04/F-05/F-11, GV-08/GV-12,
+I-15/I-16, and H-01 were backfilled as [#77](https://github.com/samatsum/ft_Transcendence/issues/77)–[#89](https://github.com/samatsum/ft_Transcendence/issues/89).
+Partially-done rows (e.g. B-08) and already-`(done)` rows were not filed — only 未着手 items were in
+scope for this backfill. `H-01` doesn't get a `lane:*` label (it isn't on the lane table — it's the
+final cross-cutting hardening gate, not one lane's work). Two lane labels were created for this pass
+that didn't exist yet: `lane:infra` (I-series) and `lane:gameview` (GV-series).
 
 When filing one:
 
 - **Title**: `<Issue-ID>: <short description>` (e.g. "G-11: FPS's shoot mechanic can eliminate the
   other seat").
-- **Labels**: one lane label matching the prefix — `E-`/`G-` → `lane:engine`, `B-` → `lane:backend`,
-  `I-` → `lane:infra`, `F-` → `lane:frontend`, `GV-` → `lane:gameview` (six prefixes, five labels, because
-  `E-` and `G-` share one lane). Plus `backlog-tracked`, plus `bug` or `enhancement` as fits.
+- **Labels**: one lane label matching the prefix — `E-`/`G-` → `lane:engine` (one lane, per the table
+  in [Lane prefixes](#lane-prefixes-and-the-2026-08-08-rename) above), `B-` → `lane:backend`,
+  `I-` → `lane:infra`, `F-` → `lane:frontend`, `GV-` → `lane:gameview` (six prefixes, five labels;
+  `H-` gets none, it's the cross-cutting final gate). Plus `backlog-tracked`, plus `bug` or
+  `enhancement` as fits. **Fixed 2026-08-09**: issues #46–#48 had been mislabeled `lane:gameplay`
+  (a label that contradicted this table and has been retired) — relabeled to `lane:engine`.
 - **Body**: cite file:line with **absolute GitHub URLs**
   (`https://github.com/samatsum/ft_Transcendence/blob/main/...`), never repo-relative paths — an
   Issue body isn't part of the file tree, so `../../` links silently fail to resolve there even
