@@ -123,7 +123,7 @@ An input channel that accepts state as input is itself an entry point for cheati
 
 Numbered items in the acceptance-criteria column indicate mapping to acceptance criteria 1–6 in ②§10.
 
-| Issue | Title | Acceptance criteria | Dependency | Day (14-day schedule; the 5-day-schedule day-equivalences are inline in §6's Gate table below) |
+| Issue | Title | Acceptance criteria | Dependency | Day (historical label, not a live schedule — **no calendar schedule is in effect, see §6**; 5-day-schedule equivalences are inline in §6's Gate table) |
 |---|---|---|---|---|
 | I-01 (done) | Add repository skeleton (`app/backend/`, `app/frontend/`, `app/shared/`, `infra/`, TS tooling, `env.example`+`.gitignore`) | backend/frontend start up under D-18's layout (keep current layout + add) → **achieved** (§1) | — | 1 |
 | B-02 (done) | Fastify startup configuration (TS, pino, zod validation pipeline, ③§1 error-envelope/rate-limit middleware) | **Achieved**: `npm run check:http` confirms an invalid `/api/maps?mode=` value returns 400 `validation_failed` in the ③§1-A shape (a global `setErrorHandler` converts the zod `.parse()` `ZodError` automatically), and rate limiting (③§1-C: GET 120/min, other mutating 30/min) returns 429 `rate_limited` with independent per-method counters (`OPTIONS` counted as safe, not mutating — a review catch). Reuses `app/shared/src/error.ts`'s ③§1-A envelope from I-01 rather than redefining it. pino logging is now level-configurable and redacts `Cookie`/`Authorization` ([PR #72](https://github.com/samatsum/ft_Transcendence/pull/72)) | I-01 | 2 |
@@ -208,7 +208,7 @@ Numbered items in the acceptance-criteria column indicate mapping to acceptance 
 > F-09 and F-10 are **no longer declared** as of 2026-08-08 (D-19) — see the note under the table. Also see
 > [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html).
 
-| Issue | Title | Acceptance criteria | Dependency | Day (14-day schedule; the 5-day-schedule day-equivalences are inline in §6's Gate table below) |
+| Issue | Title | Acceptance criteria | Dependency | Day (historical label, not a live schedule — **no calendar schedule is in effect, see §6**; 5-day-schedule equivalences are inline in §6's Gate table) |
 |---|---|---|---|---|
 | F-01 (done) | Scaffold (Vite/React/TS/Tailwind/Router/ErrorBoundary/StrictMode) | Foundation for ④§6-1's zero-console-errors policy. Zero build warnings | I-01 | 1 |
 | F-02 (done) | fetch wrapper + shared zod integration (③§1 error-envelope handling, toast integration) | 401 redirects to `/login`; errors appear as toasts | F-01 | 3 |
