@@ -41,7 +41,7 @@ C エンジンを `emcc` で WASM にビルドした成果物（`build/`）と�
 | 🤖 生成 | `build/` | `make web` / `make sim` が吐く `render.wasm` / `sim.wasm` と glue JS | **読まない・git 管理外** |
 | 🤖 生成 | `assets/` | `make web` が XPM から変換する RGBA テクスチャ | **読まない・git 管理外** |
 | ✍️ 手書き | `engine_demo.html` / `engine_demo.js` | **ブラウザでエンジンを 1 人で動かす動作確認ページ**。`?map=` / `?res=` | 旧名 `gate1`（下記） |
-| ✍️ 手書き | `snapshot_interp.js` | サーバ権威モデルの**補間**（2 snapshot → フラット f64。位置=線形・向き=最短弧） | GV-06 が流用 |
+| ✍️ 手書き | `snapshot_interp.js` | サーバ権威モデルの**補間**（2 snapshot → フラット f64。位置=線形・向き=最短弧） | **GV-06 は流用していない**。TS へ移植した `app/frontend/src/engine/snapshotInterp.ts` が実際に使われる実装で、この JS を直接読むのは `web/sim_demo/replay.html` だけ。**補間ロジックを直すときは両方直すこと** |
 | ✍️ 手書き | `sim_demo/record.mjs` | `sim.wasm` を Node で回して snapshot を録画（**サーバ役**のデモ） | B-10 で WS 配信になる |
 | ✍️ 手書き | `sim_demo/replay.html` / `replay.js` | 録画した snapshot を補間再生（**ブラウザ役**のデモ） | B-10 / GV-06 の下敷き |
 | ✍️ 手書き | `bench_render.mjs` | 解像度別の描画スループット（fps）計測 | E-13 の根拠データ |
@@ -60,7 +60,7 @@ C エンジンを `emcc` で WASM にビルドした成果物（`build/`）と�
 | オンラインで使う | 使わない |
 |---|---|
 | `render.wasm`（同じ C エンジン。描画用） | `engine_demo.js`（ローカル駆動のため） |
-| `snapshot_interp.js`（補間） | `web_render`（ローカルで `game_step` してしまう） |
+| `snapshot_interp.js`（補間）※オンラインで実際に使うのは TS 移植版 `app/frontend/src/engine/snapshotInterp.ts`。この JS は `sim_demo/replay.html` 専用 | `web_render`（ローカルで `game_step` してしまう） |
 | `game_apply_snapshot`（表示専用の受け口） | — |
 
 つまりオンラインは「`sim_demo/replay.html` の作り（snapshot 駆動）」を TypeScript で

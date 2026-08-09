@@ -56,7 +56,7 @@
 				<article class="card">
 					<p class="card-label">Player-facing · F-03/04/05/09/10</p>
 					<h3>ログイン前後の画面</h3>
-					<p>認証画面、共通レイアウト、ロビー、プロフィール、フレンドUIを担当します。</p>
+					<p>認証画面、共通レイアウト、ロビーを担当します（プロフィール・フレンドUIは2026-08-08に不採用）。</p>
 				</article>
 				<article class="card">
 					<p class="card-label">Match · GV-06/07/08/12</p>
@@ -81,7 +81,7 @@
 			<h2>10件のうち、4件完了</h2>
 			<p class="section-intro">
 				完了率は4/10＝40.0%。ただし完了した4件（F-01・F-02・GV-06・GV-07）は「対戦が実際に1試合、
-				2ブラウザ間で動く」ために必要な最小構成で、Gate 2のデモ可能性を優先して先に進めた結果です。
+				動く」ために必要な最小構成で、Gate 2のデモ可能性を優先して先に進めた結果です（ただし動作確認は現状<code>ws-check.ts</code>経由で、ブラウザからではありません）。
 				ロビーは未実装（F-05）のため、今のところ試合は決め打ちの部屋IDで開始する開発用リンクから入ります。
 			</p>
 			<p class="section-intro">
@@ -145,7 +145,7 @@
 				<article class="stage">
 					<span class="step">STEP 3</span>
 					<strong>ロビー</strong>
-					<p>F-05がキュー・カスタムルーム・フレンド欄・試合フィードを担当（未実装）</p>
+					<p>F-05がQuick Match・カスタムルーム・ルームビューを担当（未実装）</p>
 				</article>
 				<article class="stage">
 					<span class="step">STEP 4</span>
@@ -211,11 +211,11 @@
 				</article>
 				<article class="issue-card" data-status="todo">
 					<div class="issue-id">F-05</div>
-					<div><h3>ロビー一式</h3><p>5領域（キュー/ルーム/フレンド/試合フィード等）と<code>useLobbySocket</code>。<code>LobbyPage.tsx</code>はGV-06動作確認用の暫定リンクのみ。</p><div class="issue-meta"><span class="tag status-todo">未着手（担当未定・B-08/B-09待ち）</span></div></div>
+					<div><h3>ロビー一式</h3><p><strong>3領域</strong>（Quick Match / カスタムルーム / ルームビュー）と<code>useLobbySocket</code>。フレンド領域はB-07、試合フィードはB-13に依存するため2026-08-08に対象外。<code>LobbyPage.tsx</code>はGV-06動作確認用の暫定リンクのみ。</p><div class="issue-meta"><span class="tag status-todo">未着手（担当未定・B-08/B-09待ち）</span></div></div>
 				</article>
 				<article class="issue-card" data-status="done" data-owner="samatsum">
 					<div class="issue-id">GV-06</div>
-					<div><h3>GameView統合</h3><p>render.wasm読込、Canvas描画、snapshot補間、入力送信をE-08/E-12へ接続。2ブラウザ間の対戦が動作。<code>welcome.role==='spectator'</code>を受けたときの表示分岐（入力抑止・「観戦中」表示）も実装済みだが、サーバー側が<code>spectate</code>を受け付けないため<strong>実際に観戦者として接続することはまだできない</strong>（B-17待ち）。</p><div class="issue-meta"><span class="tag owner">samatsum</span><span class="tag status-done">完了</span></div></div>
+					<div><h3>GameView統合</h3><p>render.wasm読込、Canvas描画、snapshot補間、入力送信をE-08/E-12へ接続。対戦の動作は<strong>Node製の検査ハーネス<code>ws-check.ts</code></strong>で検証（ブラウザからの実演は本認証B-04とロビー起点のルーム生成F-05＋B-09待ち）。<code>welcome.role==='spectator'</code>を受けたときの表示分岐（入力抑止・「観戦中」表示）も実装済みだが、サーバー側が<code>spectate</code>を受け付けないため<strong>実際に観戦者として接続することはまだできない</strong>（B-17待ち）。</p><div class="issue-meta"><span class="tag owner">samatsum</span><span class="tag status-done">完了</span></div></div>
 				</article>
 				<article class="issue-card" data-status="done" data-owner="samatsum">
 					<div class="issue-id">GV-07</div>
@@ -302,8 +302,8 @@
 		</section>
 
 		<section id="backend">
-			<p class="section-kicker">07 · Boundary with W</p>
-			<h2>Fが消費するのは「Wの保証」、Fが作るのは「体験」</h2>
+			<p class="section-kicker">07 · Boundary with B / I</p>
+			<h2>F系・GV系が消費するのは「B系・I系の保証」、作るのは「体験」</h2>
 			<p class="section-intro">
 				Backendが完成すればFrontendは実装しやすくなりますが、F側にはWSの張り替え、
 				WASM描画、入力、cleanupという独自責務があります。境界を混ぜないことが重要です。
@@ -338,11 +338,11 @@
 						snapshotを補間する対戦画面）とGV-07（スコア・切断猶予・AI代替を見せるHUD）を完成させました。
 					</p>
 					<p>
-						その結果、今は開発用の固定URLから2ブラウザ間で1試合を最後まで見せられます。
+						ただし<strong>ブラウザからは今のところ実演できません</strong>——通常起動のサーバーはルームを1つも作らず（4002）、ブラウザの<code>WebSocket</code>は開発用認証の<code>x-dev-user</code>ヘッダを送れない（4000）ためです。検証は<code>ws-check.ts</code>というNode製の検査ハーネスで行いました。ブラウザで触れるようになるのは、本認証（B-04）とロビー起点のルーム生成（F-05＋B-09）が入ってからです。
 						一方でログイン画面・ロビー・プロフィールはまだstub（受け皿だけ）の状態です。
 					</p>
 					<p>
-						次に必要なのは、Wの本認証（B-04）が閉じ次第のF-03、そしてB-08/B-09を使うF-05のロビーです。
+						次に必要なのは、B系の本認証（B-04）が閉じ次第のF-03、そしてB-08/B-09を使うF-05のロビーです。
 						この2つが繋がると、プレイヤーはログインからロビー経由で実試合に入れるようになります。」
 					</p>
 				</blockquote>

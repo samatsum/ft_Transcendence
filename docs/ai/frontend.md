@@ -51,6 +51,13 @@ An SPA built with React Router. Unauthenticated access to a protected route redi
 
 ### 3.2 Lobby (the central screen of this project)
 
+> **Two of the five areas below are no longer in F-05's scope (2026-08-08, D-19).** **Friends** reads
+> `GET /api/friends` and `presence_update`, both owned by B-07; **Match feed** prepends on
+> `match_result`, which ②§7-B only emits after B-13 persists the match. Both B-07 and B-13 are not
+> declared, so those two areas have no data source. **F-05 delivers Quick Match, Custom Room and Room
+> view.** The two rows are kept below as the specification a restore would start from —
+> see [backlog.md §5](./backlog.md).
+
 Data sources: REST (initial render) + Lobby WS (deltas). Maps 1:1 to the messages in ② §3.
 
 | Area | Composition | Data / actions |
@@ -107,7 +114,7 @@ Layer structure (bottom to top):
 
 **Placeholder text is prohibited** (a rejection criterion). Prepare real wording that matches the actual data flows. Must include at minimum the following sections:
 
-- **Privacy**: Data collected (email, password hash, display name, avatar image, match history, session cookie) / purpose of use (authentication, matches, stats display) / cookie explanation (session persistence only, no tracking) / storage location and retention period (self-hosted SQLite, for the lifetime of the account) / no third-party sharing / **the fact that there is no account deletion feature**, plus a contact point for deletion requests (the operator listed in the README).
+- **Privacy**: Data collected (email, password hash, display name, session cookie — **not** avatar images or match history; B-06 and B-13 are not declared, so neither is ever stored) / purpose of use (authentication, matchmaking) / cookie explanation (session persistence only, no tracking) / storage location and retention period (self-hosted SQLite, for the lifetime of the account) / no third-party sharing / **the fact that there is no account deletion feature**, plus a contact point for deletion requests (the operator listed in the README).
 - **Terms**: Service description (competitive game) / prohibited actions (unauthorized access, cheating, offensive display names) / no warranty / a statement that this is a 42 educational project.
 
 ## 4. WS hook state machines (client responsibilities)
@@ -130,7 +137,7 @@ Translates the connection rules in ② into implementation contracts on the UI s
 ## 5. Common components (minimal set)
 
 `Button / Input / FormField / Card / Modal / Toast / Badge (presence, team colors) / Avatar / Table / Tabs / StatCard / SeatCard / CopyField (room code)`.
-Since no custom design-system module is declared, consistency (color, spacing, focus ring) is prioritized over having a comprehensive set of components.
+The custom design-system module **is** declared, as bonus #10 (architecture.md §4.2). Consistency (color, spacing, focus ring) still comes first, but the module also requires a documented palette, typography and icon set on top of the component count — see §4.2 for what is still missing.
 
 ## 6. Acceptance criteria
 
@@ -138,7 +145,7 @@ Since no custom design-system module is declared, consistency (color, spacing, f
 2. All screens render without breaking at both desktop width and mobile width (375px). GameView shows the notice at mobile width.
 3. Direct-linking to `/lobby` while logged out → redirects to `/login`. After login, returns to the original URL.
 4. `/privacy` and `/terms` are reachable within 2 clicks from the footer, and show the real wording.
-5. With the lobby open in two browsers, one browser's match ending appears in the other browser's match feed within a few seconds (`match_result`).
+5. ~~With the lobby open in two browsers, one browser's match ending appears in the other browser's match feed within a few seconds (`match_result`).~~ **Dropped 2026-08-08** — the match feed needs B-13. The mandatory "real-time updates reflected to all connected users" requirement is instead met by the lobby WS (`queue_state` / `room_state` broadcast to every member) and the game WS (15Hz snapshot fan-out).
 6. When the opponent's tab is closed mid-match, the opponent status on the local screen transitions visibly from `disconnected(n sec left)` → `AI` (the demo scenario from ② §7-B).
 7. Keyboard-only navigation can reach auth → queue join → match start (focus visible throughout).
 

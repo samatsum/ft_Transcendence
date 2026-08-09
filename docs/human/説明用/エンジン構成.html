@@ -517,7 +517,7 @@ README.md             プロジェクトの顔</code></pre>
 						<code>app/</code>の中はレーン分担そのままです。<code>app/backend/</code>＝
 						Auth / REST / DB（未完成）、<code>app/frontend/</code>＝画面（F-01・F-02・GV-06は完了、
 						残りは未完成）、<code>app/shared/</code>＝全員が使うzod契約、<code>codes/</code>＝エンジン本体
-						（完成済み。もう触らない）。複数人で並行作業する体制になったときも、
+						（予定作業は完了。ただしG-11・G-12の修正は残る）。複数人で並行作業する体制になったときも、
 						この対応がそのまま効きます（現在はsamatsum単独稼働。<a href="../はじめに/チーム体制.html">チーム体制.html</a>参照）。
 					</p>
 				</article>
@@ -617,7 +617,7 @@ README.md             プロジェクトの顔</code></pre>
 				「<code>app/</code>は骨格だけ」という以下の記述はその時点のスナップショットとして
 				読んでください。現在地・依存・担当の最新は
 				<a href="../開発状況/サーバー開発工程.html">Backend / Infra 全体 —
-				エンジンをオンライン製品にする16工程</a>を参照してください。
+				エンジンをオンライン製品にする14工程</a>を参照してください。
 			</div>
 
 			<h3>プロジェクトは「2つの半分」でできている</h3>
@@ -625,7 +625,7 @@ README.md             プロジェクトの顔</code></pre>
 				<table>
 					<thead><tr><th>半分</th><th>実体</th><th>状態</th><th>役割</th></tr></thead>
 					<tbody>
-						<tr><td><strong>エンジン</strong></td><td><code>codes/</code>（C）+ <code>web/</code>（WASMとデモ）</td><td>完成（Engine E-01〜E-14 / Gameplay G-01〜G-10）</td><td>移動・衝突・敵AI・じゃんけん・描画。単体で動く</td></tr>
+						<tr><td><strong>エンジン</strong></td><td><code>codes/</code>（C）+ <code>web/</code>（WASMとデモ）</td><td><strong>予定作業は完了</strong>（Engine E-01〜E-14 / Gameplay G-01〜G-10）。ただし<strong>後から見つかった未修正の欠陥 G-11・G-12 が残る</strong></td><td>移動・衝突・敵AI・じゃんけん・描画。単体で動く。G-11＝FPSの射撃が相手プレイヤーを排除できてしまう、G-12＝FPSで相手プレイヤーの見た目が無い</td></tr>
 						<tr><td><strong>製品層</strong></td><td><code>app/</code>（backend / frontend / shared）</td><td>I-01完了時点ではほぼ未着手（骨格のみ）</td><td>認証・ロビー・オンライン対戦・履歴。エンジンをネット越しの製品にする</td></tr>
 					</tbody>
 				</table>
@@ -654,7 +654,7 @@ README.md             プロジェクトの顔</code></pre>
 			<h3><code>app/</code>が完成すると、エンジンと「こう繋がる」</h3>
 			<p>
 				<code>app/</code>は無関係な別物ではなく、<strong>エンジンの部品（<code>sim.wasm</code> /
-				<code>render.wasm</code> / <code>snapshot_interp.js</code>）をオンライン対戦として
+				<code>render.wasm</code> と補間ロジック）をオンライン対戦として
 				繋ぐ入れ物</strong>です。
 			</p>
 			<div class="table-wrap">
@@ -662,7 +662,7 @@ README.md             プロジェクトの顔</code></pre>
 					<thead><tr><th><code>app/</code>の部分</th><th>これから作る中身</th><th>エンジンとの接続</th></tr></thead>
 					<tbody>
 						<tr><td><code>app/backend/</code></td><td>REST・認証・DB・WSとGameRoom</td><td><strong><code>sim.wasm</code>をNodeで回す</strong>（B-10）</td></tr>
-						<tr><td><code>app/frontend/</code></td><td>ロビー・GameView・HUD・プロフィール</td><td><strong><code>render.wasm</code> + <code>snapshot_interp.js</code></strong>を使う（GV-06）</td></tr>
+						<tr><td><code>app/frontend/</code></td><td>ロビー・GameView・HUD・プロフィール</td><td><strong><code>render.wasm</code></strong>と、<code>snapshot_interp.js</code>を<strong>TS移植した<code>src/engine/snapshotInterp.ts</code></strong>を使う（GV-06）</td></tr>
 						<tr><td><code>app/shared/</code></td><td>REST/WSのメッセージ契約（zod）</td><td>型の単一情報源。両者がimport</td></tr>
 					</tbody>
 				</table>
@@ -677,7 +677,7 @@ README.md             プロジェクトの顔</code></pre>
 			<p>「ほぼ完成だが、3つの経路で今後も関わる」が答えです。</p>
 			<ol class="path-list">
 				<li><div><strong><code>codes/</code>を直すと<code>web/build/*.wasm</code>が再生成される</strong><span>手で<code>web/</code>を編集するのではなく、Cを直して<code>make web</code> / <code>make sim</code>が生成物を更新する（例: B-14の<code>world_delta</code>）</span></div></li>
-				<li><div><strong><code>snapshot_interp.js</code>はGV-06が流用する</strong><span><code>app/frontend</code>からimport/取り込む形になり、実質<code>web/</code>の資産が<code>app/</code>に持ち込まれる（補間ロジックを書き直さずに済む）</span></div></li>
+				<li><div><strong><code>snapshot_interp.js</code>はGV-06が流用<em>していない</em></strong><span>実際には <code>app/frontend/src/engine/snapshotInterp.ts</code> へ<strong>TypeScriptで移植し直した</strong>ものが使われている。この JS を直接読むのは <code>web/sim_demo/replay.html</code> だけ。<strong>補間ロジックを直すときは JS 版と TS 版の両方を直すこと</strong>——片方だけ直すと乖離する</span></div></li>
 				<li><div><strong>wasmの置き場や読み込み経路の見直し</strong><span><code>app/</code>とエンジンを結線するB-10 / GV-06の際、<code>web/build/</code>の成果物をどこから読むかを再検討する可能性がある（設計上の未決事項）</span></div></li>
 			</ol>
 			<p>

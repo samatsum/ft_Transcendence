@@ -10,7 +10,7 @@ natively, compiled to WASM in the browser for rendering, and compiled to WASM on
 sole authority over the match. Two game modes ship on top of it — an RSP ("rock-paper-scissors
 tag") team battle and an FPS collect-and-race mode.
 
-## Current status (implementation 2026-08-07 / module lineup 2026-08-08)
+## Current status (implementation 2026-07-30 / module lineup 2026-08-08)
 
 The C engine is complete. The online product layer around it — auth, matchmaking, and most of the
 frontend — is partially built. Read this table before trying to demo anything.
@@ -154,10 +154,28 @@ npm run dev:backend        # Fastify on :3000
 npm run dev:frontend       # Vite on :5173, proxies /api to :3000
 ```
 
-Open `http://localhost:5173`. With `NODE_ENV=development` and `ALLOW_DEV_AUTH=true` set (see
-`.env.example`), an `x-dev-user` header stands in for real auth, which doesn't exist yet (B-04).
-There is no lobby yet, so `/lobby` is a stub with a dev-only link straight into `/game/dev-room`
-for exercising the GameView/HUD.
+Open `http://localhost:5173`. The auth screens and lobby are stubs, so there is not much to click
+yet.
+
+> **The `/game/dev-room` link on `/lobby` does not currently work from a browser**, despite what its
+> label says. Two independent blockers, and they are waiting on *different* issues:
+>
+> 1. **The dev-auth stub cannot be satisfied from a browser** (blocked on **B-04**).
+>    `authenticateRequest()` accepts an `x-dev-user` *header*, but the browser `WebSocket`
+>    constructor cannot set request headers and the Vite proxy does not inject any — so the socket
+>    closes with **4000 unauthenticated**. This one is hit first. Real cookie auth (B-04) removes it,
+>    because a cookie *is* sent on the WS upgrade.
+> 2. **No room is ever created** (blocked on **F-05 + B-09**, not B-04). `createRoom()` is called only
+>    from `app/backend/src/game/dev-run.ts` and `app/backend/src/game/ws-check.ts`; the normally
+>    started server (`app/backend/src/index.ts`) registers the WS route but creates nothing, so
+>    `/ws/game/dev-room` closes with **4002 room-not-found**. Rooms are meant to come from lobby
+>    matchmaking (F-05 drives B-08, B-09 turns a MatchPlan into a GameRoom) — fixing auth alone does
+>    not make this route reachable.
+>
+> **GV-06 and GV-07 are nonetheless genuinely done.** They were verified through
+> `app/backend/src/game/ws-check.ts`, a Node harness that creates real rooms and connects as a WS
+> client (Node's client *can* send headers). What is not yet possible is the *browser* demo. Real
+> cookie auth (B-04) plus lobby-driven room creation (F-05 + B-09) are what make it clickable.
 
 ### Generated files
 
@@ -184,7 +202,7 @@ RSP mode disables `1`/`2`/`3`/`Space` — hand-to-hand contact is resolved autom
 
 | Layer | Choice | Why |
 |---|---|---|
-| Engine | C, MiniLibX (native only), Emscripten → WASM (`render.wasm` client / `sim.wasm` server) | Reuses the complete cub3D engine unmodified for both rendering and server-authoritative simulation — zero duplicated game logic |
+| Engine | C, MiniLibX (native only), Emscripten → WASM (`render.wasm` client / `sim.wasm` server) | Reuses the complete cub3D engine for both rendering and server-authoritative simulation — zero duplicated game logic |
 | Frontend | React + Vite + TypeScript + Tailwind CSS | SPA is sufficient (no SSR module); React code-gen quality is strong; Tailwind satisfies the CSS-framework requirement |
 | Backend | Fastify + TypeScript | Runs `sim.wasm` directly under Node; official WS plugin; lighter than Nest for this scope |
 | Realtime | Raw WebSocket (`@fastify/websocket`) | Socket.IO's abstraction isn't needed |

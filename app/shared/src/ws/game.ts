@@ -50,7 +50,8 @@ export const gameLeaveSchema = z.object({
 	d: z.object({}).optional(),
 });
 
-/** `spectate`: 観戦参加（保1。② §5-E。実装は余力時のみ） */
+/** `spectate`: 観戦参加（② §5-E）。**2026-08-08 のD-19で必須へ昇格**（観戦モジュールを+5pt枠に採用）。
+ * サーバー側の実装は B-17、観戦UIは GV-12。現在 ws.ts のハンドラは not_participant を返すスタブ */
 export const gameSpectateSchema = z.object({
 	t: z.literal('spectate'),
 	d: z.object({}).optional(),
