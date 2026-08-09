@@ -52,7 +52,7 @@
 			<p class="section-kicker">01 · Read this first</p>
 			<h2>重要な注意: 「動く」と「評価当日にそのまま見せられる」は別</h2>
 			<p class="section-intro">
-				B-08〜B-12・GV-06/GV-07で実証済みの機能の多くは、<code>ALLOW_DEV_AUTH=true</code>という
+				B-08〜B-12で実証済みの機能の多くは（GV-06/GV-07については<strong>ブラウザでの受入が未再現</strong>）、<code>ALLOW_DEV_AUTH=true</code>という
 				開発専用フラグで本認証（B-04）を迂回して動かしています（<a href="../../../app/backend/src/auth/session.ts"><code>auth/session.ts</code></a>）。
 				エンジン・WS・対戦ループそのものは実機で証明済みですが、<strong>「ログイン→ロビー→対戦」という
 				評価当日に審査員へ見せる正規の導線は、B-04（本認証）が閉じるまで存在しません</strong>。
