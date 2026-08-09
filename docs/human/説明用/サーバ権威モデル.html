@@ -460,8 +460,9 @@ web/sim_demo/replay.html   snapshots.json を読み、補間して描画（＝�
 			<div class="callout" style="margin-top: 18px">
 				<strong>GV-06は、この <code>replay.html</code> の「<code>snapshots.json</code> を読む」
 				ところを「WSで受信する」に差し替える形で実装済み</strong>です（<code>GameView.tsx</code>）。
-				補間（<code>snapshot_interp.js</code>）と受け口（<code>game_apply_snapshot</code>）は
-				そのまま流用されています。HUD（GV-07）も
+				受け口（<code>game_apply_snapshot</code>）はそのまま流用されていますが、<strong>補間は
+				<code>app/frontend/src/engine/snapshotInterp.ts</code> へTypeScript移植し直したもの</strong>が使われています
+				（<code>web/snapshot_interp.js</code>を直接読むのは<code>replay.html</code>だけ。<strong>補間を直すときは両方直すこと</strong>）。HUD（GV-07）も
 				<a href="https://github.com/samatsum/ft_Transcendence/pull/35">PR #35</a>として実装・マージ済みです。
 			</div>
 		</section>

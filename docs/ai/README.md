@@ -16,7 +16,7 @@ material that didn't carry forward into either the AI or human doc set) live und
 
 ## Project status (implementation as of 2026-07-30, reconciled against `origin/main` @ `40acdee`; module lineup as of the 2026-08-08 D-19 revision)
 
-- **C engine** (Engine E-01–E-14 / Gameplay G-01–G-10): complete.
+- **C engine** (Engine E-01–E-14 / Gameplay G-01–G-10): planned backlog closed, but **G-11 and G-12 are open defects** ([#46](https://github.com/samatsum/ft_Transcendence/issues/46) / [#47](https://github.com/samatsum/ft_Transcendence/issues/47)) — FPS online play is affected.
 - **Server** (B-/I-series): I-01, B-09, B-10, B-11, B-12, B-14 complete (**6**); **B-08 is core-complete, not complete** — it still needs the real cookie auth from B-04/B-05, so backlog.md counts it separately. B-08–B-12 were
   built ahead of schedule against `ALLOW_DEV_AUTH` and still need to integrate with real cookie
   auth (**B-02–B-05**, not yet done). **B-17 (spectator server side), I-15, I-16** are also outstanding.
@@ -53,7 +53,7 @@ As of 2026-08-05 the former 4-person team (torinoue / mamiyaza / hminemur, plus 
 | [ws-protocol.md](./ws-protocol.md) | WebSocket protocol: GameRoom, matchmaking, disconnect/reconnect (B-12). Ends with a dedicated **B-10 (GameRoom + sim.wasm integration) implementation notes** section — a 9-item list of implementation-detail caveats carried over from the original Phase 3 report. |
 | [rest-api.md](./rest-api.md) | REST API: auth, users, friends, matches/stats, maps. Includes the Prisma schema. |
 | [frontend.md](./frontend.md) | Frontend design: SPA screens, HUD, WS hooks, Privacy/ToS pages. |
-| [backlog.md](./backlog.md) | The full issue backlog — every E/G/W/F issue, gate criteria, and the project's decision log. Check this first for current implementation status. |
+| [backlog.md](./backlog.md) | The full issue backlog — every E-/G-/B-/I-/F-/GV- issue, gate criteria, and the project's decision log. Check this first for current implementation status. |
 | [coding-rules.md](./coding-rules.md) | The canonical C coding-rules document. Every `CRxxx` code that `make check` can print maps 1:1 to a rule here. |
 | [dev-doc.md](./dev-doc.md) | Engine developer reference: module structure, enemy AI / RSP AI internals, data flow, tuning values, lint tooling. |
 | [git-workflow.md](./git-workflow.md) | The mandatory branch → PR → CI → merge-on-GitHub → `pull` procedure. Not a design doc — read this before making any commit in this repo. |

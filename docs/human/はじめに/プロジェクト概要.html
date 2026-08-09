@@ -19,7 +19,7 @@
 				3か所で動きます。RSP（じゃんけん鬼ごっこ）チーム戦とFPS収集レースの2モードを搭載。
 			</p>
 			<div class="hero-note">
-				<strong>2026-08-07 時点</strong>
+				<strong>実装は2026-07-30時点／モジュール構成は2026-08-08のD-19改訂</strong>
 				<span>ルートの<code>README.md</code>（英語・42提出用正本）の日本語版サマリー</span>
 			</div>
 		</div>
@@ -41,7 +41,7 @@
 			<p class="section-kicker">01 · Current status</p>
 			<h2>今、何が動いて何が動かないか</h2>
 			<p class="section-intro">
-				Cエンジンは完成しています。その上に載せるオンライン化の層（認証・マッチング・
+				Cエンジンは予定していた作業を完了しています（ただしFPSに未修正の欠陥G-11（FPSの射撃で相手席を消せる）・G-12（FPSで相手の見た目が無い）が残ります）。その上に載せるオンライン化の層（認証・マッチング・
 				フロント大部分）はまだ部分的です。デモする前にこの表を確認してください。
 			</p>
 			<div class="table-wrap">
@@ -51,7 +51,7 @@
 						<tr><td>エンジン（<code>codes/</code> + <code>web/</code>）— 描画・物理・両モード・AI・サーバ権威シム</td><td><span class="tag status-done">完了</span></td></tr>
 						<tr><td>サーバー（<code>app/backend/</code>）— ロビーWS・マッチング・GameRoom・切断復帰・マップ配布</td><td><span class="tag status-partial">コア完了</span>（I-01・B-08コア・B-09〜B-12・B-14）。本認証（B-04/05）待ちで最終結合は未了。観戦のサーバー側（B-17）・Docker配信（I-15）・CI拡張（I-16）は未着手。永続化（B-13）は2026-08-08に不採用</td></tr>
 						<tr><td>認証・DB（<code>app/backend/</code>）</td><td><span class="tag status-todo">未着手</span>（B-02〜B-05）。開発用ヘッダースタブ（<code>ALLOW_DEV_AUTH</code>）で代用中。認証とDBは課題第III章の必須要件なので、モジュール改訂後も作ります。フレンド（B-07）・アバター（B-06）は不採用</td></tr>
-						<tr><td>フロント（<code>app/frontend/</code>）— 雛形・APIクライアント・GameView・HUD</td><td><span class="tag status-done">完了</span>（F-01・F-02・GV-06・GV-07）</td></tr>
+						<tr><td>フロント（<code>app/frontend/</code>）— 雛形・APIクライアント・GameView・HUD</td><td><span class="tag status-done">完了</span>（F-01・F-02・GV-06・GV-07）。ただしGV-06/GV-07はコードはマージ済みだが、<strong>ブラウザでの受入（2ブラウザ対戦）は現在再現できない</strong>——本認証B-04とロビー起点のルーム生成F-05＋B-09待ち</td></tr>
 						<tr><td>フロント — ロビー・認証画面・試合遷移・観戦</td><td><span class="tag status-todo">未着手</span>（F-03〜F-05・GV-08・F-11・GV-12）。<code>/lobby</code>は開発用リンクだけのスタブ。プロフィール（F-09）・フレンドUI（F-10）は不採用</td></tr>
 						<tr><td><strong>通しの体験</strong>：ログイン→マッチング→対戦→結果</td><td><span class="tag status-todo">まだ不可能</span>。マッチングするロビーも、本物のログインも無い</td></tr>
 					</tbody>

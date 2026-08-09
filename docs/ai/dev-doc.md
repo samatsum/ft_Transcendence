@@ -129,7 +129,7 @@ ft_transcendence/
 │   └── PythonCodes/                  # clint (custom C coding-rule linter) and migration scripts
 ├── web/                              # HTML/JS for the web target
 │   ├── engine_demo.html / engine_demo.js         # local-play verification page (supports ?map= and ?res=)
-│   ├── snapshot_interp.js            # interpolation between two snapshots (reused by GV-06)
+│   ├── snapshot_interp.js            # interpolation between two snapshots (replay.html only; GV-06 uses the TS port)
 │   ├── bench_render.mjs              # per-resolution throughput measurement
 │   ├── sim_demo/{record.mjs, replay.html, replay.js}  # one-way sim→JSON→render demo
 │   └── build/ assets/                # generated output (not tracked by git)

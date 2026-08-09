@@ -2,7 +2,7 @@
 
 > Source: translated from the Japanese original at md_files/02_設計書/5-バックログ.md (archived).
 
-**Positioning**: This is the authoritative document, at a granularity that can be transcribed directly into GitHub Issues, integrating the W/F-series issues derived from [WS_PROTOCOL_DESIGN.md](./ws-protocol.md) (②), [REST_API_DESIGN.md](./rest-api.md) (③), and [FRONTEND_DESIGN.md](./frontend.md) (④) with the E/G-series issues in §6 of [ENGINE_SEPARATION_DESIGN.md](./engine-separation.md) (①).
+**Positioning**: This is the authoritative document, at a granularity that can be transcribed directly into GitHub Issues, integrating the B-/I-/F-/GV-series issues derived from [WS_PROTOCOL_DESIGN.md](./ws-protocol.md) (②), [REST_API_DESIGN.md](./rest-api.md) (③), and [FRONTEND_DESIGN.md](./frontend.md) (④) with the E/G-series issues in §6 of [ENGINE_SEPARATION_DESIGN.md](./engine-separation.md) (①).
 Historically the PM role transcribed this into Issues and tracked progress; as of 2026-08-05 the team has dissolved to a single active contributor (samatsum — see [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html)), who now does this directly. Where acceptance-criteria detail exists in the individual design documents, it is referenced rather than repeated.
 **Completion of this document marks the completion of the upstream process (①–⑤).** The former Q-1–Q-3 have been decided as D-16–D-18 (the comparison of options is recorded in §0).
 
@@ -215,7 +215,7 @@ Numbered items in the acceptance-criteria column indicate mapping to acceptance 
 | F-03 | Auth screens + route guard (④§3.1, §1) | ④§6-3 | F-02, B-04 | 3 |
 | F-04 | Common layout + **actual Privacy/ToS copy** (④§2, §3.5) | ④§6-4. Zero placeholder text | F-01 | 3–4 |
 | F-05 | Lobby suite — **3 of ④§3.2's 5 regions** as of 2026-08-08 (Quick Match / Custom Room / Room view) + `useLobbySocket` per ④§4 | Queue join/leave/AI-fill, room create/join/rules/start, and `match_found` auto-navigation all work against the live lobby WS with no console errors | F-03, B-08, B-09 | 5–7 |
-| GV-06 (done) | GameView integration (render.wasm loading, Canvas, interpolation receiver, input sending; wired to E-08/E-12) | A match works between 2 browsers and the spectator view doesn't break | F-05, E-12, B-11 | 6–7 |
+| GV-06 (code merged; **acceptance not currently reproducible**) | GameView integration (render.wasm loading, Canvas, interpolation receiver, input sending; wired to E-08/E-12) | "A match works between 2 browsers and the spectator view doesn't break" — **cannot be re-run on the current main**: no room is created by the normally started server and the browser cannot satisfy the `x-dev-user` dev-auth stub. `ws-check.ts` does **not** cover this (it is a B-11/B-12/B-14 backend check that never loads the frontend). Re-verify once B-04 + F-05 + B-09 land | F-05, E-12, B-11 | 6–7 |
 | GV-07 (done) | Full HUD overlay suite (④§3.3's 8 elements) | ④§6-6 (grace→AI transition is displayed) | GV-06 | 7–8 |
 | GV-08 | Match transition flow (match_found auto-transition → countdown → match_end modal → back to lobby) | No console errors while the WS connection is re-established mid-transition | F-05, GV-07 | 7–8 |
 | F-09 **(not declared, 2026-08-08)** | Profile/stats/history + self-editing + avatar (④§3.4) | Files over 2MB show an immediate error. win_rate matches ③§2-D | F-02, B-13, B-06 | — (was 9–10) |

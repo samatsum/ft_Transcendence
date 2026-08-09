@@ -12,7 +12,7 @@ tag") team battle and an FPS collect-and-race mode.
 
 ## Current status (implementation 2026-07-30 / module lineup 2026-08-08)
 
-The C engine is complete. The online product layer around it — auth, matchmaking, and most of the
+The C engine's planned backlog is closed, though **two FPS defects (G-11, G-12) remain unfixed** — see the Engine row below. The online product layer around it — auth, matchmaking, and most of the
 frontend — is partially built. Read this table before trying to demo anything.
 
 Two dates on purpose: nothing has been *completed* since 2026-07-30, but the **declared module lineup was
@@ -21,10 +21,10 @@ that older commits still describe as planned.
 
 | Area | Status |
 |---|---|
-| **Engine** (`codes/` + `web/`) — rendering, physics, both game modes, AI, server-authoritative sim | ✅ **Complete** |
+| **Engine** (`codes/` + `web/`) — rendering, physics, both game modes, AI, server-authoritative sim | ✅ **Planned backlog closed** (E-01–E-14 / G-01–G-10). ⚠️ Two defects found afterward are still open: **G-11** (FPS shooting can eliminate the other seat, [#46](https://github.com/samatsum/ft_Transcendence/issues/46)) and **G-12** (remote players have no appearance in FPS, [#47](https://github.com/samatsum/ft_Transcendence/issues/47)). FPS online play does not currently hold up |
 | **Server** (`app/backend/`) — lobby WS, matchmaking, GameRoom driving `sim.wasm`, disconnect/reconnect, map whitelist | ✅ **Core complete** (I-01, B-08 core, B-09–B-12, B-14). Blocked on real Cookie auth (B-04/B-05) for final integration; the spectator server side (B-17), Docker/nginx delivery (I-15), and CI extension (I-16) not started. Persistence (B-13) was **not declared** as of 2026-08-08 (D-19) |
 | **Auth / DB** (`app/backend/`) | ❌ **Not started** (B-02–B-05). A dev-only header-based auth stub (`ALLOW_DEV_AUTH`) stands in for it. Auth and the database are Chapter III mandatory requirements, so they are built regardless of module choice; friends (B-07) and avatar (B-06) are **not declared** |
-| **Frontend** (`app/frontend/`) — scaffold, API client, GameView, HUD | ✅ Scaffold, fetch layer, GameView, and HUD are done (F-01, F-02, GV-06, GV-07) |
+| **Frontend** (`app/frontend/`) — scaffold, API client, GameView, HUD | ✅ Scaffold and fetch layer are done (F-01, F-02). GameView and HUD (GV-06, GV-07) are **code-complete but their browser acceptance is not currently reproducible** — see the dev-server note below |
 | **Frontend — lobby, auth screens, match transition, spectating** | ❌ **Not started** (F-03–F-05, GV-08・F-11・GV-12). The lobby route is currently a stub with a dev-only link straight into a match. Profile (F-09) and friends UI (F-10) are **not declared**; GV-12 was promoted from reserve to required |
 | **End-to-end result**: log in → find a match → play → see results | ❌ **Not yet possible.** There is no lobby to matchmake from and no real login |
 
@@ -172,10 +172,19 @@ yet.
 >    matchmaking (F-05 drives B-08, B-09 turns a MatchPlan into a GameRoom) — fixing auth alone does
 >    not make this route reachable.
 >
-> **GV-06 and GV-07 are nonetheless genuinely done.** They were verified through
-> `app/backend/src/game/ws-check.ts`, a Node harness that creates real rooms and connects as a WS
-> client (Node's client *can* send headers). What is not yet possible is the *browser* demo. Real
-> cookie auth (B-04) plus lobby-driven room creation (F-05 + B-09) are what make it clickable.
+> **What this means for GV-06 / GV-07's "done" status.** The code is written and merged, but be
+> precise about what has actually been verified on the current `main`:
+>
+> | Layer | Verified by | Covers |
+> |---|---|---|
+> | Backend WS path | `app/backend/src/game/ws-check.ts` | B-11 / B-12 / B-14 only. Node `ws` clients — **it never loads the frontend, Canvas, or `render.wasm`** |
+> | Interpolation + HUD logic | `snapshotInterp.test.ts`, `hudState.test.ts` | Pure functions, not rendering |
+> | **GameView / HUD rendering in a browser** | **nothing** | — |
+>
+> **GV-06's acceptance criterion ("a match works between 2 browsers") is therefore not currently
+> reproducible.** It was met manually while the dev route still worked; it cannot be re-run today.
+> Re-establishing it needs real cookie auth (B-04) plus lobby-driven room creation (F-05 + B-09).
+> Treat "GV-06 done" as "the integration code is merged", not as "the browser demo is passing".
 
 ### Generated files
 

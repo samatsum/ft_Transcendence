@@ -19,8 +19,8 @@
 			</p>
 			<p class="hero-note">
 				<span aria-hidden="true">●</span>
-				<strong>実装は2026-08-07時点／モジュール構成は2026-08-08のD-19改訂</strong>
-				<span>F-01 / F-02 / GV-06 / GV-07 完了、F-03〜F-05・GV-08・F-11・GV-12は担当未定で未着手</span>
+				<strong>実装は2026-07-30時点／モジュール構成は2026-08-08のD-19改訂</strong>
+				<span>F-01 / F-02 / GV-06 / GV-07 はコード完了（GV-06/07はブラウザ受入が未再現）、F-03〜F-05・GV-08・F-11・GV-12は担当未定で未着手</span>
 			</p>
 		</div>
 	</header>
@@ -71,7 +71,7 @@
 			</div>
 			<div class="callout" style="margin-top: 18px">
 				<strong>B系・I系との境界:</strong>
-				Wは「サーバーとして何を保証するか」を完成させます。Fは「その保証を、プレイヤーが
+				B系・I系は「サーバーとして何を保証するか」を完成させます。F系・GV系は「その保証を、プレイヤーが
 				迷わず操作できる画面としてどう見せるか」を受け持ちます。詳細は<a href="#backend">B/Iとの境界</a>参照。
 			</div>
 		</section>
@@ -81,7 +81,7 @@
 			<h2>10件のうち、4件完了</h2>
 			<p class="section-intro">
 				完了率は4/10＝40.0%。ただし完了した4件（F-01・F-02・GV-06・GV-07）は「対戦が実際に1試合、
-				動く」ために必要な最小構成で、Gate 2のデモ可能性を優先して先に進めた結果です（ただし動作確認は現状<code>ws-check.ts</code>経由で、ブラウザからではありません）。
+				動く」ために必要な最小構成で、Gate 2のデモ可能性を優先して先に進めた結果です。<strong>ただしGV-06の受入条件「2ブラウザで対戦が成立」は現在の<code>main</code>では再現できません</strong>——通常起動のサーバーはルームを作らず、ブラウザは開発用認証の<code>x-dev-user</code>ヘッダを送れないためです。<code>ws-check.ts</code>はB-11/B-12/B-14を検査するバックエンド用で、GameViewもCanvasも読み込みません。
 				ロビーは未実装（F-05）のため、今のところ試合は決め打ちの部屋IDで開始する開発用リンクから入ります。
 			</p>
 			<p class="section-intro">
@@ -250,7 +250,7 @@
 			<p class="section-intro">
 				GV-06/GV-07はF-05より先に完了しています。これは「Gate 2でデモできる状態を優先する」という
 				判断のもとで、計画（④設計書の依存順）とあえて順序を変えたものです。ロビーが無いため、
-				GV-06/GV-07は今も<code>/game/dev-room</code>という開発用URLから直接入る形で確認します。
+				<strong>ただし<code>/game/dev-room</code>は現在ブラウザから開けません</strong>（ルーム未生成で4002、開発用認証ヘッダを送れず4000）。再現には本認証B-04とロビー起点のルーム生成F-05＋B-09が要ります。
 			</p>
 			<div class="grid grid-2">
 				<article class="card">
@@ -267,7 +267,7 @@
 					<ol class="path-list">
 						<li><div><strong>F-01 完了</strong><span>骨格・ルーティング・ビルド警告ゼロを確立</span></div></li>
 						<li><div><strong>F-02 完了</strong><span>共通fetch・エラー処理・401リダイレクトを確立</span></div></li>
-						<li><div><strong>GV-06 完了</strong><span>B-11のsnapshotをrender.wasm経由でCanvasへ表示</span></div></li>
+						<li><div><strong>GV-06 コード完了</strong><span>B-11のsnapshotをrender.wasm経由でCanvasへ表示。ブラウザでの受入は未再現</span></div></li>
 						<li><div><strong>GV-07 完了</strong><span>B-12のgrace/AI状態をHUDへ可視化</span></div></li>
 					</ol>
 				</article>
@@ -315,7 +315,7 @@
 					<tbody>
 						<tr><td>B-04 auth REST + Cookie</td><td>F-03</td><td>フォーム、route guard、401遷移</td></tr>
 						<tr><td>B-08/B-09 lobby WS + match_found</td><td>F-05/GV-08</td><td>ロビー表示、再接続、試合画面への遷移</td></tr>
-						<tr><td>B-11 snapshot/event</td><td>GV-06/GV-07</td><td>render.wasm、補間、Canvas、HUD、入力送信（完了済み）</td></tr>
+						<tr><td>B-11 snapshot/event</td><td>GV-06/GV-07</td><td>render.wasm、補間、Canvas、HUD、入力送信（コード完了・ブラウザ受入は未再現）</td></tr>
 						<tr><td>B-12 grace/AI状態</td><td>GV-07</td><td>切断猶予とAI切替の可視化（完了済み）</td></tr>
 						<tr><td>B-17 spectator接続 + snapshot配信</td><td>GV-12</td><td>観戦HUD、視点切替、観戦者向けの入力抑止</td></tr>
 					</tbody>
@@ -375,7 +375,7 @@
 
 	<footer>
 		<div class="shell">
-			説明用資料 · F系・GV系 · 2026-08-07時点。
+			説明用資料 · F系・GV系 · 実装は2026-07-30時点、モジュール構成は2026-08-08のD-19改訂。
 			進捗が変わったら、まず⑤バックログを更新し、その後このHTMLを追従させてください。
 			<p>samatsumからの依頼（2026-08-07）を受けて新規作成。サーバー開発工程.htmlと対になるよう、
 			同じ共通スタイルシート・同じ節構成で書いています。</p>
