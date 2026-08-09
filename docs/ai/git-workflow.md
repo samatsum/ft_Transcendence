@@ -195,10 +195,12 @@ When filing one:
 
 - **Title**: `<Issue-ID>: <short description>` (e.g. "G-11: FPS's shoot mechanic can eliminate the
   other seat").
-- **Labels**: one lane label matching the prefix — `E-` → `lane:engine`, `G-` → `lane:gameplay`,
-  `B-` → `lane:backend`, `I-` → `lane:infra`, `F-` → `lane:frontend`, `GV-` → `lane:gameview` (one
-  label per prefix; `H-` gets none, it's the cross-cutting final gate). Plus `backlog-tracked`, plus
-  `bug` or `enhancement` as fits.
+- **Labels**: one lane label matching the prefix — `E-`/`G-` → `lane:engine` (one lane, per the table
+  in [Lane prefixes](#lane-prefixes-and-the-2026-08-08-rename) above), `B-` → `lane:backend`,
+  `I-` → `lane:infra`, `F-` → `lane:frontend`, `GV-` → `lane:gameview` (six prefixes, five labels;
+  `H-` gets none, it's the cross-cutting final gate). Plus `backlog-tracked`, plus `bug` or
+  `enhancement` as fits. **Fixed 2026-08-09**: issues #46–#48 had been mislabeled `lane:gameplay`
+  (a label that contradicted this table and has been retired) — relabeled to `lane:engine`.
 - **Body**: cite file:line with **absolute GitHub URLs**
   (`https://github.com/samatsum/ft_Transcendence/blob/main/...`), never repo-relative paths — an
   Issue body isn't part of the file tree, so `../../` links silently fail to resolve there even

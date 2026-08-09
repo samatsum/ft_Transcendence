@@ -316,7 +316,7 @@ git push origin --delete feat/xxx       # リモート（gh pr merge --delete-br
 					<thead><tr><th>項目</th><th>ルール</th></tr></thead>
 					<tbody>
 						<tr><td>タイトル</td><td><code>&lt;Issue番号&gt;: &lt;短い説明&gt;</code>（例:「G-11: FPSの射撃機構がプレイヤー同士を排除できてしまう」）</td></tr>
-						<tr><td>ラベル</td><td>接頭辞に対応するレーンラベルを1つ——<code>E-</code>→<code>lane:engine</code>、<code>G-</code>→<code>lane:gameplay</code>、<code>B-</code>→<code>lane:backend</code>、<code>I-</code>→<code>lane:infra</code>、<code>F-</code>→<code>lane:frontend</code>、<code>GV-</code>→<code>lane:gameview</code>（接頭辞1つにつきラベル1つ。<code>H-</code>は特定レーンの作業ではない最終ゲートなのでラベル無し）。＋<code>backlog-tracked</code>＋<code>bug</code>か<code>enhancement</code></td></tr>
+						<tr><td>ラベル</td><td>接頭辞に対応するレーンラベルを1つ——<code>E-</code>/<code>G-</code>→<code>lane:engine</code>（上の「レーン接頭辞」表の通り1レーン）、<code>B-</code>→<code>lane:backend</code>、<code>I-</code>→<code>lane:infra</code>、<code>F-</code>→<code>lane:frontend</code>、<code>GV-</code>→<code>lane:gameview</code>（接頭辞6つに対しラベル5つ。<code>H-</code>は特定レーンの作業ではない最終ゲートなのでラベル無し）。＋<code>backlog-tracked</code>＋<code>bug</code>か<code>enhancement</code>。<strong>2026-08-09に修正</strong>: Issue #46〜#48がこの表と矛盾する<code>lane:gameplay</code>を誤って付けられていた（このラベルは廃止し、<code>lane:engine</code>へ付け替え済み）</td></tr>
 						<tr><td>本文中のコード引用</td><td><strong>絶対URL</strong>（<code>https://github.com/samatsum/ft_Transcendence/blob/main/...</code>）を使う。<code>../../</code>のような相対パスは、Issue本文がリポジトリのファイルツリーの外にあるため<strong>静かに解決しません</strong>（docs/内では同じ書き方が問題なく動くので特に注意）</td></tr>
 						<tr><td>相互リンク</td><td>backlog.mdの行からIssue番号へ、Issue本文からbacklog.mdの節へ、両方向にリンクする</td></tr>
 						<tr><td>クローズのタイミング</td><td>対応するbacklog.mdの行がマージ済みPRで完了マークされた時だけ閉じる（両者がズレないように）</td></tr>
