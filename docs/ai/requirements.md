@@ -165,10 +165,11 @@ Building the entire project is complex, and many problems can arise. Therefore, 
 - [◎] You must use Git with clear, meaningful commit messages. The repository must show:
     - [◎] Commits from all team members.
     - [◎] Clear commit messages describing the changes made.
-- [◎] Proper work distribution across the entire team. **At risk**: the team has dissolved to a
-  single active contributor (samatsum) as of 2026-08-05; this is an open, unresolved discrepancy
-  with the subject's 4–5 person team premise, not something this checkbox can honestly claim is
-  on track — see [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html) §04 for the full writeup.
+- [◎] Proper work distribution across the entire team. **At risk**: the team dissolved to a
+  single active contributor (samatsum) on 2026-08-05. 4 new members are confirmed to join (date not
+  set), which would satisfy the subject's 4–5 person premise, but **nothing is distributed until they
+  actually start**, so this checkbox is not on track today — see
+  [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html) §04 for the full writeup.
 - [◎] Deployment must use a containerization solution (Docker, Podman, etc.) and run with a single command.
 - [◎] The website must be compatible with the latest stable version of Google Chrome.
 - [◎] No warnings or errors may appear in the browser console.

@@ -258,6 +258,13 @@ development. `GameView`/`HudOverlay` currently have no lobby to be launched from
 
 ## 6. Gate/schedule mapping (update to ARCHITECTURE §7)
 
+> **The `Day N` numbers below are historical labels, not dates (noted 2026-08-09).** Both plans they come from
+> are superseded: the 14-day plan by the 5-day one, and the 5-day daily breakdown by its own deletion on
+> 2026-08-05, when the team dissolved and every per-person assignment was removed
+> ([architecture.md §7](./architecture.md)). Nothing replaced it, so **no calendar schedule is in effect**.
+> What still holds is the **order** of the gates and the pass criteria in §6.1 / §6.2 — read the Day numbers
+> as "which gate comes before which," not as a deadline.
+
 | Gate | Content | Issues that converge here | Status |
 |---|---|---|---|
 | Gate 1 (Day 2) | Canvas rendering of a static map | E-01–E-07 | **Passed (go)**, 2026-07-11 |

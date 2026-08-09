@@ -7,9 +7,16 @@
 **Authoritative requirements**: [ft_トランセンデンス.md](./requirements.md) (this document does not restate requirements)
 **Reference materials**: [DEV_DOC.md](./dev-doc.md) / [USER_DOC.md](../human/プレイヤー向け/プレイヤーガイド.html) (authoritative for the current cub3D implementation)
 
-> **Team-status caveat (2026-08-05)**: the "Team: 4 members" line above reflects the original design-time plan. The
-> team has since dissolved; **samatsum is now the sole active contributor**. See
-> [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html) for the current, authoritative team status.
+> **Design-time header caveat (updated 2026-08-09)**: *both* the "Team: 4 members" and "Duration: 5 days" lines
+> above are the original design-time plan, and neither describes the present.
+>
+> - **Team**: that 4-person team dissolved on 2026-08-05 and **samatsum is currently the sole active
+>   contributor**. **4 new members are confirmed to join** (joining date not set), which will make a 5-person
+>   team once they do. Authoritative source:
+>   [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html).
+> - **Duration**: the day-by-day breakdown that made "5 days" actionable was deleted on 2026-08-05 along with
+>   the per-person assignments, and nothing replaced it — **no calendar schedule is currently in effect**. See
+>   §7, and use [backlog.md §6](./backlog.md)'s gate order and pass criteria instead.
 
 ---
 
@@ -377,7 +384,22 @@ The subject's mandatory roles (PO / PM / Tech Lead / Developer) are assigned acr
 
 ## 7. Schedule (with gates)
 
-> **Note: this schedule is stale.** The 14-day table below reflects the original 2-week plan. The project's actual duration is now 5 days, and this table is no longer an accurate schedule — it is retained purely for historical reference. See [6-チーム分担計画 §5.1「5日間の日割り」](../human/はじめに/チーム体制.html) for the schedule that is currently in effect.
+> **Note: no schedule is currently in effect (verified 2026-08-09).** The 14-day table below is the original
+> 2-week plan, retained purely for historical reference. It was superseded in 2026-07 by a 5-day daily
+> breakdown in 6-チーム分担計画 §5.1 — but **that section no longer exists**. It was deleted on 2026-08-05
+> together with every per-person assignment when the team dissolved, and the page that carried it,
+> [`チーム体制.html`](../human/はじめに/チーム体制.html), now covers team status only (its own lead paragraph says
+> the 日割り was removed deliberately). Two links here used to point at that deleted section; they were
+> corrected on 2026-08-09.
+>
+> A pre-deletion copy survives at [`../../archive/02_設計書/6-チーム分担計画.md`](../../archive/02_設計書/6-チーム分担計画.md)
+> §5.1, but **do not use it as a plan**: `archive/` is unmaintained, and that table allocates each day across
+> 4 named people ("1日 = 4人 × 1営業日。1人でも丸1日欠けると Day 3 のゲート2 が崩れます"), uses the
+> pre-2026-08-08 `W-`/`F-` ids, and assumes the pre-D-19 module lineup.
+>
+> **What is still in effect** is the gate *sequence* and each gate's pass criteria — Gate 1 → Gate 2 → Gate 3
+> → hardening, defined in [backlog.md §6](./backlog.md) with §6.1/§6.2 spelling out the criteria. No dates are
+> attached to them.
 >
 > **Progress (2026-08-07)**: of the original plan's 4 parallel lanes, the **entire Engine and Gameplay schedules are complete** (E-01–E-14 / G-01–G-10; Gate 1 passed). Backend/DevOps has completed I-01/B-08 core/B-09/B-10/B-11/B-12/B-14; Frontend has F-01/F-02/GV-06/GV-07 done (GV-07 merged via [PR #35](https://github.com/samatsum/ft_Transcendence/pull/35)). **Gate 2 is not yet met** — what remains server-side is wiring B-04/B-05 into B-08, and frontend-side is F-05 (lobby, not started) and GV-08 (match transition, not started).
 
@@ -423,6 +445,10 @@ The subject's mandatory roles (PO / PM / Tech Lead / Developer) are assigned acr
 > **samatsum is the sole active contributor**, filling every role below. Read every `torinoue` / `mamiyaza` / `hminemur`
 > cell in §9 and §9.1 as "unassigned — samatsum covers it solo until a role is reassigned," not as a live task
 > handout. See [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html) for the authoritative current team status.
+>
+> **"Day 5" below is a gate label, not a date.** It means the hardening / rehearsal / submission gate —
+> [backlog.md §6](./backlog.md)'s `H-01` row — which is the last gate in the sequence. No calendar schedule is
+> currently in effect (§7), so read every `Day 5` in §9 and §9.1 as "at the hardening gate."
 
 Ownership and source material for Chapter VI's required README sections. The README is written in English and finalized on **Day 5**.
 
@@ -476,4 +502,4 @@ Mapped 1:1 to the inspection steps on the evaluation sheet (42evalhub / ft_trans
 | Second game | FPS 1v1 race (collect → door → first to goal). Enemies act as hazards |
 | Modules | **Mandatory target is core 14pt**, holding only modules that are hard to reject and cheap to finish. The 4 bonus items (+5pt) count as points and also absorb a rejection; advanced 3D sits there deliberately because its "library" wording carries interpretive risk. Revised 2026-08-08 (D-19, §4.5) after auditing all 55 subject modules. No custom Major is declared |
 | Team structure (as planned; superseded 2026-08-05) | **samatsum** = Tech Lead / Engine + Gameplay (complete) + game server, **torinoue** = PM / Backend foundation, **mamiyaza** = PO / Frontend foundation, **hminemur** = Developer / Frontend game screens. Critical areas use a two-person model. Task management via GitHub, communication via Discord. **The team has since dissolved; samatsum is now the sole active contributor covering every role** (current authoritative source: [チーム体制.html](../human/はじめに/チーム体制.html)) |
-| Quality gates | Day 2 (WASM rendering) / Day 7 (full 2v2 RSP playthrough) / Day 11 (all 19pt working) / Day 12 (disqualification-risk hardening) — **these numbers are from the original 14-day plan. For the current 5-day mapping, see [doc 6 §5.1](../human/はじめに/チーム体制.html) (Gate 2 = Day 3 / Gate 3 = Day 4 / hardening = Day 5)** |
+| Quality gates | Day 2 (WASM rendering) / Day 7 (full 2v2 RSP playthrough) / Day 11 (all 19pt working) / Day 12 (disqualification-risk hardening) — **these numbers are from the original 14-day plan; the later 5-day plan renumbered them Gate 2 = Day 3 / Gate 3 = Day 4 / hardening = Day 5. Both are historical: no calendar schedule is in effect (see §7). The live definition of each gate, and the criteria for passing it, is [backlog.md §6](./backlog.md)** |

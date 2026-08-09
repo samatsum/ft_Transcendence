@@ -31,14 +31,18 @@ material that didn't carry forward into either the AI or human doc set) live und
 ## Team status (important — read before assuming a multi-person workflow)
 
 As of 2026-08-05 the former 4-person team (torinoue / mamiyaza / hminemur, plus samatsum) has
-**dissolved**. **samatsum is the only active contributor**; no new members have joined yet.
+**dissolved**. **samatsum is the only active contributor.** **4 new members are confirmed to join** (as of
+2026-08-08; joining date not set), which will make a 5-person team — but none of them have started yet, so
+every statement below about solo development still describes the present.
 
 - Do not expect or generate per-person task assignments, hand-off routing, or "ask X about Y"
   guidance — that information was deliberately removed from the docs during the 2026-08-05
   refactor because there is no one to route it to.
-- The project brief still requires a 4–5 person team (this is an open, unresolved discrepancy
-  with the repo's own README — see [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html) for the
-  human-facing writeup of this risk). Don't try to resolve it; just be aware of it.
+- The project brief requires a 4–5 person team. The 4 confirmed joiners would satisfy that, but until
+  they actually start, the discrepancy is live — and separately, the repo's own README still lists the
+  three departed members as current role holders, which is wrong either way. See
+  [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html) §04 for the human-facing writeup of both.
+  Don't try to resolve them; just be aware of them.
 - Role/lane framework (PO / PM·SM / Technical Lead / Developer; Engine / Backend·DevOps /
   Frontend / Gameplay) is preserved as a structural requirement, with samatsum currently filling
   every active slot and the rest marked open.
