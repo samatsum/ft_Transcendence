@@ -4,5 +4,7 @@
 // 「フロント/バック双方での検証」要件（0-全体アーキテクチャ設計 §2.4）を単一定義で満たす。
 export * from './error.js';
 export * from './health.js';
-// ② WS プロトコル（B-08/B-11。配置は Issue #10 で合意）。REST 側の `api/` は B-02 で追加する
+// ② WS プロトコル（B-08/B-11。配置は Issue #10 で合意）
 export * from './ws/index.js';
+// ③ REST 側の契約（B-02 で追加）
+export * from './api/index.js';
