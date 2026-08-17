@@ -164,7 +164,7 @@ All 9 layers have finalized selections. The table below includes an "Integrated"
 | Frontend | **React + Vite + TypeScript (SPA)** | Next.js / SvelteKit | SSR not required (the SSR module isn't being pursued). SPA is simplest, and React qualifies as a framework per the subject's definition. AI code-generation quality is also top-tier for React | I-01 |
 | Styling | **Tailwind CSS** | Bootstrap | Satisfies the "use a CSS framework" requirement. Pairs well with a component-oriented approach | I-01 |
 | Backend | **Fastify + TypeScript** | NestJS / Express / Django | With Node, `sim.wasm` can be executed directly (the deciding factor). Fastify has an official WS plugin and is lightweight. NestJS would be overkill for this schedule | I-01 |
-| DB | **SQLite + Prisma (ORM)** | PostgreSQL | Evaluation is a single local host (A1). One fewer container; backups = a file copy. Prisma satisfies the ORM Minor requirement, and migrating to Postgres later remains easy | Pending — B-03 |
+| DB | **SQLite + Prisma (ORM)** | PostgreSQL | Evaluation is a single local host (A1). One fewer container; backups = a file copy. Prisma satisfies the ORM Minor requirement, and migrating to Postgres later remains easy | Integrated in B-03 (schema v1 + migration; not yet read/written by the server — B-04 does that) |
 | Realtime | **WebSocket (@fastify/websocket)** | Socket.IO | Raw WS is sufficient; Socket.IO's abstraction isn't needed here | Integrated in B-11 (originally planned for B-08, but the game WS landed first) |
 | Auth | Email + password (argon2id) + **opaque session token via httpOnly cookie** (not JWT — see [rest-api.md](./rest-api.md) D-4) | — | Ensures the required minimum baseline. OAuth/2FA are not declared under the current lineup (§4.3) | Pending — B-04 |
 | Input validation | **zod schema shared between FE and BE** | — | Satisfies the "validate on both frontend and backend" requirement with a single schema definition | I-01 |
@@ -175,7 +175,7 @@ All 9 layers have finalized selections. The table below includes an "Integrated"
 >
 > - The root `docker-compose.yml` already exists but currently contains only the Emscripten build service (`engine-build`). The evaluation requirement of "`docker compose up` brings everything up" will be delivered in I-15.
 > - `infra/` similarly is currently just a skeleton with a README (listing what will go there); `nginx.conf` does not exist yet.
-> - Prisma is not yet integrated (`schema.prisma` does not exist yet).
+> - Prisma's schema and migration landed in B-03 (`app/backend/prisma/schema.prisma`, verified by `npm run check:db`). **The server does not open a connection yet** — `src/db/client.ts` only exports a factory, and B-04 is its first caller. Running the migration from `docker compose up` is I-15's half.
 
 ---
 

@@ -106,7 +106,7 @@
 						<tr><td>4</td><td>FE/BE双方でフレームワーク使用</td><td>Web Major</td><td>2</td><td><span class="tag status-done">完了</span></td><td><a href="../../../app/frontend/"><code>app/frontend/</code></a>（React）・<a href="../../../app/backend/"><code>app/backend/</code></a>（Fastify）</td><td>F-01/I-01。両方起動しビルド警告ゼロを確認済み</td></tr>
 						<tr><td>5</td><td>WebSocketsによるリアルタイム機能</td><td>Web Major</td><td>2</td><td><span class="tag status-partial">部分完了</span></td><td><a href="../../../app/backend/src/game/ws.ts"><code>game/ws.ts</code></a>（完了）・<a href="../../../app/backend/src/lobby/ws.ts"><code>lobby/ws.ts</code></a>（コアのみ）</td><td>課題書が求める3要件（クライアント間更新・接続/切断処理・ブロードキャスト）は<strong>ゲームWSだけで満たせる</strong>。ロビーWSは上乗せ</td></tr>
 						<tr><td>6</td><td><strong>AI対戦相手</strong></td><td>AI Major</td><td>2</td><td><span class="tag status-done">完了</span></td><td><a href="../../../codes/"><code>codes/</code></a>（G系列、AI判定ロジック）</td><td><strong>ボーナスから昇格</strong>。RSP/FPS双方のAI完成。<code>game_set_input_source</code>でAI⇔人間の切替も実証済み</td></tr>
-						<tr><td>7</td><td>ORMの使用（Prisma）</td><td>Web Minor</td><td>1</td><td><span class="tag status-todo">未着手</span></td><td>—（<code>schema.prisma</code>が存在しない）</td><td>B-03のみ。DBは第III章で必須なのでどのみち作る＝実質タダ</td></tr>
+						<tr><td>7</td><td>ORMの使用（Prisma）</td><td>Web Minor</td><td>1</td><td><span class="tag status-partial">部分完了</span></td><td><code>app/backend/prisma/schema.prisma</code>（5テーブル＋migration、<code>npm run check:db</code>）</td><td>B-03でスキーマとmigrationは完了。残りはI-15（composeの初回起動でmigrationを流す）。DBは第III章で必須なのでどのみち作る＝実質タダ</td></tr>
 						<tr><td>8</td><td><strong>ゲームカスタマイズオプション</strong></td><td>Gaming Minor</td><td>1</td><td><span class="tag status-partial">部分完了</span></td><td><a href="../../../codes/"><code>codes/</code></a>（<code>target_score</code>・マップ選択パラメータ）</td><td><strong>ボーナスから昇格</strong>。エンジン側パラメータは対応済み。選択UIが残る</td></tr>
 					</tbody>
 				</table>
@@ -161,7 +161,7 @@
 				<table>
 					<thead><tr><th>必須要件</th><th>状態</th><th>コード入口 / 備考</th></tr></thead>
 					<tbody>
-						<tr><td>FE+BE+DBのWebアプリ</td><td><span class="tag status-partial">部分完了</span></td><td>FE/BEの骨格は起動する。DB接続（Prisma、B-03）が無い</td></tr>
+						<tr><td>FE+BE+DBのWebアプリ</td><td><span class="tag status-partial">部分完了</span></td><td>FE/BEの骨格は起動する。DBはB-03でスキーマまで作成済みだが、<strong>サーバーはまだ接続していない</strong>（B-04が最初の利用者）</td></tr>
 						<tr><td>全員からの明確なコミット</td><td><span class="tag status-done">完了（運用ルールとして）</span></td><td><a href="../../ai/git-workflow.md">git-workflow.md</a>のConventional Commits + PRレビュー運用を継続中。単独稼働という別リスクは<a href="../はじめに/チーム体制.html">チーム体制.html</a>参照</td></tr>
 						<tr><td>1コマンドでのコンテナ起動</td><td><span class="tag status-todo">未着手</span></td><td><code>docker compose up</code>で証明書生成・migration・WASM生成まで通す必要（I-15）。<a href="../../../infra/README.md">infra/README.md</a></td></tr>
 						<tr><td>最新安定版Chromeでの動作</td><td><span class="tag status-todo">未検証</span></td><td>専用の動作確認手順が未整備</td></tr>
@@ -170,7 +170,7 @@
 						<tr><td>複数ユーザーの同時利用</td><td><span class="tag status-partial">部分完了</span></td><td>複数GameRoomの同時稼働はサーバー側で実証済み（B-10）。正規ログインでの通し確認は未実施</td></tr>
 						<tr><td>レスポンシブ・アクセシブルなFE</td><td><span class="tag status-todo">未着手</span></td><td>F-11。375px幅・キーボード操作の確認が必要</td></tr>
 						<tr><td>envをGit管理外に + env.example</td><td><span class="tag status-done">完了</span></td><td><a href="../../../.env.example"><code>.env.example</code></a> / <a href="../../../.gitignore"><code>.gitignore</code></a></td></tr>
-						<tr><td>明確なスキーマとリレーション</td><td><span class="tag status-partial">部分完了</span></td><td>概念設計は<a href="../../ai/architecture.md">architecture.md §3.3</a>にある。実際の<code>schema.prisma</code>・ER図は未作成（B-03）</td></tr>
+						<tr><td>明確なスキーマとリレーション</td><td><span class="tag status-partial">部分完了</span></td><td>概念設計は<a href="../../ai/architecture.md">architecture.md §3.3</a>、実装の正本は<a href="../../ai/rest-api.md">rest-api.md §3</a>。<code>app/backend/prisma/schema.prisma</code>はB-03で作成済み（5テーブル）。<strong>READMEのER図は未作成</strong></td></tr>
 						<tr><td>メール+パスワード認証（ハッシュ+ソルト）</td><td><span class="tag status-todo">未着手</span></td><td>argon2id採用は設計決定済みだが未実装（B-04）</td></tr>
 						<tr><td>FE/BE双方での入力検証</td><td><span class="tag status-partial">部分完了</span></td><td>WS側は<a href="../../../app/shared/src/ws/"><code>app/shared/src/ws/</code></a>の共有zodスキーマで運用中。REST側は<strong>B-02が完了</strong>し共通のzod検証パイプライン＋エラーエンベロープが動いているが、適用先は現状<code>/api/maps</code>のみ（他の書き込み系エンドポイントはB-04/B-05待ち）</td></tr>
 						<tr><td>外部接続はすべてHTTPS</td><td><span class="tag status-todo">未着手</span></td><td>nginx TLS終端が未構築（I-15）</td></tr>

@@ -1,0 +1,150 @@
+// B-03: schema v1。③REST API設計 §3 が正本。
+//
+// **列の型・制約・命名を変えるときは、先に docs/ai/rest-api.md §3 を直すこと。**
+// READMEのDBスキーマ章とER図はあの節から生成する方針なので、ここだけ変えると
+// 図と実装が食い違う。
+//
+// ---------------------------------------------------------------------------
+// 5テーブルのうち3つは、現在どこからも使われない
+// ---------------------------------------------------------------------------
+// 2026-08-08 のモジュール改訂（D-19）で「標準ユーザー管理」と「戦績統計」を
+// 不採用にしたため、それらを唯一の利用者としていた Issue も不採用になった:
+//
+//   Friendship          → B-07（フレンドAPI・不採用）
+//   Match / MatchPlayer → B-13（試合永続化・不採用、復帰候補№1）
+//   User.avatarPath     → B-06（アバターアップロード・不採用）
+//
+// それでも作る、と 2026-08-09 に決めた。理由は Issue #93 に書いてある:
+//   - 後から migration を足すより一度で済む
+//   - B-13 は復帰候補№1で、戻れば Match / MatchPlayer がそのまま要る
+//   - README の DB スキーマ章と ER 図は必須要件で、②③の設計と一致した
+//     完全なスキーマがある方が説明しやすい
+//
+// **これらは「作り忘れ」でも「使われていないゴミ」でもない。** 消す前に
+// Issue #93 と docs/ai/backlog.md の B-03 行を読むこと。
+// ---------------------------------------------------------------------------
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+// Prisma 7 から `url` はスキーマに書けない（P1012）。接続先は ../prisma.config.ts。
+datasource db {
+  provider = "sqlite"
+}
+
+/// 認証・プロフィール・オンライン状態の起点（③§3 `User`）。
+model User {
+  id           Int       @id @default(autoincrement())
+  /// 小文字化して保存する（③§1-B）。
+  email        String    @unique
+  /// argon2id の文字列（B-04 が書き込む）。生パスワードは保存しない。
+  passwordHash String
+  /// 表示名。3〜20文字・`[a-zA-Z0-9_-]` のみ（③§1-B）。
+  displayName  String    @unique
+  /// ③§1-B の「大文字小文字を無視して一意」を保証するための正規化列。
+  ///
+  /// SQLite では Prisma スキーマから式インデックスや `COLLATE NOCASE` を
+  /// 宣言できないため、小文字化した値を別列に持って `@unique` を張る。
+  /// **③§3 の表に対して、この1列だけ増えている**（2026-08-09、B-03 で追記）。
+  /// 書き込み側（B-04）が `displayName` と必ず同時に更新すること。
+  displayNameLower String @unique
+  /// `/data/avatars` 配下の相対名。**B-06 不採用のため現在は常に null**。
+  avatarPath   String?
+  createdAt    DateTime  @default(now())
+  /// 認証付きリクエストと WS 切断で更新する（B-04 以降）。
+  lastSeenAt   DateTime?
+
+  sessions          Session[]
+  friendshipsSent     Friendship[]  @relation("FriendshipRequester")
+  friendshipsReceived Friendship[]  @relation("FriendshipAddressee")
+  matchPlayers      MatchPlayer[]
+  matchesWon        Match[]       @relation("MatchWinner")
+}
+
+/// ログイン状態そのもの（③§3 `Session`、③ D-4/D-7）。
+/// 不透明トークン + httpOnly Cookie。`RefreshToken` は作らない（D-7 で統合済み）。
+model Session {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  /// **生トークンは保存しない。** SHA-256 のハッシュだけを持つ（③§3）。
+  tokenHash String   @unique
+  createdAt DateTime @default(now())
+  /// スライディング延長で更新する（③ D-5）。
+  expiresAt DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// フレンド関係（③§3 `Friendship`）。
+/// **B-07 不採用のため、現在このテーブルを読み書きするコードは無い**（Issue #93）。
+model Friendship {
+  id          Int      @id @default(autoincrement())
+  requesterId Int
+  addresseeId Int
+  /// `pending` / `accepted`。
+  status      String
+  createdAt   DateTime @default(now())
+
+  requester User @relation("FriendshipRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee User @relation("FriendshipAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  /// 逆方向の既存関係（B→A があるのに A→B を作る）は **アプリ層で弾く**。
+  /// SQLite / Prisma に CHECK 制約が無いため（③§3）。
+  @@unique([requesterId, addresseeId])
+  @@index([addresseeId])
+}
+
+/// 1試合1行（③§3 `Match`）。
+/// **B-13 不採用のため、現在このテーブルへ書き込むコードは無い**（Issue #93）。
+model Match {
+  id            Int       @id @default(autoincrement())
+  /// `rsp` / `fps`。
+  mode          String
+  /// ③§2-E のホワイトリスト ID（`GET /api/maps` が返す `id` と同じ）。
+  mapId         String
+  /// ②§4-B の `rules` を JSON 文字列としてそのまま保存する。
+  settingsJson  String
+  startedAt     DateTime  @default(now())
+  endedAt       DateTime?
+  /// RSP は 0/1。FPS と強制終了では null。
+  winnerTeam    Int?
+  /// FPS の勝者。RSP では null。
+  winnerUserId  Int?
+  /// `score` / `goal` / `forfeit` / `abandon`（②§5-D と同じ値空間）。
+  endReason     String?
+
+  winner  User?         @relation("MatchWinner", fields: [winnerUserId], references: [id], onDelete: SetNull)
+  players MatchPlayer[]
+
+  @@index([winnerUserId])
+}
+
+/// Match と User の結合表（③§3 `MatchPlayer`）。
+/// **AI席も行として残す**（統計の一貫性のため）。
+/// **B-13 不採用のため、現在このテーブルへ書き込むコードは無い**（Issue #93）。
+model MatchPlayer {
+  id           Int     @id @default(autoincrement())
+  matchId      Int
+  /// AI席は常に null。**ただし null が AI席を意味するとは限らない**——
+  /// User を消すと `onDelete: SetNull` で人間席の userId も null になるため。
+  /// **席が AI かどうかの判定は `isAi` を見ること**（③§3 の「null = AI席」は
+  /// 行を作る時点の話で、退会後の行までは含意していない。2026-08-09、B-03 で明確化）。
+  userId       Int?
+  isAi         Boolean
+  team         Int
+  slot         Int
+  pointsScored Int     @default(0)
+  /// `win` / `lose` / `draw` / `abandon`（帰属規則は ②§6-C）。
+  result       String
+
+  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  user  User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([matchId, slot])
+  @@index([matchId])
+  @@index([userId])
+}

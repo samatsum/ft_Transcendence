@@ -45,7 +45,7 @@
 > | Framework on both FE and BE | 2 | **Complete** (I-01 / F-01) |
 > | WebSockets | 2 | Game WS complete (B-11). Lobby WS integration remains |
 > | AI opponent | 2 | **Complete** |
-> | ORM (Prisma) | 1 | Not yet started (B-03 — a DB is mandatory under Chapter III anyway) |
+> | ORM (Prisma) | 1 | **Schema + migration done (B-03)**. Wiring `prisma migrate` into `docker compose up` remains (I-15) |
 > | Game customization | 1 | Engine side (win condition / maps) complete. Selection UI remains |
 >
 > **Bonus +5pt** — cheap, or safe to lose:

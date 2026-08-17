@@ -20,7 +20,7 @@
 			<p class="hero-note">
 				<span aria-hidden="true">●</span>
 				<strong>現在地 2026-08-09</strong>
-				<span>I-01 / B-02 / B-09 / B-10 / B-11 / B-12 / B-14 完了、B-08コア実装済み</span>
+				<span>I-01 / B-02 / B-03 / B-09 / B-10 / B-11 / B-12 / B-14 完了、B-08コア実装済み</span>
 				<span aria-hidden="true">·</span>
 				<span>ID表記は2026-08-08に <code>W-</code> から <code>B-</code>/<code>I-</code> へ改名</span>
 			</p>
@@ -80,24 +80,24 @@
 
 		<section id="current">
 			<p class="section-kicker">02 · Current position</p>
-			<h2>14件のうち、7件完了＋1件コア完了</h2>
+			<h2>14件のうち、8件完了＋1件コア完了</h2>
 			<p class="section-intro">
-				厳格な完了率は7/14＝50.0%。B-08は大部分が動いていますが、本Cookie認証との
+				厳格な完了率は8/14＝57.1%。B-08は大部分が動いていますが、本Cookie認証との
 				通し検査が残るため「完全完了」には数えていません。
 			</p>
 			<p class="section-intro">
 				<strong>分母が16から14に変わりました（2026-08-08）。</strong>
 				モジュール構成の改訂（D-19）でB-06・B-07・B-13が<strong>不採用</strong>になり、
 				代わりに観戦モードのサーバー側<strong>B-17</strong>が新規に必要になったためです。
-				完了件数はその後B-02（2026-08-09、PR #72）が加わり7件になりました。
+				完了件数はその後B-02（PR #72）とB-03（PR #94）が加わり、2026-08-09時点で8件になりました。
 				不採用の3件はページから消さず、下の一覧に「不採用」として残してあります。
 			</p>
 			<div class="grid grid-4">
 				<article class="card">
 					<p class="card-label">完了</p>
-					<p class="metric" style="color: var(--green)">7<small> / 14</small></p>
-					<p class="metric-note">I-01 · B-02 · B-09 · B-10 · B-11 · B-12 · B-14</p>
-					<div class="progress" role="progressbar" aria-label="Backend/Infra作業50.0%完了" aria-valuenow="50.0" aria-valuemin="0" aria-valuemax="100"><span style="width:50%"></span></div>
+					<p class="metric" style="color: var(--green)">8<small> / 14</small></p>
+					<p class="metric-note">I-01 · B-02 · B-03 · B-09 · B-10 · B-11 · B-12 · B-14</p>
+					<div class="progress" role="progressbar" aria-label="Backend/Infra作業57.1%完了" aria-valuenow="57.1" aria-valuemin="0" aria-valuemax="100"><span style="width:57.1%"></span></div>
 				</article>
 				<article class="card">
 					<p class="card-label">コア実装済み</p>
@@ -106,8 +106,8 @@
 				</article>
 				<article class="card">
 					<p class="card-label">samatsum側の次</p>
-					<p class="metric">B-03〜B-05</p>
-					<p class="metric-note">DB・本認証・Originを通し、B-08の最終結合まで運ぶ（B-02のFastify共通処理は完了済み。旧・次手のB-13は不採用）</p>
+					<p class="metric">B-04〜B-05</p>
+					<p class="metric-note">本認証とOriginを通し、B-08の最終結合まで運ぶ（B-02のFastify共通処理とB-03のDBは完了済み。旧・次手のB-13は不採用）</p>
 				</article>
 				<article class="card">
 					<p class="card-label">最大の上流ブロッカー</p>
@@ -203,9 +203,9 @@
 					<div class="issue-id">B-02</div>
 					<div><h3>Fastify共通処理</h3><p>ログ、zod検証、RESTエラー形式、レート制限を全APIで同じにする。<code>npm run check:http</code>で400/429の実地検証まで完了。</p><div class="issue-meta"><span class="tag owner">samatsum</span><span class="tag status-done">完了</span></div></div>
 				</article>
-				<article class="issue-card" data-status="todo">
+				<article class="issue-card" data-status="done" data-owner="samatsum">
 					<div class="issue-id">B-03</div>
-					<div><h3>Prisma + SQLite</h3><p>User・Session・Friendship・Match・MatchPlayerの正本を作り、migrationで再現可能にする。</p><div class="issue-meta"><span class="tag status-todo">未完成（担当未定）</span></div></div>
+					<div><h3>Prisma + SQLite</h3><p>User・Session・Friendship・Match・MatchPlayerの正本を作り、migrationで再現可能にする。<strong>スキーマとmigrationは完了</strong>（<code>npm run check:db</code>で6項目を検査）。ただし<strong>まだ誰も読み書きしていない</strong>——最初の利用者はB-04。composeの初回起動へ組み込む部分はI-15へ移した。</p><div class="issue-meta"><span class="tag status-done">完了</span><span class="tag owner">samatsum</span></div></div>
 				</article>
 				<article class="issue-card" data-status="todo">
 					<div class="issue-id">B-04</div>
@@ -270,7 +270,7 @@
 			<p class="section-kicker">05 · Dependencies</p>
 			<h2>次に進む順番は、番号順ではない</h2>
 			<p class="section-intro">
-				B-12まで接続済みです。採用分のうちB-03〜B-05・B-17・I-15・I-16が担当未定で未完成のまま残っています
+				B-12まで接続済みです。採用分のうちB-04・B-05・B-17・I-15・I-16が担当未定で未完成のまま残っています
 				（B-06・B-07・B-13は2026-08-08に不採用）。
 				samatsumが単独稼働のなかで、本認証をB-08へ結合するレーンを進めます。
 			</p>
@@ -278,7 +278,6 @@
 				<article class="card">
 					<p class="card-label">Backend foundation（未完成・担当未定）</p>
 					<ol class="path-list">
-						<li><div><strong>B-03</strong><span>DB正本（Prisma + SQLite）を置く（B-02の共通Fastify処理は完了済み）</span></div></li>
 						<li><div><strong>B-04 → B-05</strong><span>本Cookie認証とOrigin共通化を閉じる</span></div></li>
 						<li><div><strong>I-15を並行</strong><span>最終日の前にcompose/TLSを通す</span></div></li>
 						<li><div><strong>B-17</strong><span>観戦接続を受け入れ、snapshot配信の宛先に加える</span></div></li>
@@ -358,7 +357,7 @@
 					</p>
 					<p>
 						最初にI-01でTypeScriptの骨格を作り、B-02で共通のエラー処理・zod検証・レート制限を
-						全APIで揃えます。続くB-03〜B-05でDB、認証Cookie、Origin検証を作ります。
+						全APIで揃えます。B-03でDBの正本（Prisma + SQLite）を置き、続くB-04・B-05で認証CookieとOrigin検証を作ります。
 						ログインした人はB-08のロビーでキューやカスタムルームへ入り、
 						B-09がその参加者をB-10のGameRoomへ変換します。
 					</p>
