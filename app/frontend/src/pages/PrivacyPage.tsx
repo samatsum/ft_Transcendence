@@ -7,11 +7,11 @@
 export default function PrivacyPage() {
 	return (
 		<article className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-12 text-slate-200">
-			<h1 className="text-2xl font-semibold">Privacy Policy</h1>
-			<p className="text-sm text-amber-400">
+			<h1 className="text-heading-lg">Privacy Policy</h1>
+			<p className="text-body text-amber-400">
 				⚠ この文面は F-04 で最終化します（④ §3.5 の章立てで実データフローに即した文面を書く）。
 			</p>
-			<p className="text-sm text-slate-400">
+			<p className="text-body text-slate-400">
 				42 教育プロジェクト ft_transcendence の実運用に即した Privacy Policy を掲載予定。
 				現時点では章立てのみ準備しています。
 			</p>

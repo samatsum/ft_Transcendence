@@ -7,11 +7,11 @@ import { Link } from 'react-router-dom';
 export default function NotFoundPage() {
 	return (
 		<div className="mx-auto flex max-w-md flex-col items-center gap-4 px-4 py-16 text-center">
-			<h1 className="text-2xl font-semibold">ページが見つかりません</h1>
-			<p className="text-sm text-slate-400">URL をご確認ください。</p>
+			<h1 className="text-heading-lg">ページが見つかりません</h1>
+			<p className="text-body text-slate-400">URL をご確認ください。</p>
 			<Link
 				to="/"
-				className="inline-flex items-center justify-center gap-2 rounded-md bg-sky-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-400"
+				className="inline-flex items-center justify-center gap-2 rounded-md bg-sky-500 px-4 py-2 text-label text-white transition-colors hover:bg-sky-400"
 			>
 				ホームへ戻る
 			</Link>

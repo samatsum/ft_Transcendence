@@ -13,7 +13,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 
 	if (status === 'loading') {
 		return (
-			<div className="flex min-h-[50vh] items-center justify-center text-sm text-slate-400">
+			<div className="flex min-h-[50vh] items-center justify-center text-body text-slate-400">
 				確認中…
 			</div>
 		);

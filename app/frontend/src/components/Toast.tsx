@@ -34,7 +34,7 @@ function Toast({ toast, onDismiss }: ToastProps) {
 			role={toast.kind === 'error' ? 'alert' : 'status'}
 			className={`flex items-start gap-3 rounded-md border px-4 py-3 shadow-lg ${KIND_CLASS[toast.kind]}`}
 		>
-			<p className="flex-1 text-sm">{toast.message}</p>
+			<p className="flex-1 text-body">{toast.message}</p>
 			<button
 				type="button"
 				onClick={() => onDismiss(toast.id)}

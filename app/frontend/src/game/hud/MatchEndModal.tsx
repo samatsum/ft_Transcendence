@@ -65,12 +65,12 @@ export function MatchEndModal({
 			}
 		>
 			<div className="flex flex-col gap-3">
-				<p className="text-sm text-slate-300">
+				<p className="text-body text-slate-300">
 					事由: {REASON_LABEL[end.reason]} ／ 最終スコア:{' '}
 					<span className="font-mono">{end.finalScore[0]} - {end.finalScore[1]}</span>
 				</p>
 				{matchDetails && matchDetails.players.length > 0 && (
-					<table className="w-full text-xs">
+					<table className="w-full text-caption">
 						<thead>
 							<tr className="border-b border-slate-700 text-left text-slate-400">
 								<th className="py-1">Slot</th>
@@ -90,15 +90,15 @@ export function MatchEndModal({
 					</table>
 				)}
 				{end.matchId === null && (
-					<p className="text-xs text-amber-400">
+					<p className="text-caption text-amber-400">
 						※ 試合の永続化に失敗したため、詳細は表示できません(最終 snapshot のみ)。
 					</p>
 				)}
 				{end.matchId !== null && !matchDetails && !detailsError && (
-					<p className="text-xs text-slate-500">試合詳細を取得しています…</p>
+					<p className="text-caption text-slate-500">試合詳細を取得しています…</p>
 				)}
 				{detailsError && (
-					<p className="text-xs text-slate-500">試合詳細の取得に失敗しました(最終 snapshot のみ表示)。</p>
+					<p className="text-caption text-slate-500">試合詳細の取得に失敗しました(最終 snapshot のみ表示)。</p>
 				)}
 			</div>
 		</Modal>

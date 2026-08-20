@@ -63,11 +63,11 @@ export function Modal({ open, onClose, title, children, actions }: ModalProps) {
 				onClick={(ev) => ev.stopPropagation()}
 			>
 				{title && (
-					<h2 id="modal-title" className="mb-3 text-lg font-semibold text-slate-100">
+					<h2 id="modal-title" className="mb-3 text-heading-sm text-slate-100">
 						{title}
 					</h2>
 				)}
-				<div className="text-sm text-slate-200">{children}</div>
+				<div className="text-body text-slate-200">{children}</div>
 				{actions && <div className="mt-4 flex justify-end gap-2">{actions}</div>}
 			</div>
 		</div>,

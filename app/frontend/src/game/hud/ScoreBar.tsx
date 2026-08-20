@@ -20,7 +20,7 @@ export function ScoreBar({ mode, score, targetScore, highlightTeam }: ScoreBarPr
 		// 収集アイテムで表現するが、そのカウントは world_delta 集計が要る(TODO)
 		return (
 			<div className="pointer-events-none absolute inset-x-0 top-4 flex justify-center">
-				<div className="rounded-md bg-black/60 px-4 py-1 text-sm text-slate-200">
+				<div className="rounded-md bg-black/60 px-4 py-1 text-body text-slate-200">
 					FPS — ゴールへ到達せよ
 				</div>
 			</div>
