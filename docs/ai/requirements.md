@@ -53,7 +53,7 @@
 > | Module | pt | Status |
 > |---|---|---|
 > | Advanced 3D graphics | 2 | **Implementation complete** (raycaster, 112fps @960×540). Needs only a README justification. Carries interpretive risk — see architecture.md §4.2 |
-> | Custom-made design system | 1 | 9 of the required 10 components already exist |
+> | Custom-made design system | 1 | **Complete** — 14 reusable components (9 UI + 5 icons), plus palette/typography/icon tokens; catalog at `/dev/design-system` |
 > | Spectator mode | 1 | GV-06 handles the spectator display path. `spectate` WS action + GV-12 remain |
 > | Health check / status page | 1 | `GET /api/health` exists. Status page + backup/recovery remain |
 >

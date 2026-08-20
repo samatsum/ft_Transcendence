@@ -306,7 +306,7 @@ development. `GameView`/`HudOverlay` currently have no lobby to be launched from
 | 7 | ORM | 1 | Prisma's schema and migrations run on compose first startup | **B-03 done** (schema v1 + migration + `npm run check:db`); I-15 remains (running it from compose) |
 | **8** | **Game customization** | **1** | Map selection + points-to-win, with defaults available | Engine params **done**; selection UI remains (promoted from bonus) |
 | — | **Mandatory requirement** (not a module) | — | **Responsive at 2 sizes (375px and desktop width) / reachable up to match start using keyboard only** (subject III.3. **not a "nice to have"**) | F-11 |
-| 9/10/11/12 | Bonus | +5 | Only declare items that are **fully working** (never declare something that doesn't work) | Advanced 3D (done, needs README justification) / design system (**1 more component + palette/typography/icons**) / **spectator (B-17 + GV-12 — the largest of the three gaps)** / health-check (`/api/health` exists; **status page + backup/recovery remain**). Only #9 is genuinely finished |
+| 9/10/11/12 | Bonus | +5 | Only declare items that are **fully working** (never declare something that doesn't work) | Advanced 3D (done, needs README justification) / **design system (done — 14 components, palette/typography/icons, see architecture.md §4.2)** / **spectator (B-17 + GV-12 — now the largest of the remaining gaps)** / health-check (`/api/health` exists; **status page + backup/recovery remain**). #9 and #10 are genuinely finished |
 
 > **No longer on the critical path:** B-06 (avatar), B-07 (friends API), B-13 (match persistence),
 > F-09 (profile screen) and F-10 (friends UI) were only required by the dropped modules. B-13 remains
