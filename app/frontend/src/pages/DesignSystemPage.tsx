@@ -43,7 +43,7 @@ export default function DesignSystemPage() {
 			</Section>
 
 			<Section title="Color">
-				<div className="flex flex-wrap gap-6">
+				<div className="grid grid-cols-6 gap-6">
 					{Object.entries(DesignSystem.Color).map(([name, className]) => (
 						<ColorSwatch key={name} name={name} className={className} />
 					))}
