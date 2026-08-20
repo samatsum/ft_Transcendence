@@ -1,5 +1,6 @@
 import { Button } from './Button.js';
 import { Card } from './Card.js';
+import { ColorSwatch } from './ColorSwatch.js';
 import { Footer } from './Footer.js';
 import { FormField } from './FormField.js';
 import { Header } from './Header.js';
@@ -14,7 +15,7 @@ import { InfoCircleIcon } from './icons/InfoCircleIcon.js';
 import { WarningTriangleIcon } from './icons/WarningTriangleIcon.js';
 
 // カスタムデザインシステムの部品一覧を1つの名前空間にまとめたカタログ。
-// `DesignSystem.` と打つと UI / Icon / Typography がエディタの補完候補に出る。
+// `DesignSystem.` と打つと UI / Icon / Typography / Color がエディタの補完候補に出る。
 // DesignSystemPage（開発用一覧ページ）はこのオブジェクトを走査して描画する。
 // 既存コードの import 方法（各ファイルからの直接 import）は変えない —
 // これは新規追加分とカタログ専用の入口として並存させる
@@ -23,6 +24,7 @@ export const DesignSystem = {
 	UI: {
 		Button,
 		Card,
+		ColorSwatch,
 		FormField,
 		Input,
 		Modal,
@@ -45,5 +47,18 @@ export const DesignSystem = {
 		label: 'text-label',
 		body: 'text-body',
 		caption: 'text-caption',
+	},
+	Color: {
+		bg: 'bg-bg',
+		bgElevated: 'bg-bg-elevated',
+		bgHover: 'bg-bg-hover',
+		border: 'bg-border',
+		fg: 'bg-fg',
+		fgMuted: 'bg-fg-muted',
+		accent: 'bg-accent',
+		accentHover: 'bg-accent-hover',
+		danger: 'bg-danger',
+		success: 'bg-success',
+		warning: 'bg-warning',
 	},
 } as const;

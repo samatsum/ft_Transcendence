@@ -8,7 +8,7 @@ import { useToast } from '../contexts/ToastContext.js';
 // 新しいタイポグラフィトークンやアイコンを追加すると自動的にここへ並ぶ。
 // 本番ビルドには含めない（App.tsx 側で import.meta.env.DEV 限定のルートにする）
 
-const { Button, Card, FormField, Input, Modal } = DesignSystem.UI;
+const { Button, Card, ColorSwatch, FormField, Input, Modal } = DesignSystem.UI;
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
 	return (
@@ -22,7 +22,6 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 export default function DesignSystemPage() {
 	const [modalOpen, setModalOpen] = useState(false);
 	const { push } = useToast();
-
 	return (
 		<div className="mx-auto flex max-w-4xl flex-col gap-10 px-4 py-12">
 			<div>
@@ -39,6 +38,14 @@ export default function DesignSystemPage() {
 							<code className="w-32 shrink-0 text-caption text-slate-500">{name}</code>
 							<span className={className}>The quick brown fox — サンプル文字列</span>
 						</div>
+					))}
+				</div>
+			</Section>
+
+			<Section title="Color">
+				<div className="flex flex-wrap gap-6">
+					{Object.entries(DesignSystem.Color).map(([name, className]) => (
+						<ColorSwatch key={name} name={name} className={className} />
 					))}
 				</div>
 			</Section>
