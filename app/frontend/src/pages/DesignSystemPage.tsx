@@ -43,7 +43,7 @@ export default function DesignSystemPage() {
 			</Section>
 
 			<Section title="Color">
-				<div className="grid grid-cols-6 gap-6">
+				<div className="grid grid-cols-3 gap-6 sm:grid-cols-4 md:grid-cols-6">
 					{Object.entries(DesignSystem.Color).map(([name, className]) => (
 						<ColorSwatch key={name} name={name} className={className} />
 					))}
