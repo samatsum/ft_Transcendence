@@ -26,7 +26,7 @@ export default function PrivacyPage() {
 					<li>メールアドレス</li>
 					<li>パスワードのハッシュ値（argon2id によるハッシュ。生のパスワードは保存しません）</li>
 					<li>表示名</li>
-					<li>ログインセッションを維持するための Cookie（セッショントークンのハッシュ値）</li>
+					<li>ログインセッションを維持するための Cookie（ランダムに生成されたセッション識別子）</li>
 				</ul>
 				<p className="text-sm leading-relaxed text-slate-300">
 					アバター画像および対戦履歴は、現時点の本サービスでは機能自体が提供されていないため、
@@ -51,9 +51,10 @@ export default function PrivacyPage() {
 			<section className="flex flex-col gap-2">
 				<h2 className="text-lg font-semibold text-slate-100">Cookie について</h2>
 				<p className="text-sm leading-relaxed text-slate-300">
-					本サービスはログインセッションを維持するためだけに Cookie を使用します。Cookie にはセッション
-					トークンのハッシュ値のみが含まれ、ユーザーの行動を追跡する目的（アクセス解析・広告トラッキング等）
-					では使用しません。ログアウト、またはセッションの有効期限切れにより Cookie は無効になります。
+					本サービスはログインセッションを維持するためだけに Cookie を使用します。Cookie にはランダムに
+					生成されたセッション識別子のみが含まれ、サーバー側にはその SHA-256 ハッシュ値だけを保存します。
+					ユーザーの行動を追跡する目的（アクセス解析・広告トラッキング等）では使用しません。ログアウト、
+					またはセッションの有効期限切れにより Cookie は無効になります。
 				</p>
 			</section>
 
