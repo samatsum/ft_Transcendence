@@ -4,9 +4,12 @@
 import { pathToFileURL } from 'node:url';
 
 import Fastify from 'fastify';
+import fastifyCookie from '@fastify/cookie';
 import fastifyWebsocket from '@fastify/websocket';
 import { healthSchema, listMapsQuerySchema, makeError } from '@ft/shared';
 
+import { registerAuthRoutes } from './auth/routes.js';
+import { createPrismaClient } from './db/client.js';
 import { listMaps } from './game/maps.js';
 import { closeAllRooms } from './game/rooms.js';
 import { registerGameWs } from './game/ws.js';
@@ -71,6 +74,16 @@ export async function buildServer(options: BuildServerOptions = {}) {
 		const { mode } = listMapsQuerySchema.parse(request.query);
 		return listMaps(mode);
 	});
+
+	// B-04: ③§2-A の `POST /api/auth/login`。DB は buildServer 呼び出しごとに
+	// 生成するだけで、実際に開かれるのは最初のクエリが飛んだ時（B-03 の前提を維持——
+	// `/api/health` だけを叩く CI ジョブや DB を使わない check:* は今まで通り DB 不要）
+	await app.register(fastifyCookie);
+	const prisma = createPrismaClient();
+	app.addHook('onClose', async () => {
+		await prisma.$disconnect();
+	});
+	registerAuthRoutes(app, { prisma });
 
 	// B-11: ゲーム WS（② §5）。ロビー WS（B-08）も同じプラグインに載る
 	await app.register(fastifyWebsocket, {
