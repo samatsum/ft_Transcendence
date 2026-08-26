@@ -100,6 +100,8 @@ jobs:
           cache: npm
       - name: install (workspaces)
         run: npm ci
+      - name: lint (frontend)
+        run: npm run lint
       - name: typecheck (shared / backend / frontend)
         run: npm run typecheck
       - name: build
