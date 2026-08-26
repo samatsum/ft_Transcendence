@@ -43,7 +43,16 @@ function requireOrigin(request: FastifyRequest, reply: FastifyReply): boolean {
 	return false;
 }
 
-/** Cookie を検証し、失敗なら401エンベロープを送って `null` を返す */
+/**
+ * Cookie を検証し、失敗なら401エンベロープを送って `null` を返す。
+ *
+ * 認証に成功したら Cookie も張り直す。`authenticateRequest` はDB側の
+ * `Session.expiresAt` をスライディング延長するが（③D-5）、Cookie自体の
+ * `maxAge` は login/signup 時の7日固定のままだと、DBのセッションはまだ
+ * 有効なのにブラウザ側のCookieだけ7日で消えてログアウトしてしまう
+ * （CodeRabbitの指摘・2026-08-26）。`x-dev-user` の開発スタブには対応する
+ * Cookie が無いので、Cookieが実際に来ているときだけ張り直す
+ */
 async function requireAuth(
 	request: FastifyRequest,
 	reply: FastifyReply,
@@ -53,6 +62,8 @@ async function requireAuth(
 		reply.code(401).send(makeError('unauthenticated', 'ログインが必要です'));
 		return null;
 	}
+	const token = request.cookies[SESSION_COOKIE_NAME];
+	if (token) setSessionCookie(reply, token);
 	return user;
 }
 
@@ -180,7 +191,16 @@ export function registerAuthRoutes(
 		const authed = await requireAuth(request, reply);
 		if (!authed) return;
 
-		await prisma.session.delete({ where: { id: authed.sessionId } });
+		// `authed.sessionId` を直接 delete のキーにしない。`x-dev-user` の開発スタブは
+		// 対応する Session 行を持たずに sessionId だけ返すため、`delete`（対象行が無いと
+		// P2025 で例外）だと落ちる上、たまたま実在の別ユーザーの Session.id と数値が
+		// 一致すると誤って削除してしまう（CodeRabbitの指摘・2026-08-26）。実Cookieの
+		// tokenHash を条件にした deleteMany なら、対象が無くても例外にならず、
+		// 開発スタブ(Cookie無し)なら何も消さない
+		const token = request.cookies[SESSION_COOKIE_NAME];
+		if (token) {
+			await prisma.session.deleteMany({ where: { tokenHash: hashSessionToken(token) } });
+		}
 		reply.clearCookie(SESSION_COOKIE_NAME, { path: '/' });
 		connectionManager.closeSessionConnections(authed.sessionId);
 		reply.code(204);
