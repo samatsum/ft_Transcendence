@@ -5,6 +5,8 @@ import { pathToFileURL } from 'node:url';
 
 import Fastify from 'fastify';
 import fastifyCookie from '@fastify/cookie';
+import fastifySwagger from '@fastify/swagger';
+import fastifySwaggerUi from '@fastify/swagger-ui';
 import fastifyWebsocket from '@fastify/websocket';
 import { healthSchema, listMapsQuerySchema, makeError } from '@ft/shared';
 
@@ -16,6 +18,7 @@ import { closeAllRooms } from './game/rooms.js';
 import { registerGameWs } from './game/ws.js';
 import { registerErrorHandler } from './http/errors.js';
 import { loggerOptions } from './http/logger.js';
+import { buildOpenApiDocument } from './http/openapi.js';
 import { registerRateLimit } from './http/rate-limit.js';
 import { registerLobbyWs } from './lobby/ws.js';
 import { ConnectionManager } from './ws/connection.js';
@@ -56,6 +59,15 @@ export async function buildServer(options: BuildServerOptions = {}) {
 	// ③§1-C: レート制限（GET 120/分・その他の書き込み 30/分。既定値の上書きは
 	// ルート追加時に `config.rateLimit` で行う）
 	await registerRateLimit(app);
+
+	// API仕様の確認用。ルートは schema: オプションを使わず手動 .parse() する流儀なので
+	// dynamic モードでは何も拾えない。static モードで shared の zod スキーマから
+	// 組み立てた spec をそのまま渡す（openapi.ts 参照）
+	await app.register(fastifySwagger, {
+		mode: 'static',
+		specification: { document: buildOpenApiDocument() },
+	});
+	await app.register(fastifySwaggerUi, { routePrefix: '/api/docs' });
 
 	// 疎通確認。返す形は shared の zod スキーマで自己検証し、
 	// FE/BE が同じ契約を共有していることを起動時に保証する
