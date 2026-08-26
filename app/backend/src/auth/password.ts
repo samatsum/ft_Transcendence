@@ -10,6 +10,16 @@ export function verifyPassword(hash: string, plain: string): Promise<boolean> {
 	return argon2.verify(hash, plain);
 }
 
+/** ③§2-A: argon2id, memory 19MiB / iterations 2 / parallelism 1（OWASP推奨ライン） */
+export function hashPassword(plain: string): Promise<string> {
+	return argon2.hash(plain, {
+		type: argon2.argon2id,
+		memoryCost: 19 * 1024,
+		timeCost: 2,
+		parallelism: 1,
+	});
+}
+
 /**
  * メール不存在時にも argon2.verify を1回走らせて応答時間を揃えるための固定ハッシュ
  * （③§2-A「存在しないメールと誤パスワードを区別しない」の、タイミング側での担保）。

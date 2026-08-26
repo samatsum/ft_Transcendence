@@ -9,6 +9,7 @@ import fastifyWebsocket from '@fastify/websocket';
 import { healthSchema, listMapsQuerySchema, makeError } from '@ft/shared';
 
 import { registerAuthRoutes } from './auth/routes.js';
+import { configureAuthPrisma } from './auth/session.js';
 import { createPrismaClient } from './db/client.js';
 import { listMaps } from './game/maps.js';
 import { closeAllRooms } from './game/rooms.js';
@@ -83,7 +84,10 @@ export async function buildServer(options: BuildServerOptions = {}) {
 	app.addHook('onClose', async () => {
 		await prisma.$disconnect();
 	});
-	registerAuthRoutes(app, { prisma });
+	// B-04: authenticateRequest はシグネチャを変えられない（Issue #11）ので、
+	// DB はここで一度だけ注入する（game/lobby WS の authenticateRequest 呼び出しにも効く）
+	configureAuthPrisma(prisma);
+	registerAuthRoutes(app, { prisma, connectionManager });
 
 	// B-11: ゲーム WS（② §5）。ロビー WS（B-08）も同じプラグインに載る
 	await app.register(fastifyWebsocket, {

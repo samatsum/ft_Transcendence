@@ -15,6 +15,21 @@ export const loginRequestSchema = z.object({
 });
 export type LoginRequest = z.infer<typeof loginRequestSchema>;
 
+/** 3〜20文字・`[a-zA-Z0-9_-]` のみ。大文字小文字を無視して一意（③§1-B） */
+export const displayNameSchema = z
+	.string()
+	.trim()
+	.min(3)
+	.max(20)
+	.regex(/^[a-zA-Z0-9_-]+$/);
+
+export const signupRequestSchema = z.object({
+	email: emailSchema,
+	password: passwordSchema,
+	display_name: displayNameSchema,
+});
+export type SignupRequest = z.infer<typeof signupRequestSchema>;
+
 /** self = ③§2-A。`email` は本人にのみ返す（他ユーザーのプロフィールには含めない） */
 export const selfSchema = z.object({
 	id: z.number().int(),
