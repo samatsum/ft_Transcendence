@@ -48,12 +48,12 @@ export class ErrorBoundary extends Component<Props, State> {
 				role="alert"
 				className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-950 p-8 text-slate-100"
 			>
-				<h1 className="text-xl font-semibold">画面の描画で問題が起きました</h1>
-				<p className="max-w-md text-center text-sm text-slate-400">
+				<h1 className="text-heading-md">画面の描画で問題が起きました</h1>
+				<p className="max-w-md text-center text-body text-slate-400">
 					もう一度読み込むか、ホームへ戻ってください。
 				</p>
 				{import.meta.env.DEV && (
-					<pre className="max-w-xl overflow-x-auto rounded border border-slate-700 bg-slate-900 p-3 text-xs text-rose-300">
+					<pre className="max-w-xl overflow-x-auto rounded border border-slate-700 bg-slate-900 p-3 text-caption text-rose-300">
 						{this.state.error.message}
 					</pre>
 				)}
@@ -61,14 +61,14 @@ export class ErrorBoundary extends Component<Props, State> {
 					<button
 						type="button"
 						onClick={this.handleReload}
-						className="rounded-md bg-sky-500 px-4 py-2 text-sm font-medium text-white hover:bg-sky-400"
+						className="rounded-md bg-sky-500 px-4 py-2 text-label text-white hover:bg-sky-400"
 					>
 						もう一度読み込む
 					</button>
 					<button
 						type="button"
 						onClick={this.handleHome}
-						className="rounded-md border border-slate-600 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800"
+						className="rounded-md border border-slate-600 px-4 py-2 text-label text-slate-200 hover:bg-slate-800"
 					>
 						ホームへ
 					</button>

@@ -5,6 +5,7 @@ import { RedirectIfAuth } from './components/RedirectIfAuth.js';
 import { RequireAuth } from './components/RequireAuth.js';
 import { useAuth } from './contexts/AuthContext.js';
 
+import DesignSystemPage from './pages/DesignSystemPage.js';
 import GameView from './pages/GameView.js';
 import LobbyPage from './pages/LobbyPage.js';
 import LoginPage from './pages/LoginPage.js';
@@ -25,7 +26,7 @@ function RootRedirect() {
 	const { status } = useAuth();
 	if (status === 'loading') {
 		return (
-			<div className="flex min-h-screen items-center justify-center text-sm text-slate-400">
+			<div className="flex min-h-screen items-center justify-center text-body text-slate-400">
 				確認中…
 			</div>
 		);
@@ -74,6 +75,10 @@ export default function App() {
 				{/* Privacy / Terms は未認証でも読める（④ §1 route 表） */}
 				<Route path="/privacy" element={<PrivacyPage />} />
 				<Route path="/terms" element={<TermsPage />} />
+				{/* 開発用デザインシステムカタログ。本番ビルドには含めない */}
+				{import.meta.env.DEV && (
+					<Route path="/dev/design-system" element={<DesignSystemPage />} />
+				)}
 				<Route path="*" element={<NotFoundPage />} />
 			</Route>
 

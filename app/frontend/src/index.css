@@ -18,6 +18,30 @@
 	--color-danger: oklch(0.65 0.22 25);        /* rose-500 */
 	--color-success: oklch(0.72 0.19 155);      /* emerald-500 */
 	--color-warning: oklch(0.75 0.15 80);       /* amber-500 */
+
+	/* タイポグラフィトークン */
+	/* ページ見出し */
+	--text-heading-lg: 1.5rem;
+	--text-heading-lg--line-height: 2rem;
+	--text-heading-lg--font-weight: 600;
+	/* セクション見出し */
+	--text-heading-md: 1.25rem;
+	--text-heading-md--line-height: 1.75rem;
+	--text-heading-md--font-weight: 600;
+	/* 	モーダルタイトルなど */
+	--text-heading-sm: 1.125rem;
+	--text-heading-sm--line-height: 1.75rem;
+	--text-heading-sm--font-weight: 600;
+	/* フォームラベル・ボタン文字 */
+	--text-label: 0.875rem;
+	--text-label--line-height: 1.25rem;
+	--text-label--font-weight: 500;
+	/* 本文・補助テキスト */
+	--text-body: 0.875rem;
+	--text-body--line-height: 1.25rem;
+	/* キャプション・注釈 */
+	--text-caption: 0.75rem;
+	--text-caption--line-height: 1rem;
 }
 
 /* body 既定色（layout 未マウントの ErrorBoundary fallback 等でも白背景にならない保険） */

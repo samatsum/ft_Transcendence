@@ -22,7 +22,7 @@ export function Header() {
 			<div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
 				<Link
 					to={user ? '/lobby' : '/'}
-					className="text-lg font-semibold text-slate-100 hover:text-white"
+					className="text-heading-sm text-slate-100 hover:text-white"
 				>
 					ft_transcendence
 				</Link>
@@ -30,7 +30,7 @@ export function Header() {
 					<div className="flex items-center gap-3">
 						<Link
 							to={`/profile/${user.id}`}
-							className="flex items-center gap-2 rounded-md px-2 py-1 text-sm text-slate-200 hover:bg-slate-800"
+							className="flex items-center gap-2 rounded-md px-2 py-1 text-body text-slate-200 hover:bg-slate-800"
 						>
 							<span
 								className="flex h-7 w-7 items-center justify-center rounded-full bg-sky-600 text-xs font-bold text-white"

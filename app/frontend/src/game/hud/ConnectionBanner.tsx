@@ -25,7 +25,7 @@ export function ConnectionBanner({ status, closeCode }: ConnectionBannerProps) {
 		<div className="pointer-events-none absolute inset-x-0 bottom-4 flex justify-center">
 			<div
 				role="status"
-				className={`rounded-md px-4 py-2 text-sm font-medium text-white shadow ${tone}`}
+				className={`rounded-md px-4 py-2 text-label text-white shadow ${tone}`}
 			>
 				{label}
 			</div>

@@ -96,10 +96,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
           cache: npm
       - name: install (workspaces)
         run: npm ci
+      - name: lint (frontend)
+        run: npm run lint
       - name: typecheck (shared / backend / frontend)
         run: npm run typecheck
       - name: build

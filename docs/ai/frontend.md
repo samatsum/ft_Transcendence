@@ -137,7 +137,7 @@ Translates the connection rules in ② into implementation contracts on the UI s
 ## 5. Common components (minimal set)
 
 `Button / Input / FormField / Card / Modal / Toast / Badge (presence, team colors) / Avatar / Table / Tabs / StatCard / SeatCard / CopyField (room code)`.
-The custom design-system module **is** declared, as bonus #10 (architecture.md §4.2). Consistency (color, spacing, focus ring) still comes first, but the module also requires a documented palette, typography and icon set on top of the component count — see §4.2 for what is still missing.
+The custom design-system module **is** declared, as bonus #10 (architecture.md §4.2), and is now **complete**: component count, palette, typography and icon set are all done, catalogued in `components/design-system.ts` and the dev-only `/dev/design-system` gallery page — see §4.2 for detail.
 
 ## 6. Acceptance criteria
 

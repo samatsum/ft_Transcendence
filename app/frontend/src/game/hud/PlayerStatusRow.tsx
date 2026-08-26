@@ -31,7 +31,7 @@ function SeatBadge({ seat, isSelf, nowMs }: { seat: SeatInfo; isSelf: boolean; n
 			: null;
 	return (
 		<div
-			className={`flex items-center gap-2 rounded px-2 py-1 text-xs ${
+			className={`flex items-center gap-2 rounded px-2 py-1 text-caption ${
 				isSelf ? 'ring-1 ring-sky-400' : ''
 			} bg-black/60`}
 		>
