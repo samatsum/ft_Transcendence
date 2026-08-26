@@ -4,8 +4,10 @@
   "type": "module",
   "description": "ft_transcendence — cub3D エンジン（C/wasm）を核にしたオンライン対戦。W-01 リポジトリ骨格",
   "engines": {
-    "node": ">=20"
+    "node": ">=20.17.0",
+    "npm": "^11.0.0"
   },
+  "packageManager": "npm@11.17.0",
   "workspaces": [
     "app/shared",
     "app/backend",
