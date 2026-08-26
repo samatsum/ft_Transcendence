@@ -119,27 +119,27 @@ export default function GameView() {
 				{/* 読み込み中と描画エラーは HUD 前に出す(HUD は welcome 後にしか描かない) */}
 				<div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 text-center">
 					{rendererStatus === 'loading-glue' && (
-						<p className="rounded bg-black/60 px-4 py-2 text-sm">
+						<p className="rounded bg-black/60 px-4 py-2 text-body">
 							エンジンを読み込んでいます…
 						</p>
 					)}
 					{rendererStatus === 'loading-textures' && textureProgress && (
-						<p className="rounded bg-black/60 px-4 py-2 text-sm">
+						<p className="rounded bg-black/60 px-4 py-2 text-body">
 							テクスチャ {textureProgress.loaded}/{textureProgress.total}
 						</p>
 					)}
 					{rendererStatus === 'error' && (
-						<p className="rounded bg-rose-900/80 px-4 py-2 text-sm">
+						<p className="rounded bg-rose-900/80 px-4 py-2 text-body">
 							描画エラー: {errorMessage}
 						</p>
 					)}
 					{rendererStatus === 'ready' && !captured && !isSpectator && (
-						<p className="rounded bg-black/60 px-4 py-2 text-sm">
+						<p className="rounded bg-black/60 px-4 py-2 text-body">
 							クリック / Enter でキャプチャ開始、Esc で解除
 						</p>
 					)}
 					{rendererStatus === 'ready' && isSpectator && (
-						<p className="rounded bg-black/60 px-4 py-2 text-sm">
+						<p className="rounded bg-black/60 px-4 py-2 text-body">
 							観戦中(視点切替は GV-12)
 						</p>
 					)}
@@ -159,7 +159,7 @@ export default function GameView() {
 				/>
 			</div>
 
-			<footer className="flex w-full max-w-[1280px] items-center justify-between text-xs text-slate-400">
+			<footer className="flex w-full max-w-[1280px] items-center justify-between text-caption text-slate-400">
 				<span>
 					room={roomId} · view={welcome?.combatant_id ?? '-'} · slot={welcome?.slot ?? '-'}
 				</span>

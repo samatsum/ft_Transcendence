@@ -27,7 +27,7 @@ export function FormField({ label, error, hint, required, children }: FormFieldP
 	};
 	return (
 		<div className="flex flex-col gap-1">
-			<label htmlFor={fieldId} className="text-sm font-medium text-slate-200">
+			<label htmlFor={fieldId} className="text-label text-slate-200">
 				{label}
 				{required && <span className="ml-1 text-rose-400" aria-hidden>*</span>}
 			</label>
@@ -35,7 +35,7 @@ export function FormField({ label, error, hint, required, children }: FormFieldP
 			{(error || hint) && (
 				<p
 					id={descId}
-					className={`text-xs ${error ? 'text-rose-400' : 'text-slate-400'}`}
+					className={`text-caption ${error ? 'text-rose-400' : 'text-slate-400'}`}
 					role={error ? 'alert' : undefined}
 				>
 					{error || hint}
