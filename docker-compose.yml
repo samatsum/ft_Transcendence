@@ -1,5 +1,5 @@
 services:
-  app:
+  backend:
     build:
       context: .
       dockerfile: infra/docker/backend/Dockerfile
