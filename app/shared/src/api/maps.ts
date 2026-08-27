@@ -9,3 +9,17 @@ export const listMapsQuerySchema = z.object({
 });
 
 export type ListMapsQuery = z.infer<typeof listMapsQuerySchema>;
+
+/**
+ * ③§2-E: `GET /api/maps` が返す1件の形（`path` は含めない。サーバ内部の情報）。
+ * バックエンドの `PublicMap`（`game/maps.ts`）と同じ形。命名衝突を避けるため
+ * 型名はここでは export しない（Swagger docs 生成専用のスキーマ）
+ */
+const mapEntrySchema = z.object({
+	id: z.string(),
+	name: z.string(),
+	mode: gameModeSchema,
+	description: z.string(),
+});
+
+export const listMapsResponseSchema = z.array(mapEntrySchema);

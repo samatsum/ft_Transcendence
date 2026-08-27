@@ -4,14 +4,21 @@
 import { pathToFileURL } from 'node:url';
 
 import Fastify from 'fastify';
+import fastifyCookie from '@fastify/cookie';
+import fastifySwagger from '@fastify/swagger';
+import fastifySwaggerUi from '@fastify/swagger-ui';
 import fastifyWebsocket from '@fastify/websocket';
 import { healthSchema, listMapsQuerySchema, makeError } from '@ft/shared';
 
+import { registerAuthRoutes } from './auth/routes.js';
+import { configureAuthPrisma } from './auth/session.js';
+import { createPrismaClient } from './db/client.js';
 import { listMaps } from './game/maps.js';
 import { closeAllRooms } from './game/rooms.js';
 import { registerGameWs } from './game/ws.js';
 import { registerErrorHandler } from './http/errors.js';
 import { loggerOptions } from './http/logger.js';
+import { buildOpenApiDocument } from './http/openapi.js';
 import { registerRateLimit } from './http/rate-limit.js';
 import { registerLobbyWs } from './lobby/ws.js';
 import { ConnectionManager } from './ws/connection.js';
@@ -53,6 +60,15 @@ export async function buildServer(options: BuildServerOptions = {}) {
 	// ルート追加時に `config.rateLimit` で行う）
 	await registerRateLimit(app);
 
+	// API仕様の確認用。ルートは schema: オプションを使わず手動 .parse() する流儀なので
+	// dynamic モードでは何も拾えない。static モードで shared の zod スキーマから
+	// 組み立てた spec をそのまま渡す（openapi.ts 参照）
+	await app.register(fastifySwagger, {
+		mode: 'static',
+		specification: { document: buildOpenApiDocument() },
+	});
+	await app.register(fastifySwaggerUi, { routePrefix: '/api/docs' });
+
 	// 疎通確認。返す形は shared の zod スキーマで自己検証し、
 	// FE/BE が同じ契約を共有していることを起動時に保証する
 	app.get('/api/health', async () => {
@@ -71,6 +87,19 @@ export async function buildServer(options: BuildServerOptions = {}) {
 		const { mode } = listMapsQuerySchema.parse(request.query);
 		return listMaps(mode);
 	});
+
+	// B-04: ③§2-A の `POST /api/auth/login`。DB は buildServer 呼び出しごとに
+	// 生成するだけで、実際に開かれるのは最初のクエリが飛んだ時（B-03 の前提を維持——
+	// `/api/health` だけを叩く CI ジョブや DB を使わない check:* は今まで通り DB 不要）
+	await app.register(fastifyCookie);
+	const prisma = createPrismaClient();
+	app.addHook('onClose', async () => {
+		await prisma.$disconnect();
+	});
+	// B-04: authenticateRequest はシグネチャを変えられない（Issue #11）ので、
+	// DB はここで一度だけ注入する（game/lobby WS の authenticateRequest 呼び出しにも効く）
+	configureAuthPrisma(prisma);
+	registerAuthRoutes(app, { prisma, connectionManager });
 
 	// B-11: ゲーム WS（② §5）。ロビー WS（B-08）も同じプラグインに載る
 	await app.register(fastifyWebsocket, {
