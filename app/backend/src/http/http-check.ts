@@ -1,7 +1,13 @@
 // B-02 の受入検査（③§1: 不正入力が ③§1-A の形で 400/429 を返す）。
+// B-04 検査5だけ ③§2-A の列挙攻撃対策（ログイン失敗時のレスポンスが区別不能）も見る。
 // 実行: npm run check:http --workspace @ft/backend
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, rmSync } from 'node:fs';
 import type { AddressInfo } from 'node:net';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import type { FastifyInstance } from 'fastify';
 import { errorEnvelopeSchema } from '@ft/shared';
@@ -126,6 +132,73 @@ async function checkMutatingRateLimit(): Promise<void> {
 	);
 }
 
+/**
+ * ③§2-A: ログイン失敗時、「メール不存在」と「パスワード誤り」でレスポンスが
+ * 区別できないこと（列挙攻撃対策）。`routes.ts` の login ハンドラは、ユーザーが
+ * いなくても `DUMMY_PASSWORD_HASH` で `verifyPassword` を走らせたうえで
+ * 同じ 401 エンベロープを返す実装になっているので、それをここで裏取りする。
+ *
+ * signup/login は Origin 検証を通るので、B-08/lobby-check.ts と同じ
+ * `NODE_ENV=development` + `ALLOW_DEV_AUTH=true` の開発用 loopback fallback を使う。
+ * DB はこの検査専用の一時 SQLite に migrate してから使う（`data/dev.db` を汚さない、
+ * `db-check.ts` と同じやり方）
+ */
+async function checkLoginFailureIndistinguishable(): Promise<void> {
+	const backendRoot = fileURLToPath(new URL('../..', import.meta.url));
+	const dir = mkdtempSync(join(tmpdir(), 'ft-http-check-'));
+	const url = `file:${join(dir, 'check.db')}`;
+	try {
+		execFileSync('npx', ['prisma', 'migrate', 'deploy'], {
+			cwd: backendRoot,
+			env: { ...process.env, DATABASE_URL: url },
+			stdio: 'pipe',
+		});
+
+		process.env.DATABASE_URL = url;
+		process.env.NODE_ENV = 'development';
+		process.env.ALLOW_DEV_AUTH = 'true';
+
+		await withServer(
+			() => {},
+			async (base) => {
+				const headers = { 'content-type': 'application/json', origin: 'http://127.0.0.1' };
+				const email = `checker-${Date.now()}@example.test`;
+				const password = 'correct-horse-battery';
+
+				const signup = await fetch(`${base}/api/auth/signup`, {
+					method: 'POST',
+					headers,
+					body: JSON.stringify({ email, password, display_name: 'checker' }),
+				});
+				assert.equal(signup.status, 201, 'テスト用ユーザーの作成に失敗した');
+
+				const wrongPassword = await fetch(`${base}/api/auth/login`, {
+					method: 'POST',
+					headers,
+					body: JSON.stringify({ email, password: 'incorrect-password' }),
+				});
+				const unknownEmail = await fetch(`${base}/api/auth/login`, {
+					method: 'POST',
+					headers,
+					body: JSON.stringify({ email: `nobody-${Date.now()}@example.test`, password }),
+				});
+
+				assert.equal(wrongPassword.status, 401, 'パスワード誤りは401のはず');
+				assert.equal(unknownEmail.status, 401, 'メール不存在も401のはず');
+				const wrongBody = errorEnvelopeSchema.parse(await wrongPassword.json());
+				const unknownBody = errorEnvelopeSchema.parse(await unknownEmail.json());
+				assert.deepEqual(
+					wrongBody,
+					unknownBody,
+					'メール不存在とパスワード誤りのレスポンスが同一であること（列挙攻撃対策）',
+				);
+			},
+		);
+	} finally {
+		rmSync(dir, { recursive: true, force: true });
+	}
+}
+
 async function main(): Promise<void> {
 	console.log('B-02 検査1: 不正クエリ → 400 validation_failed（③§1-A/§1-B）');
 	await checkValidationFailed();
@@ -144,6 +217,10 @@ async function main(): Promise<void> {
 	console.log('  OK');
 
 	console.log('B-02: ③§1 の受入条件（不正入力が③§1-Aの形で400/429を返す）を満たしています');
+
+	console.log('B-04 検査5: ログイン失敗時、メール不存在とパスワード誤りが区別できない（③§2-A・列挙攻撃対策）');
+	await checkLoginFailureIndistinguishable();
+	console.log('  OK');
 }
 
 main().catch((error: unknown) => {
