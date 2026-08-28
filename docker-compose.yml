@@ -1,4 +1,31 @@
 services:
+  backend:
+    build:
+      context: .
+      dockerfile: infra/docker/backend/Dockerfile
+    init: true
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      BACKEND_PORT: 3000
+      DATABASE_URL: file:/data/app.db
+      ALLOWED_ORIGIN: ${ALLOWED_ORIGIN:-https://localhost}
+    volumes:
+      - app-data:/data
+    expose:
+      - "3000"
+    healthcheck:
+      # nginx を後から接続する前に、backend 単体で HTTP 応答を確認する
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/api/health', { signal: AbortSignal.timeout(4000) }).then(r => process.exit(r.status === 200 ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+
   engine-build:
     build:
       context: .
@@ -21,4 +48,5 @@ services:
       - make frontend-engine-assets && python3 -m http.server 8000 --bind 0.0.0.0
 
 volumes:
+  app-data:
   emscripten-cache:
