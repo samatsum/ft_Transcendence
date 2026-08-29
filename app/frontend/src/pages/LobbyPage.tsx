@@ -1,32 +1,73 @@
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
+import { Button } from '../components/Button.js';
 import { Card } from '../components/Card.js';
+import { useAuth } from '../contexts/AuthContext.js';
 
-// F-05 の担当（ロビー一式 + useLobbySocket）。ここは stub。
-// GV-06 の GameView 用に /game/dev-room への暫定リンクを残す。
-// 注意: このリンクは現状ブラウザからは繋がらない。通常起動のサーバーはルームを作らず(4002)、
-// ブラウザの WebSocket は開発用認証の x-dev-user ヘッダを送れない(4000)。B-04 と F-05 待ち。
-//
-// CodeRabbit 指摘: Link と Button は両方 interactive なので入れ子にすると不正 HTML。
-// Link に Button 相当のクラスを直付けする（Button の VARIANT_CLASS と揃える）
+// F-05 ロビーの入口となるハブ画面。「部屋を作る」「部屋に参加する」の2択と補助導線だけを持つ。
+// /ws/lobby への接続は useLobbySocket（F-05 の残り）で入れるため、ここではまだ張らない。
 
 export default function LobbyPage() {
+	const { user } = useAuth();
+	const navigate = useNavigate();
+
 	return (
-		<div className="mx-auto flex max-w-4xl flex-col gap-4 px-4 py-8">
-			<h1 className="text-heading-md">ロビー</h1>
-			<Card>
-				<p className="text-body text-slate-400">
-					このページは F-05 で実装します（Quick Match / カスタムルーム / ルームビュー）。
-				</p>
-			</Card>
-			<div className="flex gap-2">
-				<Link
-					to="/game/dev-room"
-					className="inline-flex items-center justify-center gap-2 rounded-md bg-slate-700 px-4 py-2 text-label text-slate-100 transition-colors hover:bg-slate-600"
-				>
-					/game/dev-room を開く (GV-06 用・B-04まで未接続)
-				</Link>
+		<div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-10">
+			<header className="flex flex-wrap items-baseline justify-between gap-2">
+				<h1 className="text-heading-lg">ロビー</h1>
+				{user && (
+					<p className="text-caption text-fg-muted">
+						{user.displayName} としてログイン中
+					</p>
+				)}
+			</header>
+
+			<div className="grid gap-4 sm:grid-cols-2">
+				<Card className="flex flex-col gap-3">
+					<h2 className="text-heading-sm">部屋を作る</h2>
+					<p className="text-body text-fg-muted">
+						ゲームモードを選んで部屋を作ります。作ると 6 文字の部屋コードが
+						発行されるので、それを友達に伝えて集まります。
+					</p>
+					{/* mt-auto: 説明文の長さが違っても2枚のボタン位置を揃える */}
+					<div className="mt-auto pt-1">
+						<Button fullWidth onClick={() => navigate('/lobby/create')}>
+							部屋を作る
+						</Button>
+					</div>
+				</Card>
+
+				<Card className="flex flex-col gap-3">
+					<h2 className="text-heading-sm">部屋に参加する</h2>
+					<p className="text-body text-fg-muted">
+						友達から聞いた 6 文字の部屋コードを入力して参加します。
+						コードは試合が始まると使えなくなります。
+					</p>
+					<div className="mt-auto pt-1">
+						<Button fullWidth onClick={() => navigate('/lobby/join')}>
+							部屋に参加する
+						</Button>
+					</div>
+				</Card>
 			</div>
+
+			<Card className="flex flex-wrap items-center justify-between gap-3">
+				<div>
+					<p className="text-label">その他</p>
+					<p className="text-caption text-fg-muted">
+						操作方法の確認や、音量の設定はこちらから
+					</p>
+				</div>
+				{/* ゲームメニューは F-07 の担当。画面が入るまで無効にしておく。
+				    ログアウトは Header が持っているのでここには置かない */}
+				<Button
+					variant="ghost"
+					disabled
+					title="ゲームメニュー画面の実装後に有効になります"
+				>
+					ゲームメニュー
+				</Button>
+			</Card>
 		</div>
 	);
 }
