@@ -20,7 +20,7 @@ import { registerErrorHandler } from './http/errors.js';
 import { loggerOptions } from './http/logger.js';
 import { buildOpenApiDocument } from './http/openapi.js';
 import { registerRateLimit } from './http/rate-limit.js';
-import { registerLobbyWs } from './lobby/ws.js';
+import { registerLobbyWs, type UserProfileResolver } from './lobby/ws.js';
 import { ConnectionManager } from './ws/connection.js';
 
 // BACKEND_PORT が正（`.env.example` の名前・Vite のプロキシ先と同じ）。
@@ -106,9 +106,22 @@ export async function buildServer(options: BuildServerOptions = {}) {
 		// ② §2-A の 4KB 上限は handleMessage 側でも見るが、ここでも枠を切っておく
 		options: { maxPayload: 64 * 1024 },
 	});
+	// I-133: 既定の devProfileResolver は ALLOW_DEV_AUTH 無しで必ず例外を投げるため、
+	// 本番構成（評価当日と同じ構成）では未配線のまま起動すると /ws/lobby が
+	// 「認証は通るのに 4000 user profile unavailable で切断される」形で壊れる。
+	const profileResolver: UserProfileResolver = {
+		getDisplayName: async (userId) => {
+			const user = await prisma.user.findUnique({
+				where: { id: userId },
+				select: { displayName: true },
+			});
+			if (!user) throw new Error(`user ${userId} not found`);
+			return user.displayName;
+		},
+	};
 	await app.register(async (scoped) => {
 		registerGameWs(scoped, connectionManager);
-		registerLobbyWs(scoped, { connectionManager });
+		registerLobbyWs(scoped, { connectionManager, profileResolver });
 	});
 	app.addHook('onClose', async () => {
 		closeAllRooms();

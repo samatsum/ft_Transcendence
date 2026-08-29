@@ -1,8 +1,12 @@
 // B-08 の決定的検査 + 実 WebSocket 結合検査（② §10-A）。
 // 実行: npm run check:lobby --workspace @ft/backend
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import type { AddressInfo } from 'node:net';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import WebSocket from 'ws';
 import {
@@ -12,6 +16,7 @@ import {
 	type LobbyServerMessage,
 } from '@ft/shared';
 
+import { createPrismaClient } from '../db/client.js';
 import { buildServer } from '../index.js';
 import {
 	closeAllRooms,
@@ -770,10 +775,17 @@ class WsClient {
 	closedWith: number | null = null;
 	private readonly socket: WebSocket;
 
-	/** 実gatewayへ接続するclientと永続error観測を初期化する */
-	constructor(url: string, userId?: number, origin?: string) {
+	/**
+	 * 実gatewayへ接続するclientと永続error観測を初期化する。
+	 * `cookie` を渡すと `x-dev-user` の代わりに実session cookieで認証する
+	 * （I-133回帰: ALLOW_DEV_AUTHのバイパスを経由しない経路を検査するため）。
+	 */
+	constructor(url: string, userId?: number, origin?: string, cookie?: string) {
+		const headers: Record<string, string> = {};
+		if (userId !== undefined) headers['x-dev-user'] = String(userId);
+		if (cookie !== undefined) headers['cookie'] = cookie;
 		this.socket = new WebSocket(url, {
-			headers: userId === undefined ? undefined : { 'x-dev-user': String(userId) },
+			headers: Object.keys(headers).length > 0 ? headers : undefined,
 			origin,
 		});
 		this.socket.on('message', (raw) => {
@@ -832,10 +844,52 @@ class WsClient {
 	}
 }
 
+/**
+ * `x-dev-user` が名乗る各IDぶん、実DBへ最小限のUser行を用意する。
+ *
+ * I-133でregisterLobbyWsへ実DB引きのprofileResolverを配線したため、この検査が
+ * `ALLOW_DEV_AUTH=true` で使う偽装userId（DBに実在しない）はもう
+ * `devProfileResolver` の`dev-<id>`固定文字列では素通りしない——実際に
+ * `User.findUnique` されるので、行が無ければ`user profile unavailable`で
+ * 切断されてしまう。検査専用の一時DBに、必要なIDぶんだけ先に作っておく。
+ */
+async function seedDevAuthUsers(dbUrl: string, userIds: number[]): Promise<void> {
+	const prisma = createPrismaClient(dbUrl);
+	try {
+		for (const userId of userIds) {
+			await prisma.user.create({
+				data: {
+					email: `dev-${userId}@example.test`,
+					passwordHash: 'argon2id$placeholder',
+					displayName: `dev-${userId}`,
+					displayNameLower: `dev-${userId}`,
+				},
+			});
+		}
+	} finally {
+		await prisma.$disconnect();
+	}
+}
+
 /** 実Fastify serverで認証、Origin、制限、置換、session closeを検査する */
 async function checkRealWebSocket(): Promise<void> {
 	process.env.NODE_ENV = 'development';
 	process.env.ALLOW_DEV_AUTH = 'true';
+
+	const backendRoot = fileURLToPath(new URL('../..', import.meta.url));
+	const dir = mkdtempSync(join(tmpdir(), 'ft-lobby-check-'));
+	const dbUrl = `file:${join(dir, 'check.db')}`;
+	const savedDatabaseUrl = process.env.DATABASE_URL;
+	execFileSync('npx', ['prisma', 'migrate', 'deploy'], {
+		cwd: backendRoot,
+		env: { ...process.env, DATABASE_URL: dbUrl },
+		stdio: 'pipe',
+	});
+	// このテストが`x-dev-user`で名乗る全ID（badOrigin用の2はOrigin検査で
+	// 認証前に切断されるため不要）
+	await seedDevAuthUsers(dbUrl, [1, 3, 4, 5, 6, 88]);
+	process.env.DATABASE_URL = dbUrl;
+
 	const connectionManager = new ConnectionManager();
 	const app = await buildServer({ connectionManager });
 	app.log.level = 'silent';
@@ -977,8 +1031,111 @@ async function checkRealWebSocket(): Promise<void> {
 		closeAllRooms();
 		await app.close();
 		await new Promise((resolve) => setTimeout(resolve, 30));
+		if (savedDatabaseUrl === undefined) delete process.env.DATABASE_URL;
+		else process.env.DATABASE_URL = savedDatabaseUrl;
+		rmSync(dir, { recursive: true, force: true });
 	}
 	assert.equal(connectionManager.stats().connections, 0);
+}
+
+/**
+ * I-133回帰: `checkRealWebSocket` は `ALLOW_DEV_AUTH=true` を立てて実行するため、
+ * `devProfileResolver` が偽名 `dev-<id>` を返すだけの経路しか通らない。
+ * これは本番構成（`ALLOW_DEV_AUTH` 無し）で `registerLobbyWs` に `profileResolver`
+ * が配線されているかどうかを検知できない（Issue #133 はまさにこれで見逃された）。
+ *
+ * ここでは `ALLOW_DEV_AUTH` を立てず、実DBへのsignup→実session cookieという
+ * 本番と同じ経路で `/ws/lobby` に接続し、`User.displayName` が正しく届くことを見る。
+ * `profileResolver` が未配線のままなら `devProfileResolver` が例外を投げ、
+ * `4000 user profile unavailable` で切断されて `real.closedWith` がnullでなくなる。
+ */
+async function checkRealProfileResolverWiring(): Promise<void> {
+	const backendRoot = fileURLToPath(new URL('../..', import.meta.url));
+	const dir = mkdtempSync(join(tmpdir(), 'ft-lobby-check-'));
+	const dbUrl = `file:${join(dir, 'check.db')}`;
+	const savedEnv = {
+		DATABASE_URL: process.env.DATABASE_URL,
+		NODE_ENV: process.env.NODE_ENV,
+		ALLOW_DEV_AUTH: process.env.ALLOW_DEV_AUTH,
+		ALLOWED_ORIGIN: process.env.ALLOWED_ORIGIN,
+	};
+	try {
+		execFileSync('npx', ['prisma', 'migrate', 'deploy'], {
+			cwd: backendRoot,
+			env: { ...process.env, DATABASE_URL: dbUrl },
+			stdio: 'pipe',
+		});
+
+		process.env.DATABASE_URL = dbUrl;
+		process.env.NODE_ENV = 'production';
+		delete process.env.ALLOW_DEV_AUTH;
+
+		const connectionManager = new ConnectionManager();
+		const app = await buildServer({ connectionManager });
+		app.log.level = 'silent';
+		await app.listen({ port: 0, host: '127.0.0.1' });
+		const port = (app.server.address() as AddressInfo).port;
+		const origin = `http://127.0.0.1:${port}`;
+		// isAllowedOrigin() は ALLOW_DEV_AUTH の loopback fallback を使えないので、
+		// 本番同様 ALLOWED_ORIGIN を明示する
+		process.env.ALLOWED_ORIGIN = origin;
+
+		try {
+			const displayName = `checker${Date.now()}`;
+			const signup = await fetch(`${origin}/api/auth/signup`, {
+				method: 'POST',
+				headers: { 'content-type': 'application/json', origin },
+				body: JSON.stringify({
+					email: `${displayName}@example.test`,
+					password: 'correct-horse-battery',
+					display_name: displayName,
+				}),
+			});
+			assert.equal(signup.status, 201, 'テスト用ユーザーのsignupに失敗した');
+			const signupBody = (await signup.json()) as { id: number };
+			const setCookie = signup.headers.get('set-cookie');
+			assert.ok(setCookie, 'signupがsession cookieを発行していない');
+			const cookie = setCookie.split(';')[0] as string;
+
+			const real = new WsClient(`ws://127.0.0.1:${port}/ws/lobby`, undefined, origin, cookie);
+			try {
+				await real.open();
+				await real.waitFor(() => real.messages.length > 0, 'lobby_hello (real session)');
+				assert.equal(
+					real.closedWith,
+					null,
+					'profileResolver未配線のdevProfileResolverの例外でuser profile unavailable切断された',
+				);
+				assert.equal(real.messages[0]?.t, 'lobby_hello');
+
+				real.send({ t: 'room_create', d: { mode: 'rsp' } });
+				await real.waitFor(
+					() => real.messages.some((message) => message.t === 'room_state'),
+					'room_state after room_create',
+				);
+				const roomState = real.messages.find((message) => message.t === 'room_state');
+				const seat =
+					roomState?.t === 'room_state'
+						? roomState.d.seats.find((s) => s.user_id === signupBody.id)
+						: undefined;
+				assert.equal(
+					seat?.display_name,
+					displayName,
+					'room_stateのdisplay_nameがUserテーブルの実displayNameと一致しない（dev-<id>のままの疑い）',
+				);
+			} finally {
+				real.close();
+			}
+		} finally {
+			await app.close();
+		}
+	} finally {
+		rmSync(dir, { recursive: true, force: true });
+		for (const [key, value] of Object.entries(savedEnv)) {
+			if (value === undefined) delete process.env[key as keyof typeof savedEnv];
+			else process.env[key as keyof typeof savedEnv] = value;
+		}
+	}
 }
 
 /** heartbeat/session索引用の最小ManagedSocket fakeを生成する */
@@ -1098,6 +1255,10 @@ async function main(): Promise<void> {
 	console.log('B-08 検査6: 実WebSocket');
 	await checkRealWebSocket();
 	console.log('  OK: hello/認証/Origin/4KB/違反/置換/session/Vite契約');
+
+	console.log('I-133 検査: ALLOW_DEV_AUTH無しでprofileResolverが実DBへ配線されている');
+	await checkRealProfileResolverWiring();
+	console.log('  OK: signup→実session cookie→/ws/lobby→room_stateの表示名が一致');
 
 	console.log('B-08 検査7: 共通heartbeat/session索引');
 	checkHeartbeatAndSessionIndex();
