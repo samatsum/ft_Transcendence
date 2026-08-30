@@ -28,7 +28,6 @@
 	<nav class="topnav" aria-label="ページ内目次">
 		<div class="shell nav-inner">
 			<a href="#meaning">Fとは</a>
-			<a href="#current">現在地</a>
 			<a href="#flow">画面遷移の流れ</a>
 			<a href="#issues">10工程</a>
 			<a href="#dependencies">依存と次手</a>
@@ -74,59 +73,18 @@
 				B系・I系は「サーバーとして何を保証するか」を完成させます。F系・GV系は「その保証を、プレイヤーが
 				迷わず操作できる画面としてどう見せるか」を受け持ちます。詳細は<a href="#backend">B/Iとの境界</a>参照。
 			</div>
-		</section>
-
-		<section id="current">
-			<p class="section-kicker">02 · Current position</p>
-			<h2>10件のうち、4件完了</h2>
-			<p class="section-intro">
-				完了率は4/10＝40.0%。ただし完了した4件（F-01・F-02・GV-06・GV-07）は「対戦が実際に1試合、
-				動く」ために必要な最小構成で、Gate 2のデモ可能性を優先して先に進めた結果です。<strong>ただしGV-06の受入条件「2ブラウザで対戦が成立」は現在の<code>main</code>では再現できません</strong>——通常起動のサーバーはルームを作らず、ブラウザは開発用認証の<code>x-dev-user</code>ヘッダを送れないためです。<code>ws-check.ts</code>はB-11/B-12/B-14を検査するバックエンド用で、GameViewもCanvasも読み込みません。
-				ロビーは未実装（F-05）のため、今のところ試合は決め打ちの部屋IDで開始する開発用リンクから入ります。
-			</p>
-			<p class="section-intro">
-				<strong>分母が12から10に変わりました（2026-08-08）。</strong>
-				モジュール構成の改訂（D-19）でF-09（プロフィール）とF-10（フレンドUI）が<strong>不採用</strong>になったためです。
-				完了件数の4は変わっていません——分母だけが「これから実際にやる作業」へ縮みました。
-				不採用の2件はページから消さず、下の一覧に「不採用」として残してあります。
-				逆に<strong>GV-12（観戦UI）は予備枠から必須へ昇格</strong>しました。
-				なお<strong>F-03（ログイン画面）は影響を受けません</strong>——メール+パスワード認証は
-				モジュールではなく課題第III章の必須要件だからです。
-			</p>
-			<div class="grid grid-4">
-				<article class="card">
-					<p class="card-label">完了</p>
-					<p class="metric" style="color: var(--green)">4<small> / 10</small></p>
-					<p class="metric-note">F-01 · F-02 · GV-06 · GV-07</p>
-					<div class="progress" role="progressbar" aria-label="F作業40.0%完了" aria-valuenow="40.0" aria-valuemin="0" aria-valuemax="100"><span></span></div>
-				</article>
-				<article class="card">
-					<p class="card-label">stubのみ存在</p>
-					<p class="metric" style="color: var(--yellow)">3</p>
-					<p class="metric-note">F-03・F-04・F-05。ルートと「後で実装」の断り書きだけがある（F-09のstubは不採用に伴い放置）</p>
-				</article>
-				<article class="card">
-					<p class="card-label">最大の上流ブロッカー</p>
-					<p class="metric">B-04</p>
-					<p class="metric-note">本認証が無いとF-03（ログイン画面）が実際には繋がらない</p>
-				</article>
-				<article class="card">
-					<p class="card-label">計画からの逸脱</p>
-					<p class="metric">GV-06/07</p>
-					<p class="metric-note">本来F-05の後の予定だったが、Gate 2優先で先に完了させた</p>
-				</article>
-			</div>
 			<div class="callout warning" style="margin-top: 18px">
 				<strong>重要:</strong>
 				<code>pages/LoginPage.tsx</code>・<code>LobbyPage.tsx</code>・<code>PrivacyPage.tsx</code>などの
-				ファイルは<strong>すでに存在します</strong>が、中身はF-01が作ったルーティングの受け皿（stub）です。
+				ファイルは<strong>すでに存在します</strong>が、中身がstub（受け皿）のこともあります。
 				ファイルがあることと画面が完成していることは同じではありません——各stubのコード先頭コメントに
-				「これはF-0Xで実装する」と明記されています。
+				「これはF-0Xで実装する」と明記されている場合は未完成です。現在の実装状況はGitHub Issues /
+				Projectを参照してください。
 			</div>
 		</section>
 
 		<section id="flow">
-			<p class="section-kicker">03 · Screen flow</p>
+			<p class="section-kicker">02 · Screen flow</p>
 			<h2>ログインから試合結果まで、画面がどう繋がるか</h2>
 			<p class="section-intro">
 				F番号順に実装されるわけではありません。プレイヤー体験としては、次の順番で複数Issueが連携します。
@@ -172,7 +130,7 @@
 		</section>
 
 		<section id="issues">
-			<p class="section-kicker">04 · F系・GV系</p>
+			<p class="section-kicker">03 · F系・GV系</p>
 			<h2>10工程を「何のためか」で読む</h2>
 			<p class="section-intro">
 				詳細な受入条件は⑤バックログが正本です。ここでは、チーム説明で必要な
@@ -245,7 +203,7 @@
 		</section>
 
 		<section id="dependencies">
-			<p class="section-kicker">05 · Dependencies</p>
+			<p class="section-kicker">04 · Dependencies</p>
 			<h2>次に進む順番は、番号順ではない</h2>
 			<p class="section-intro">
 				GV-06/GV-07はF-05より先に完了しています。これは「Gate 2でデモできる状態を優先する」という
@@ -281,7 +239,7 @@
 		</section>
 
 		<section id="code">
-			<p class="section-kicker">06 · Code map</p>
+			<p class="section-kicker">05 · Code map</p>
 			<h2>説明するときに開くコードはここ</h2>
 			<p class="section-intro">
 				すべて読む必要はありません。Fの各責務を代表する入口だけを押さえれば、コードと説明が結びつきます。
@@ -302,7 +260,7 @@
 		</section>
 
 		<section id="backend">
-			<p class="section-kicker">07 · Boundary with B / I</p>
+			<p class="section-kicker">06 · Boundary with B / I</p>
 			<h2>F系・GV系が消費するのは「B系・I系の保証」、作るのは「体験」</h2>
 			<p class="section-intro">
 				Backendが完成すればFrontendは実装しやすくなりますが、F側にはWSの張り替え、
@@ -324,7 +282,7 @@
 		</section>
 
 		<section id="talk">
-			<p class="section-kicker">08 · Three-minute talk</p>
+			<p class="section-kicker">07 · Three-minute talk</p>
 			<h2>このまま読める、F全体の3分説明</h2>
 			<div class="script">
 				<blockquote>
@@ -350,7 +308,7 @@
 		</section>
 
 		<section id="references">
-			<p class="section-kicker">09 · Sources of truth</p>
+			<p class="section-kicker">08 · Sources of truth</p>
 			<h2>このHTMLは説明用。契約の正本は設計書</h2>
 			<div class="grid grid-3">
 				<article class="card">

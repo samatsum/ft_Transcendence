@@ -30,7 +30,6 @@
 	<nav class="topnav" aria-label="ページ内目次">
 		<div class="shell nav-inner">
 			<a href="#meaning">B/Iとは</a>
-			<a href="#current">現在地</a>
 			<a href="#flow">一試合の流れ</a>
 			<a href="#issues">14工程</a>
 			<a href="#dependencies">依存と次手</a>
@@ -76,55 +75,17 @@
 				Engineレーン（E系・G系）は「ゲーム内で何が起きるか」を完成させました。B系・I系は「誰が入り、どの試合で動かし、
 				誰へ送り、切れたらどうし、結果をどこへ残すか」を受け持ちます。
 			</div>
-		</section>
-
-		<section id="current">
-			<p class="section-kicker">02 · Current position</p>
-			<h2>14件のうち、8件完了＋1件コア完了</h2>
-			<p class="section-intro">
-				厳格な完了率は8/14＝57.1%。B-08は大部分が動いていますが、本Cookie認証との
-				通し検査が残るため「完全完了」には数えていません。
-			</p>
-			<p class="section-intro">
-				<strong>分母が16から14に変わりました（2026-08-08）。</strong>
-				モジュール構成の改訂（D-19）でB-06・B-07・B-13が<strong>不採用</strong>になり、
-				代わりに観戦モードのサーバー側<strong>B-17</strong>が新規に必要になったためです。
-				完了件数はその後B-02（PR #72）とB-03（PR #94）が加わり、2026-08-09時点で8件になりました。
-				不採用の3件はページから消さず、下の一覧に「不採用」として残してあります。
-			</p>
-			<div class="grid grid-4">
-				<article class="card">
-					<p class="card-label">完了</p>
-					<p class="metric" style="color: var(--green)">8<small> / 14</small></p>
-					<p class="metric-note">I-01 · B-02 · B-03 · B-09 · B-10 · B-11 · B-12 · B-14</p>
-					<div class="progress" role="progressbar" aria-label="Backend/Infra作業57.1%完了" aria-valuenow="57.1" aria-valuemin="0" aria-valuemax="100"><span style="width:57.1%"></span></div>
-				</article>
-				<article class="card">
-					<p class="card-label">コア実装済み</p>
-					<p class="metric" style="color: var(--yellow)">1</p>
-					<p class="metric-note">B-08。B-04/B-05の本認証・Origin・session失効との結合待ち</p>
-				</article>
-				<article class="card">
-					<p class="card-label">samatsum側の次</p>
-					<p class="metric">B-04〜B-05</p>
-					<p class="metric-note">本認証とOriginを通し、B-08の最終結合まで運ぶ（B-02のFastify共通処理とB-03のDBは完了済み。旧・次手のB-13は不採用）</p>
-				</article>
-				<article class="card">
-					<p class="card-label">最大の上流ブロッカー</p>
-					<p class="metric">B-04/05</p>
-					<p class="metric-note">本認証とOrigin共通化（未完成・担当未定）。B-08の最終受入に必要</p>
-				</article>
-			</div>
 			<div class="callout warning" style="margin-top: 18px">
 				<strong>重要:</strong>
 				コードが存在することとIssue完了は同じではありません。たとえば
-				<code>auth/session.ts</code>には開発用スタブがありますが、B-04/B-05の
-				Cookie・DB・本番Origin受入は未完です。
+				<code>auth/session.ts</code>には開発用スタブがありますが、本認証の
+				Cookie・DB・本番Origin受入が完了しているとは限りません。現在の実装状況は
+				GitHub Issues / Projectを参照してください。
 			</div>
 		</section>
 
 		<section id="flow">
-			<p class="section-kicker">03 · One match</p>
+			<p class="section-kicker">02 · One match</p>
 			<h2>一試合を通すと、B系・I系の役割が見える</h2>
 			<p class="section-intro">
 				番号順に実行されるわけではありません。利用者の体験では、次の順番で複数Issueが連携します。
@@ -173,7 +134,7 @@
 		</section>
 
 		<section id="issues">
-			<p class="section-kicker">04 · B系・I系</p>
+			<p class="section-kicker">03 · B系・I系</p>
 			<h2>14工程を「何のためか」で読む</h2>
 			<p class="section-intro">
 				詳細な受入条件は⑤バックログが正本です。ここでは、チーム説明で必要な
@@ -267,7 +228,7 @@
 		</section>
 
 		<section id="dependencies">
-			<p class="section-kicker">05 · Dependencies</p>
+			<p class="section-kicker">04 · Dependencies</p>
 			<h2>次に進む順番は、番号順ではない</h2>
 			<p class="section-intro">
 				B-12まで接続済みです。採用分のうちB-04・B-05・B-17・I-15・I-16が担当未定で未完成のまま残っています
@@ -303,7 +264,7 @@
 		</section>
 
 		<section id="code">
-			<p class="section-kicker">06 · Code map</p>
+			<p class="section-kicker">05 · Code map</p>
 			<h2>説明するときに開くコードはここ</h2>
 			<p class="section-intro">
 				すべて読む必要はありません。B系・I系の各責務を代表する入口だけを押さえれば、コードと説明が結びつきます。
@@ -328,7 +289,7 @@
 		</section>
 
 		<section id="frontend">
-			<p class="section-kicker">07 · Boundary with F</p>
+			<p class="section-kicker">06 · Boundary with F</p>
 			<h2>B系・I系が作るのは「繋ぎ先」、F系・GV系が作るのは「体験」</h2>
 			<p class="section-intro">
 				Backendが完成すればFrontendは実装しやすくなりますが、F側にはWSの張り替え、
@@ -349,7 +310,7 @@
 		</section>
 
 		<section id="talk">
-			<p class="section-kicker">08 · Three-minute talk</p>
+			<p class="section-kicker">07 · Three-minute talk</p>
 			<h2>このまま読める、B系・I系全体の3分説明</h2>
 			<div class="script">
 				<blockquote>
@@ -383,7 +344,7 @@
 		</section>
 
 		<section id="references">
-			<p class="section-kicker">09 · Sources of truth</p>
+			<p class="section-kicker">08 · Sources of truth</p>
 			<h2>このHTMLは説明用。契約の正本は設計書</h2>
 			<div class="grid grid-3">
 				<article class="card">
