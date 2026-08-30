@@ -12,17 +12,10 @@
 		<p class="eyebrow">ドキュメント地図</p>
 		<h1>ft_transcendence 資料の入口</h1>
 		<p class="hero-lead">
-			ここが人間（samatsum）向け資料の入口です。全ページ日本語 HTML、共通デザインで統一しています。
+			ここが人間向け資料の入口です。全ページ日本語 HTML、共通デザインで統一しています。
 			AI（Claude Code など）向けの参照資料は英語 Markdown で別に置いており、そちらの入口は
 			<code>docs/ai/README.md</code> です — 人はそちらを読む必要はありません。
 		</p>
-		<div class="hero-note">
-			<strong>2026-08-05</strong> にドキュメント全体を再構成しました。旧構成（設計書・実装レポート・説明用13本など）は
-			<code>archive/</code> に移設済みです。<strong>2026-08-07</strong> に<code>docs/ja/</code>を
-			<code>docs/human/</code>（<code>ai/</code>と対称的な名前）へ改名し、内容の種類ごとに
-			<code>はじめに/</code>・<code>運用/</code>・<code>開発状況/</code>・<code>説明用/</code>・
-			<code>専門用語/</code>・<code>プレイヤー向け/</code>・<code>評価対応/</code>へ再分類しました。
-		</div>
 	</div>
 
 	<div class="shell">
@@ -39,24 +32,10 @@
 				</p>
 			</section>
 
-			<section id="team">
-				<p class="section-kicker">体制</p>
-				<h2>チーム体制</h2>
-				<div class="callout">
-					<strong>2026-08-30更新: チーム運用が実際に始まり、現在6人体制です。</strong>
-					PO・PM・テクニカルリード・デベロッパー2名・サポーター（元TLのsamatsum）という構成で、
-					課題書が要求する4〜5人体制の要件は満たしています。役割の割当・現在のメンバーは
-					<a href="./はじめに/チーム体制.html">チーム体制.html</a>が正本。
-					レーン構成（Engine / Backend・DevOps / Frontend / Gameplay）は誰かに割り当てる仕組み
-					ではなくなり、Issueに貼るラベルとしてのみ残っています（詳細は
-					<a href="./運用/Git運用フロー.html#lanes">Git運用フロー §05.5</a>）。
-				</div>
-			</section>
-
 			<section id="reading-order">
 				<p class="section-kicker">読む順</p>
 				<h2>まず何を読むか</h2>
-				<p class="section-intro">個人別 reading guide は廃止したため、以下の順に読めば全体像がつかめます。</p>
+				<p class="section-intro">以下の順に読めば全体像がつかめます。</p>
 				<ol class="path-list">
 					<li>
 						<div>
@@ -252,6 +231,24 @@
 					内容の正本は今後 <code>docs/human/</code>（人間向け）と <code>docs/ai/</code>（AI向け）側です。
 					<code>archive/</code> は履歴参照用で、更新はしません。
 				</div>
+			</section>
+
+			<section id="changelog">
+				<p class="section-kicker">変更履歴</p>
+				<h2>docs/human/ の変遷</h2>
+				<dl class="changelog">
+					<dt>2026-08-05</dt>
+					<dd>ドキュメント全体を再構成。旧構成（設計書・実装レポート・説明用13本など）は<code>archive/</code>に移設</dd>
+					<dt>2026-08-07</dt>
+					<dd><code>docs/ja/</code>を<code>docs/human/</code>（<code>ai/</code>と対称的な名前）へ改名し、
+						内容の種類ごとに<code>はじめに/</code>・<code>運用/</code>・<code>開発状況/</code>・
+						<code>説明用/</code>・<code>専門用語/</code>・<code>プレイヤー向け/</code>・
+						<code>評価対応/</code>へ再分類</dd>
+					<dt>2026-08-30</dt>
+					<dd>チーム運用開始に伴い、Issue <a href="https://github.com/samatsum/ft_Transcendence/issues/141">#141</a>で
+						チーム体制・レーン運用・ステータス表記を全面見直し。経緯は
+						<code>docs/drafts/141-docs-restructure.md</code></dd>
+				</dl>
 			</section>
 		</main>
 	</div>
