@@ -4,11 +4,13 @@ This directory is the **AI-facing documentation set**: English Markdown, written
 assistant (e.g. Claude Code) to consult while implementing or reviewing code in this repository.
 
 The **human-facing** documentation set is the parallel `docs/human/` directory: Japanese HTML,
-written for samatsum. Start there instead if you're a person, not an AI — [`../human/index.html`](../human/index.html).
-It includes a lane-by-lane Japanese terminology glossary under `docs/human/専門用語/` (samatsum is
-working toward the Technical Lead role and knows only the `codes/` C engine so far) — if you're
-asked to explain a term to samatsum, check whether it's already defined there before improvising
-your own explanation, so the vocabulary stays consistent across sessions.
+written for the team (see [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html)
+for the current roster). Start there instead if you're a person, not an AI —
+[`../human/index.html`](../human/index.html). It includes a Japanese terminology glossary under
+`docs/human/専門用語/`, organized by area (engine / backend-infra / frontend / game rules / overall,
+not by lane-ID prefix as of 2026-08-30) — if you're asked to explain a term to a team member, check
+whether it's already defined there before improvising your own explanation, so the vocabulary stays
+consistent across sessions.
 
 Superseded/original documents (the Japanese Markdown these files were translated from, plus
 material that didn't carry forward into either the AI or human doc set) live under
