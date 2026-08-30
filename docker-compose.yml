@@ -39,14 +39,36 @@ services:
     environment:
       EM_CACHE: /tmp/emscripten-cache
       HOME: /tmp
-    ports:
-      - "${WEB_PORT:-8000}:8000"
     user: "${HOST_UID:-0}:${HOST_GID:-0}"
+    # WASM を生成し、frontend が使えるように app/frontend/public/engine/ へコピー
+    command:
+      - make
+      - frontend-engine-assets
+
+  frontend:
+    build:
+      context: .
+      dockerfile: infra/docker/frontend/Dockerfile
+    working_dir: /workspace
+    depends_on:
+      # WASM 生成が成功してから frontend のビルドを始める
+      engine-build:
+        condition: service_completed_successfully
+    volumes:
+      - .:/workspace
+      - frontend-node-modules:/workspace/node_modules
+    # コンテナ内の実行ユーザーをホストユーザーに合わせる
+    user: "${HOST_UID:-0}:${HOST_GID:-0}"
+    environment:
+      HOME: /tmp
+      NPM_CONFIG_CACHE: /tmp/npm-cache
+    # 依存関係をインストールし、frontend のビルドを実行
     command:
       - sh
       - -lc
-      - make frontend-engine-assets && python3 -m http.server 8000 --bind 0.0.0.0
+      - npm ci && npm run build --workspace @ft/frontend
 
 volumes:
   app-data:
   emscripten-cache:
+  frontend-node-modules:  # JavaScript / TypeScript プロジェクトが使う外部ライブラリ
