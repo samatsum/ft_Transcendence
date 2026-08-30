@@ -400,3 +400,18 @@ team status.
   repo has been caught out more than once by a doc claiming something was unimplemented when
   `origin/main` had already shipped it (or vice versa). Don't guess from memory of an earlier
   session.
+- **Don't put GitHub-coverable status in `docs/` at all** (decided 2026-08-30 — see
+  `docs/drafts/141-docs-restructure.md` for the discussion). Progress counts, completion
+  percentages, per-issue status tags, and "N of M done" cards belong in GitHub Issues/Projects, not
+  a `docs/` page, even as a "helpful at-a-glance summary" — that summary duplicates GitHub and starts
+  going stale the moment either side moves (this repo has already removed several: the root
+  README's status table, `評価対応/42モジュール対応表.html`'s completion tags, and the
+  `開発状況/` pages' progress grids and per-issue card sections). `docs/ai/backlog.md` keeps
+  acceptance criteria, dependencies, and the decision log — it does not restate current % done. If
+  you're about to add a status grid, progress bar, or completion tag to a `docs/` page, link to
+  GitHub instead.
+- **Refer to individuals by role, not name, in prose** (decided 2026-08-30) — "the Technical Lead"
+  rather than a person's name — so text doesn't need editing every time someone changes roles. The
+  one exception is a page whose actual purpose is declaring who currently holds each role
+  (`チーム体制.html`'s roster table, root `README.md`'s Team table) — those need real names to do
+  their job; this rule is for narrative prose elsewhere.
