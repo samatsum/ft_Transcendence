@@ -168,7 +168,7 @@ Building the entire project is complex, and many problems can arise. Therefore, 
     - [◎] Commits from all team members.
     - [◎] Clear commit messages describing the changes made.
 - [◎] Proper work distribution across the entire team. **Resolved 2026-08-30**: team operation
-  started, and the project is now a 6-person team (PO/PM/TL/2 Developers/Supporter), meeting the
+  started, and the project is now a 7-person team (PO/PM/TL/2 Developers/2 Supporters), meeting the
   subject's 4–5 person premise — see
   [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html) for the current roster.
 - [◎] Deployment must use a containerization solution (Docker, Podman, etc.) and run with a single command.

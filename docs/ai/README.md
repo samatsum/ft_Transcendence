@@ -33,11 +33,12 @@ material that didn't carry forward into either the AI or human doc set) live und
 ## Team status (updated 2026-08-30 — read before assuming a solo workflow)
 
 The single-contributor period (samatsum, 2026-08-05 → 2026-08-09) is over. **Team operation actually
-started**, and the project is now a 6-person team, meeting the subject's 4–5 person requirement:
+started**, and the project is now a 7-person team, meeting the subject's 4–5 person requirement:
 PO (kmitsuki), PM/Scrum Master (torinoue — rejoined under a new GitHub account after the earlier
 dissolution), Technical Lead (ttsubo — took over the role from samatsum), two Developers (kkurose,
-tomtomvx), and samatsum stepped back to a Supporter role. Full roster with GitHub-handle mapping:
-[`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html).
+tvaroux), samatsum stepped back to a Supporter role, and mamiyaza (a second Supporter — no GitHub
+account, no commits, counted as a nominal member for headcount purposes). Full roster with
+GitHub-handle mapping: [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html).
 
 - Per-person task assignment is now tracked in GitHub (Issue assignees + the single unified Project
   board, not per-lane boards — see below), not in `docs/`. Don't expect docs to say who is doing what

@@ -401,7 +401,51 @@ ttsuboが立てたIssue [#146](https://github.com/samatsum/ft_Transcendence/issu
 
 ---
 
-## 13. このドラフトの運用
+## 13. ロースターの訂正: mamiyaza復帰・tvaroux表記ミス（2026-08-31）
+
+ttsuboが共有したチーム体制のポンチ絵（Issue #146の参考資料）から、2件の事実誤りが見つかった。
+
+- **mamiyazaはサポーターとして人数に含まれる**。GitHub上のコラボレーターには入っておらず
+  （`gh api repos/samatsum/ft_Transcendence/collaborators`で確認）、コミットも無い名義上の
+  メンバーだが、旧チームからの「離脱済み・非稼働」という扱いは誤りだった。これにより
+  チーム人数は6人→**7人**（PO1・PM1・TL1・Developer2・Supporter**2**）に修正
+- **tomtomvxはGitHubアカウント名であって、intra名ではない**。正しいintra名は**tvaroux**
+  （ニックネーム「とむ」）
+
+**修正した箇所**:
+- [x] `docs/human/はじめに/チーム体制.html`: ロースター表にmamiyaza行を追加（GitHub欄は
+      「—（GitHubアカウントなし）」）、tomtomvx行のintra名をtvarouxに修正、人数を6→7人へ、
+      hero-note修正履歴に2026-08-31の追記を追加
+- [x] `README.md`: 冒頭宣言文にmamiyazaを追加・tomtomvx→tvaroux、Team表にmamiyaza行追加・
+      tvaroux修正、人数を6→7人へ、Historical contributorsからmamiyazaを削除（hminemurのみ残す）
+- [x] `docs/ai/README.md`・`requirements.md`・`architecture.md`（4箇所）・`backlog.md`の
+      「6-person」表記を全て「7-person」に統一
+- [x] `docs/human/index.html`・`評価対応/42モジュール対応表.html`（2箇所）・
+      `開発状況/フロントエンド開発工程.html`・`開発状況/サーバー開発工程.html`の「6人」表記も
+      「7人」に統一
+- プロジェクト概要.htmlは既にチーム体制.htmlへのリンクのみに簡略化済みだったため、修正不要
+  だった（論点D/二重管理回避の効果が出た一例）
+
+**あえて直さなかった箇所**: `docs/ai/architecture.md`の§9系（旧4人体制チェックリスト）や
+`docs/ai/backlog.md`§4/§5冒頭の「Originally planned as a mamiyaza + hminemur lane. As of
+2026-08-05 neither is active.」のような、特定の過去日付に紐づいた歴史的記述は変更していない
+——「その時点でどうだったか」の記録として引き続き正確なため
+
+検証:
+- `gh api repos/samatsum/ft_Transcendence/collaborators`でmamiyazaがコラボレーターに
+  含まれないことを確認
+- 変更した全HTMLファイルのタグ開閉バランスをPythonスクリプトで確認（問題なし）
+
+**追加修正（ttsuboの指摘）**: ルート`README.md`は42への正式な提出物であり、提出メンバーは
+最大5人という制約がある。サポーター（samatsum・mamiyaza）を含めると提出メンバー数の表現が
+崩れるため、README.mdの冒頭宣言文とTeam表からはサポーター2人を除外し、「提出メンバー5人
+（PO/PM/TL/Developer×2）+ 提出に含まれないサポーター2人」という構成に分離した。
+`チーム体制.html`（内部向け、全7人を記載する場を維持）にも同じ区別を明記し、README.mdとの
+整合を取った。この提出人数の制約自体は妥当な指摘と判断し、そのまま反映した。
+
+---
+
+## 14. このドラフトの運用
 
 - 編集はこのファイルに直接。HELPへの回答もこのファイル内に追記していく形でよい
 - 方針が固まった項目から、上の「次のアクション候補」を実行に移す（別コミットに分ける）

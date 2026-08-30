@@ -330,7 +330,7 @@ reads or writes it yet — **B-04 is the first consumer**, and it is also what m
 In parallel on the frontend side: F-01, F-02, GV-06, and GV-07 are done. F-05 + GV-08 (both not started,
 unassigned) are what's left to converge on Gate 2.
 The C side (E-series, G-series) is entirely Done; only the TypeScript Backend/DevOps and Frontend lanes remain.
-See [チーム体制.html](../human/はじめに/チーム体制.html) for current team status — the original 4-person plan dissolved 2026-08-05, and a new 6-person team started operating 2026-08-30 under a PO/PM/TL/Developer/Supporter structure (not the original 4 names or roles).
+See [チーム体制.html](../human/はじめに/チーム体制.html) for current team status — the original 4-person plan dissolved 2026-08-05, and a new 7-person team started operating 2026-08-30 under a PO/PM/TL/Developer/Supporter structure (not the original 4 names or roles).
 
 ## 7. Upstream Process Closure Declaration
 
