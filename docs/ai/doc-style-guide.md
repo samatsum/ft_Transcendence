@@ -80,6 +80,7 @@ directories above. Copy an existing page in the category you're adding to
 
 	<nav class="topnav" aria-label="ページ内目次">
 		<div class="shell nav-inner">
+			<a href="../index.html">← ドキュメント地図</a>  <!-- always first, see note below -->
 			<a href="#section1">Section 1</a>
 			<a href="#section2">Section 2</a>
 			<button class="print-button" type="button" onclick="window.print()">印刷 / PDF</button>
@@ -104,6 +105,14 @@ directories above. Copy an existing page in the category you're adding to
 The `nav.topnav` (with anchor links + print button) is only worth including on pages long enough
 to need in-page navigation — short pages (a handful of short sections) can skip it, see
 `docs/human/はじめに/チーム体制.html` for an example of a page without one.
+
+**Every page links back to `docs/human/index.html`** (added 2026-08-30 — no page had this
+before, which meant landing on any page other than `index.html` was a dead end). If the page
+has a `nav.topnav`, this is its first link, before the in-page anchors: `<a
+href="../index.html">← ドキュメント地図</a>` (adjust the relative path for the page's depth —
+`../../index.html` two levels down, e.g. `説明用/技術スタック/`). If the page has no
+`nav.topnav`, put the same link as the first line of the `footer`. `docs/human/index.html`
+itself doesn't link to itself.
 
 ## The shared stylesheet (`docs/human/assets/style.css`)
 

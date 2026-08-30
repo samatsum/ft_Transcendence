@@ -29,30 +29,13 @@
 		<main>
 			<section id="status">
 				<p class="section-kicker">現在地</p>
-				<h2>プロジェクトの進捗（実装は2026-08-09時点／モジュール構成は2026-08-08のD-19改訂を反映）</h2>
-				<div class="grid grid-3">
-					<div class="card">
-						<p class="card-label">C エンジン</p>
-						<p>Engine E-01〜E-14 / Gameplay G-01〜G-10 完了。</p>
-					</div>
-					<div class="card">
-						<p class="card-label">サーバ（B系・I系）</p>
-						<p>I-01・B-02・B-03・B-09・B-10・B-11・B-12・B-14 完了（8件）。<strong>B-08 は「コア実装済み」で完了には数えていません</strong>（本Cookie認証との通し検査が残るため）。B-08〜B-12 は
-							<code>ALLOW_DEV_AUTH</code> 経由の先行実装で、<strong>B-04・B-05（Cookie本認証+Origin）</strong>
-							との結合が残る。<strong>B-17（観戦のサーバー側）・I-15・I-16</strong> も未着手。CI は全ジョブ green。
-							2026-08-08のモジュール改訂（D-19）で <strong>B-06・B-07・B-13 は不採用</strong>。</p>
-					</div>
-					<div class="card">
-						<p class="card-label">フロントエンド（F系・GV系）</p>
-						<p><strong>F-01・F-02・GV-06・GV-07 コード完了</strong>（<strong>GV-06/GV-07 はブラウザでの受入が未再現</strong>——B-04とF-05＋B-09待ち。samatsum単独実装。GV-07は
-							<a href="https://github.com/samatsum/ft_Transcendence/pull/35">PR #35</a>としてマージ済み）。
-							F-03〜F-05・GV-08・F-11・GV-12 は未着手（<strong>F-09・F-10 は2026-08-08に不採用</strong>、代わりに <strong>GV-12 が予備枠から必須へ昇格</strong>）。次の関門は <strong>ゲート2</strong>（2ブラウザで 2vs2 RSP 対戦が最後まで成立すること）で、
-							残るはF-05（ロビー）とGV-08（試合遷移）。</p>
-					</div>
-				</div>
-				<p class="section-intro" style="margin-top:16px;">
-					詳しい進捗・Issue一覧は AI向け資料の <code>docs/ai/backlog.md</code> が正本です
-					（英語ですが、内容はこのプロジェクトのバックログそのものです）。
+				<h2>実装状況はGitHubを見る</h2>
+				<p class="section-intro">
+					現在の進捗はこのページでは追跡しない——
+					<a href="https://github.com/samatsum/ft_Transcendence/issues">GitHub Issues</a>と
+					<a href="https://github.com/users/samatsum/projects/1">Project</a>が正本。
+					受入条件・依存関係・意思決定の理由は <code>docs/ai/backlog.md</code>
+					（英語だが、このプロジェクトのバックログそのもの）。
 				</p>
 			</section>
 
@@ -76,56 +59,82 @@
 				<p class="section-intro">個人別 reading guide は廃止したため、以下の順に読めば全体像がつかめます。</p>
 				<ol class="path-list">
 					<li>
-						<strong><a href="./はじめに/プロジェクト概要.html">はじめに/プロジェクト概要.html</a></strong>
-						<span>ルート<code>README.md</code>の日本語サマリー。今何が動いて何が動かないか、チーム、アーキテクチャ図。</span>
+						<div>
+							<strong><a href="./はじめに/プロジェクト概要.html">はじめに/プロジェクト概要.html</a></strong>
+							<span>ルート<code>README.md</code>の日本語サマリー。今何が動いて何が動かないか、チーム、アーキテクチャ図。</span>
+						</div>
 					</li>
 					<li>
-						<strong><a href="./専門用語/全体用語.html">専門用語/全体用語.html</a></strong>
-						<span>この先の全ページで前提にする共通語彙（リポジトリ構成・サーバ権威・WS/REST・Git用語・42評価用語）。ここから読み始めるのが一番迷わない。</span>
+						<div>
+							<strong><a href="./専門用語/全体用語.html">専門用語/全体用語.html</a></strong>
+							<span>この先の全ページで前提にする共通語彙（リポジトリ構成・サーバ権威・WS/REST・Git用語・42評価用語）。ここから読み始めるのが一番迷わない。</span>
+						</div>
 					</li>
 					<li>
-						<strong><a href="./運用/Git運用フロー.html">運用/Git運用フロー.html</a></strong>
-						<span>何かコミットする前に。branch → PR → CI → GitHub上でマージ → ローカルpull、というこのリポジトリの唯一の正しい統合手順。</span>
+						<div>
+							<strong><a href="./運用/Git運用フロー.html">運用/Git運用フロー.html</a></strong>
+							<span>何かコミットする前に。branch → PR → CI → GitHub上でマージ → ローカルpull、というこのリポジトリの唯一の正しい統合手順。</span>
+						</div>
 					</li>
 					<li>
-						<strong><a href="./運用/ドキュメント作法.html">運用/ドキュメント作法.html</a></strong>
-						<span>docs/配下に何か書く前に。ページテンプレート・共通CSS・Mermaidの使い所・リンク切れの確認方法。</span>
+						<div>
+							<strong><a href="./運用/ドキュメント作法.html">運用/ドキュメント作法.html</a></strong>
+							<span>docs/配下に何か書く前に。ページテンプレート・共通CSS・Mermaidの使い所・リンク切れの確認方法。</span>
+						</div>
 					</li>
 					<li>
-						<strong><a href="./はじめに/オンボーディング.html">はじめに/オンボーディング.html</a></strong>
-						<span>役割・略号・モジュール境界・ゲート2の定義・FAQ。全体の共通知識。</span>
+						<div>
+							<strong><a href="./はじめに/オンボーディング.html">はじめに/オンボーディング.html</a></strong>
+							<span>役割・略号・モジュール境界・ゲート2の定義・FAQ。全体の共通知識。</span>
+						</div>
 					</li>
 					<li>
-						<strong><a href="./開発状況/サーバー開発工程.html">開発状況/サーバー開発工程.html</a></strong>
-						<span>B系・I系、エンジンをオンライン製品にする14工程の狙い・依存関係・コード入口を1枚で。</span>
+						<div>
+							<strong><a href="./開発状況/サーバー開発工程.html">開発状況/サーバー開発工程.html</a></strong>
+							<span>B系・I系、エンジンをオンライン製品にする14工程の狙い・依存関係・コード入口を1枚で。</span>
+						</div>
 					</li>
 					<li>
-						<strong><a href="./開発状況/フロントエンド開発工程.html">開発状況/フロントエンド開発工程.html</a></strong>
-						<span>F系・GV系、動くサーバーをプレイヤーが触れる画面にする10工程の狙い・依存関係・コード入口を1枚で。</span>
+						<div>
+							<strong><a href="./開発状況/フロントエンド開発工程.html">開発状況/フロントエンド開発工程.html</a></strong>
+							<span>F系・GV系、動くサーバーをプレイヤーが触れる画面にする10工程の狙い・依存関係・コード入口を1枚で。</span>
+						</div>
 					</li>
 					<li>
-						<strong><a href="./説明用/エンジン構成.html">説明用/エンジン構成.html</a></strong>
-						<span>エンジン構成。<code>pf_*</code> 境界・言語配置・ディレクトリ構成・app/web層の関係。</span>
+						<div>
+							<strong><a href="./説明用/エンジン構成.html">説明用/エンジン構成.html</a></strong>
+							<span>エンジン構成。<code>pf_*</code> 境界・言語配置・ディレクトリ構成・app/web層の関係。</span>
+						</div>
 					</li>
 					<li>
-						<strong><a href="./説明用/サーバ権威モデル.html">説明用/サーバ権威モデル.html</a></strong>
-						<span>サーバ権威モデル。スナップショット補間と戦闘員（人/NPC）統合。オンライン対戦の芯。</span>
+						<div>
+							<strong><a href="./説明用/サーバ権威モデル.html">説明用/サーバ権威モデル.html</a></strong>
+							<span>サーバ権威モデル。スナップショット補間と戦闘員（人/NPC）統合。オンライン対戦の芯。</span>
+						</div>
 					</li>
 					<li>
-						<strong><a href="./説明用/ビルドと実行.html">説明用/ビルドと実行.html</a></strong>
-						<span>ビルドと実行。3つのビルドターゲット・ループ反転・WASM入門。</span>
+						<div>
+							<strong><a href="./説明用/ビルドと実行.html">説明用/ビルドと実行.html</a></strong>
+							<span>ビルドと実行。3つのビルドターゲット・ループ反転・WASM入門。</span>
+						</div>
 					</li>
 					<li>
-						<strong><a href="./説明用/cubマップ書式.html">説明用/cubマップ書式.html</a></strong>
-						<span>.cub マップ書式。マップ文字・RSP/FPS判定・対戦マップのホワイトリスト。</span>
+						<div>
+							<strong><a href="./説明用/cubマップ書式.html">説明用/cubマップ書式.html</a></strong>
+							<span>.cub マップ書式。マップ文字・RSP/FPS判定・対戦マップのホワイトリスト。</span>
+						</div>
 					</li>
 					<li>
-						<strong><a href="./説明用/エンジンQA.html">説明用/エンジンQA.html</a></strong>
-						<span>コードのどこで何をしているかをQ&amp;A形式・file:line付きで即答できるようにする自己確認シート。archive/説明用/から新規移設。</span>
+						<div>
+							<strong><a href="./説明用/エンジンQA.html">説明用/エンジンQA.html</a></strong>
+							<span>コードのどこで何をしているかをQ&amp;A形式・file:line付きで即答できるようにする自己確認シート。archive/説明用/から新規移設。</span>
+						</div>
 					</li>
 					<li>
-						<strong><a href="./評価対応/42モジュール対応表.html">評価対応/42モジュール対応表.html</a></strong>
-						<span>42評価の各モジュール・必須要件が今どこまで実装済みか、コード入口とあわせて一枚で。評価当日の直前に開く用。</span>
+						<div>
+							<strong><a href="./評価対応/42モジュール対応表.html">評価対応/42モジュール対応表.html</a></strong>
+							<span>42評価の各モジュール・必須要件が今どこまで実装済みか、コード入口とあわせて一枚で。評価当日の直前に開く用。</span>
+						</div>
 					</li>
 				</ol>
 				<p class="section-intro" style="margin-top: 16px;">

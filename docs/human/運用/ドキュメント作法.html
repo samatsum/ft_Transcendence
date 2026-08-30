@@ -26,6 +26,7 @@
 
 	<nav class="topnav" aria-label="ページ内目次">
 		<div class="shell nav-inner">
+			<a href="../index.html">← ドキュメント地図</a>
 			<a href="#tracks">どちらの系統か</a>
 			<a href="#template">HTMLテンプレート</a>
 			<a href="#css">共通CSS</a>
@@ -126,6 +127,15 @@
 				ページだけに付けます。短いページ（セクションが数個だけ）は省略して構いません
 				（<code>はじめに/チーム体制.html</code>が省略例）。
 			</p>
+			<div class="callout">
+				<strong>全ページからindex.htmlへ戻れるようにする</strong>（2026-08-30追加——それまで
+				どのページも戻るリンクを持たず、index.html以外に着地すると行き止まりだった）。
+				<code>nav.topnav</code>があるページは、その先頭（ページ内アンカーより前）に
+				<code>&lt;a href="../index.html"&gt;← ドキュメント地図&lt;/a&gt;</code>を置く
+				（階層が深い場合は相対パスを調整——<code>説明用/技術スタック/</code>のような2階層下なら
+				<code>../../index.html</code>）。<code>nav.topnav</code>が無いページは、同じリンクを
+				<code>footer</code>の先頭行に置く。<code>docs/human/index.html</code>自身には不要。
+			</div>
 		</section>
 
 		<section id="css">
