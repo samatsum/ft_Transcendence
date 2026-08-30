@@ -162,7 +162,7 @@
 					<thead><tr><th>必須要件</th><th>状態</th><th>コード入口 / 備考</th></tr></thead>
 					<tbody>
 						<tr><td>FE+BE+DBのWebアプリ</td><td><span class="tag status-partial">部分完了</span></td><td>FE/BEの骨格は起動する。DBはB-03でスキーマまで作成済みだが、<strong>サーバーはまだ接続していない</strong>（B-04が最初の利用者）</td></tr>
-						<tr><td>全員からの明確なコミット</td><td><span class="tag status-done">完了（運用ルールとして）</span></td><td><a href="../../ai/git-workflow.md">git-workflow.md</a>のConventional Commits + PRレビュー運用を継続中。単独稼働という別リスクは<a href="../はじめに/チーム体制.html">チーム体制.html</a>参照</td></tr>
+						<tr><td>全員からの明確なコミット</td><td><span class="tag status-done">完了（運用ルールとして）</span></td><td><a href="../../ai/git-workflow.md">git-workflow.md</a>のConventional Commits + PRレビュー運用を継続中。現在のメンバー構成は<a href="../はじめに/チーム体制.html">チーム体制.html</a>参照</td></tr>
 						<tr><td>1コマンドでのコンテナ起動</td><td><span class="tag status-todo">未着手</span></td><td><code>docker compose up</code>で証明書生成・migration・WASM生成まで通す必要（I-15）。<a href="../../../infra/README.md">infra/README.md</a></td></tr>
 						<tr><td>最新安定版Chromeでの動作</td><td><span class="tag status-todo">未検証</span></td><td>専用の動作確認手順が未整備</td></tr>
 						<tr><td>コンソールに警告・エラーを出さない</td><td><span class="tag status-partial">部分完了</span></td><td>F-01でビルド警告ゼロは達成済み。全画面通しでの確認（ハードニング日）は未実施</td></tr>
@@ -183,8 +183,9 @@
 			<p class="section-kicker">06 · Evaluation-day flow</p>
 			<h2>評価当日の想定デモ動線（要約）</h2>
 			<p class="section-intro">
-				フルの評価チェックリスト（4人チーム時に書かれた台本。**内容は今も有効、担当者名だけ
-				samatsum単独稼働に読み替える**）は<a href="../../ai/architecture.md">architecture.md §9.1</a>にあります。
+				フルの評価チェックリスト（旧4人チーム時に書かれた台本。**内容は今も有効、担当者名は
+				現行の6人チーム（チーム体制.html参照）の話として読み替える**）は
+				<a href="../../ai/architecture.md">architecture.md §9.1</a>にあります。
 				ここでは骨子だけ書きます。
 			</p>
 			<div class="grid grid-2">
@@ -239,7 +240,7 @@
 				</article>
 				<article class="card">
 					<h3><a href="../はじめに/チーム体制.html">⑥ チーム体制</a></h3>
-					<p>4〜5人要件との齟齬（新メンバー4名の加入は確定、合流待ち）という、モジュール実装状況とは別のリスク。</p>
+					<p>2026-08-30にチーム運用が始まり6人体制。4〜5人要件は満たしている。現在のメンバー・役割の一覧。</p>
 				</article>
 			</div>
 		</section>

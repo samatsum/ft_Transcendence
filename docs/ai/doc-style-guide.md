@@ -384,9 +384,11 @@ These come up constantly when editing anything that mentions progress or who did
 context: [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html) is the authoritative source for current
 team status.
 
-- Never state a former team member (torinoue / mamiyaza / hminemur) as a **current** owner of
-  unfinished work. Use **完了 (done) / 未完成 (not started) / 担当未定 (unassigned)** instead of a
-  name for anything not finished.
+- Never state a former or historical-period team member (mamiyaza / hminemur — and torinoue for the
+  2026-08-05–2026-08-30 window, since torinoue rejoined 2026-08-30 as PM) as a **current** owner of
+  unfinished work from a period before they held that role. Use **完了 (done) / 未完成 (not started) /
+  担当未定 (unassigned)** instead of a name for anything not finished, unless you've checked the
+  current roster in チーム体制.html and GitHub Issue assignees.
 - Historical mentions (who actually built the thing that's now done, when a decision was made) are
   fine to keep — the distinction is "is this describing the past" vs. "is this implying someone is
   currently working on this." When historical content could be misread as a live assignment, add

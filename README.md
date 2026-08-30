@@ -1,6 +1,7 @@
 # ft_transcendence
 
-*This project has been created as part of the 42 curriculum by samatsum, torinoue, mamiyaza, hminemur.*
+*This project has been created as part of the 42 curriculum by samatsum, torinoue, ttsubo, kmitsuki,
+kkurose, tomtomvx.*
 
 <img align="center" src="docs/screenshot.png" alt="Screenshot of the game" />
 
@@ -34,29 +35,26 @@ server-authoritative match rendered in the browser via a recorded/replayed snaps
 Demo B below) — the same wiring that a real WebSocket connection will use once the lobby exists.
 
 Full per-issue detail: [`docs/ai/backlog.md`](./docs/ai/backlog.md) (English). Current team
-capacity and the reason online play isn't finished yet: [`docs/human/はじめに/チーム体制.html`](./docs/human/はじめに/チーム体制.html)
-(Japanese).
+roster and roles: [`docs/human/はじめに/チーム体制.html`](./docs/human/はじめに/チーム体制.html)
+(Japanese); the reason online play isn't finished yet is the status table above, not that page.
 
 ## Team
 
-ft_transcendence is a 4-person group project per the subject (Chapter II). **As of 2026-08-05 the
-team has dissolved to a single active contributor. 4 new members are confirmed to join (joining date
-not set), which will meet the subject's 4–5 person requirement — but until they start, the gap is
-open** (see [`docs/human/はじめに/チーム体制.html`](./docs/human/はじめに/チーム体制.html) §04 for the full writeup —
-it is not resolved by this README, only accurately reported here). Both the opening declaration at the
-top of this file and the table below **must be rewritten to the actual membership once the new members
-join**.
+ft_transcendence is a 4–5-person group project per the subject (Chapter II). **As of 2026-08-30 the
+team is 6 people** (up from a single active contributor through 2026-08-09), meeting the subject's
+person-count requirement (see
+[`docs/human/はじめに/チーム体制.html`](./docs/human/はじめに/チーム体制.html) for the full writeup).
 
 | Required role (subject II.1.1) | Current holder | Notes |
 |---|---|---|
-| Technical Lead / Architect | **samatsum** | Fixed — designed and built the engine (`codes/`, `web/`) |
-| Project Manager / Scrum Master | **samatsum** (filling an open slot) | |
-| Product Owner | **samatsum** (filling an open slot) | |
-| Developer (everyone) | **samatsum** | All active development |
+| Technical Lead / Architect | **ttsubo** (GitHub: `cacapon`) | Designed and built the engine (`codes/`, `web/`); handed the TL role here 2026-08-30 |
+| Project Manager / Scrum Master | **torinoue** (GitHub: `tototec1234`) | Rejoined 2026-08-28 under a new GitHub account after the earlier team dissolution |
+| Product Owner | **kmitsuki** (GitHub: `mitsukio-o`) | |
+| Developer | **kkurose** (GitHub: `kkur0z`), **tomtomvx** (GitHub: `tomtomvx`) | |
+| Supporter | **samatsum** (GitHub: `samatsum`) | Stepped back from core membership 2026-08-30; previously sole TL/PM/PO/Developer through 2026-08-09 |
 
-Historical contributors (per git history, no longer active as of 2026-08-05): **torinoue**
-(backend foundation: auth/REST/DB groundwork), **mamiyaza** (frontend foundation planning),
-**hminemur** (frontend game-screen planning). Their planned ownership is recorded in
+Historical contributors (per git history, no longer active): **mamiyaza** (frontend foundation
+planning), **hminemur** (frontend game-screen planning). Their planned ownership is recorded in
 [`docs/ai/architecture.md`](./docs/ai/architecture.md) §6 as a historical record, not a current
 assignment.
 

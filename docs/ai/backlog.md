@@ -3,7 +3,7 @@
 > Source: translated from the Japanese original at md_files/02_設計書/5-バックログ.md (archived).
 
 **Positioning**: This is the authoritative document, at a granularity that can be transcribed directly into GitHub Issues, integrating the B-/I-/F-/GV-series issues derived from [WS_PROTOCOL_DESIGN.md](./ws-protocol.md) (②), [REST_API_DESIGN.md](./rest-api.md) (③), and [FRONTEND_DESIGN.md](./frontend.md) (④) with the E/G-series issues in §6 of [ENGINE_SEPARATION_DESIGN.md](./engine-separation.md) (①).
-Historically the PM role transcribed this into Issues and tracked progress; as of 2026-08-05 the team has dissolved to a single active contributor (samatsum — see [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html)), who now does this directly. Where acceptance-criteria detail exists in the individual design documents, it is referenced rather than repeated.
+Historically the PM role transcribed this into Issues and tracked progress; after a 2026-08-05 dissolution and single-contributor period, team operation started 2026-08-30 with torinoue back as PM (see [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html) for the current roster). Where acceptance-criteria detail exists in the individual design documents, it is referenced rather than repeated.
 **Completion of this document marks the completion of the upstream process (①–⑤).** The former Q-1–Q-3 have been decided as D-16–D-18 (the comparison of options is recorded in §0).
 
 ---
@@ -117,8 +117,10 @@ An input channel that accepts state as input is itself an entry point for cheati
 
 ## 4. Backend / DevOps lane B系・I系 — new
 
-> Originally planned as a torinoue + samatsum lane. As of 2026-08-05 torinoue is no longer active; samatsum is the sole
-> contributor and every unfinished item below is unassigned (open for a future team member) rather than "torinoue's."
+> Originally planned as a torinoue + samatsum lane under the first team (dissolved 2026-08-05); samatsum
+> was the sole contributor through the single-contributor period. Team operation started 2026-08-30
+> with torinoue back (now as PM) — see [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html)
+> for who's active now. Don't assume unfinished items below are unassigned; check current GitHub Issues.
 > Use the Issue-level 完了/未完了 status in the table, not a person's name, to read current state.
 
 Numbered items in the acceptance-criteria column indicate mapping to acceptance criteria 1–6 in ②§10.
@@ -328,7 +330,7 @@ reads or writes it yet — **B-04 is the first consumer**, and it is also what m
 In parallel on the frontend side: F-01, F-02, GV-06, and GV-07 are done. F-05 + GV-08 (both not started,
 unassigned) are what's left to converge on Gate 2.
 The C side (E-series, G-series) is entirely Done; only the TypeScript Backend/DevOps and Frontend lanes remain.
-See [チーム体制.html](../human/はじめに/チーム体制.html) for current team status — as of 2026-08-05 the original 4-person plan no longer applies; samatsum is the sole active contributor.
+See [チーム体制.html](../human/はじめに/チーム体制.html) for current team status — the original 4-person plan dissolved 2026-08-05, and a new 6-person team started operating 2026-08-30 under a PO/PM/TL/Developer/Supporter structure (not the original 4 names or roles).
 
 ## 7. Upstream Process Closure Declaration
 
