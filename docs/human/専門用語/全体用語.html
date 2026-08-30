@@ -4,7 +4,7 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="color-scheme" content="dark">
-	<title>全体・専門用語 — ft_transcendence</title>
+	<title>全体用語 — ft_transcendence</title>
 	<link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
@@ -14,8 +14,8 @@
 			<h1>まず、全体で<br>共通の言葉から。</h1>
 			<p class="hero-lead">
 				このページは「コードは<code>codes/</code>くらいしか分からない」人が、他の用語集
-				（<a href="./E-専門用語.html">E</a>・<a href="./G-専門用語.html">G</a>・
-				<a href="./B・I-専門用語.html">B・I</a>・<a href="./F-専門用語.html">F</a>）を読む前に
+				（<a href="./エンジン用語.html">E</a>・<a href="./ゲームルール用語.html">G</a>・
+				<a href="./サーバー用語.html">B・I</a>・<a href="./フロントエンド用語.html">F</a>）を読む前に
 				知っておくと迷わない、レーン横断の共通語彙です。
 			</p>
 			<div class="hero-note">
@@ -50,8 +50,8 @@
 					<tbody>
 						<tr><td><code>codes/</code></td><td>C</td><td>ゲームエンジン本体。あなたが知っている部分。native / web / sim の3ターゲットに化ける元になるソース</td></tr>
 						<tr><td><code>web/</code></td><td>C由来のWASM + 少量のJS</td><td><code>codes/</code>をブラウザ/Node向けに翻訳した成果物（<code>render.wasm</code>・<code>sim.wasm</code>）と、それを動かすための最小限のJS（<code>engine_demo.js</code>など）。<strong>フロント画面（React）とは別物</strong> — 詳しくは下の「よくある勘違い」参照</td></tr>
-						<tr><td><code>app/backend/</code></td><td>TypeScript</td><td>Node上で動くサーバー。認証・DB・WebSocket・<code>sim.wasm</code>の実行を担当。詳細は<a href="./B・I-専門用語.html">B・I用語集</a></td></tr>
-						<tr><td><code>app/frontend/</code></td><td>TypeScript（React）</td><td>ブラウザで動く画面。ロビー・対戦画面・プロフィールなど。詳細は<a href="./F-専門用語.html">F用語集</a></td></tr>
+						<tr><td><code>app/backend/</code></td><td>TypeScript</td><td>Node上で動くサーバー。認証・DB・WebSocket・<code>sim.wasm</code>の実行を担当。詳細は<a href="./サーバー用語.html">B・I用語集</a></td></tr>
+						<tr><td><code>app/frontend/</code></td><td>TypeScript（React）</td><td>ブラウザで動く画面。ロビー・対戦画面・プロフィールなど。詳細は<a href="./フロントエンド用語.html">F用語集</a></td></tr>
 						<tr><td><code>app/shared/</code></td><td>TypeScript</td><td>backendとfrontendが同じ型定義を使うための共有コード（zodスキーマなど）</td></tr>
 						<tr><td><code>infra/</code></td><td>設定ファイル</td><td>nginx・TLS証明書・Dockerfile。本番起動まわり</td></tr>
 						<tr><td><code>maps/</code> / <code>textures/</code></td><td>データ</td><td>ゲームのステージ定義（<code>.cub</code>ファイル）と画像素材</td></tr>
@@ -82,7 +82,7 @@
 						<tr><td>プロトコル</td><td>通信の「言葉の決まり」。このプロジェクトにはREST APIとWebSocketの2種類がある</td></tr>
 						<tr><td>REST API</td><td>ブラウザが「GET /api/users/1」のようにHTTPでサーバへ1回ずつ要求を送る方式。ログイン・プロフィール取得などに使う（<a href="https://aws.amazon.com/jp/what-is/restful-api/">解説: AWS「RESTful API とは」</a>）</td></tr>
 						<tr><td>WebSocket（WS）</td><td>一度繋いだら繋ぎっぱなしで、双方向に小さいメッセージを送り合える通信方式。対戦中の入力・状態配信に使う（RESTだと繋ぎ直しのコストが高すぎる）（<a href="https://developer.mozilla.org/ja/docs/Web/API/WebSockets_API">公式: MDN WebSocket API</a>）</td></tr>
-						<tr><td>スナップショット（snapshot）</td><td>サーバが今の試合状態を「写真」のように切り出してクライアントへ送るデータ。詳細は<a href="./B・I-専門用語.html">B・I用語集</a>・<a href="../説明用/サーバ権威モデル.html">サーバ権威モデル.html</a></td></tr>
+						<tr><td>スナップショット（snapshot）</td><td>サーバが今の試合状態を「写真」のように切り出してクライアントへ送るデータ。詳細は<a href="./サーバー用語.html">B・I用語集</a>・<a href="../説明用/サーバ権威モデル.html">サーバ権威モデル.html</a></td></tr>
 						<tr><td>tick</td><td>サーバがゲームを1コマ進める単位（このプロジェクトは30Hz＝1秒に30回）。フレーム（描画の1コマ）とは別の概念</td></tr>
 					</tbody>
 				</table>
@@ -101,9 +101,9 @@
 						<tr><td>コンテナ / Docker</td><td>「アプリと、それが動くのに必要な環境一式」を1つの箱に詰めて配れるようにする技術。評価は<code>docker compose up</code>という単一コマンドで動く必要がある（<a href="https://aws.amazon.com/jp/docker/">解説: AWS「Docker とは」</a>）</td></tr>
 						<tr><td>Docker Compose</td><td>複数のコンテナ（nginx・Node・DBなど）をまとめて起動する仕組み。<code>docker-compose.yml</code>に定義されている（<a href="https://docs.docker.jp/compose/index.html">解説: Docker ドキュメント日本語化プロジェクト「Docker Compose 概要」</a>）</td></tr>
 						<tr><td>CI（継続的インテグレーション）</td><td>コードをpushするたびに自動でビルド・テストを走らせる仕組み（<a href="https://github.com/resources/articles/ci-cd?locale=ja">解説: GitHub「CI/CDとは」</a>）。このリポジトリでは<code>.github/workflows/ci.yml</code>1本の中に3つのジョブが定義されていて、毎push・毎PRで並行して走る</td></tr>
-						<tr><td>DevOps</td><td><strong>開発手法（ScrumやXPのような進め方の型）ではなく</strong>、開発と運用を分けず作った人が動かすところまで持つ、という考え方と自動化の実践の総称。上のCIやDocker Composeはその手段にあたる。<code>I-</code>レーンを「Infra / DevOps」と呼ぶ理由と、課題書 IV.7 の同名モジュール分類との違いは<a href="./B・I-専門用語.html#infra">B・I用語集</a>を参照</td></tr>
+						<tr><td>DevOps</td><td><strong>開発手法（ScrumやXPのような進め方の型）ではなく</strong>、開発と運用を分けず作った人が動かすところまで持つ、という考え方と自動化の実践の総称。上のCIやDocker Composeはその手段にあたる。<code>I-</code>レーンを「Infra / DevOps」と呼ぶ理由と、課題書 IV.7 の同名モジュール分類との違いは<a href="./サーバー用語.html#infra">B・I用語集</a>を参照</td></tr>
 						<tr><td>起動スモーク（smoke test）</td><td>「詳しく動作確認する」のではなく、<strong>起動してすぐ落ちないか（クラッシュしないか）だけ</strong>を確認する、最も基本的な健全性チェック。語源は電子機器の試作品の電源を入れて発煙しないか調べる試験（<a href="https://developer.mozilla.org/ja/docs/Glossary/Smoke_Test">公式: MDN用語集「Smoke Test」</a>）。このリポジトリでは<code>native</code>ジョブが実マップ5枚を実際に起動し、5秒間クラッシュせず動き続けたら成功と判定する</td></tr>
-						<tr><td>sim（<code>sim.wasm</code>）</td><td>Cエンジンを、<strong>判定専用</strong>（描画コードを含まない）としてビルドしたWebAssembly。サーバー（Node）がこれを実行し、衝突・勝敗・スコアだけを計算する。対になるのが描画専用の<code>render.wasm</code>。詳細は<a href="./E-専門用語.html">E用語集</a>の「3つのビルドターゲット」</td></tr>
+						<tr><td>sim（<code>sim.wasm</code>）</td><td>Cエンジンを、<strong>判定専用</strong>（描画コードを含まない）としてビルドしたWebAssembly。サーバー（Node）がこれを実行し、衝突・勝敗・スコアだけを計算する。対になるのが描画専用の<code>render.wasm</code>。詳細は<a href="./エンジン用語.html">E用語集</a>の「3つのビルドターゲット」</td></tr>
 						<tr><td>モノレポ（monorepo）</td><td>複数の独立したパッケージ（プロジェクト）を、1つのリポジトリにまとめて入れる構成（対義語はマルチレポ）。<code>app/</code>配下の<code>shared</code>・<code>backend</code>・<code>frontend</code>がnpm workspacesでこの構成になっており、<code>shared</code>のzodスキーマを他2つが直接importできるのはこのおかげ（<a href="https://about.gitlab.com/ja-jp/blog/what-is-monorepo/">解説: GitLab「モノレポとは？」</a>）</td></tr>
 					</tbody>
 				</table>
@@ -168,10 +168,10 @@
 
 	<footer class="shell">
 		<p>2026-08-07 作成。次に読む: 自分の担当・興味に応じて
-			<a href="./E-専門用語.html">E</a> /
-			<a href="./G-専門用語.html">G</a> /
-			<a href="./B・I-専門用語.html">B・I</a> /
-			<a href="./F-専門用語.html">F</a> の用語集へ。全体像は
+			<a href="./エンジン用語.html">E</a> /
+			<a href="./ゲームルール用語.html">G</a> /
+			<a href="./サーバー用語.html">B・I</a> /
+			<a href="./フロントエンド用語.html">F</a> の用語集へ。全体像は
 			<a href="../はじめに/オンボーディング.html">オンボーディング.html</a>も参照。</p>
 	</footer>
 </body>
