@@ -86,7 +86,7 @@ flowchart LR
 
     client -- "REST: 認証・プロフィール・マップ" --> BE
     client -- "WebSocket: input →<br/>← snapshot (15Hz)" --> GR
-    BE -.->|"スキーマのみ、未接続 (B-03済/B-04で接続)"| DB
+    BE -->|"ユーザー・セッションの永続化"| DB
 			</pre>
 			<p class="section-intro" style="margin-top: 16px;">
 				図解付きの詳しい説明は<a href="../説明用/サーバ権威モデル.html">サーバ権威モデル.html</a>、
@@ -105,9 +105,9 @@ flowchart LR
 						<tr><td>フロントエンド</td><td>React + Vite + TypeScript + Tailwind CSS</td><td>SSR不要のSPAで十分。TailwindでCSSフレームワーク要件を満たす</td></tr>
 						<tr><td>バックエンド</td><td>Fastify + TypeScript</td><td>Node上で<code>sim.wasm</code>を直接実行できる。公式WSプラグインあり</td></tr>
 						<tr><td>リアルタイム通信</td><td>生WebSocket（<code>@fastify/websocket</code>）</td><td>Socket.IOの抽象化は不要</td></tr>
-						<tr><td>DB</td><td>SQLite + Prisma（<strong>B-03でスキーマ作成済み。サーバーからの接続はB-04</strong>）</td><td>単一ホスト評価に適合。ORM要件を満たす</td></tr>
-						<tr><td>認証</td><td>argon2id + opaque httpOnlyセッションCookie（JWTではない）（<strong>未結線, B-04</strong>）</td><td>ステートレスJWTの利点（サーバ側失効不可）がこの規模では不要</td></tr>
-						<tr><td>配信</td><td>nginx + Docker Compose（<strong>未結線, I-15</strong>）</td><td>単一コマンド起動の要件</td></tr>
+						<tr><td>DB</td><td>SQLite + Prisma</td><td>単一ホスト評価に適合。ORM要件を満たす</td></tr>
+						<tr><td>認証</td><td>argon2id + opaque httpOnlyセッションCookie（JWTではない）</td><td>ステートレスJWTの利点（サーバ側失効不可）がこの規模では不要</td></tr>
+						<tr><td>配信</td><td>nginx + Docker Compose</td><td>単一コマンド起動の要件</td></tr>
 						<tr><td>共有契約</td><td><code>app/shared/</code>のzodスキーマ</td><td>1つの定義でFE/BE両方のバリデーションを満たす</td></tr>
 					</tbody>
 				</table>
