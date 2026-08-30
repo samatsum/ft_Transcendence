@@ -76,6 +76,24 @@
 				「このコード領域が何を保証し、誰が消費するか」という契約の境界自体は、
 				誰が今そこを担当していても変わらない共通の地図として使える。
 			</p>
+			<pre class="mermaid">
+flowchart LR
+    Engine["Engine<br/>(完了・原則不変)"]
+    Backend["Backend"]
+    Frontend["Frontend"]
+    GameView["GameView"]
+
+    Engine -->|"sim API"| Backend
+    Engine -.->|"sim API"| GameView
+    Backend ==>|"WSプロトコル"| GameView
+    Backend -->|"REST API"| Frontend
+    Backend -.->|"ロビーWS"| Frontend
+    Backend -.->|"zod契約"| Frontend
+    Backend -.->|"zod契約"| GameView
+			</pre>
+			<p class="section-intro" style="margin-top: 8px; font-size: 0.85rem;">
+				太い矢印＝最優先の同期。点線＝間接的な依存・型共有。表で詳細を確認：
+			</p>
 			<div class="table-wrap">
 				<table>
 					<thead><tr><th>契約</th><th>所有領域</th><th>主な消費領域</th></tr></thead>
@@ -169,5 +187,36 @@
 			旧版は<a href="../../../archive/docs-human/はじめに/オンボーディング_2026-08-30版.html">archive/docs-human/はじめに/オンボーディング_2026-08-30版.html</a>に保存。
 		</p>
 	</footer>
+
+	<script type="module">
+		import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+		mermaid.initialize({
+			startOnLoad: true,
+			theme: "base",
+			themeVariables: {
+				darkMode: true,
+				background: "#07111f",
+				primaryColor: "#12243a",
+				primaryTextColor: "#edf6ff",
+				primaryBorderColor: "#29415d",
+				lineColor: "#5de4d6",
+				secondaryColor: "#0d1b2d",
+				secondaryTextColor: "#edf6ff",
+				secondaryBorderColor: "#29415d",
+				tertiaryColor: "#0d1b2d",
+				tertiaryTextColor: "#edf6ff",
+				tertiaryBorderColor: "#29415d",
+				fontFamily: "Inter, 'Noto Sans JP', sans-serif",
+				noteBkgColor: "#12243a",
+				noteTextColor: "#c4d4e6",
+				noteBorderColor: "#29415d",
+				actorBkg: "#12243a",
+				actorTextColor: "#edf6ff",
+				actorBorder: "#29415d",
+				signalColor: "#73a7ff",
+				signalTextColor: "#edf6ff"
+			}
+		});
+	</script>
 </body>
 </html>

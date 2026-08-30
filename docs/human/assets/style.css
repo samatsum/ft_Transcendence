@@ -53,6 +53,7 @@ pre {
 	padding: 16px 18px;
 }
 pre code { border: 0; background: none; padding: 0; }
+pre.mermaid svg { display: block; margin: 0 auto; }
 
 .shell {
 	width: min(1180px, calc(100% - 36px));
