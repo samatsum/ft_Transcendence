@@ -181,6 +181,21 @@ h3 {
 	box-shadow: var(--shadow);
 }
 .card p:last-child { margin-bottom: 0; }
+.card.tone-green {
+	border-color: rgb(126 231 135 / 35%);
+	background: linear-gradient(145deg, rgb(126 231 135 / 10%), rgb(13 27 45 / 90%));
+}
+.card.tone-green .card-label { color: var(--green); }
+.card.tone-yellow {
+	border-color: rgb(255 209 102 / 35%);
+	background: linear-gradient(145deg, rgb(255 209 102 / 10%), rgb(13 27 45 / 90%));
+}
+.card.tone-yellow .card-label { color: var(--yellow); }
+.card.tone-red {
+	border-color: rgb(255 140 140 / 35%);
+	background: linear-gradient(145deg, rgb(255 140 140 / 10%), rgb(13 27 45 / 90%));
+}
+.card.tone-red .card-label { color: var(--red); }
 .card-label {
 	margin: 0 0 9px;
 	color: var(--muted);
@@ -256,6 +271,119 @@ h3 {
 .changelog dd {
 	margin: 6px 0 0;
 	color: var(--muted);
+}
+
+.gitflow {
+	border: 1px solid var(--line);
+	border-radius: 14px;
+	background: rgb(13 27 45 / 55%);
+	padding: 20px;
+	margin-top: 18px;
+}
+.gitflow-controls {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 16px;
+	margin-bottom: 14px;
+}
+.gitflow-controls button {
+	border: 1px solid var(--line);
+	border-radius: 999px;
+	background: var(--panel);
+	color: var(--text);
+	width: 40px;
+	height: 40px;
+	font-size: 1.1rem;
+	line-height: 1;
+	cursor: pointer;
+}
+.gitflow-controls button:hover:not(:disabled) {
+	border-color: var(--cyan);
+	color: var(--cyan);
+}
+.gitflow-controls button:disabled {
+	opacity: 0.35;
+	cursor: default;
+}
+.gitflow-step-label {
+	font-weight: 700;
+	color: var(--cyan);
+	min-width: 220px;
+	text-align: center;
+}
+.gitflow-command {
+	text-align: center;
+	margin-bottom: 16px;
+}
+.gitflow-command code {
+	display: inline-block;
+	background: rgb(93 228 214 / 10%);
+	border: 1px solid rgb(93 228 214 / 35%);
+	border-radius: 8px;
+	padding: 6px 14px;
+	color: var(--cyan);
+	font-size: 0.95rem;
+}
+.gitflow-panels {
+	display: flex;
+	gap: 20px;
+	justify-content: center;
+	flex-wrap: wrap;
+}
+.gitflow-panel {
+	flex: 1;
+	min-width: 260px;
+	max-width: 420px;
+}
+.gitflow-panel-label {
+	text-align: center;
+	font-weight: 700;
+	color: var(--text);
+	margin-bottom: 8px;
+	font-size: 0.88rem;
+}
+.gitflow-diagram {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	min-height: 140px;
+	overflow-x: auto;
+	border: 1px solid var(--line);
+	border-radius: 10px;
+	background: rgb(7 17 31 / 40%);
+	padding: 10px;
+}
+.gitflow-diagram svg {
+	max-width: 100%;
+	height: auto;
+}
+.gitflow-caption {
+	margin-top: 14px;
+	color: var(--muted);
+	text-align: center;
+}
+.gitflow-badges {
+	display: flex;
+	justify-content: center;
+	gap: 10px;
+	margin-top: 12px;
+	flex-wrap: wrap;
+}
+.gitflow-dots {
+	display: flex;
+	justify-content: center;
+	gap: 6px;
+	margin-top: 16px;
+}
+.gitflow-dots span {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: var(--line);
+}
+.gitflow-dots span.active {
+	background: var(--cyan);
 }
 
 .lifecycle {

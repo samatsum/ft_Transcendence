@@ -279,6 +279,53 @@ ttsuboが実際にindex.htmlを読んで見つけた3件。論点A〜Eの決定�
   「samatsum · Game server」「samatsum · すでに閉じた対戦画面」という個人名カードラベルが
   残っている（論点B対象だが、どの役割名に置き換えるべきか——現ttsuboの担当かは不明——要判断）
 
+## 8. `Git運用フロー.html`にステップ送りの図を追加（2026-08-30、ttsuboの依頼）
+
+「標準の5ステップ」のbashコードブロックの直後に、GitHub Flowを1コマずつ確認できる
+インタラクティブな図を追加した。
+
+- Mermaid `gitGraph`を使い、7ステップ（①出発点→②ブランチ作成→③コミット→④push→
+  ⑤PR作成・CI実行中→⑥マージ(squash)→⑦ローカル追従）に分割。各ステップに
+  ローカル/origin/PR状態を示すバッジ(`.tag`流用)とキャプションを添えた
+- ←→ボタンとキーボード矢印キーで送れる軽量な自前JS（Mermaidを`startOnLoad: false`で
+  初期化し、`mermaid.render()`をステップごとに呼ぶ方式）
+- 新しいCSSクラス（`.gitflow`系）を共通スタイルシート`assets/style.css`に追加
+  （ページ固有`<style>`は書かない、というdoc-style-guideのルールに従った）
+- squash合流はgitGraphの`merge`ではなく、`checkout main`後に独立した`commit`を積む形で
+  表現した（squashはfeat/xxx側のコミットを親として引き継がないため、`merge`キーワードだと
+  実態と異なる図になる）
+
+検証:
+- gitGraphソースをHTMLから直接抽出し、`mermaid.parse()`で構文検証（全件OK）
+- 埋め込みJS（`<script type="module">`の中身）を`node --check`で構文検証（OK）
+- `mermaid.render()`によるフルレンダリング確認はjsdomのSVG計測API未実装により断念
+  （doc-style-guide.md自身がparse検証止まりを推奨している既知の制約と同種）
+
+**ttsuboのブラウザレビュー後の追加修正（同日）**:
+- [x] ローカル/originを1枚のグラフではなく、2枚を並べて表示する形に変更。図とキャプションを
+      「どの時点でどちらが進んでいるか」が分かるように書き直した（8ステップの各ステップに
+      `localSource`/`remoteSource`を別々に用意）
+- [x] 各ステップの実行コマンドを`.gitflow-command`として画面上部に強調表示するように追加
+- [x] ⑧ブランチを消す、をステップに追加（8ステップ化）。旧「05 · Cleanup」の独立セクションは
+      削除し、「放置すると7本たまった」という注意書きはステップ⑦の警告と並べて統合。この番号を
+      参照していた4ファイル（チーム体制.html・サーバー開発工程.html・エンジン構成.html・
+      オンボーディング.html）の「Git運用フロー §05.5」表記も「§05」に更新
+- [x] セクション順を「Flow→Naming→Merge strategy→Why→Lanes→Issue tracking→Anti-patterns」に
+      並び替え（旧: Why→Flow→Naming→Merge strategy→...）。ナビ・セクションキッカー番号も追従
+- [x] マージ方式カード4枚に色分け（既定=緑`tone-green`、例外=黄`tone-yellow`、禁止=赤`tone-red`）
+      を追加。新しいCSSクラスを共通スタイルシートに追加
+- [x] 「禁止」カードを「mainへの直接プッシュ全般」として拡張し、GitHubのruleset（ブランチ保護）
+      でpush・force-pushが実際にブロックされている旨を追記。これに伴い、Anti-patterns節にあった
+      重複する2項目（mainへの直接コミット・mainのforce-push）を削除し、内容をこのカードへ一本化
+- [x] インタラクティブな図とbashコード版の順序を入れ替え（図が先、コードは「まとめてコピペしたい
+      人向け」の位置づけに）。ttsuboと相談し、初見の人には概念→細部の順の方が読みやすいという
+      判断
+- [x] hero-leadの「samatsum本人にも」を「チームの誰にも」に修正（論点B）
+- [x] hero-noteの「2026-08-07制定・31コミット遅れ事故を受けて明文化」を末尾の新セクション
+      「08 · Changelog」（`<dl class="changelog">`、index.htmlで導入済みの同じCSSを再利用）へ
+      移設し、2026-08-30の今回の全面見直しも1エントリとして追加。footerの重複していた
+      「2026-08-07制定」の記述も整理
+
 ---
 
 ## 7. このドラフトの運用
