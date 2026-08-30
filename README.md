@@ -11,32 +11,19 @@ natively, compiled to WASM in the browser for rendering, and compiled to WASM on
 sole authority over the match. Two game modes ship on top of it — an RSP ("rock-paper-scissors
 tag") team battle and an FPS collect-and-race mode.
 
-## Current status (implementation 2026-07-30 / module lineup 2026-08-08)
+## Current status
 
-The C engine's planned backlog is closed, and its two post-backlog FPS defects (**G-11**, **G-12**) were both fixed 2026-08-09 — see the Engine row below. The online product layer around it — auth, matchmaking, and most of the
-frontend — is partially built. Read this table before trying to demo anything.
+Tracked live on GitHub, not here — this section used to be a manually-maintained status table, which
+is exactly the kind of fact that goes stale (see [`docs/drafts/141-docs-restructure.md`](./docs/drafts/141-docs-restructure.md)
+for why). Check:
 
-Two dates on purpose: as of 2026-07-30 nothing had been *completed* beyond what's listed here, **except
-three later, individually-dated exceptions called out inline below — B-02, G-11, and G-12, all landed
-2026-08-09**. The **declared module lineup was rewritten on 2026-08-08** (decision D-19), which is why
-several rows below say "not declared" for work that older commits still describe as planned.
+- [Issues](https://github.com/samatsum/ft_Transcendence/issues) and the
+  [Project board](https://github.com/users/samatsum/projects/1) for what's open/closed and in progress
+- [`docs/ai/backlog.md`](./docs/ai/backlog.md) for acceptance criteria, dependencies, and the
+  decision log (this file doesn't restate current % done, only *why* something was built the way it was)
 
-| Area | Status |
-|---|---|
-| **Engine** (`codes/` + `web/`) — rendering, physics, both game modes, AI, server-authoritative sim | ✅ **Planned backlog closed** (E-01–E-14 / G-01–G-10). ✅ **G-11** (FPS shooting could eliminate the other seat, [#46](https://github.com/samatsum/ft_Transcendence/issues/46)) fixed 2026-08-09 — shooting now costs hp (default 3, `.cub` `PH`) and a lethal hit is a respawn delay, not elimination. ✅ **G-12** (remote players had no appearance in FPS, [#47](https://github.com/samatsum/ft_Transcendence/issues/47)) fixed 2026-08-09 — deliberately the opposite of the issue's original ask: the opponent now renders identically to a hazard monster (design call, not a bug), verified via a `record.mjs fps` + headless-browser screenshot. FPS online play is still blocked, but only by auth/lobby (B-04/F-05/B-09), not by these two |
-| **Server** (`app/backend/`) — lobby WS, matchmaking, GameRoom driving `sim.wasm`, disconnect/reconnect, map whitelist | ✅ **Core complete** (I-01, B-08 core, B-09–B-12, B-14). Blocked on real Cookie auth (B-04/B-05) for final integration; the spectator server side (B-17), Docker/nginx delivery (I-15), and CI extension (I-16) not started. Persistence (B-13) was **not declared** as of 2026-08-08 (D-19) |
-| **Auth / DB** (`app/backend/`) | ⚠️ **B-02 and B-03 done** (Fastify common processing: ③§1 error envelope/zod validation/rate limit; Prisma schema v1 + migration). **B-03 created the schema but nothing reads or writes it yet** — B-04 is the first consumer. B-04–B-05 not started. A dev-only header-based auth stub (`ALLOW_DEV_AUTH`) stands in for real auth. Auth and the database are Chapter III mandatory requirements, so they are built regardless of module choice; friends (B-07) and avatar (B-06) are **not declared** |
-| **Frontend** (`app/frontend/`) — scaffold, API client, GameView, HUD | ✅ Scaffold and fetch layer are done (F-01, F-02). GameView and HUD (GV-06, GV-07) are **code-complete but their browser acceptance is not currently reproducible** — see the dev-server note below |
-| **Frontend — lobby, auth screens, match transition, spectating** | ❌ **Not started** (F-03–F-05, GV-08・F-11・GV-12). The lobby route is currently a stub with a dev-only link straight into a match. Profile (F-09) and friends UI (F-10) are **not declared**; GV-12 was promoted from reserve to required |
-| **End-to-end result**: log in → find a match → play → see results | ❌ **Not yet possible.** There is no lobby to matchmake from and no real login |
-
-What *is* demoable today: the native/browser engine standalone (single player, both modes), and a
-server-authoritative match rendered in the browser via a recorded/replayed snapshot stream (see
-Demo B below) — the same wiring that a real WebSocket connection will use once the lobby exists.
-
-Full per-issue detail: [`docs/ai/backlog.md`](./docs/ai/backlog.md) (English). Current team
-roster and roles: [`docs/human/はじめに/チーム体制.html`](./docs/human/はじめに/チーム体制.html)
-(Japanese); the reason online play isn't finished yet is the status table above, not that page.
+Current team roster and roles: [`docs/human/はじめに/チーム体制.html`](./docs/human/はじめに/チーム体制.html)
+(Japanese).
 
 ## Team
 

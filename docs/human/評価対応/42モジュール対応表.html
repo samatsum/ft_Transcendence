@@ -14,14 +14,15 @@
 			<h1>「このモジュールは<br>どこで確認できますか」に、即答する。</h1>
 			<p class="hero-lead">
 				評価当日、審査員に加点モジュールや必須要件を1つずつ聞かれたときに開く一枚です。
-				どのモジュールが・何ptで・今どこまで実装済みで・コードのどこを見せればよいかを、
-				このページだけで確認できるようにします。モジュール選定の根拠そのものは
-				<a href="../../ai/architecture.md">architecture.md §4</a>が正本、ここはその「今の実装状況」版です。
+				どのモジュールが・何ptで・コードのどこにあるかを、このページだけで確認できるようにします。
+				モジュール選定の根拠そのものは<a href="../../ai/architecture.md">architecture.md §4</a>が正本、
+				<strong>現在の実装状況はGitHub Issues / Projectを参照</strong>（このページは対応表であって
+				進捗トラッカーではない）。
 			</p>
 			<div class="hero-note">
-				<strong>実装は2026-07-30時点／モジュール構成は2026-08-08のD-19改訂</strong>
+				<strong>モジュール構成は2026-08-08のD-19改訂</strong>
 				申告予定は必須14pt＋ボーナス5pt＝19pt。ただし<strong>下の「重要な注意」を必ず先に読んでください</strong>
-				——多くのモジュールが、正規のログインを迂回する開発用フラグ経由でしか動作確認できていません。
+				——一部のモジュールは、正規のログインを迂回する開発用フラグ経由でしか動作確認できていません。
 			</div>
 			<div class="callout" style="margin-top: 18px">
 				<strong>2026-08-08にモジュール構成を改訂しました（D-19）。</strong>
@@ -52,38 +53,19 @@
 			<p class="section-kicker">01 · Read this first</p>
 			<h2>重要な注意: 「動く」と「評価当日にそのまま見せられる」は別</h2>
 			<p class="section-intro">
-				B-08〜B-12で実証済みの機能の多くは（GV-06/GV-07については<strong>ブラウザでの受入が未再現</strong>）、<code>ALLOW_DEV_AUTH=true</code>という
-				開発専用フラグで本認証（B-04）を迂回して動かしています（<a href="../../../app/backend/src/auth/session.ts"><code>auth/session.ts</code></a>）。
-				エンジン・WS・対戦ループそのものは実機で証明済みですが、<strong>「ログイン→ロビー→対戦」という
-				評価当日に審査員へ見せる正規の導線は、B-04（本認証）が閉じるまで存在しません</strong>。
-				下の表の「部分完了」は、この意味で「コードはあるが正規フローでは未実証」を含みます。
+				一部の機能は<code>ALLOW_DEV_AUTH=true</code>という開発専用フラグで本認証を迂回した状態で
+				実証されている（<a href="../../../app/backend/src/auth/session.ts"><code>auth/session.ts</code></a>）。
+				「コードが動く」ことと「評価当日に正規のログイン→ロビー→対戦という導線でそのまま見せられる」
+				ことは別なので、デモ準備の際はこのフラグに依存していないか確認すること。
+				各モジュール・各必須要件の現在の実装状況は、このページではなく
+				<a href="https://github.com/samatsum/ft_Transcendence/issues">GitHub Issues</a>と
+				<a href="https://github.com/users/samatsum/projects/1">Project</a>を参照
+				（このページが持つのは「必須要件・モジュール ↔ コード入口」の対応表という、実装状況が
+				変わっても腐らない部分だけ）。
 			</p>
-			<div class="grid grid-4">
-				<article class="card">
-					<p class="card-label">必須14pt</p>
-					<p class="metric">2<small> 完了 / 8</small></p>
-					<p class="metric-note">完了2・部分完了5・未着手1（詳細は<a href="#core">§02</a>）</p>
-				</article>
-				<article class="card">
-					<p class="card-label">ボーナス+5pt</p>
-					<p class="metric">1<small> 完了 / 4</small></p>
-					<p class="metric-note">3Dは実装完了・他3件は土台あり（詳細は<a href="#bonus">§03</a>）</p>
-				</article>
-				<article class="card">
-					<p class="card-label">不採用にしたもの</p>
-					<p class="metric">B-13</p>
-					<p class="metric-note">これ1つで「別のゲーム」2ptが復活する最有力の復帰候補。「ゲーム統計」1ptはさらにF-09も必要（<a href="#dropped">§04</a>）</p>
-				</article>
-				<article class="card">
-					<p class="card-label">最大の上流ブロッカー</p>
-					<p class="metric">B-04</p>
-					<p class="metric-note">本認証が無いと大半のモジュールが正規導線で見せられない</p>
-				</article>
-			</div>
 			<div class="callout warning" style="margin-top: 18px">
-				<strong>特に注意（評価で0ptになりやすい2点）:</strong>
+				<strong>特に注意（評価で0ptになりやすい1点）:</strong>
 				<ul style="margin: 10px 0 0 20px; padding: 0;">
-					<li><strong>Privacy/ToS（必須要件）</strong>: <a href="../../../app/frontend/src/pages/PrivacyPage.tsx"><code>PrivacyPage.tsx</code></a>は現状「本文はF-04で書く」という断り書きが表示されるプレースホルダーです。42の評価は<strong>プレースホルダー厳禁</strong>と明記しており、このままだと該当項目は0pt扱いになり得ます</li>
 					<li><strong>HTTPS（必須要件）</strong>: nginx/TLS（I-15）が未着手のため、現状は評価環境で要求される「アドレスバーでHTTPS確認」ができません</li>
 				</ul>
 			</div>
@@ -98,16 +80,16 @@
 			</p>
 			<div class="table-wrap">
 				<table>
-					<thead><tr><th>#</th><th>モジュール</th><th>区分</th><th>pt</th><th>状態</th><th>コード入口</th><th>備考</th></tr></thead>
+					<thead><tr><th>#</th><th>モジュール</th><th>区分</th><th>pt</th><th>コード入口</th><th>備考</th></tr></thead>
 					<tbody>
-						<tr><td>1</td><td>完全にWebベースのゲーム実装（RSP）</td><td>Gaming Major</td><td>2</td><td><span class="tag status-partial">部分完了</span></td><td><a href="../../../codes/"><code>codes/</code></a>（RSPエンジン）・<a href="../../../app/frontend/src/pages/GameView.tsx"><code>GameView.tsx</code></a></td><td>エンジン+対戦ループは2ブラウザで実証済み。正規ログイン導線はF-05/B-04待ち</td></tr>
-						<tr><td>2</td><td>リモートプレイヤー</td><td>Gaming Major</td><td>2</td><td><span class="tag status-partial">部分完了</span></td><td><a href="../../../app/backend/src/game/room.ts"><code>game/room.ts</code></a>・<a href="../../../app/frontend/src/game/useGameSocket.ts"><code>useGameSocket.ts</code></a></td><td>サーバー権威+補間+30秒切断復帰（B-12）まで実証済み。ALLOW_DEV_AUTH経由</td></tr>
-						<tr><td>3</td><td>マルチプレイヤー（3人以上）</td><td>Gaming Major</td><td>2</td><td><span class="tag status-partial">部分完了</span></td><td><a href="../../../app/backend/src/lobby/rooms.ts"><code>lobby/rooms.ts</code></a></td><td>RSP 2v2＝4人はエンジン・ロビーコアとも対応済み。ロビーUI（F-05）が無く画面から到達不可</td></tr>
-						<tr><td>4</td><td>FE/BE双方でフレームワーク使用</td><td>Web Major</td><td>2</td><td><span class="tag status-done">完了</span></td><td><a href="../../../app/frontend/"><code>app/frontend/</code></a>（React）・<a href="../../../app/backend/"><code>app/backend/</code></a>（Fastify）</td><td>F-01/I-01。両方起動しビルド警告ゼロを確認済み</td></tr>
-						<tr><td>5</td><td>WebSocketsによるリアルタイム機能</td><td>Web Major</td><td>2</td><td><span class="tag status-partial">部分完了</span></td><td><a href="../../../app/backend/src/game/ws.ts"><code>game/ws.ts</code></a>（完了）・<a href="../../../app/backend/src/lobby/ws.ts"><code>lobby/ws.ts</code></a>（コアのみ）</td><td>課題書が求める3要件（クライアント間更新・接続/切断処理・ブロードキャスト）は<strong>ゲームWSだけで満たせる</strong>。ロビーWSは上乗せ</td></tr>
-						<tr><td>6</td><td><strong>AI対戦相手</strong></td><td>AI Major</td><td>2</td><td><span class="tag status-done">完了</span></td><td><a href="../../../codes/"><code>codes/</code></a>（G系列、AI判定ロジック）</td><td><strong>ボーナスから昇格</strong>。RSP/FPS双方のAI完成。<code>game_set_input_source</code>でAI⇔人間の切替も実証済み</td></tr>
-						<tr><td>7</td><td>ORMの使用（Prisma）</td><td>Web Minor</td><td>1</td><td><span class="tag status-partial">部分完了</span></td><td><code>app/backend/prisma/schema.prisma</code>（5テーブル＋migration、<code>npm run check:db</code>）</td><td>B-03でスキーマとmigrationは完了。残りはI-15（composeの初回起動でmigrationを流す）。DBは第III章で必須なのでどのみち作る＝実質タダ</td></tr>
-						<tr><td>8</td><td><strong>ゲームカスタマイズオプション</strong></td><td>Gaming Minor</td><td>1</td><td><span class="tag status-partial">部分完了</span></td><td><a href="../../../codes/"><code>codes/</code></a>（<code>target_score</code>・マップ選択パラメータ）</td><td><strong>ボーナスから昇格</strong>。エンジン側パラメータは対応済み。選択UIが残る</td></tr>
+						<tr><td>1</td><td>完全にWebベースのゲーム実装（RSP）</td><td>Gaming Major</td><td>2</td><td><a href="../../../codes/"><code>codes/</code></a>（RSPエンジン）・<a href="../../../app/frontend/src/pages/GameView.tsx"><code>GameView.tsx</code></a></td><td>エンジン+対戦ループは2ブラウザで実証済み。正規ログイン導線はF-05/B-04待ち</td></tr>
+						<tr><td>2</td><td>リモートプレイヤー</td><td>Gaming Major</td><td>2</td><td><a href="../../../app/backend/src/game/room.ts"><code>game/room.ts</code></a>・<a href="../../../app/frontend/src/game/useGameSocket.ts"><code>useGameSocket.ts</code></a></td><td>サーバー権威+補間+30秒切断復帰（B-12）まで実証済み。ALLOW_DEV_AUTH経由</td></tr>
+						<tr><td>3</td><td>マルチプレイヤー（3人以上）</td><td>Gaming Major</td><td>2</td><td><a href="../../../app/backend/src/lobby/rooms.ts"><code>lobby/rooms.ts</code></a></td><td>RSP 2v2＝4人はエンジン・ロビーコアとも対応済み。ロビーUI（F-05）が無く画面から到達不可</td></tr>
+						<tr><td>4</td><td>FE/BE双方でフレームワーク使用</td><td>Web Major</td><td>2</td><td><a href="../../../app/frontend/"><code>app/frontend/</code></a>（React）・<a href="../../../app/backend/"><code>app/backend/</code></a>（Fastify）</td><td>F-01/I-01。両方起動しビルド警告ゼロを確認済み</td></tr>
+						<tr><td>5</td><td>WebSocketsによるリアルタイム機能</td><td>Web Major</td><td>2</td><td><a href="../../../app/backend/src/game/ws.ts"><code>game/ws.ts</code></a>（完了）・<a href="../../../app/backend/src/lobby/ws.ts"><code>lobby/ws.ts</code></a>（コアのみ）</td><td>課題書が求める3要件（クライアント間更新・接続/切断処理・ブロードキャスト）は<strong>ゲームWSだけで満たせる</strong>。ロビーWSは上乗せ</td></tr>
+						<tr><td>6</td><td><strong>AI対戦相手</strong></td><td>AI Major</td><td>2</td><td><a href="../../../codes/"><code>codes/</code></a>（G系列、AI判定ロジック）</td><td><strong>ボーナスから昇格</strong>。RSP/FPS双方のAI完成。<code>game_set_input_source</code>でAI⇔人間の切替も実証済み</td></tr>
+						<tr><td>7</td><td>ORMの使用（Prisma）</td><td>Web Minor</td><td>1</td><td><code>app/backend/prisma/schema.prisma</code>（5テーブル＋migration、<code>npm run check:db</code>）</td><td>B-03でスキーマとmigrationは完了。残りはI-15（composeの初回起動でmigrationを流す）。DBは第III章で必須なのでどのみち作る＝実質タダ</td></tr>
+						<tr><td>8</td><td><strong>ゲームカスタマイズオプション</strong></td><td>Gaming Minor</td><td>1</td><td><a href="../../../codes/"><code>codes/</code></a>（<code>target_score</code>・マップ選択パラメータ）</td><td><strong>ボーナスから昇格</strong>。エンジン側パラメータは対応済み。選択UIが残る</td></tr>
 					</tbody>
 				</table>
 			</div>
@@ -118,12 +100,12 @@
 			<h2>ボーナスモジュール（申告予定・+5pt上限）</h2>
 			<div class="table-wrap">
 				<table>
-					<thead><tr><th>#</th><th>モジュール</th><th>区分</th><th>pt</th><th>状態</th><th>コード入口</th><th>備考</th></tr></thead>
+					<thead><tr><th>#</th><th>モジュール</th><th>区分</th><th>pt</th><th>コード入口</th><th>備考</th></tr></thead>
 					<tbody>
-						<tr><td>9</td><td><strong>高度な3Dグラフィックス</strong></td><td>Gaming Major</td><td>2</td><td><span class="tag status-done">実装完了</span></td><td><a href="../../../codes/"><code>codes/</code></a>（レイキャスター）</td><td><strong>追加コードゼロ</strong>。READMEの正当化のみ。E-13で112fps@960×540を実測。<br>ただし課題書の「Three.js等のライブラリを使用して」をライブラリ必須と読まれる可能性があり、<strong>あえてボーナス側に置いている</strong>（却下されても合格ラインに影響しない）</td></tr>
-						<tr><td>10</td><td><strong>カスタムデザインシステム</strong></td><td>Web Minor</td><td>1</td><td><span class="tag status-done">完了</span></td><td><a href="../../../app/frontend/src/components/"><code>src/components/</code></a></td><td>要件は再利用可能部品10個以上＋パレット/タイポグラフィ/アイコン。部品15個（Button・Card・Modal・Toast・FormField・Input・Header・Footer・Layoutの9個＋アイコン5個＋ColorSwatch）、タイポグラフィトークン、アイコン体系すべて完備（2026-08-20）。<code>/dev/design-system</code>にカタログページあり</td></tr>
-						<tr><td>11</td><td><strong>観戦モード</strong></td><td>Gaming Minor</td><td>1</td><td><span class="tag status-partial">土台のみ</span></td><td><a href="../../../app/frontend/src/pages/GameView.tsx"><code>GameView.tsx</code></a>・<a href="../../../app/backend/src/game/ws.ts"><code>game/ws.ts</code></a></td><td><strong>予備から昇格</strong>。<code>welcome.role==='spectator'</code>の表示はGV-06で完了済み。WSの<code>spectate</code>アクション（現在<code>not_participant</code>を返すスタブ）＝<strong>B-17</strong>と、視点切替UI＝<strong>GV-12</strong>が残る。<strong>+5点枠で残作業がある3項目のうち、最も大きいもの</strong>（他は#10のコンポーネント1個＋パレット/タイポグラフィ/アイコン、#12のステータスページ＋バックアップ手順）</td></tr>
-						<tr><td>12</td><td><strong>ヘルスチェック/ステータスページ</strong></td><td>DevOps Minor</td><td>1</td><td><span class="tag status-partial"><code>/api/health</code>済</span></td><td><a href="../../../app/backend/src/index.ts"><code>backend/src/index.ts</code></a></td><td>エンドポイントはI-01で実装済み（CIも起動確認に使用中）。ステータスページ＋自動バックアップ・復旧手順が残る</td></tr>
+						<tr><td>9</td><td><strong>高度な3Dグラフィックス</strong></td><td>Gaming Major</td><td>2</td><td><a href="../../../codes/"><code>codes/</code></a>（レイキャスター）</td><td><strong>追加コードゼロ</strong>。READMEの正当化のみ。E-13で112fps@960×540を実測。<br>ただし課題書の「Three.js等のライブラリを使用して」をライブラリ必須と読まれる可能性があり、<strong>あえてボーナス側に置いている</strong>（却下されても合格ラインに影響しない）</td></tr>
+						<tr><td>10</td><td><strong>カスタムデザインシステム</strong></td><td>Web Minor</td><td>1</td><td><a href="../../../app/frontend/src/components/"><code>src/components/</code></a></td><td>要件は再利用可能部品10個以上＋パレット/タイポグラフィ/アイコン。部品15個（Button・Card・Modal・Toast・FormField・Input・Header・Footer・Layoutの9個＋アイコン5個＋ColorSwatch）、タイポグラフィトークン、アイコン体系すべて完備（2026-08-20）。<code>/dev/design-system</code>にカタログページあり</td></tr>
+						<tr><td>11</td><td><strong>観戦モード</strong></td><td>Gaming Minor</td><td>1</td><td><a href="../../../app/frontend/src/pages/GameView.tsx"><code>GameView.tsx</code></a>・<a href="../../../app/backend/src/game/ws.ts"><code>game/ws.ts</code></a></td><td><strong>予備から昇格</strong>。<code>welcome.role==='spectator'</code>の表示はGV-06で完了済み。WSの<code>spectate</code>アクション（現在<code>not_participant</code>を返すスタブ）＝<strong>B-17</strong>と、視点切替UI＝<strong>GV-12</strong>が残る。<strong>+5点枠で残作業がある3項目のうち、最も大きいもの</strong>（他は#10のコンポーネント1個＋パレット/タイポグラフィ/アイコン、#12のステータスページ＋バックアップ手順）</td></tr>
+						<tr><td>12</td><td><strong>ヘルスチェック/ステータスページ</strong></td><td>DevOps Minor</td><td>1</td><td><a href="../../../app/backend/src/index.ts"><code>backend/src/index.ts</code></a></td><td>エンドポイントはI-01で実装済み（CIも起動確認に使用中）。ステータスページ＋自動バックアップ・復旧手順が残る</td></tr>
 					</tbody>
 				</table>
 			</div>
@@ -159,21 +141,21 @@
 			</p>
 			<div class="table-wrap">
 				<table>
-					<thead><tr><th>必須要件</th><th>状態</th><th>コード入口 / 備考</th></tr></thead>
+					<thead><tr><th>必須要件</th><th>コード入口 / 備考</th></tr></thead>
 					<tbody>
-						<tr><td>FE+BE+DBのWebアプリ</td><td><span class="tag status-partial">部分完了</span></td><td>FE/BEの骨格は起動する。DBはB-03でスキーマまで作成済みだが、<strong>サーバーはまだ接続していない</strong>（B-04が最初の利用者）</td></tr>
-						<tr><td>全員からの明確なコミット</td><td><span class="tag status-done">完了（運用ルールとして）</span></td><td><a href="../../ai/git-workflow.md">git-workflow.md</a>のConventional Commits + PRレビュー運用を継続中。現在のメンバー構成は<a href="../はじめに/チーム体制.html">チーム体制.html</a>参照</td></tr>
-						<tr><td>1コマンドでのコンテナ起動</td><td><span class="tag status-todo">未着手</span></td><td><code>docker compose up</code>で証明書生成・migration・WASM生成まで通す必要（I-15）。<a href="../../../infra/README.md">infra/README.md</a></td></tr>
-						<tr><td>最新安定版Chromeでの動作</td><td><span class="tag status-todo">未検証</span></td><td>専用の動作確認手順が未整備</td></tr>
-						<tr><td>コンソールに警告・エラーを出さない</td><td><span class="tag status-partial">部分完了</span></td><td>F-01でビルド警告ゼロは達成済み。全画面通しでの確認（ハードニング日）は未実施</td></tr>
-						<tr><td>Privacy Policy / 利用規約ページ</td><td><span class="tag status-todo">未着手</span></td><td><a href="../../../app/frontend/src/pages/PrivacyPage.tsx"><code>PrivacyPage.tsx</code></a>は現状プレースホルダー（F-04）。<strong>上の「重要な注意」参照</strong></td></tr>
-						<tr><td>複数ユーザーの同時利用</td><td><span class="tag status-partial">部分完了</span></td><td>複数GameRoomの同時稼働はサーバー側で実証済み（B-10）。正規ログインでの通し確認は未実施</td></tr>
-						<tr><td>レスポンシブ・アクセシブルなFE</td><td><span class="tag status-todo">未着手</span></td><td>F-11。375px幅・キーボード操作の確認が必要</td></tr>
-						<tr><td>envをGit管理外に + env.example</td><td><span class="tag status-done">完了</span></td><td><a href="../../../.env.example"><code>.env.example</code></a> / <a href="../../../.gitignore"><code>.gitignore</code></a></td></tr>
-						<tr><td>明確なスキーマとリレーション</td><td><span class="tag status-partial">部分完了</span></td><td>概念設計は<a href="../../ai/architecture.md">architecture.md §3.3</a>、実装の正本は<a href="../../ai/rest-api.md">rest-api.md §3</a>。<code>app/backend/prisma/schema.prisma</code>はB-03で作成済み（5テーブル）。<strong>READMEのER図は未作成</strong></td></tr>
-						<tr><td>メール+パスワード認証（ハッシュ+ソルト）</td><td><span class="tag status-todo">未着手</span></td><td>argon2id採用は設計決定済みだが未実装（B-04）</td></tr>
-						<tr><td>FE/BE双方での入力検証</td><td><span class="tag status-partial">部分完了</span></td><td>WS側は<a href="../../../app/shared/src/ws/"><code>app/shared/src/ws/</code></a>の共有zodスキーマで運用中。REST側は<strong>B-02が完了</strong>し共通のzod検証パイプライン＋エラーエンベロープが動いているが、適用先は現状<code>/api/maps</code>のみ（他の書き込み系エンドポイントはB-04/B-05待ち）</td></tr>
-						<tr><td>外部接続はすべてHTTPS</td><td><span class="tag status-todo">未着手</span></td><td>nginx TLS終端が未構築（I-15）</td></tr>
+						<tr><td>FE+BE+DBのWebアプリ</td><td>FE/BEの骨格は起動する。DBはB-03でスキーマまで作成済みだが、<strong>サーバーはまだ接続していない</strong>（B-04が最初の利用者）</td></tr>
+						<tr><td>全員からの明確なコミット</td><td><a href="../../ai/git-workflow.md">git-workflow.md</a>のConventional Commits + PRレビュー運用を継続中。現在のメンバー構成は<a href="../はじめに/チーム体制.html">チーム体制.html</a>参照</td></tr>
+						<tr><td>1コマンドでのコンテナ起動</td><td><code>docker compose up</code>で証明書生成・migration・WASM生成まで通す必要（I-15）。<a href="../../../infra/README.md">infra/README.md</a></td></tr>
+						<tr><td>最新安定版Chromeでの動作</td><td>専用の動作確認手順が未整備</td></tr>
+						<tr><td>コンソールに警告・エラーを出さない</td><td>F-01でビルド警告ゼロは達成済み。全画面通しでの確認（ハードニング日）は未実施</td></tr>
+						<tr><td>Privacy Policy / 利用規約ページ</td><td><a href="../../../app/frontend/src/pages/PrivacyPage.tsx"><code>PrivacyPage.tsx</code></a>は現状プレースホルダー（F-04）。<strong>上の「重要な注意」参照</strong></td></tr>
+						<tr><td>複数ユーザーの同時利用</td><td>複数GameRoomの同時稼働はサーバー側で実証済み（B-10）。正規ログインでの通し確認は未実施</td></tr>
+						<tr><td>レスポンシブ・アクセシブルなFE</td><td>F-11。375px幅・キーボード操作の確認が必要</td></tr>
+						<tr><td>envをGit管理外に + env.example</td><td><a href="../../../.env.example"><code>.env.example</code></a> / <a href="../../../.gitignore"><code>.gitignore</code></a></td></tr>
+						<tr><td>明確なスキーマとリレーション</td><td>概念設計は<a href="../../ai/architecture.md">architecture.md §3.3</a>、実装の正本は<a href="../../ai/rest-api.md">rest-api.md §3</a>。<code>app/backend/prisma/schema.prisma</code>はB-03で作成済み（5テーブル）。<strong>READMEのER図は未作成</strong></td></tr>
+						<tr><td>メール+パスワード認証（ハッシュ+ソルト）</td><td>argon2id採用は設計決定済みだが未実装（B-04）</td></tr>
+						<tr><td>FE/BE双方での入力検証</td><td>WS側は<a href="../../../app/shared/src/ws/"><code>app/shared/src/ws/</code></a>の共有zodスキーマで運用中。REST側は<strong>B-02が完了</strong>し共通のzod検証パイプライン＋エラーエンベロープが動いているが、適用先は現状<code>/api/maps</code>のみ（他の書き込み系エンドポイントはB-04/B-05待ち）</td></tr>
+						<tr><td>外部接続はすべてHTTPS</td><td>nginx TLS終端が未構築（I-15）</td></tr>
 					</tbody>
 				</table>
 			</div>
