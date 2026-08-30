@@ -110,7 +110,7 @@
 				</table>
 			</div>
 			<div class="callout" style="margin-top: 18px">
-				<strong>このリポジトリのCIは3ジョブ構成（2026-08-07時点、3つとも green）：</strong>
+				<strong>このリポジトリのCIは3ジョブ構成：</strong>
 				<ul style="margin: 10px 0 0 20px; padding: 0;">
 					<li><code>native</code> — Cエンジンを<code>make</code>でLinux実行ファイルとしてビルドし、<code>make check</code>（lint）・<code>make test</code>（sim受入テスト85件）・5枚のマップでの起動スモークまで通す</li>
 					<li><code>wasm</code> — <code>make web sim</code>で<code>render.wasm</code>と<code>sim.wasm</code>をビルドし、Node上で<code>record.mjs</code>によるsim通し実行まで確認する</li>
@@ -148,19 +148,19 @@
 			<p class="section-kicker">05 · 42 evaluation</p>
 			<h2>42の課題・評価に関する用語</h2>
 			<p class="section-intro">
-				TLとして評価当日に必ず聞かれる語彙です。詳しくは<a href="../../ai/requirements.md">requirements.md</a>（英語）。
+				評価当日に誰かが必ず聞かれる語彙です。詳しくは<a href="../../ai/requirements.md">requirements.md</a>（英語）。
 			</p>
 			<div class="table-wrap">
 				<table>
 					<thead><tr><th>用語</th><th>意味</th></tr></thead>
 					<tbody>
-						<tr><td>TL（テクニカルリード）</td><td>技術的な意思決定とアーキテクチャに責任を持つ役割。課題書 II.1.1 の必須役割の1つ。samatsumが担当</td></tr>
+						<tr><td>TL（テクニカルリード）</td><td>技術的な意思決定とアーキテクチャに責任を持つ役割。課題書 II.1.1 の必須役割の1つ。現在の担当は<a href="../はじめに/チーム体制.html">チーム体制.html</a>参照</td></tr>
 						<tr><td>PM / スクラムマスター</td><td>進捗・期限・ブロッカーの管理役</td></tr>
 						<tr><td>PO（プロダクトオーナー）</td><td>機能の優先順位と完了判定の役</td></tr>
 						<tr><td>Developer</td><td>全員が兼ねる役割。実装・レビュー・自分の実装のテストをする人</td></tr>
 						<tr><td>Module（モジュール）</td><td>42が定義する加点項目（Major=2pt / Minor=1pt）。合計14pt必須、+5ptまでボーナス</td></tr>
 						<tr><td>Gate（関門）</td><td>このプロジェクト独自の内部マイルストーン（Gate 1〜3）。42の課題番号とは無関係。詳細は<a href="../../ai/backlog.md">backlog.md</a></td></tr>
-						<tr><td>E / G / B / I / F / GV</td><td>Issue番号の接頭辞＝どのレーンの作業か。Engine（<code>E-</code>と<code>G-</code>で1レーン）/ Backend / Infra·DevOps / Frontend（一般Web画面）/ GameView（ゲーム画面）に対応。2026-08-08まではBackendとInfraがまとめて<code>W-</code>だった。詳しい用語はこの用語集の各レーン別ページへ</td></tr>
+						<tr><td>E / G / B / I / F / GV</td><td>レーンを表す分類。Engine（<code>E-</code>と<code>G-</code>で1レーン）/ Backend / Infra·DevOps / Frontend（一般Web画面）/ GameView（ゲーム画面）に対応。<strong>2026-08-30より前のIssue番号の接頭辞</strong>で、当時は新規Issueにこの接頭辞付きIDを振っていた（2026-08-08まではBackendとInfraがまとめて<code>W-</code>だった）。<strong>2026-08-30に新規採番は廃止</strong>——現在はGitHubの生番号のみで識別し、レーンは<code>lane:*</code>ラベルで表す（詳細は<a href="../運用/Git運用フロー.html#lanes">Git運用フロー §05</a>）。過去のID・各レーン別用語集での読み方はそちらを参照</td></tr>
 					</tbody>
 				</table>
 			</div>
