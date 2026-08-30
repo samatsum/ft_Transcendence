@@ -389,36 +389,31 @@ This only checks that the target *exists on disk* — it can't tell you a link p
 
 ## Status and team-attribution rules
 
-These come up constantly when editing anything that mentions progress or who did what. Full
-context: [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html) is the authoritative source for current
-team status.
+These come up constantly when editing anything that mentions progress or who did what. Current
+team roster/roles: [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html). But the
+rules below are this guide's own — チーム体制.html doesn't define writing-style rules, only the
+roster.
 
-- Never state a former or historical-period team member (mamiyaza / hminemur — and torinoue for the
-  2026-08-05–2026-08-30 window, since torinoue rejoined 2026-08-30 as PM) as a **current** owner of
-  unfinished work from a period before they held that role. Use **完了 (done) / 未完成 (not started) /
-  担当未定 (unassigned)** instead of a name for anything not finished, unless you've checked the
-  current roster in チーム体制.html and GitHub Issue assignees.
+- **Don't put GitHub-coverable status in `docs/` at all** (decided 2026-08-30 — see
+  `docs/drafts/141-docs-restructure.md` for the discussion). Who owns unfinished work and how far
+  along something is are GitHub Issues/Projects' job — don't reach for careful phrasing like
+  **完了 (done) / 未完成 (not started) / 担当未定 (unassigned)** to describe it in `docs/`; don't
+  write it there at all. The same goes for progress counts, completion percentages, per-issue status
+  tags, and "N of M done" cards — even as a "helpful at-a-glance summary," that summary duplicates
+  GitHub and starts going stale the moment either side moves (this repo has already removed several:
+  the root README's status table, `評価対応/42モジュール対応表.html`'s completion tags, and the
+  `開発状況/` pages' progress grids and per-issue card sections). `docs/ai/backlog.md` keeps
+  acceptance criteria, dependencies, and the decision log — it does not restate current % done or
+  current owner. This also replaces "verify before writing a progress claim" as the rule: this repo
+  has been caught out more than once by a doc claiming something was unimplemented when
+  `origin/main` had already shipped it (or vice versa) — the fix isn't a more careful verification
+  step, it's not writing the claim in `docs/` in the first place.
 - Historical mentions (who actually built the thing that's now done, when a decision was made) are
   fine to keep — the distinction is "is this describing the past" vs. "is this implying someone is
   currently working on this." When historical content could be misread as a live assignment, add
   an explicit disclaimer rather than deleting the history (see `docs/ai/architecture.md` §6/§9 for
   the pattern: the original 4-person plan is preserved as a table, with a note above it saying it's
   superseded and pointing at the current source of truth).
-- Before writing any progress claim ("X is done", "Y is not started"), verify it against
-  `docs/ai/backlog.md` and, if there's any doubt, against `git log origin/main` directly — this
-  repo has been caught out more than once by a doc claiming something was unimplemented when
-  `origin/main` had already shipped it (or vice versa). Don't guess from memory of an earlier
-  session.
-- **Don't put GitHub-coverable status in `docs/` at all** (decided 2026-08-30 — see
-  `docs/drafts/141-docs-restructure.md` for the discussion). Progress counts, completion
-  percentages, per-issue status tags, and "N of M done" cards belong in GitHub Issues/Projects, not
-  a `docs/` page, even as a "helpful at-a-glance summary" — that summary duplicates GitHub and starts
-  going stale the moment either side moves (this repo has already removed several: the root
-  README's status table, `評価対応/42モジュール対応表.html`'s completion tags, and the
-  `開発状況/` pages' progress grids and per-issue card sections). `docs/ai/backlog.md` keeps
-  acceptance criteria, dependencies, and the decision log — it does not restate current % done. If
-  you're about to add a status grid, progress bar, or completion tag to a `docs/` page, link to
-  GitHub instead.
 - **Refer to individuals by role, not name, in prose** (decided 2026-08-30) — "the Technical Lead"
   rather than a person's name — so text doesn't need editing every time someone changes roles. The
   one exception is a page whose actual purpose is declaring who currently holds each role
