@@ -14,6 +14,8 @@ import LoginPage from './pages/LoginPage.js';
 import NotFoundPage from './pages/NotFoundPage.js';
 import PrivacyPage from './pages/PrivacyPage.js';
 import ProfilePage from './pages/ProfilePage.js';
+import RoomCreatePage from './pages/RoomCreatePage.js';
+import RoomJoinPage from './pages/RoomJoinPage.js';
 import SignupPage from './pages/SignupPage.js';
 import TermsPage from './pages/TermsPage.js';
 
@@ -63,6 +65,23 @@ export default function App() {
 					element={
 						<RequireAuth>
 							<LobbyPage />
+						</RequireAuth>
+					}
+				/>
+				{/* #109 / #110 は別 Issue。#106 からの遷移先として枠だけ置く */}
+				<Route
+					path="/lobby/create"
+					element={
+						<RequireAuth>
+							<RoomCreatePage />
+						</RequireAuth>
+					}
+				/>
+				<Route
+					path="/lobby/join"
+					element={
+						<RequireAuth>
+							<RoomJoinPage />
 						</RequireAuth>
 					}
 				/>
