@@ -25,11 +25,16 @@ export interface AuthUser {
 	displayName: string;
 }
 
-// B-04 完成時に shared/api/ 側の zod へ置き換える暫定スキーマ
-const authUserSchema = z.object({
-	id: z.number(),
-	displayName: z.string(),
-});
+// B-04 完成時に shared/api/ 側の zod へ置き換える暫定スキーマ。
+// `/api/auth/me` の実レスポンス（selfSchema・③§2-A）は snake_case の
+// display_name を返すため、ここで camelCase の AuthUser へ変換する。
+// export しているのは AuthContext.test.ts から直接検査するため（#135回帰）
+export const authUserSchema = z
+	.object({
+		id: z.number(),
+		display_name: z.string(),
+	})
+	.transform(({ id, display_name }) => ({ id, displayName: display_name }));
 
 export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
 
