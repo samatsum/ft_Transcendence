@@ -1,4 +1,35 @@
 services:
+  nginx:
+    build:
+      context: .
+      dockerfile: infra/docker/nginx/Dockerfile
+    init: true
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_completed_successfully
+    ports:
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      # frontend サービスが生成する Vite の成果物を静的配信する
+      - ./app/frontend/dist:/usr/share/nginx/html:ro
+      # 初回起動で生成したローカル CA と localhost 証明書を再起動後も再利用する
+      - ./infra/certs:/etc/nginx/certs
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - --fail
+        - --silent
+        - --show-error
+        - --insecure
+        - https://127.0.0.1/api/health
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+
   backend:
     build:
       context: .
