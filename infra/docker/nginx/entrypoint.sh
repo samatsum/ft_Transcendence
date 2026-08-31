@@ -24,12 +24,22 @@ run_openssl() {
 	rm -f "$error_log"
 }
 
+# 証明書と秘密鍵が対応する鍵ペアかどうかを、公開鍵の比較で検証する
+keys_match() {
+	cert=$1
+	key=$2
+	cert_pubkey=$(openssl x509 -in "$cert" -noout -pubkey 2>/dev/null) || return 1
+	key_pubkey=$(openssl pkey -in "$key" -pubout 2>/dev/null) || return 1
+	[ -n "$cert_pubkey" ] && [ "$cert_pubkey" = "$key_pubkey" ]
+}
+
 # CA 証明書を(再)生成する必要があるかどうかを示す flag
 generate_ca=false
 
 # CA 証明書を新規作成
 if [ ! -s "$ca_cert" ] || [ ! -s "$ca_key" ] \
-	|| ! openssl x509 -checkend 0 -noout -in "$ca_cert" >/dev/null 2>&1; then	# CA 証明書が存在するが無効である
+	|| ! openssl x509 -checkend 0 -noout -in "$ca_cert" >/dev/null 2>&1 \
+	|| ! keys_match "$ca_cert" "$ca_key"; then	# CA 証明書が存在するが無効、または証明書と秘密鍵が対応していない
 	generate_ca=true
 	tmp_dir=$(mktemp -d "$cert_dir/.ca.XXXXXX")
 	#  CA 証明書の拡張設定
@@ -59,7 +69,8 @@ if [ "$generate_ca" = true ] || [ ! -s "$server_cert" ] || [ ! -s "$server_key" 
 # サーバー証明書が現在の CA によって署名されていない場合
 elif ! openssl x509 -checkend 0 -noout -in "$server_cert" >/dev/null 2>&1 \
 	|| ! openssl x509 -in "$server_cert" -noout -checkhost localhost >/dev/null 2>&1 \
-	|| ! openssl verify -CAfile "$ca_cert" "$server_cert" >/dev/null 2>&1; then
+	|| ! openssl verify -CAfile "$ca_cert" "$server_cert" >/dev/null 2>&1 \
+	|| ! keys_match "$server_cert" "$server_key"; then
 	generate_server=true
 fi
 
