@@ -859,6 +859,7 @@ async function seedDevAuthUsers(dbUrl: string, userIds: number[]): Promise<void>
 		for (const userId of userIds) {
 			await prisma.user.create({
 				data: {
+					id: userId,
 					email: `dev-${userId}@example.test`,
 					passwordHash: 'argon2id$placeholder',
 					displayName: `dev-${userId}`,
