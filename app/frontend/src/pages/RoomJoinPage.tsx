@@ -63,7 +63,10 @@ export default function RoomJoinPage() {
 					<Input
 						value={code}
 						onChange={(e) => {
-							setCode(e.target.value.toUpperCase());
+							// ここで toUpperCase しない。値が変わると React が input.value を
+							// 書き戻し、そのたびにカーソルが末尾へ飛ぶため。
+							// 表示は CSS の uppercase、正規化は送信時の roomCodeSchema が行う
+							setCode(e.target.value);
 							if (error) setError(null);
 						}}
 						maxLength={6}
