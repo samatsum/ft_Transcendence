@@ -74,6 +74,8 @@ export default function HowToPlayPage() {
 					<img
 						src="/how-to/fps.png"
 						alt="FPS モードのプレイ画面。中央にクロスヘア、左下に収集進捗、右下にミニマップが表示されている"
+						loading='lazy'
+						decoding='async'
 						className="w-full rounded-md border border-border"
 					/>
 					<ul className="list-disc space-y-1 pl-5 text-body text-fg-muted">
