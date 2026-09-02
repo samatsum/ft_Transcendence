@@ -8,12 +8,12 @@ import { useAuth } from './contexts/AuthContext.js';
 import DesignSystemPage from './pages/DesignSystemPage.js';
 import GameView from './pages/GameView.js';
 import LobbyPage from './pages/LobbyPage.js';
+import RoomCreatePage from './pages/RoomCreatePage.js';
+import RoomJoinPage from './pages/RoomJoinPage.js';
 import LoginPage from './pages/LoginPage.js';
 import NotFoundPage from './pages/NotFoundPage.js';
 import PrivacyPage from './pages/PrivacyPage.js';
 import ProfilePage from './pages/ProfilePage.js';
-import RoomCreatePage from './pages/RoomCreatePage.js';
-import RoomJoinPage from './pages/RoomJoinPage.js';
 import SignupPage from './pages/SignupPage.js';
 import TermsPage from './pages/TermsPage.js';
 
