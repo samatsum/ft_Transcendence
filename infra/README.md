@@ -1,13 +1,15 @@
 # infra — nginx 設定・TLS 証明書・compose 用アセット
 
-**I-01 時点では骨格のみ。実体は I-15（Docker Compose + nginx TLS + 単一コマンド起動）で作る。**
+**I-15（Docker Compose + nginx TLS + 単一コマンド起動）で実装済み。** `docker compose up` 一発で
+`engine-build`（WASM 生成）→ `frontend`（Vite ビルド）→ `backend` / `nginx`（TLS 終端・REST/WS
+プロキシ）の順に起動する。
 
-## 置くもの（I-15 の作業対象）
+## 置くもの
 
 | パス | 内容 |
 |---|---|
 | `docker/` | Dockerfile 置き場。現状は `docker/engine-build/`（Emscripten ビルド用）。ルート直下から移設（②の整理） |
-| `nginx/nginx.conf` | HTTPS 終端（自己署名）・静的配信（frontend の build）・`/api` と `/ws` のリバースプロキシ |
+| `docker/nginx/nginx.conf` | HTTPS 終端（自己署名）・静的配信（frontend の build）・`/api` と `/ws` のリバースプロキシ |
 | `certs/` | 自己署名証明書（**生成物。git 管理外**）。初回 `docker compose up` で生成する |
 | `scripts/` | 証明書生成・Prisma マイグレーション・`make web sim` 相当のアセット変換を起動時に流す入口 |
 
@@ -15,7 +17,7 @@
 
 - 構成（nginx + app + ボリューム）と TLS 方針は [architecture.md](../docs/ai/architecture.md) §2.4・§3.1。
 - 受入条件「空フォルダ `git clone` → `docker compose up` → Chrome で HTTPS 接続」は [backlog.md](../docs/ai/backlog.md) I-15。
-- 既存の `docker-compose.yml` は現状 **Emscripten ビルド用サービス（engine-build）**のみ。I-15 で `nginx` / `app` サービスを追加する。
+- `docker-compose.yml` には `nginx` / `backend` / `frontend` / `engine-build` の4サービスがある。`app` という単一サービスにはまとめず、レーンごとに分けている。
 
 ## ⚠ I-15 で落としやすい点（2026-07-27・TL 追記）
 
