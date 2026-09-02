@@ -4,6 +4,8 @@ import { Layout } from './components/Layout.js';
 import { RedirectIfAuth } from './components/RedirectIfAuth.js';
 import { RequireAuth } from './components/RequireAuth.js';
 import { useAuth } from './contexts/AuthContext.js';
+import { DevSession } from './contexts/DevSession.js';
+import { LobbyProvider } from './contexts/LobbyContext.js';
 
 import DesignSystemPage from './pages/DesignSystemPage.js';
 import GameView from './pages/GameView.js';
@@ -63,7 +65,17 @@ export default function App() {
 					path="/lobby"
 					element={
 						<RequireAuth>
-							<LobbyPage />
+							{import.meta.env.DEV ? (
+								<DevSession>
+									<LobbyProvider>
+										<LobbyPage />
+									</LobbyProvider>
+								</DevSession>
+							) : (
+								<LobbyProvider>
+									<LobbyPage />
+								</LobbyProvider>
+							)}
 						</RequireAuth>
 					}
 				/>
