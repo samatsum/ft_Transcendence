@@ -88,18 +88,30 @@ services:
     volumes:
       - .:/workspace
       - frontend-node-modules:/workspace/node_modules
+      - npm-cache:/tmp/npm-cache
     # コンテナ内の実行ユーザーをホストユーザーに合わせる
     user: "${HOST_UID:-0}:${HOST_GID:-0}"
     environment:
       HOME: /tmp
       NPM_CONFIG_CACHE: /tmp/npm-cache
-    # 依存関係をインストールし、frontend のビルドを実行
+    # package-lock.json が前回と同じなら npm ci を省略し、依存関係インストールの
+    # やり直し（十数秒）を毎回の起動から取り除く
     command:
       - sh
       - -lc
-      - npm ci && npm run build --workspace @ft/frontend
+      - |
+        stamp=node_modules/.package-lock.sha256
+        lock_hash=$$(sha256sum package-lock.json | cut -d' ' -f1)
+        if [ -f "$$stamp" ] && [ "$$(cat "$$stamp")" = "$$lock_hash" ]; then
+          echo "package-lock.json unchanged, skipping npm ci"
+        else
+          npm ci
+          echo "$$lock_hash" > "$$stamp"
+        fi
+        npm run build --workspace @ft/frontend
 
 volumes:
   app-data:
   emscripten-cache:
   frontend-node-modules:  # JavaScript / TypeScript プロジェクトが使う外部ライブラリ
+  npm-cache:  # npm ci のダウンロードキャッシュ（レジストリからの再取得を避ける）

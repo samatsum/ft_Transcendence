@@ -158,8 +158,13 @@ $(MLX_TARGET):
 debug:          CFLAGS += -O0 -g3 -fsanitize=address -static-libasan
 debug:          re
 
-web-assets:
+TEXTURE_SRCS    = $(shell find textures -type f)
+
+web-assets:     $(WEB_ASSET_DIR)/.stamp
+
+$(WEB_ASSET_DIR)/.stamp: $(TEXTURE_SRCS) codes/PythonCodes/xpm_to_tex.py
 	python3 codes/PythonCodes/xpm_to_tex.py textures $(WEB_ASSET_DIR)
+	@touch $@
 
 web:            web-assets $(WEB_BUILD_DIR)/render.js
 
