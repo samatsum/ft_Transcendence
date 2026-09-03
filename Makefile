@@ -158,8 +158,24 @@ $(MLX_TARGET):
 debug:          CFLAGS += -O0 -g3 -fsanitize=address -static-libasan
 debug:          re
 
-web-assets:
+TEXTURE_SRCS    = $(shell find textures -type f)
+
+# textures/ の追加・削除・rename は TEXTURE_SRCS（Makefile 読み込み時点の一覧）だけでは
+# 検知できない（消えたファイルは prerequisite からも消えるため）。.filelist を毎回
+# force 経由で評価し直し、一覧が実際に変わったときだけ更新することで、削除・rename でも
+# .stamp を確実に古くする
+force:
+
+$(WEB_ASSET_DIR)/.filelist: force
+	@mkdir -p $(@D)
+	@find textures -type f | sort > $@.tmp
+	@cmp -s $@.tmp $@ 2>/dev/null && rm -f $@.tmp || mv $@.tmp $@
+
+web-assets:     $(WEB_ASSET_DIR)/.stamp
+
+$(WEB_ASSET_DIR)/.stamp: $(TEXTURE_SRCS) $(WEB_ASSET_DIR)/.filelist codes/PythonCodes/xpm_to_tex.py
 	python3 codes/PythonCodes/xpm_to_tex.py textures $(WEB_ASSET_DIR)
+	@touch $@
 
 web:            web-assets $(WEB_BUILD_DIR)/render.js
 
@@ -205,4 +221,4 @@ fclean:         clean
 re:             fclean all
 
 .PHONY:         all clean fclean re check audit debug web web-assets sim test \
-                frontend-engine-assets
+                frontend-engine-assets force
