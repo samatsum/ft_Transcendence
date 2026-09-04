@@ -1,5 +1,6 @@
 作成者: torinoue:PM(tototec1234)  
-作成日時: 2026-09-04
+作成日時: 2026-09-04  
+改訂日時: 2026-09-04（ttubo レビュー反映: §3 CLI/Web 分岐、次 Issue は main から切るを明記）
 
 # PR 作成手順 — feature ブランチから Pull Request まで
 
@@ -42,9 +43,24 @@ F-03（Issue #83 … 認証画面 + route guard 全体）
 
 ### ブランチ名について
 
-今回の `feature/104-login-screen` は **そのまま PR してよい**（rename しない）。
+今回の `feature/104-login-screen` は **そのまま PR してよい**（rename しない：作業と管理の煩雑さを避けるため）。
 
-本来は [Git運用フロー §03 命名規約](./Git運用フロー.html#naming) に従い **`feat/104-login-screen`** が正しい。`feature/` 接頭辞は規約外。**次回以降は `feat/` を使う。**
+<details>
+<summary>rebase は使わない（知識メモ・クリックで表示）</summary>
+
+main 同期は **merge** を使う。rebase との違い:
+
+| | merge（本リポジトリ推奨） | rebase |
+|---|---|---|
+| 見た目 | 分岐と合流がグラフに残る | 自分のコミットが main の先頭に付け替わり、線が直線に見える |
+| リスク | 低い | push 済みブランチだと force push が必要になりやすい |
+| 本 repo で推奨する理由 | PR は **squash merge**（1 PR = main に 1 コミット）なので、feature ブランチ内の merge コミットは main 履歴に残らない。安全に main の変更を取り込める | 共有ブランチで履歴を書き換えると、他人（や未来の自分）が混乱しやすい |
+
+rebase だと「ブランチを切った時点では存在しなかった main の変更を、最初から自分のコミットの上に載せた」ように見える、というのも rebase の性質上の特徴のひとつ。
+
+</details>
+
+本来は [Git運用フロー §03 命名規約](./Git運用フロー.html#naming) に従い **`feat/104-login-screen`** が正しい。`feature/` 接頭辞は規約外。**次回以降は `feat/` を使うこと！。**
 
 ---
 
@@ -121,16 +137,6 @@ feature ブランチの先端付近に `Merge branch 'main'` があり、その�
    ```
 4. 取り込み後すぐ: `npm run typecheck` と `npm run build`
 
-### rebase は使わない（知識メモ）
-
-| | merge（本リポジトリ推奨） | rebase |
-|---|---|---|
-| 見た目 | 分岐と合流がグラフに残る | 自分のコミットが main の先頭に付け替わり、線が直線に見える |
-| リスク | 低い | push 済みブランチだと force push が必要になりやすい |
-| 本 repo で推奨する理由 | PR は **squash merge**（1 PR = main に 1 コミット）なので、feature ブランチ内の merge コミットは main 履歴に残らない。安全に main の変更を取り込める | 共有ブランチで履歴を書き換えると、他人（や未来の自分）が混乱しやすい |
-
-rebase だと「ブランチを切った時点では存在しなかった main の変更を、最初から自分のコミットの上に載せた」ように見える、というのも rebase の性質上の特徴のひとつ。
-
 ---
 
 ## 2. Issue #104 を満たすかテストする（受入検査）
@@ -164,7 +170,7 @@ npm run dev:frontend
 |---|---|---|
 | ユーザー名入力（FormField + Input） | はい | 画面にある |
 | パスワード入力 | はい | 同上 |
-| ログイン → **認証** → 部屋画面 | **いいえ（モック）** | ボタンで `/lobby` には行けるが、`POST /api/auth/login` は呼んでいない |
+| ログイン → **認証** → 部屋画面（`/lobby`） | **いいえ（モック）** | ボタンで `/lobby` には行けるが、`POST /api/auth/login` は呼んでいない |
 | 認証失敗の表示 | **いいえ** | API 未接続 |
 | 新規作成 → 新規作成画面 | はい | `/signup` へ遷移 |
 
@@ -174,9 +180,9 @@ npm run dev:frontend
 
 ```
 ブラウザ (:5173)              backend (:3000)
-  frontend                         │
-  見た目・ボタン                    │ POST /api/auth/login
-  ────── /api/... ──────────────► │ DB で確認 → Cookie
+  frontend　　　　　　　　　　　　　　　│
+  見た目・ボタン　　　　　　　　　　　　　│ POST /api/auth/login
+  ────── /api/... ──────────────►  │ DB で確認 → Cookie
 ```
 
 - **`npm run dev:frontend` だけ:** UI 確認はできる。**本物のログイン API は使えない**（backend が動いておらず、DB への導線もない）。
@@ -212,16 +218,18 @@ git push -u origin feature/104-login-screen
 
 （main merge 後の merge コミットがあればそれも含めて push）
 
-### 3-2. 本文テンプレ
+### 3-2. 本文を用意する
 
-[templates/pr-body-104.md](./templates/pr-body-104.md) をコピーして編集する。
+[templates/pr-body-104.md](./templates/pr-body-104.md) を編集する（CLI / Web 共通）。
 
 - 節: **何をしたか** / **検証したこと** / **未検証・スコープ外**（該当なしなら「なし」）
 - 先頭: **`Closes #104` のみ**
 
-### 3-3. `gh pr create`（本文はファイルから）
+### 3-3. PR を作成する（A/CLI **または** B/Web のどちらか一方）
 
-エディタでテンプレを編集してから:
+#### A. CLI — `gh pr create`
+
+テンプレをエディタで編集してから:
 
 ```bash
 gh pr create \
@@ -231,13 +239,20 @@ gh pr create \
 
 ヒアドク（`<<'EOF'`）より **ファイル指定** の方が、エディタで改行を確認でき、誤操作に強い。
 
-### 3-4. GitHub Web
+- 成功すると **PR の URL / 番号**がターミナルに表示される
+- ブラウザで **その PR を開く**（push 直後の Compare & pull request バナーは使わない）
 
-1. push 後、**Compare & pull request**
+#### B. GitHub Web
+
+1. push 後、リポジトリの **Compare & pull request** をクリック
 2. base: **`main`** / compare: 作業ブランチ
-3. タイトル・本文は上と同じ
-4. CI が緑 → GitHub 上で merge（[Git運用フロー](./Git運用フロー.html)）
-5. PR コメント: `@coderabbitai review`
+3. タイトル・本文は 3-2 で用意した内容を UI に入力（`gh` は使わない）
+
+### 3-4. PR 作成後（CLI / Web 共通）
+
+1. CI が緑になるまで待つ
+2. PR コメント: `@coderabbitai review`
+3. GitHub 上で merge（[Git運用フロー](./Git運用フロー.html)）
 
 ### 3-5. マージ後
 
@@ -245,9 +260,20 @@ gh pr create \
 - ローカル `main` を追従: `git switch main && git pull`
 - マージ済みブランチは削除（[Git運用フロー §05](./Git運用フロー.html#cleanup)）
 
-### 本 PR のあとに別 Issue を切る例
+### 3-6. 本 PR のあとに別 Issue を切る例
 
 #104 の「認証する」を満たす **`POST /api/auth/login` 接続** は、F-03（#83）の残タスクとして **新しい GitHub Issue** を切り、看板で In progress に載せる。
+
+> **ブランチは必ず `origin/main` から切る。** `feature/104-login-screen`（マージ前後を問わず）から
+> そのまま `feat/login-api` などを切らない（[Git運用フロー](./Git運用フロー.html#donts) —
+> squash merge 運用では、前の feature ブランチを base にすると main に届かない変更が残る）。
+>
+> ```bash
+> git fetch origin
+> git switch main
+> git pull origin main
+> git switch -c feat/login-api   # 例: 規約どおり feat/ 接頭辞
+> ```
 
 ---
 
@@ -309,7 +335,7 @@ gh pr create \
 <details>
 <summary>A4（クリックで表示）</summary>
 
-**満たさない。** PR 本文の **「未検証・スコープ外」** に「`POST /api/auth/login` 未接続。認証はモック」と書く。本 API 接続は **別 Issue** として切る。
+**満たさない。** PR 本文の **「未検証・スコープ外」** に「`POST /api/auth/login` 未接続。認証はモック」と書く。本 API 接続は **別 Issue** として切り、ブランチは §3-6 のとおり **`origin/main` から**切る。
 
 </details>
 
