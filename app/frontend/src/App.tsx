@@ -7,6 +7,7 @@ import { useAuth } from './contexts/AuthContext.js';
 
 import DesignSystemPage from './pages/DesignSystemPage.js';
 import GameView from './pages/GameView.js';
+import HowToPlayPage from './pages/HowToPlayPage.js';
 import LobbyPage from './pages/LobbyPage.js';
 import RoomCreatePage from './pages/RoomCreatePage.js';
 import RoomJoinPage from './pages/RoomJoinPage.js';
@@ -80,6 +81,14 @@ export default function App() {
 					element={
 						<RequireAuth>
 							<RoomJoinPage />
+						</RequireAuth>
+					}
+				/>
+				<Route
+					path="/lobby/how-to"
+					element={
+						<RequireAuth>
+							<HowToPlayPage />
 						</RequireAuth>
 					}
 				/>

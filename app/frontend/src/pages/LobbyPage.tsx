@@ -58,14 +58,10 @@ export default function LobbyPage() {
 						操作方法の確認や、音量の設定はこちらから
 					</p>
 				</div>
-				{/* ゲームメニューは F-07 の担当。画面が入るまで無効にしておく。
-				    ログアウトは Header が持っているのでここには置かない */}
 				<Button
-					variant="ghost"
-					disabled
-					title="ゲームメニュー画面の実装後に有効になります"
-				>
-					ゲームメニュー
+				variant='secondary'
+				fullWidth onClick={() => navigate('/lobby/how-to')}>
+					操作マニュアル
 				</Button>
 			</Card>
 		</div>
