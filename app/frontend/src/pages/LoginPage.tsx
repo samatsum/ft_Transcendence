@@ -30,7 +30,7 @@ export default function LoginPage() {
 
 	return (
 		<div className="mx-auto flex max-w-md flex-col gap-4 px-4 py-12">
-			<h1 className="text-heading-md">ログイン</h1>
+			<h1 className="text-heading-lg">ログイン</h1>
 
 			<Card>
 				<form className="flex flex-col gap-4" onSubmit={handleSubmit}>
