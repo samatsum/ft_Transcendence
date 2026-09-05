@@ -58,7 +58,9 @@ export default function LobbyPage() {
 						操作方法の確認や、音量の設定はこちらから
 					</p>
 				</div>
-				<Button fullWidth onClick={() => navigate('/lobby/how-to')}>
+				<Button
+				variant='secondary'
+				fullWidth onClick={() => navigate('/lobby/how-to')}>
 					操作マニュアル
 				</Button>
 			</Card>
