@@ -81,40 +81,41 @@ export default function LobbyPage() {
 				</Button>
 			</Card>
 
-			{import.meta.env.DEV && (
+			{room && (
 				<Card className="flex flex-col gap-3">
-					<p className="text-label">ロビーWS 動作確認（開発時のみ）</p>
-					<div className="flex flex-wrap gap-2">
-						<Button
-							variant="secondary"
-							onClick={() => send({ t: 'room_create', d: { mode: 'rsp' } })}
-							disabled={status !== 'open'}
-						>
-							RSP の部屋を作る
-						</Button>
-						<Button
-							variant="ghost"
-							onClick={() => send({ t: 'room_leave', d: {} })}
-							disabled={status !== 'open' || !room}
-						>
+					<div className="flex flex-wrap items-baseline justify-between gap-2">
+						<h2 className="text-heading-sm">参加中の部屋</h2>
+						<p className="text-caption text-fg-muted">
+							モード {room.mode.toUpperCase()} ／ {room.state}
+						</p>
+					</div>
+					<div>
+						<p className="text-caption text-fg-muted">部屋コード（友達に伝えてください）</p>
+						<p className="text-heading-lg tracking-[0.3em] text-sky-300">{room.code}</p>
+					</div>
+					<ul className="flex flex-col gap-1">
+						{room.seats.map((seat) => (
+							<li key={seat.slot} className="text-body">
+								<span className="text-fg-muted">席 {seat.slot + 1}:</span>{' '}
+								{seat.display_name ?? <span className="text-fg-muted">（空き）</span>}
+								{seat.is_ai && <span className="text-caption text-fg-muted">（AI）</span>}
+							</li>
+						))}
+					</ul>
+					<div>
+						<Button variant="ghost" onClick={() => send({ t: 'room_leave', d: {} })}>
 							退室する
 						</Button>
 					</div>
-					{room && (
-						<pre className="overflow-x-auto rounded bg-slate-900 p-3 text-caption text-slate-200">
-{`部屋コード : ${room.code}
-モード     : ${room.mode}
-状態       : ${room.state}
-席         : ${room.seats.map((s) => s.display_name ?? '（空）').join(' / ')}`}
-						</pre>
-					)}
-					{error && (
-						<p className="text-caption text-rose-400">
-							{error.code}: {error.message}
-						</p>
-					)}
 				</Card>
 			)}
+
+			{error && (
+				<p className="text-body text-rose-400" role="alert">
+					{error.message}（{error.code}）
+				</p>
+			)}
+
 		</div>
 	);
 }
