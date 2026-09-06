@@ -50,6 +50,16 @@ export default defineConfig(({ mode }) => {
 
 	return {
 		plugins: [react(), tailwindcss()],
+		// **`VITE_` 変数もリポジトリルートの `.env` から読む。**
+		// 上の `loadEnv` は BACKEND_PORT / FRONTEND_PORT を解決するためだけのもので、
+		// `import.meta.env` へは何も注入しない。`envDir` を指定しないと Vite 本体は
+		// 既定の envDir（＝このファイルがある `app/frontend/`）しか見に行かず、
+		// そこに `.env` は無いので `.env.example` が宣言している VITE_DEV_AUTOLOGIN が
+		// **静かに undefined になる**（AuthContext の開発スタブが有効にならず、
+		// 保護ルートが常に /login へリダイレクトする形で現れる）。
+		// 露出するのは `VITE_` 接頭辞のものだけなので、同じファイルにある
+		// SESSION_SECRET などがクライアントへ漏れることはない
+		envDir: repoRoot,
 		server: {
 			host: '0.0.0.0',
 			port: fePort,
