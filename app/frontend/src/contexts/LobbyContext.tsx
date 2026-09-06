@@ -49,6 +49,10 @@ interface LobbyContextValue {
 	clearError: () => void;
 	/** 部屋を出た直後など、画面側で room を明示的に捨てたいとき */
 	clearRoom: () => void;
+	/** 待機画面が対戦画面へ遷移したら呼ぶ。残したままだと次の入室で即再遷移する */
+	clearMatchFound: () => void;
+	/** 結果表示を閉じたら呼ぶ */
+	clearMatchResult: () => void;
 }
 
 const LobbyContext = createContext<LobbyContextValue | null>(null);
@@ -57,6 +61,7 @@ const LobbyContext = createContext<LobbyContextValue | null>(null);
 function shouldReconnect(code: number): boolean {
 	if (code === WS_CLOSE.normal) return false; // 1000: 意図的な切断
 	if (code === WS_CLOSE.unauthenticated) return false; // 4000: 認証が通っていない
+	if (code === WS_CLOSE.protocolViolation) return false; // 4001: 繋ぎ直しても同じ違反を繰り返す
 	if (code === WS_CLOSE.notAllowed) return false; // 4003
 	if (code === WS_CLOSE.replaced) return false; // 4004: 別タブに乗り換えられた
 	return true;
@@ -177,6 +182,10 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
 
 	const clearError = useCallback(() => setError(null), []);
 	const clearRoom = useCallback(() => setRoom(null), []);
+	// 遷移や結果表示を終えた画面が呼ぶ。残したままだと、次に同じ画面へ入った瞬間に
+	// 古い値で再遷移してしまう
+	const clearMatchFound = useCallback(() => setMatchFound(null), []);
+	const clearMatchResult = useCallback(() => setMatchResult(null), []);
 
 	const value = useMemo<LobbyContextValue>(
 		() => ({
@@ -189,8 +198,13 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
 			send,
 			clearError,
 			clearRoom,
+			clearMatchFound,
+			clearMatchResult,
 		}),
-		[status, onlineCount, room, matchFound, matchResult, error, send, clearError, clearRoom],
+		[
+			status, onlineCount, room, matchFound, matchResult, error, send,
+			clearError, clearRoom, clearMatchFound, clearMatchResult,
+		],
 	);
 
 	return <LobbyContext.Provider value={value}>{children}</LobbyContext.Provider>;

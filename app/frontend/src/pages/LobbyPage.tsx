@@ -18,7 +18,7 @@ const STATUS_LABEL: Record<string, { text: string; cls: string }> = {
 
 export default function LobbyPage() {
 	const { user } = useAuth();
-	const { status, onlineCount, room, error, send } = useLobby();
+	const { status, room, error, send } = useLobby();
 	const navigate = useNavigate();
 
 	return (
@@ -28,7 +28,6 @@ export default function LobbyPage() {
 				<div className="flex items-baseline gap-3">
 					<p className={`text-caption ${STATUS_LABEL[status]?.cls ?? ''}`}>
 						● {STATUS_LABEL[status]?.text ?? status}
-						{status === 'open' && `（ロビー ${onlineCount} 人）`}
 					</p>
 					{user && (
 						<p className="text-caption text-fg-muted">
