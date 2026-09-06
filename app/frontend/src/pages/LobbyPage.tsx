@@ -18,7 +18,7 @@ const STATUS_LABEL: Record<string, { text: string; cls: string }> = {
 
 export default function LobbyPage() {
 	const { user } = useAuth();
-	const { status, room, error, send } = useLobby();
+	const { status, room, error, send, clearRoom } = useLobby();
 	const navigate = useNavigate();
 
 	return (
@@ -46,7 +46,14 @@ export default function LobbyPage() {
 					</p>
 					{/* mt-auto: 説明文の長さが違っても2枚のボタン位置を揃える */}
 					<div className="mt-auto pt-1">
-						<Button fullWidth onClick={() => navigate('/lobby/create')}>
+						{/* 既に部屋にいるなら別の部屋は作れない（サーバも in_room の間は弾く）。
+						    押してから拒否されるより、押せない方が分かりやすい */}
+						<Button
+							fullWidth
+							disabled={room !== null}
+							onClick={() => navigate('/lobby/create')}
+							title={room ? '部屋に参加中は作成できません。先に退室してください' : undefined}
+						>
 							部屋を作る
 						</Button>
 					</div>
@@ -59,7 +66,12 @@ export default function LobbyPage() {
 						コードは試合が始まると使えなくなります。
 					</p>
 					<div className="mt-auto pt-1">
-						<Button fullWidth onClick={() => navigate('/lobby/join')}>
+						<Button
+							fullWidth
+							disabled={room !== null}
+							onClick={() => navigate('/lobby/join')}
+							title={room ? '部屋に参加中は別の部屋へ入れません。先に退室してください' : undefined}
+						>
 							部屋に参加する
 						</Button>
 					</div>
@@ -102,7 +114,16 @@ export default function LobbyPage() {
 						))}
 					</ul>
 					<div>
-						<Button variant="ghost" onClick={() => send({ t: 'room_leave', d: {} })}>
+						{/* サーバは退室の成功時に何も返さない（失敗時だけ error）。
+						    room_state も届かないので、送信できたら画面側で捨てる。
+						    開始処理中は leave が拒否されるため、その間は押させない */}
+						<Button
+							variant="ghost"
+							disabled={room.state === 'starting'}
+							onClick={() => {
+								if (send({ t: 'room_leave', d: {} })) clearRoom();
+							}}
+						>
 							退室する
 						</Button>
 					</div>
