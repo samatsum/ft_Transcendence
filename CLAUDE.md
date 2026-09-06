@@ -120,6 +120,47 @@ docker compose run --rm engine-build make frontend-engine-assets
 | 画面仕様 | [`docs/ai/frontend.md`](docs/ai/frontend.md) |
 | 誰がどのレーンにいるか | [`docs/human/はじめに/チーム体制.html`](docs/human/はじめに/チーム体制.html) |
 
+---
+
+## F-11 (#86) 作業中の特記事項（一時的）
+
+> **注意:** この節は Issue #86 が完了したら削除してください。
+
+Issue #141「ドキュメントの新調」が完了するまで、**F-11 の進捗と範囲は GitHub Issue #86 を正本とする**。
+
+`docs/ai/backlog.md` §5 の F-11 行は 2026-08-08 時点の情報で止まっており、次の点が古いです:
+- 依存関係（F-04 は完了、F-05 の接続層 #134 は完了・PR #157 マージ済み、試合開始 #111 は未着手）
+- 対象画面（Profile は対象外、GameView は PR #171 が担当）
+- 進捗（ログイン・ロビーハブ・HowToPlay は main に存在）
+
+### 正本の所在
+
+| 情報 | 正本 |
+|---|---|
+| 受入条件 | [Issue #86](https://github.com/samatsum/ft_Transcendence/issues/86) 本文 |
+| 今回の範囲 | Issue #86 本文「## 今回の範囲（第1弾）」節 |
+| 依存の現状 | Issue #86 本文「## 依存の現状」表 |
+| 対象外の項目 | Issue #86 コメントおよび本文 |
+
+### 第1弾の対象画面
+
+- 認証（Login / Signup）
+- Header / Footer
+- ロビーハブ（`/lobby`）
+- 部屋作成 / 参加（`/lobby/create`, `/lobby/join`）
+- Privacy / ToS（`/privacy`, `/terms`）
+- HowToPlay（`/lobby/how-to`）
+
+### 対象外
+
+- Profile（F-09 不採用）
+- GameView のモバイル対応（PR #171 が担当）
+- Modal の focus trap（今回の画面は Modal を開かない）
+- 試合遷移（GV-08）
+- 観戦（GV-12）
+
+---
+
 **採用モジュールは改訂されることがあります。** 不採用にした Issue は削除せず「不採用」と明記して
 残す方針なので、バックログに行があること＝作業予定があること**ではありません**。
 古いドキュメントやコミットが「予定」と書いていても、`architecture.md` §4 の現行の宣言が優先します。
