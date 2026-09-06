@@ -8,6 +8,7 @@ import { WS_CLOSE } from '@ft/shared';
 import { z } from 'zod';
 
 import { useApi } from '../api/useApi.js';
+import { ExitPromptModal } from '../game/hud/ExitPromptModal.js';
 import { HudOverlay } from '../game/hud/HudOverlay.js';
 import type { MatchDetailsView } from '../game/hud/MatchEndModal.js';
 import { useEngineRenderer } from '../game/useEngineRenderer.js';
@@ -27,6 +28,10 @@ const matchDetailsSchema = z.object({
 		}),
 	),
 });
+
+// ④ D-13 / §2 のブレークポイント。Tailwind の `md:` と同じ 768px に揃える
+// （JSX 側の `md:hidden` と食い違うと、通知は出ているのに操作できる状態になる）
+const DESKTOP_QUERY = '(min-width: 768px)';
 
 export default function GameView() {
 	const { roomId = '' } = useParams();
@@ -48,11 +53,43 @@ export default function GameView() {
 	const isSpectator = welcome?.role === 'spectator';
 	const rendererEnabled = welcome !== null;
 
+	// ④ D-13: モバイル幅は「閲覧のみ」。**通知の表示は CSS 側に任せたまま、
+	// ここでは入力の可否だけを見る。** 入力の遮断は CSS ではできないので、
+	// この一点だけ matchMedia を使う（表示まで JS に寄せるとリサイズ・画面回転で
+	// 状態がずれ、初回描画でちらつく）。閾値は Tailwind の md と同じ 768px で、
+	// ④ §2 のブレークポイント（モバイル < 768px）に一致する
+	const [wideEnough, setWideEnough] = useState(
+		() => window.matchMedia(DESKTOP_QUERY).matches,
+	);
+	useEffect(() => {
+		const mq = window.matchMedia(DESKTOP_QUERY);
+		setWideEnough(mq.matches);
+		const onChange = (ev: MediaQueryListEvent) => setWideEnough(ev.matches);
+		mq.addEventListener('change', onChange);
+		return () => mq.removeEventListener('change', onChange);
+	}, []);
+
+	// #113 退出ポップアップ。Esc で開き、y / ボタンで確定、もう一度 Esc で閉じる。
+	// **表示中も送信ループは止めない**（enabled をそのままにしておく）。止めると
+	// 入力が完全に途絶えるだけで、棒立ちの表現としてはキャプチャ解除で足りる
+	const [exitPromptOpen, setExitPromptOpen] = useState(false);
+	// 決着後は結果モーダル（MatchEndModal）が出ているので、その上に退出ポップアップを
+	// 重ねない。この状態の Esc は Modal 側のハンドラに任せる＝「ロビーへ戻る」になる
+	const [matchEnded, setMatchEnded] = useState(false);
+	const onRequestExit = useCallback(() => {
+		if (matchEnded) return;
+		setExitPromptOpen(true);
+	}, [matchEnded]);
+
 	const { localYawRef, setOnCaptureChange } = useGameInput({
 		canvasRef,
 		send,
 		spectator: !!isSpectator,
-		enabled: rendererEnabled && canSend,
+		// 閲覧のみモードでは送信ループも止める。キャプチャを塞ぐだけだと mv=0 を
+		// 送り続ける「棒立ちの参加者」になり、④ D-13 の「閲覧のみ」と食い違う
+		enabled: rendererEnabled && canSend && wideEnough,
+		onRequestExit,
+		captureAllowed: wideEnough,
 	});
 
 	useEffect(() => {
@@ -66,6 +103,15 @@ export default function GameView() {
 		snapshotBufferRef,
 		localYawRef,
 	});
+
+	// 決着したら退出ポップアップを閉じ、以後 Esc では開かないようにする。
+	// **match_id が null でも決着は決着**なので、下の詳細取得とは別の effect にする
+	// （あちらは match_id === null で早期 return する）
+	useEffect(() => {
+		if (lastEvent?.kind !== 'match_end') return;
+		setMatchEnded(true);
+		setExitPromptOpen(false);
+	}, [lastEvent]);
 
 	// match_end の match_id で試合詳細取得(GV-07 推奨決定#4)。
 	// B-13 未実装期間は失敗する前提なので toast:false + error state で握る
@@ -105,6 +151,16 @@ export default function GameView() {
 
 	const onReturnToLobby = useCallback(() => navigate('/lobby'), [navigate]);
 
+	// #113 退出確定。② §5-A の leave を送ってからロビーへ。サーバは席を復帰不能な
+	// AI 席へ移し、FPS なら forfeit にする（room.ts の「明示leave」）。socket は
+	// サーバ側で閉じないので、遷移に伴う unmount で 1000 close される
+	const onConfirmExit = useCallback(() => {
+		send({ t: 'leave', d: {} });
+		setExitPromptOpen(false);
+		navigate('/lobby');
+	}, [send, navigate]);
+	const onCancelExit = useCallback(() => setExitPromptOpen(false), []);
+
 	return (
 		<main className="flex min-h-screen flex-col items-center justify-center gap-2 bg-slate-950 p-2 text-slate-100">
 			<div className="relative w-full max-w-[1280px] aspect-video bg-black">
@@ -133,9 +189,10 @@ export default function GameView() {
 							描画エラー: {errorMessage}
 						</p>
 					)}
+					{/* モバイル幅ではキャプチャできないので操作ヒント自体を出さない（④ D-13） */}
 					{rendererStatus === 'ready' && !captured && !isSpectator && (
-						<p className="rounded bg-black/60 px-4 py-2 text-body">
-							クリック / Enter でキャプチャ開始、Esc で解除
+						<p className="hidden rounded bg-black/60 px-4 py-2 text-body md:block">
+							クリック / Enter でキャプチャ開始、Esc で退出メニュー
 						</p>
 					)}
 					{rendererStatus === 'ready' && isSpectator && (
@@ -157,9 +214,25 @@ export default function GameView() {
 					matchDetailsError={matchDetailsError}
 					onReturnToLobby={onReturnToLobby}
 				/>
+
+				{/* #113 退出ポップアップ。Modal が portal で body 直下に描くので、
+				    ここに置いても canvas の重なり順には影響しない */}
+				<ExitPromptModal
+					open={exitPromptOpen}
+					onConfirm={onConfirmExit}
+					onCancel={onCancelExit}
+				/>
 			</div>
 
-			<footer className="flex w-full max-w-[1280px] items-center justify-between text-caption text-slate-400">
+			{/* ④ D-13: モバイル幅は「キーボード必須」を告知して閲覧のみとする。
+			    課題書 III.3 の「2つの画面サイズで崩れない」はモジュール点ではなく必須要件。
+			    matchMedia ではなく CSS の md ブレークポイントで出し分ける
+			    （リサイズ・画面回転で状態がずれず、初回描画で一瞬ちらつくこともない） */}
+			<p className="w-full max-w-[1280px] rounded bg-amber-500/90 px-3 py-2 text-center text-caption text-slate-950 md:hidden">
+				操作にはキーボードが必要です。この画面幅では観戦のみになります。
+			</p>
+
+			<footer className="flex w-full max-w-[1280px] flex-wrap items-center justify-between gap-x-3 text-caption text-slate-400">
 				<span>
 					room={roomId} · view={welcome?.combatant_id ?? '-'} · slot={welcome?.slot ?? '-'}
 				</span>
