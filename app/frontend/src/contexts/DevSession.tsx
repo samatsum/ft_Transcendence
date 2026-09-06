@@ -14,7 +14,7 @@ async function ensureSession(): Promise<void> {
 	if (me.ok) return;
 
 	const stamp = Date.now();
-	await fetch('/api/auth/signup', {
+	const signup = await fetch('/api/auth/signup', {
 		method: 'POST',
 		credentials: 'include',
 		headers: { 'content-type': 'application/json' },
@@ -24,29 +24,58 @@ async function ensureSession(): Promise<void> {
 			display_name: `dev${stamp % 1000000}`,
 		}),
 	});
+	// fetch は 4xx/5xx でも reject しない。ここで見ないと、Cookie が無いまま
+	// ロビーを描いてしまい /ws/lobby が 4000 で切れる（原因が分かりにくい）
+	if (!signup.ok) {
+		throw new Error(`signup ${signup.status}`);
+	}
 }
 
+type State = { kind: 'loading' } | { kind: 'ready' } | { kind: 'failed'; reason: string };
+
 export function DevSession({ children }: { children: ReactNode }) {
-	const [ready, setReady] = useState(false);
+	const [state, setState] = useState<State>({ kind: 'loading' });
 
 	useEffect(() => {
 		let alive = true;
 		ensureSession()
-			.catch(() => undefined)
-			.finally(() => {
-				if (alive) setReady(true);
+			.then(() => {
+				if (alive) setState({ kind: 'ready' });
+			})
+			.catch((error: unknown) => {
+				if (!alive) return;
+				setState({
+					kind: 'failed',
+					reason: error instanceof Error ? error.message : String(error),
+				});
 			});
 		return () => {
 			alive = false;
 		};
 	}, []);
 
-	if (!ready) {
+	if (state.kind === 'loading') {
 		return (
 			<p className="text-body text-fg-muted px-4 py-10">
 				開発用セッションを準備しています…
 			</p>
 		);
 	}
+
+	// 失敗したまま子を描くと「ロビーは出るのに WS だけ切れる」状態になり原因が追いにくい。
+	// ここで止めて、バックエンドが起動しているかを疑えるようにする
+	if (state.kind === 'failed') {
+		return (
+			<div className="flex flex-col gap-2 px-4 py-10">
+				<p className="text-heading-sm text-rose-400">開発用セッションを作れませんでした</p>
+				<p className="text-body text-fg-muted">
+					原因: {state.reason}
+					<br />
+					バックエンドが起動しているか、`ALLOWED_ORIGIN` が合っているかを確認してください。
+				</p>
+			</div>
+		);
+	}
+
 	return <>{children}</>;
 }

@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 
 import { Layout } from './components/Layout.js';
 import { RedirectIfAuth } from './components/RedirectIfAuth.js';
@@ -39,6 +39,18 @@ function RootRedirect() {
 	return <Navigate to={status === 'authenticated' ? '/lobby' : '/login'} replace />;
 }
 
+// ロビーWS を共有する枝。/lobby 配下と対戦画面が1本の接続を使う。
+// Provider を各ページの element に置くと、画面を移るたびに unmount されて接続が切れる。
+// 対戦画面まで含めるのは、試合結果(match_result)がゲームWSではなくロビーWSに届くため
+function LobbyScope() {
+	const scoped = (
+		<LobbyProvider>
+			<Outlet />
+		</LobbyProvider>
+	);
+	return import.meta.env.DEV ? <DevSession>{scoped}</DevSession> : scoped;
+}
+
 export default function App() {
 	return (
 		<Routes>
@@ -62,49 +74,6 @@ export default function App() {
 					}
 				/>
 				<Route
-					path="/lobby"
-					element={
-						<RequireAuth>
-							{import.meta.env.DEV ? (
-								<DevSession>
-									<LobbyProvider>
-										<LobbyPage />
-									</LobbyProvider>
-								</DevSession>
-							) : (
-								<LobbyProvider>
-									<LobbyPage />
-								</LobbyProvider>
-							)}
-						</RequireAuth>
-					}
-				/>
-				{/* #109 / #110 は別 Issue。#106 からの遷移先として枠だけ置く */}
-				<Route
-					path="/lobby/create"
-					element={
-						<RequireAuth>
-							<RoomCreatePage />
-						</RequireAuth>
-					}
-				/>
-				<Route
-					path="/lobby/join"
-					element={
-						<RequireAuth>
-							<RoomJoinPage />
-						</RequireAuth>
-					}
-				/>
-				<Route
-					path="/lobby/how-to"
-					element={
-						<RequireAuth>
-							<HowToPlayPage />
-						</RequireAuth>
-					}
-				/>
-				<Route
 					path="/profile/:id"
 					element={
 						<RequireAuth>
@@ -122,15 +91,18 @@ export default function App() {
 				<Route path="*" element={<NotFoundPage />} />
 			</Route>
 
-			{/* Layout 外（全画面 Canvas） */}
-			<Route
-				path="/game/:roomId"
-				element={
-					<RequireAuth>
-						<GameView />
-					</RequireAuth>
-				}
-			/>
+			{/* ロビーWS を共有する枝。Layout の内外にまたがるので、Layout の分岐より上に置く */}
+			<Route element={<RequireAuth><LobbyScope /></RequireAuth>}>
+				{/* Layout 付き（Header/Footer あり） */}
+				<Route element={<Layout />}>
+					<Route path="/lobby" element={<LobbyPage />} />
+					<Route path="/lobby/create" element={<RoomCreatePage />} />
+					<Route path="/lobby/join" element={<RoomJoinPage />} />
+					<Route path="/lobby/how-to" element={<HowToPlayPage />} />
+				</Route>
+				{/* Layout 外（全画面 Canvas。④ §3.3「Header/Footer は非表示」） */}
+				<Route path="/game/:roomId" element={<GameView />} />
+			</Route>
 		</Routes>
 	);
 }
