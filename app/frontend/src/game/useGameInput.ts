@@ -10,6 +10,8 @@
 //   （② §5-C の「自分の yaw のみローカル優先」＝唯一の予測）。
 // - タブ非表示/blur は全キー解放（押しっぱなし事故防止）。localYaw は保持。
 // - spectator は input を送らない（サーバも黙って破棄するが二重防御）。
+// - captureAllowed=false ではキャプチャを開始させない（④ D-13 の閲覧のみモード）。
+//   spectator と違い Esc は生かす＝どの画面幅でも退出できる。
 
 import { useCallback, useEffect, useRef, type RefObject } from 'react';
 import type { GameClientMessage } from '@ft/shared';
@@ -46,6 +48,15 @@ export interface UseGameInputOptions {
 	 * キーボードだけで詰む（④ §6-7）。
 	 */
 	onRequestExit?: () => void;
+	/**
+	 * false ならキャプチャを開始させない（④ D-13 のモバイル幅＝閲覧のみモード）。
+	 * 既に掴んでいた場合は解除する。
+	 *
+	 * **Esc だけは塞がない。** 退出はどの画面幅でもできる必要がある。
+	 * `spectator` を流用しないのもこれが理由で、あちらはキーイベントの登録ごと
+	 * 落とすため、退出の経路まで一緒に消えてしまう。
+	 */
+	captureAllowed?: boolean;
 }
 
 export interface UseGameInputResult {
@@ -63,6 +74,7 @@ export function useGameInput({
 	spectator,
 	enabled,
 	onRequestExit,
+	captureAllowed = true,
 }: UseGameInputOptions): UseGameInputResult {
 	const heldMvRef = useRef<number>(0);
 	const rotateRef = useRef<RotateHeld>({ left: false, right: false });
@@ -116,6 +128,8 @@ export function useGameInput({
 			if (!next) clearAll();
 			captureListenerRef.current?.(next);
 		}
+		// 幅が狭くなる等で許可が消えたら掴んだままにしない（④ D-13）
+		if (!captureAllowed) setCaptured(false);
 		function onKeyDown(ev: KeyboardEvent) {
 			// #113: Esc は「キャプチャ解除」と「退出ポップアップを開く」を兼ねる。
 			// **キャプチャ判定より前に見る** — キャプチャしていない状態でも退出できないと、
@@ -132,6 +146,7 @@ export function useGameInput({
 				// CodeRabbit 指摘: キーボードのみ操作の要件（④ §6-7）。
 				// canvas に focus 済みの状態で Enter / Space を押したら capture 開始
 				if (
+					captureAllowed &&
 					(ev.code === 'Enter' || ev.code === 'Space') &&
 					document.activeElement === canvasRef.current
 				) {
@@ -170,6 +185,7 @@ export function useGameInput({
 			}
 		}
 		function onClick() {
+			if (!captureAllowed) return;
 			setCaptured(true);
 			// canvas に focus を移して window key handler に届くようにする
 			canvasRef.current?.focus();
@@ -193,7 +209,7 @@ export function useGameInput({
 			document.removeEventListener('visibilitychange', onVisibilityChange);
 			window.removeEventListener('blur', onBlur);
 		};
-	}, [canvasRef, spectator]);
+	}, [canvasRef, spectator, captureAllowed]);
 
 	// CodeRabbit 指摘: identity を安定化させて GameView 側の useEffect が
 	// 再レンダごとに再セットアップされないようにする

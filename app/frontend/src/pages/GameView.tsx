@@ -29,6 +29,10 @@ const matchDetailsSchema = z.object({
 	),
 });
 
+// ④ D-13 / §2 のブレークポイント。Tailwind の `md:` と同じ 768px に揃える
+// （JSX 側の `md:hidden` と食い違うと、通知は出ているのに操作できる状態になる）
+const DESKTOP_QUERY = '(min-width: 768px)';
+
 export default function GameView() {
 	const { roomId = '' } = useParams();
 	const navigate = useNavigate();
@@ -49,6 +53,22 @@ export default function GameView() {
 	const isSpectator = welcome?.role === 'spectator';
 	const rendererEnabled = welcome !== null;
 
+	// ④ D-13: モバイル幅は「閲覧のみ」。**通知の表示は CSS 側に任せたまま、
+	// ここでは入力の可否だけを見る。** 入力の遮断は CSS ではできないので、
+	// この一点だけ matchMedia を使う（表示まで JS に寄せるとリサイズ・画面回転で
+	// 状態がずれ、初回描画でちらつく）。閾値は Tailwind の md と同じ 768px で、
+	// ④ §2 のブレークポイント（モバイル < 768px）に一致する
+	const [wideEnough, setWideEnough] = useState(
+		() => window.matchMedia(DESKTOP_QUERY).matches,
+	);
+	useEffect(() => {
+		const mq = window.matchMedia(DESKTOP_QUERY);
+		setWideEnough(mq.matches);
+		const onChange = (ev: MediaQueryListEvent) => setWideEnough(ev.matches);
+		mq.addEventListener('change', onChange);
+		return () => mq.removeEventListener('change', onChange);
+	}, []);
+
 	// #113 退出ポップアップ。Esc で開き、y / ボタンで確定、もう一度 Esc で閉じる。
 	// **表示中も送信ループは止めない**（enabled をそのままにしておく）。止めると
 	// 入力が完全に途絶えるだけで、棒立ちの表現としてはキャプチャ解除で足りる
@@ -65,8 +85,11 @@ export default function GameView() {
 		canvasRef,
 		send,
 		spectator: !!isSpectator,
-		enabled: rendererEnabled && canSend,
+		// 閲覧のみモードでは送信ループも止める。キャプチャを塞ぐだけだと mv=0 を
+		// 送り続ける「棒立ちの参加者」になり、④ D-13 の「閲覧のみ」と食い違う
+		enabled: rendererEnabled && canSend && wideEnough,
 		onRequestExit,
+		captureAllowed: wideEnough,
 	});
 
 	useEffect(() => {
