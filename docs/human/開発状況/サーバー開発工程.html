@@ -19,20 +19,19 @@
 			</p>
 			<p class="hero-note">
 				<span aria-hidden="true">●</span>
-				<strong>現在地 2026-08-09</strong>
-				<span>I-01 / B-02 / B-03 / B-09 / B-10 / B-11 / B-12 / B-14 完了、B-08コア実装済み</span>
+				<span>現在の実装状況はGitHub Issues / Projectを参照（このページは狙いと依存関係の説明用）</span>
 				<span aria-hidden="true">·</span>
-				<span>ID表記は2026-08-08に <code>W-</code> から <code>B-</code>/<code>I-</code> へ改名</span>
+				<span>ID表記は2026-08-08に <code>W-</code> から <code>B-</code>/<code>I-</code> へ改名。
+				2026-08-30にレーン付きID自体の新規採番も廃止（<a href="../運用/Git運用フロー.html#lanes">Git運用フロー §05</a>）</span>
 			</p>
 		</div>
 	</header>
 
 	<nav class="topnav" aria-label="ページ内目次">
 		<div class="shell nav-inner">
+			<a href="../index.html">← ドキュメント地図</a>
 			<a href="#meaning">B/Iとは</a>
-			<a href="#current">現在地</a>
 			<a href="#flow">一試合の流れ</a>
-			<a href="#issues">14工程</a>
 			<a href="#dependencies">依存と次手</a>
 			<a href="#code">コード入口</a>
 			<a href="#frontend">F/GVとの境界</a>
@@ -76,55 +75,17 @@
 				Engineレーン（E系・G系）は「ゲーム内で何が起きるか」を完成させました。B系・I系は「誰が入り、どの試合で動かし、
 				誰へ送り、切れたらどうし、結果をどこへ残すか」を受け持ちます。
 			</div>
-		</section>
-
-		<section id="current">
-			<p class="section-kicker">02 · Current position</p>
-			<h2>14件のうち、8件完了＋1件コア完了</h2>
-			<p class="section-intro">
-				厳格な完了率は8/14＝57.1%。B-08は大部分が動いていますが、本Cookie認証との
-				通し検査が残るため「完全完了」には数えていません。
-			</p>
-			<p class="section-intro">
-				<strong>分母が16から14に変わりました（2026-08-08）。</strong>
-				モジュール構成の改訂（D-19）でB-06・B-07・B-13が<strong>不採用</strong>になり、
-				代わりに観戦モードのサーバー側<strong>B-17</strong>が新規に必要になったためです。
-				完了件数はその後B-02（PR #72）とB-03（PR #94）が加わり、2026-08-09時点で8件になりました。
-				不採用の3件はページから消さず、下の一覧に「不採用」として残してあります。
-			</p>
-			<div class="grid grid-4">
-				<article class="card">
-					<p class="card-label">完了</p>
-					<p class="metric" style="color: var(--green)">8<small> / 14</small></p>
-					<p class="metric-note">I-01 · B-02 · B-03 · B-09 · B-10 · B-11 · B-12 · B-14</p>
-					<div class="progress" role="progressbar" aria-label="Backend/Infra作業57.1%完了" aria-valuenow="57.1" aria-valuemin="0" aria-valuemax="100"><span style="width:57.1%"></span></div>
-				</article>
-				<article class="card">
-					<p class="card-label">コア実装済み</p>
-					<p class="metric" style="color: var(--yellow)">1</p>
-					<p class="metric-note">B-08。B-04/B-05の本認証・Origin・session失効との結合待ち</p>
-				</article>
-				<article class="card">
-					<p class="card-label">samatsum側の次</p>
-					<p class="metric">B-04〜B-05</p>
-					<p class="metric-note">本認証とOriginを通し、B-08の最終結合まで運ぶ（B-02のFastify共通処理とB-03のDBは完了済み。旧・次手のB-13は不採用）</p>
-				</article>
-				<article class="card">
-					<p class="card-label">最大の上流ブロッカー</p>
-					<p class="metric">B-04/05</p>
-					<p class="metric-note">本認証とOrigin共通化（未完成・担当未定）。B-08の最終受入に必要</p>
-				</article>
-			</div>
 			<div class="callout warning" style="margin-top: 18px">
 				<strong>重要:</strong>
 				コードが存在することとIssue完了は同じではありません。たとえば
-				<code>auth/session.ts</code>には開発用スタブがありますが、B-04/B-05の
-				Cookie・DB・本番Origin受入は未完です。
+				<code>auth/session.ts</code>には開発用スタブがありますが、本認証の
+				Cookie・DB・本番Origin受入が完了しているとは限りません。現在の実装状況は
+				GitHub Issues / Projectを参照してください。
 			</div>
 		</section>
 
 		<section id="flow">
-			<p class="section-kicker">03 · One match</p>
+			<p class="section-kicker">02 · One match</p>
 			<h2>一試合を通すと、B系・I系の役割が見える</h2>
 			<p class="section-intro">
 				番号順に実行されるわけではありません。利用者の体験では、次の順番で複数Issueが連携します。
@@ -172,107 +133,15 @@
 			</p>
 		</section>
 
-		<section id="issues">
-			<p class="section-kicker">04 · B系・I系</p>
-			<h2>14工程を「何のためか」で読む</h2>
-			<p class="section-intro">
-				詳細な受入条件は⑤バックログが正本です。ここでは、チーム説明で必要な
-				「何を解決するIssueか」と「どこまで済んだか」に絞っています。
-			</p>
-			<div class="legend" aria-label="状態の凡例">
-				<span class="pill"><span class="dot done"></span>完了</span>
-				<span class="pill"><span class="dot partial"></span>部分完了</span>
-				<span class="pill"><span class="dot todo"></span>未完</span>
-				<span class="pill"><span class="dot dropped"></span>不採用</span>
-			</div>
-			<div class="filters" aria-label="Issue絞り込み">
-				<button class="filter-button" type="button" data-filter="all" aria-pressed="true">すべて</button>
-				<button class="filter-button" type="button" data-filter="done" aria-pressed="false">完了</button>
-				<button class="filter-button" type="button" data-filter="partial" aria-pressed="false">部分完了</button>
-				<button class="filter-button" type="button" data-filter="todo" aria-pressed="false">未完</button>
-				<button class="filter-button" type="button" data-filter="dropped" aria-pressed="false">不採用</button>
-				<button class="filter-button" type="button" data-filter="samatsum" aria-pressed="false">samatsum担当</button>
-			</div>
-
-			<div class="issue-grid">
-				<article class="issue-card" data-status="done" data-owner="samatsum">
-					<div class="issue-id">I-01</div>
-					<div><h3>Webアプリの骨格</h3><p><code>app/backend</code>・<code>frontend</code>・<code>shared</code>・<code>infra</code>を作り、全員が並行着手できる床を用意。</p><div class="issue-meta"><span class="tag owner">samatsum</span><span class="tag status-done">完了</span></div></div>
-				</article>
-				<article class="issue-card" data-status="done" data-owner="samatsum">
-					<div class="issue-id">B-02</div>
-					<div><h3>Fastify共通処理</h3><p>ログ、zod検証、RESTエラー形式、レート制限を全APIで同じにする。<code>npm run check:http</code>で400/429の実地検証まで完了。</p><div class="issue-meta"><span class="tag owner">samatsum</span><span class="tag status-done">完了</span></div></div>
-				</article>
-				<article class="issue-card" data-status="done" data-owner="samatsum">
-					<div class="issue-id">B-03</div>
-					<div><h3>Prisma + SQLite</h3><p>User・Session・Friendship・Match・MatchPlayerの正本を作り、migrationで再現可能にする。<strong>スキーマとmigrationは完了</strong>（<code>npm run check:db</code>で6項目を検査）。ただし<strong>まだ誰も読み書きしていない</strong>——最初の利用者はB-04。composeの初回起動へ組み込む部分はI-15へ移した。</p><div class="issue-meta"><span class="tag status-done">完了</span><span class="tag owner">samatsum</span></div></div>
-				</article>
-				<article class="issue-card" data-status="todo">
-					<div class="issue-id">B-04</div>
-					<div><h3>認証</h3><p>signup/login/logout/me、argon2id、Session Cookieを実装し、RESTとWSの「誰か」を確定する。</p><div class="issue-meta"><span class="tag status-todo">未完成（開発用スタブのみ・担当未定）</span></div></div>
-				</article>
-				<article class="issue-card" data-status="todo">
-					<div class="issue-id">B-05</div>
-					<div><h3>OriginとCookie認可</h3><p>異Originの変更系RESTとWSを拒否し、認証判定をロビー/ゲーム双方で共用する。</p><div class="issue-meta"><span class="tag status-todo">未完成（開発用判定のみ・担当未定）</span></div></div>
-				</article>
-				<article class="issue-card" data-status="dropped">
-					<div class="issue-id">B-06</div>
-					<div><h3>アバター</h3><p>2MB上限、MIMEとマジックバイト検査、nginx静的配信までを安全に通す。<strong>「標準的なユーザー管理」モジュールを取り下げたため不採用。</strong></p><div class="issue-meta"><span class="tag status-dropped">不採用（2026-08-08 · D-19）</span></div></div>
-				</article>
-				<article class="issue-card" data-status="dropped">
-					<div class="issue-id">B-07</div>
-					<div><h3>フレンドAPI</h3><p>申請・承認・削除とpresence合成を持つ。B-08はfriend resolverの差込口まで準備済みだが、<strong>「標準的なユーザー管理」モジュールを取り下げたため不採用。</strong></p><div class="issue-meta"><span class="tag status-dropped">不採用（2026-08-08 · D-19）</span></div></div>
-				</article>
-				<article class="issue-card" data-status="partial" data-owner="samatsum">
-					<div class="issue-id">B-08</div>
-					<div><h3>ロビーWebSocket</h3><p>presence、mode別FIFO、カスタムルーム、同期claim、heartbeat/session索引を実装。本Cookie/Origin結合が残る。</p><div class="issue-meta"><span class="tag owner">samatsum</span><span class="tag status-partial">コア完了</span></div></div>
-				</article>
-				<article class="issue-card" data-status="done" data-owner="samatsum">
-					<div class="issue-id">B-09</div>
-					<div><h3>マッチ成立の橋</h3><p>B-08のMatchPlanをB-10のGameRoomへ変換し、成功commit・失敗rollback・match_found・終了時context解放を一貫させる。</p><div class="issue-meta"><span class="tag owner">samatsum</span><span class="tag status-done">完了</span></div></div>
-				</article>
-				<article class="issue-card" data-status="done" data-owner="samatsum">
-					<div class="issue-id">B-10</div>
-					<div><h3>GameRoom + sim.wasm</h3><p>1試合1WASM instance、30Hz tick、15Hz snapshot、状態機械、複数ルームをNode上で駆動。</p><div class="issue-meta"><span class="tag owner">samatsum</span><span class="tag status-done">完了</span></div></div>
-				</article>
-				<article class="issue-card" data-status="done" data-owner="samatsum">
-					<div class="issue-id">B-11</div>
-					<div><h3>ゲームWebSocket</h3><p>join/input/welcome/snapshot/eventを運び、seq・4KB・レート・不正messageを守る。snapshot &lt; 1KBも実測済み。</p><div class="issue-meta"><span class="tag owner">samatsum</span><span class="tag status-done">完了</span></div></div>
-				</article>
-				<article class="issue-card" data-status="done" data-owner="samatsum">
-					<div class="issue-id">B-12</div>
-					<div><h3>切断・復帰・AI代替</h3><p>30秒grace、人間→AI、復帰時AI→人間、RSP全員離脱、FPS放置/明示leaveの不戦勝まで実WebSocketで検証済み。</p><div class="issue-meta"><span class="tag owner">samatsum</span><span class="tag status-done">完了</span></div></div>
-				</article>
-				<article class="issue-card" data-status="dropped">
-					<div class="issue-id">B-13</div>
-					<div><h3>試合永続化と統計</h3><p>match_endをDBのMatch/MatchPlayerへ1回だけ保存し、履歴・統計APIとロビーmatch_resultへ展開。<strong>不採用だが復帰候補の第1位</strong>——FPSエンジンとマッチメイクは完成済みなので、これ1件だけで「別のゲームの追加」2点が復活する。</p><div class="issue-meta"><span class="tag status-dropped">不採用（復帰候補№1）</span></div></div>
-				</article>
-				<article class="issue-card" data-status="done" data-owner="samatsum">
-					<div class="issue-id">B-14</div>
-					<div><h3>マップ配布</h3><p><code>GET /api/maps</code>と<code>welcome.map_text</code>を同じホワイトリストへ結び、サーバーが読む本文と一致させる。</p><div class="issue-meta"><span class="tag owner">samatsum</span><span class="tag status-done">完了</span></div></div>
-				</article>
-				<article class="issue-card" data-status="todo">
-					<div class="issue-id">B-17</div>
-					<div><h3>観戦のサーバー側</h3><p>対戦者以外の接続を受け入れ、<code>welcome</code>を<code>role: "spectator"</code>で返し、snapshot配信の宛先に加える。現在は<code>not_participant</code>を返すスタブ。<strong>観戦モジュールを+5点枠に採用したため新規に必要になった。</strong></p><div class="issue-meta"><span class="tag status-todo">未完成・新規（担当未定）</span></div></div>
-				</article>
-				<article class="issue-card" data-status="todo">
-					<div class="issue-id">I-15</div>
-					<div><h3>Docker / nginx / TLS</h3><p>空cloneから<code>docker compose up</code>だけでWASM生成、migration、HTTPS、WS proxyまで起動する。</p><div class="issue-meta"><span class="tag status-todo">未完成（engine-build土台のみ・担当未定）</span></div></div>
-				</article>
-				<article class="issue-card" data-status="todo">
-					<div class="issue-id">I-16</div>
-					<div><h3>CIの製品層拡張</h3><p>E-14のC/WASM検査を守りつつ、Frontend lint・型検査・buildを毎PRの必須検査へ追加。</p><div class="issue-meta"><span class="tag status-todo">未完成（既存CI土台あり・担当未定）</span></div></div>
-				</article>
-			</div>
-		</section>
-
 		<section id="dependencies">
-			<p class="section-kicker">05 · Dependencies</p>
+			<p class="section-kicker">03 · Dependencies</p>
 			<h2>次に進む順番は、番号順ではない</h2>
 			<p class="section-intro">
 				B-12まで接続済みです。採用分のうちB-04・B-05・B-17・I-15・I-16が担当未定で未完成のまま残っています
 				（B-06・B-07・B-13は2026-08-08に不採用）。
-				samatsumが単独稼働のなかで、本認証をB-08へ結合するレーンを進めます。
+				2026-08-30にチーム運用が始まったので、本認証をB-08へ結合する作業は現在のメンバー
+				（<a href="../はじめに/チーム体制.html">チーム体制.html</a>参照）の誰が進めるかをGitHub Issue側で確認すること
+				——このページでは追跡しない。
 			</p>
 			<div class="grid grid-2">
 				<article class="card">
@@ -301,7 +170,7 @@
 		</section>
 
 		<section id="code">
-			<p class="section-kicker">06 · Code map</p>
+			<p class="section-kicker">04 · Code map</p>
 			<h2>説明するときに開くコードはここ</h2>
 			<p class="section-intro">
 				すべて読む必要はありません。B系・I系の各責務を代表する入口だけを押さえれば、コードと説明が結びつきます。
@@ -326,7 +195,7 @@
 		</section>
 
 		<section id="frontend">
-			<p class="section-kicker">07 · Boundary with F</p>
+			<p class="section-kicker">05 · Boundary with F</p>
 			<h2>B系・I系が作るのは「繋ぎ先」、F系・GV系が作るのは「体験」</h2>
 			<p class="section-intro">
 				Backendが完成すればFrontendは実装しやすくなりますが、F側にはWSの張り替え、
@@ -347,7 +216,7 @@
 		</section>
 
 		<section id="talk">
-			<p class="section-kicker">08 · Three-minute talk</p>
+			<p class="section-kicker">06 · Three-minute talk</p>
 			<h2>このまま読める、B系・I系全体の3分説明</h2>
 			<div class="script">
 				<blockquote>
@@ -381,7 +250,7 @@
 		</section>
 
 		<section id="references">
-			<p class="section-kicker">09 · Sources of truth</p>
+			<p class="section-kicker">07 · Sources of truth</p>
 			<h2>このHTMLは説明用。契約の正本は設計書</h2>
 			<div class="grid grid-3">
 				<article class="card">
@@ -390,7 +259,7 @@
 				</article>
 				<article class="card">
 					<h3><a href="../はじめに/チーム体制.html">⑥ チーム体制</a></h3>
-					<p>役割・レーンの枠組み。2026-08-05にsamatsum単独稼働の体制へ更新。</p>
+					<p>役割の枠組みと現在のメンバー。2026-08-30にチーム運用が始まり7人体制へ更新。</p>
 				</article>
 				<article class="card">
 					<h3><a href="../../ai/ws-protocol.md">② WSプロトコル設計</a></h3>

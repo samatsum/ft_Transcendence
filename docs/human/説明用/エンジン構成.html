@@ -30,6 +30,7 @@
 
 	<nav class="topnav" aria-label="ページ内目次">
 		<div class="shell nav-inner">
+			<a href="../index.html">← ドキュメント地図</a>
 			<a href="#pf">pf_*の継ぎ目</a>
 			<a href="#languages">言語の配置</a>
 			<a href="#directory">ディレクトリ構成</a>
@@ -517,8 +518,10 @@ README.md             プロジェクトの顔</code></pre>
 						<code>app/</code>の中はレーン分担そのままです。<code>app/backend/</code>＝
 						Auth / REST / DB（未完成）、<code>app/frontend/</code>＝画面（F-01・F-02・GV-06は完了、
 						残りは未完成）、<code>app/shared/</code>＝全員が使うzod契約、<code>codes/</code>＝エンジン本体
-						（予定作業は完了。後から見つかったG-11・G-12も修正済み）。複数人で並行作業する体制になったときも、
-						この対応がそのまま効きます（現在はsamatsum単独稼働。<a href="../はじめに/チーム体制.html">チーム体制.html</a>参照）。
+						（予定作業は完了。後から見つかったG-11・G-12も修正済み）。2026-08-30にチーム運用が始まり
+						複数人で並行作業する体制になったが、この対応（フォルダ＝レーン）はそのまま効く
+						（現在の体制は<a href="../はじめに/チーム体制.html">チーム体制.html</a>参照。レーンとIssueの
+						対応自体は<a href="../運用/Git運用フロー.html#lanes">Git運用フロー §05</a>が正本）。
 					</p>
 				</article>
 			</div>
@@ -808,9 +811,9 @@ Cross-Origin-Embedder-Policy: require-corp</code></pre>
 
 		<section id="faq">
 			<p class="section-kicker">06 · FAQ</p>
-			<h2>テクニカルリード自己確認シートより — エンジン構造編</h2>
+			<h2>エンジンQ&amp;Aより — エンジン構造編</h2>
 			<p class="section-intro">
-				samatsumが評価・チーム説明で即答できるように用意した自己確認シートから、
+				評価・チーム説明で即答できるように用意した<a href="./エンジンQA.html">自己確認シート</a>から、
 				エンジン構造・<code>pf_*</code>境界に関する項目だけをここに集めました
 				（サーバ権威モデル・ビルドターゲット・スナップショット・戦闘員などの項目は他の
 				テーマページに分類しています）。

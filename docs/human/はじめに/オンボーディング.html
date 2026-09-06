@@ -1,35 +1,37 @@
 <!doctype html>
 <html lang="ja">
 <head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta name="color-scheme" content="dark">
-	<title>オンボーディング — ft_transcendence</title>
-	<link rel="stylesheet" href="../assets/style.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>オンボーディング — ft_transcendence</title>
+<link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
 	<header class="hero">
 		<div class="shell">
-			<p class="eyebrow">Onboarding · 共通リファレンス</p>
-			<h1>ft_transcendence<br>オンボーディング</h1>
+			<p class="eyebrow">Onboarding · 技術コーディネーション</p>
+			<h1>ここだけ合意すれば、<br>並行して進められる。</h1>
 			<p class="hero-lead">
-				42の課題 <strong>ft_transcendence</strong>（ブラウザで遊べるオンライン対戦。cub3D由来のエンジンをWeb化したもの）に
-				取り組むための入口。役割とレーンの定義、略号、モジュール境界、ゲート2の定義、よくある質問をまとめた、
-				特定の担当者を前提としない共通リファレンス。
+				2026-08-30にIssue <a href="https://github.com/samatsum/ft_Transcendence/issues/141">#141</a>で
+				書き直した版。プロジェクト概要・チーム構成・用語集は他のページと内容が重複していたため、
+				このページ固有の価値である<strong>「モジュール間の契約境界」と「よくある質問」</strong>だけに
+				絞った。旧版（プロジェクト概要・レーン一覧・略号集・進捗表を含む）は
+				<a href="../../../archive/docs-human/はじめに/オンボーディング_2026-08-30版.html">archive/docs-human/</a>
+				に保存してある。
 			</p>
 			<p class="hero-note">
 				<span aria-hidden="true">●</span>
-				<strong>読む目安 15〜20分</strong>
-				<span>正本ではない: 契約・日程の正本は各設計書（本文中にリンク）</span>
+				<strong>読む目安 5分</strong>
+				<span>先に読むもの一覧は下の「まず読むもの」参照</span>
 			</p>
 		</div>
 	</header>
 
 	<nav class="topnav" aria-label="ページ内目次">
 		<div class="shell nav-inner">
-			<a href="#now">いま作っているもの</a>
-			<a href="#lanes">レーンと役割</a>
-			<a href="#glossary">略号・用語</a>
+			<a href="../index.html">← ドキュメント地図</a>
+			<a href="#start">まず読むもの</a>
 			<a href="#boundaries">モジュール境界</a>
 			<a href="#faq">よくある質問</a>
 			<button class="print-button" type="button" onclick="window.print()">印刷 / PDF</button>
@@ -37,210 +39,106 @@
 	</nav>
 
 	<main class="shell">
-		<section id="now">
-			<p class="section-kicker">01 · Now</p>
-			<h2>いま何を作っているか</h2>
+		<section id="start">
+			<p class="section-kicker">01 · Start here</p>
+			<h2>プロジェクト概要・チーム・用語はここで読んだ前提にする</h2>
 			<p class="section-intro">
-				42の課題 ft_transcendence: ブラウザで遊べるオンライン対戦（cub3D由来のエンジンをWeb化）。
-				Cエンジンは予定作業を完了しており、これからTypeScriptのBackend / Frontendを積み上げる段階（FPSにあった欠陥G-11（FPSの射撃で相手席を消せる）・G-12（FPSで相手の見た目が無い）はいずれも2026-08-09に修正済み）。
-			</p>
-			<div class="table-wrap">
-				<table>
-					<thead><tr><th>状態</th><th>内容</th></tr></thead>
-					<tbody>
-						<tr>
-							<td><span class="tag status-done">完了</span></td>
-							<td>Cエンジン（<code>codes/</code> / <code>web/</code>）。判定を担う <code>sim.wasm</code> と、描画を担う <code>render.wasm</code>。</td>
-						</tr>
-						<tr>
-							<td><span class="tag status-todo">これから</span></td>
-							<td>TypeScriptのBackend / Frontend（<code>app/</code>）。次の関門は<strong>ゲート2</strong>。</td>
-						</tr>
-					</tbody>
-				</table>
-			</div>
-			<div class="callout" style="margin-top: 18px">
-				<strong>ゲート2の定義:</strong>
-				複数ブラウザでRSP（じゃんけん鬼ごっこ）対戦が最後まで成立すること。
-				これが結合デモのgo/no-go関門であり、連番の課題番号ではない。
-				日程の正本は<a href="../../ai/backlog.md">⑤ バックログ</a> §6（Gate/schedule mapping）。
-			</div>
-			<p class="section-intro" style="margin-top: 18px">
-				要件の一次情報: <a href="../../ai/requirements.md">ai/requirements.md</a>（旧 <code>01_課題/ft_トランセンデンス.md</code>）
-			</p>
-		</section>
-
-		<section id="lanes">
-			<p class="section-kicker">02 · Lanes &amp; roles</p>
-			<h2>開発レーンと管理役割</h2>
-			<p class="section-intro">
-				このプロジェクトの実装は5つの開発レーンに分かれる。<strong>レーンは「どこで動くか」ではなく
-				「何のコードで、誰が保守するか」で分けている。</strong>
-				誰が何を担当するかは体制によって変わるが、境界そのものは変わらない共通の地図として使える。
-				定義の正本は<a href="../運用/Git運用フロー.html#lanes">Git運用フロー §05.5</a>、
-				今そのレーンに誰がいるかは<a href="./チーム体制.html#lanes">⑥ チーム体制</a> §03。
+				このページは、下の4つを読み終えた後に見る想定です。同じ内容をここで繰り返すと
+				更新のたびにズレるので、リンクだけにしています。読む順の全体像は
+				<a href="../index.html">docs/human/index.html</a>「読む順」も参照。
 			</p>
 			<div class="grid grid-2">
 				<article class="card">
-					<p class="card-label">Lane · <code>E-</code> / <code>G-</code></p>
-					<h3>Engine</h3>
-					<p><code>codes/</code>と<code>web/</code>のCエンジン。native / <code>render.wasm</code> / <code>sim.wasm</code>の3ターゲット、
-					対戦ルール、AI、マップ。<strong>予定作業は全件完了。後から見つかったG-11・G-12も修正済み。</strong></p>
+					<h3><a href="./プロジェクト概要.html">プロジェクト概要.html</a></h3>
+					<p>プロジェクト全体像・現在の実装状況の見方・アーキテクチャ・技術スタック。</p>
 				</article>
 				<article class="card">
-					<p class="card-label">Lane · <code>B-</code></p>
-					<h3>Backend</h3>
-					<p>Fastify・認証・REST・WS・GameRoom・DB。
-					<strong>中身は性質の違う2種類に分かれる</strong>——基盤（<code>B-02</code>〜<code>B-05</code>: 普通のWebアプリのCRUDと認証）と、
-					ゲームサーバー（<code>B-08</code>〜<code>B-12</code>・<code>B-17</code>: 30Hz tick・snapshot・再接続）。
-					必要な経験が違うので、着手先を選ぶときはここを見る。</p>
+					<h3><a href="./チーム体制.html">チーム体制.html</a></h3>
+					<p>現在のメンバー・役割割当（課題書 II.1.1 の必須役割）。</p>
 				</article>
 				<article class="card">
-					<p class="card-label">Lane · <code>I-</code></p>
-					<h3>Infra / DevOps</h3>
-					<p>リポジトリ骨格とツーリング、Docker / nginx / TLS、CI。
-					「空のcloneから<code>docker compose up</code>だけで起動する」を成立させる担当。</p>
+					<h3><a href="../専門用語/全体用語.html">専門用語/全体用語.html</a></h3>
+					<p>リポジトリ構成・アーキテクチャ用語・Git用語・42評価用語（Gate/Moduleなど）。</p>
 				</article>
 				<article class="card">
-					<p class="card-label">Lane · <code>F-</code></p>
-					<h3>Frontend</h3>
-					<p>一般Web画面。認証画面、共通レイアウト、ロビー、レスポンシブ。
-					対戦そのものではない画面を担う。</p>
-				</article>
-				<article class="card">
-					<p class="card-label">Lane · <code>GV-</code></p>
-					<h3>GameView</h3>
-					<p>ゲーム画面。Canvasと<code>render.wasm</code>の統合、HUD、試合遷移、観戦UI。
-					<code>F-</code>と分けてあるのは、<strong>WASMとWebSocketに触るかどうかで必要な知識が大きく違う</strong>ため。</p>
+					<h3><a href="../運用/Git運用フロー.html">運用/Git運用フロー.html</a></h3>
+					<p>ブランチ→PR→CI→マージの運用ルール。コミット前に必読。</p>
 				</article>
 			</div>
-			<div class="callout" style="margin-top: 18px">
-				<strong>なぜ<code>render.wasm</code>がFrontendではなくEngineなのか:</strong>
-				ブラウザで動くのにEngineなのは、レーンを実行場所ではなくコードの正体で分けているから。
-				同じ<code>raycast.c</code>がnativeバイナリと<code>render.wasm</code>の両方にコンパイルされるので、
-				実行場所で線を引くと1つのソースファイルが2レーンに割れてしまい、担当境界として機能しない。
-			</div>
-			<div class="callout" style="margin-top: 18px">
-				<strong>課題書の4レーンとの対応:</strong>
-				課題書 II 章が想定するのは Engine / Backend・DevOps / Frontend / Gameplay の4本。
-				<strong>運用上のレーンと、課題書の科目としての枠は別物</strong>という点に注意。
-				<code>E-</code>と<code>G-</code>は<strong>運用上は1本のEngineレーン</strong>（接頭辞が2つあるのは、完了済みの作業を振り直す利益が無いから）だが、
-				課題書の枠に当てはめると<code>G-</code>の中身がGameplayに相当する。
-				残りは<code>B-</code>＋<code>I-</code>＝Backend・DevOps、<code>F-</code>＋<code>GV-</code>＝Frontend。
-				<strong>2026-08-08まではさらに別の呼び方（「ゲームサーバーレーン」「非ゲームUIレーン」など）も並立していた</strong>が、
-				3種類の語彙が混在して分かりにくかったため上の1本へ統一した。
-				古いコミットやIssueに残る<code>W-</code>の読み方は
-				<a href="../運用/Git運用フロー.html#lanes">Git運用フロー §05.5</a>の対応表を参照。
-			</div>
-			<div class="callout" style="margin-top: 18px">
-				<strong>管理役割（課題書 II.1.1）:</strong>
-				テクニカルリード（TL）、プロジェクトマネージャー / スクラムマスター（PM/SM）、
-				プロダクトオーナー（PO）、開発者（専任）の4種。
-				<strong>全員が開発者</strong>であり、管理役割は開発と兼任できる。
-				評価では「自分の役割と貢献」を説明できる必要がある。
-			</div>
-		</section>
-
-		<section id="glossary">
-			<p class="section-kicker">03 · Glossary</p>
-			<h2>略号・用語（初めて読む人向け）</h2>
-			<p class="section-intro">
-				Issue番号の正本: <a href="../../ai/backlog.md">⑤ バックログ</a>
-			</p>
-			<div class="table-wrap">
-				<table>
-					<thead><tr><th>略号</th><th>意味</th><th>例</th></tr></thead>
-					<tbody>
-						<tr><td><code>E-xx</code></td><td>Engine（エンジン分離）。<strong>完了済み</strong></td><td>E-11 = sim.wasm</td></tr>
-						<tr><td><code>G-xx</code></td><td>Gameplay（対戦ルール等）。<strong>完了済み</strong></td><td>G-01 = 戦闘員統合</td></tr>
-						<tr><td><code>B-xx</code></td><td>Backendのissue（Fastify・認証・REST・WS・GameRoom・DB）</td><td>B-04 = 認証、B-10 = GameRoom</td></tr>
-						<tr><td><code>I-xx</code></td><td>Infra / DevOpsのIssue（リポジトリ骨格・Docker/nginx/TLS・CI）</td><td>I-15 = compose起動</td></tr>
-						<tr><td><code>F-xx</code></td><td>Frontendのissue（認証画面・レイアウト・ロビー・レスポンシブ）</td><td>F-05 = ロビーUI</td></tr>
-						<tr><td><code>GV-xx</code></td><td>GameViewのissue（Canvas＋render.wasm・HUD・試合遷移・観戦）</td><td>GV-06 = GameView</td></tr>
-						<tr><td>ゲート</td><td>結合デモのgo/no-go関門（連番の課題番号ではない）</td><td>ゲート2 = 対人戦成立</td></tr>
-						<tr><td>RSP</td><td>じゃんけん鬼ごっこモード（ゲート2の題材）</td><td>—</td></tr>
-						<tr><td>WS</td><td>WebSocket（常時双方向）。契約の正本は<a href="../../ai/ws-protocol.md">② WSプロトコル設計</a></td><td>—</td></tr>
-						<tr><td>REST</td><td>HTTPでJSONをやり取りするAPI。契約の正本は<a href="../../ai/rest-api.md">③ REST API設計</a></td><td>—</td></tr>
-					</tbody>
-				</table>
-			</div>
-			<p class="section-intro" style="margin-top: 22px">
-				設計書を指すとき、本文に残る<strong>⓪〜⑥</strong>は丸数字＝設計書番号。紙・検索では次のファイル名を使う。
-			</p>
-			<div class="table-wrap">
-				<table>
-					<thead><tr><th>よく出る呼び方</th><th>ファイル</th></tr></thead>
-					<tbody>
-						<tr><td>全体アーキテクチャ</td><td><a href="../../ai/architecture.md"><code>ai/architecture.md</code></a>（旧 <code>02_設計書/0-全体アーキテクチャ設計.md</code>）</td></tr>
-						<tr><td>WSプロトコル</td><td><a href="../../ai/ws-protocol.md"><code>ai/ws-protocol.md</code></a>（旧 <code>02_設計書/2-WSプロトコル設計.md</code>）</td></tr>
-						<tr><td>REST API</td><td><a href="../../ai/rest-api.md"><code>ai/rest-api.md</code></a>（旧 <code>02_設計書/3-REST_API設計.md</code>）</td></tr>
-						<tr><td>フロントエンド設計</td><td><a href="../../ai/frontend.md"><code>ai/frontend.md</code></a>（旧 <code>02_設計書/4-フロントエンド設計.md</code>）</td></tr>
-						<tr><td>バックログ</td><td><a href="../../ai/backlog.md"><code>ai/backlog.md</code></a>（旧 <code>02_設計書/5-バックログ.md</code>）</td></tr>
-						<tr><td>チーム分担計画</td><td><a href="./チーム体制.html"><code>human/はじめに/チーム体制.html</code></a>（旧 <code>02_設計書/6-チーム分担計画.md</code>）</td></tr>
-					</tbody>
-				</table>
-			</div>
-			<p class="section-intro" style="margin-top: 22px">
-				用語の詳細は<a href="../専門用語/全体-専門用語.html">専門用語/全体-専門用語.html</a>と、
-				レーン別の<a href="../専門用語/E-専門用語.html">E</a>・
-				<a href="../専門用語/G-専門用語.html">G</a>・
-				<a href="../専門用語/B・I-専門用語.html">B・I</a>・
-				<a href="../専門用語/F-専門用語.html">F</a>用語集を参照（契約の正本は各設計書）。
-				旧個人用語集（zod・ロビー・snapshot等の学習メモ）は
-				<a href="../../../archive/torinoue/torinoue_用語集.md">archive/torinoue/torinoue_用語集.md</a>に残っています。
-			</p>
 		</section>
 
 		<section id="boundaries">
-			<p class="section-kicker">04 · Boundaries</p>
+			<p class="section-kicker">02 · Boundaries</p>
 			<h2>モジュール境界（ここだけ合意すれば並行できる）</h2>
 			<p class="section-intro">
-				正本はこのページ（旧「⑥チーム分担計画」§4の内容を移設）。
-				担当者が誰であっても、この契約の境界自体は変わらない。
+				正本はこのページ。レーンは2026-08-30以降Issueに貼るラベルとしてのみ使う運用になったが
+				（詳細は<a href="../運用/Git運用フロー.html#lanes">Git運用フロー §05</a>）、
+				「このコード領域が何を保証し、誰が消費するか」という契約の境界自体は、
+				誰が今そこを担当していても変わらない共通の地図として使える。
+			</p>
+			<pre class="mermaid">
+flowchart LR
+    Engine["Engine<br/>(完了・原則不変)"]
+    Backend["Backend"]
+    Frontend["Frontend"]
+    GameView["GameView"]
+
+    Engine -->|"sim API"| Backend
+    Engine -.->|"sim API"| GameView
+    Backend ==>|"WSプロトコル"| GameView
+    Backend -->|"REST API"| Frontend
+    Backend -.->|"ロビーWS"| Frontend
+    Backend -.->|"zod契約"| Frontend
+    Backend -.->|"zod契約"| GameView
+			</pre>
+			<p class="section-intro" style="margin-top: 8px; font-size: 0.85rem;">
+				太い矢印＝最優先の同期。点線＝間接的な依存・型共有。表で詳細を確認：
 			</p>
 			<div class="table-wrap">
 				<table>
-					<thead><tr><th>契約</th><th>所有レーン</th><th>主な消費レーン</th></tr></thead>
+					<thead><tr><th>契約</th><th>所有領域</th><th>主な消費領域</th></tr></thead>
 					<tbody>
 						<tr>
 							<td><code>app/shared/</code>のzod（型の単一情報源）</td>
-							<td><code>B-</code> Backend（<code>F-</code> Frontendが必須レビュアー）</td>
-							<td>全レーン</td>
+							<td>Backend（Frontendが必須レビュアー）</td>
+							<td>全領域</td>
 						</tr>
 						<tr>
 							<td>REST API</td>
-							<td><code>B-</code> Backend（基盤側）</td>
-							<td><code>F-</code> Frontend</td>
+							<td>Backend（基盤側）</td>
+							<td>Frontend</td>
 						</tr>
 						<tr>
 							<td>WSプロトコル（メッセージ形・GameRoom）</td>
-							<td><code>B-</code> Backend（ゲームサーバー側）</td>
-							<td><code>GV-</code> GameView（＋ロビーWSは<code>F-</code> Frontend）</td>
+							<td>Backend（ゲームサーバー側）</td>
+							<td>GameView（＋ロビーWSはFrontend）</td>
 						</tr>
 						<tr>
 							<td>sim公開API / snapshot受信・補間（C側）</td>
-							<td><code>E-</code> Engine（完了・原則不変）</td>
-							<td><code>B-</code> Backend / <code>GV-</code> GameView</td>
+							<td>Engine（完了・原則不変）</td>
+							<td>Backend / GameView</td>
 						</tr>
 					</tbody>
 				</table>
 			</div>
 			<div class="callout" style="margin-top: 18px">
 				<strong>最優先の同期:</strong>
-				<code>B-</code>（ゲームサーバー側） ⇄ <code>GV-</code> GameView のsnapshot JSON形（<a href="../../ai/ws-protocol.md">②WSプロトコル設計</a>のsnapshot節）。<br>
+				Backend（ゲームサーバー側） ⇄ GameView のsnapshot JSON形（<a href="../../ai/ws-protocol.md">②WSプロトコル設計</a>のsnapshot節）。<br>
 				<strong>次点:</strong>
-				<code>B-</code>（基盤側） ⇄ <code>F-</code> Frontend のエラーエンベロープとCookie。
+				Backend（基盤側） ⇄ Frontend のエラーエンベロープとCookie。
 			</div>
 			<p class="section-intro" style="margin-top: 18px">
 				契約を変えるときは<strong>設計書を先に直してから</strong>実装する
 				（<a href="../../ai/ws-protocol.md">②WSプロトコル設計</a>自身が「実装が本書と食い違ったら、まず本書を直してから実装せよ」と明記している通り）。
-				元は「所有レーンの担当者に相談してから」というルールだったが、samatsum単独稼働の現状では
-				相談する相手が別にいないため、この原則だけが残っている。
+				<strong>2026-08-30更新:</strong> チーム運用が始まったので、変える前に
+				<a href="./チーム体制.html">チーム体制.html</a>とGitHub Issueのアサインで
+				「今そこを担当している人」を確認してから相談すること——固定の担当者がいない領域は
+				PM/TL（<a href="./チーム体制.html">チーム体制.html</a>参照）に確認する。
 			</p>
 		</section>
 
 		<section id="faq">
-			<p class="section-kicker">05 · FAQ</p>
+			<p class="section-kicker">03 · FAQ</p>
 			<h2>よくある混乱</h2>
 
 			<div class="grid grid-2">
@@ -248,7 +146,7 @@
 					<h3>Q. Cub3D / レイキャスタの数学まで読むか？</h3>
 					<p>
 						<strong>A.</strong>
-						ゲート2前は、<code>B-</code>のゲームサーバー側（エンジン駆動）以外は不要。
+						ゲート2前は、Backendのゲームサーバー側（エンジン駆動）以外は不要。
 						説明用の深いエンジン資料や、印刷用全記録のレイキャスタ章は後回しでよい。
 					</p>
 				</article>
@@ -264,7 +162,9 @@
 					<h3>Q. 進捗の正本はどれか？</h3>
 					<p>
 						<strong>A.</strong>
-						Issue受入・ゲート定義・日程（Gate/schedule mapping） → <a href="../../ai/backlog.md">⑤ バックログ</a> §6。
+						<a href="https://github.com/samatsum/ft_Transcendence/issues">GitHub Issues</a>と
+						<a href="https://github.com/users/samatsum/projects/1">Project</a>が現在の実装状況の正本。
+						受入条件・依存関係・意思決定の理由は<a href="../../ai/backlog.md">⑤ バックログ</a>。
 						<a href="../../ai/architecture.md">0-全体アーキテクチャ設計.md</a>の14日表は<strong>日程としては無効</strong>。
 					</p>
 				</article>
@@ -273,7 +173,7 @@
 					<p>
 						<strong>A.</strong>
 						いいえ。自分が今取り組んでいる分野に関係する資料から読めば十分。
-						説明用（説1〜説12）を通読する必要はない。
+						<code>説明用/</code>配下を通読する必要はない。
 					</p>
 				</article>
 			</div>
@@ -281,7 +181,42 @@
 	</main>
 
 	<footer class="shell">
-		元資料: md_files/onboarding_docs/onboarding.md（archive/ に移設。2026-08-05に個人別ガイドへの導線を削除）
+		<p>
+			2026-08-07 作成、2026-08-30に全面刷新（Issue
+			<a href="https://github.com/samatsum/ft_Transcendence/issues/141">#141</a>）。
+			旧版は<a href="../../../archive/docs-human/はじめに/オンボーディング_2026-08-30版.html">archive/docs-human/はじめに/オンボーディング_2026-08-30版.html</a>に保存。
+		</p>
 	</footer>
+
+	<script type="module">
+		import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+		mermaid.initialize({
+			startOnLoad: true,
+			theme: "base",
+			themeVariables: {
+				darkMode: true,
+				background: "#07111f",
+				primaryColor: "#12243a",
+				primaryTextColor: "#edf6ff",
+				primaryBorderColor: "#29415d",
+				lineColor: "#5de4d6",
+				secondaryColor: "#0d1b2d",
+				secondaryTextColor: "#edf6ff",
+				secondaryBorderColor: "#29415d",
+				tertiaryColor: "#0d1b2d",
+				tertiaryTextColor: "#edf6ff",
+				tertiaryBorderColor: "#29415d",
+				fontFamily: "Inter, 'Noto Sans JP', sans-serif",
+				noteBkgColor: "#12243a",
+				noteTextColor: "#c4d4e6",
+				noteBorderColor: "#29415d",
+				actorBkg: "#12243a",
+				actorTextColor: "#edf6ff",
+				actorBorder: "#29415d",
+				signalColor: "#73a7ff",
+				signalTextColor: "#edf6ff"
+			}
+		});
+	</script>
 </body>
 </html>

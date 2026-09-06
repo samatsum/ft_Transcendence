@@ -4,7 +4,7 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="color-scheme" content="dark">
-	<title>B・I 専門用語 — ft_transcendence</title>
+	<title>サーバー用語 — ft_transcendence</title>
 	<link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
@@ -26,6 +26,7 @@
 
 	<nav class="topnav" aria-label="ページ内目次">
 		<div class="shell nav-inner">
+			<a href="../index.html">← ドキュメント地図</a>
 			<a href="#server">サーバーとは</a>
 			<a href="#rest">REST / 認証</a>
 			<a href="#db">DB / ORM</a>
@@ -148,7 +149,7 @@
 				<table>
 					<thead><tr><th>用語</th><th>意味</th></tr></thead>
 					<tbody>
-						<tr><td>DevOps</td><td><strong>開発手法ではない。</strong>開発（Dev）と運用（Ops）を別チームに分けず、作った人が動かすところまで持つ、という考え方と、そのための実践（自動ビルド・自動テスト・自動デプロイ・監視）の総称。ScrumやXPのような「進め方の型」ではなく、文化・体制の名前（<a href="https://aws.amazon.com/jp/devops/what-is-devops/">解説: AWS「DevOps とは」</a>）。<strong>このレポで担当するのは<code>I-</code>レーンの2件だが、どちらも未着手</strong>——<code>I-15</code>（Docker/nginx/TLSで1コマンド起動。現状の<code>docker-compose.yml</code>にはwasmを生成する<code>engine-build</code>しか無く、<code>nginx.conf</code>も存在しない）と<code>I-16</code>（<a href="./全体-専門用語.html#build">CI</a>にフロントエンドのlint/typecheckを足す拡張）。<strong>ただしCIそのものは動いている</strong>——<code>E-14</code>で実装済みで全ジョブgreen。<code>I-</code>を「Infra / DevOps」と呼ぶのは、Infraだけだと名前からCIが漏れるため。なお課題書 IV.7 にも同名のモジュール分類があり、ボーナスで採用したヘルスチェック/ステータスページ（1pt）はそちら</td></tr>
+						<tr><td>DevOps</td><td><strong>開発手法ではない。</strong>開発（Dev）と運用（Ops）を別チームに分けず、作った人が動かすところまで持つ、という考え方と、そのための実践（自動ビルド・自動テスト・自動デプロイ・監視）の総称。ScrumやXPのような「進め方の型」ではなく、文化・体制の名前（<a href="https://aws.amazon.com/jp/devops/what-is-devops/">解説: AWS「DevOps とは」</a>）。<strong>このレポで担当するのは<code>I-</code>レーンの2件だが、どちらも未着手</strong>——<code>I-15</code>（Docker/nginx/TLSで1コマンド起動。現状の<code>docker-compose.yml</code>にはwasmを生成する<code>engine-build</code>しか無く、<code>nginx.conf</code>も存在しない）と<code>I-16</code>（<a href="./全体用語.html#build">CI</a>にフロントエンドのlint/typecheckを足す拡張）。<strong>ただしCIそのものは動いている</strong>——<code>E-14</code>で実装済みで全ジョブgreen。<code>I-</code>を「Infra / DevOps」と呼ぶのは、Infraだけだと名前からCIが漏れるため。なお課題書 IV.7 にも同名のモジュール分類があり、ボーナスで採用したヘルスチェック/ステータスページ（1pt）はそちら</td></tr>
 						<tr><td>nginx</td><td>Webサーバー/リバースプロキシ。TLS（HTTPS化）と、リクエストをFastifyへ橋渡しする役目（<a href="https://zenn.dev/teasy/articles/nginx-reverse-proxy">解説: Zenn「NGINXのリバースプロキシ機能を使う」</a>、公式ドキュメントは英語のみ）</td></tr>
 						<tr><td>リバースプロキシ</td><td>外部からのアクセスを一旦受け取り、内部の別サーバーへ転送する仕組み</td></tr>
 						<tr><td>TLS / HTTPS</td><td>通信を暗号化する仕組み。評価要件で全接続がHTTPSであることが必須（<a href="https://developer.mozilla.org/ja/docs/Glossary/HTTPS">公式: MDN用語集「HTTPS」</a>）</td></tr>
@@ -165,7 +166,7 @@
 		<p>2026-08-07 作成。仕組みそのものの解説（なぜこうなっているか）は
 			<a href="../説明用/サーバ権威モデル.html">サーバ権威モデル.html</a>、
 			各Issueの現状は<a href="../開発状況/サーバー開発工程.html">サーバー開発工程.html</a>へ。
-			次は<a href="./F-専門用語.html">F-専門用語.html</a>（画面側）。</p>
+			次は<a href="./フロントエンド用語.html">フロントエンド用語.html</a>（画面側）。</p>
 	</footer>
 </body>
 </html>

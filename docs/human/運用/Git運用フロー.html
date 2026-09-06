@@ -15,39 +15,202 @@
 			<p class="hero-lead">
 				<strong>origin/main（GitHub側）が唯一の正本。統合はそこで行い、ローカルの
 				<code>main</code> は <code>pull</code> で追従させるだけ</strong>にする。
-				これがこのリポジトリのGit運用ルールです。samatsum本人にも、Claude Codeなどの
+				これがこのリポジトリのGit運用ルールです。チームの誰にも、Claude Codeなどの
 				AIエージェントにも、同じルールを適用します。
 			</p>
-			<div class="hero-note">
-				<strong>2026-08-07 制定</strong>
-				<span>ローカルmainが31コミット遅れていた事故を受けて明文化</span>
-			</div>
 		</div>
 	</header>
 
 	<nav class="topnav" aria-label="ページ内目次">
 		<div class="shell nav-inner">
-			<a href="#why">なぜPR経由か</a>
-			<a href="#flow">5ステップ</a>
+			<a href="../index.html">← ドキュメント地図</a>
+			<a href="#flow">8ステップ</a>
 			<a href="#naming">命名規約</a>
 			<a href="#merge">マージ戦略</a>
-			<a href="#cleanup">後片付け</a>
+			<a href="#why">なぜPR経由か</a>
 			<a href="#lanes">レーン接頭辞</a>
 			<a href="#issues">Issue併用</a>
 			<a href="#donts">やってはいけないこと</a>
+			<a href="#changelog">変更履歴</a>
 			<button class="print-button" type="button" onclick="window.print()">印刷 / PDF</button>
 		</div>
 	</nav>
 
 	<main class="shell">
+		<section id="flow">
+			<p class="section-kicker">01 · The flow</p>
+			<h2>標準の8ステップ</h2>
+			<p class="section-intro">
+				すべての変更（1行のdocs修正でも）はこの流れに乗せます。<code>main</code> へ直接
+				コミットすることはありません。ローカルとorigin（GitHub側）を並べて表示するので、
+				どの時点でどちらが進んでいるかが分かります。←→ボタンかキーボードの矢印キーで
+				ステップを送れます。
+			</p>
+			<div class="gitflow" id="gitflow-widget">
+				<div class="gitflow-controls">
+					<button type="button" id="gitflow-prev" aria-label="前のステップ">←</button>
+					<span class="gitflow-step-label" id="gitflow-label">1 / 8</span>
+					<button type="button" id="gitflow-next" aria-label="次のステップ">→</button>
+				</div>
+				<div class="gitflow-command" id="gitflow-command"></div>
+				<div class="gitflow-panels">
+					<div class="gitflow-panel">
+						<p class="gitflow-panel-label">🖥 ローカル</p>
+						<div class="gitflow-diagram" id="gitflow-diagram-local" role="img" aria-live="polite"></div>
+					</div>
+					<div class="gitflow-panel">
+						<p class="gitflow-panel-label">☁ origin（GitHub）</p>
+						<div class="gitflow-diagram" id="gitflow-diagram-remote" role="img" aria-live="polite"></div>
+					</div>
+				</div>
+				<div class="gitflow-badges" id="gitflow-badges"></div>
+				<p class="gitflow-caption" id="gitflow-caption"></p>
+				<div class="gitflow-dots" id="gitflow-dots"></div>
+			</div>
+
+			<div class="callout warning" style="margin-top: 18px">
+				<strong>ステップ⑦は省略しない。</strong>
+				今回、ローカル <code>main</code> が <code>origin/main</code> より31コミットも
+				遅れていた原因はまさにこれで、しばらく<code>git pull</code>していなかったせいで
+				古い<code>main</code>を土台にした作業ブランチが1本まるごと発生し、後から手作業で
+				<code>origin/main</code>と突き合わせる羽目になりました。
+			</div>
+			<div class="callout warning" style="margin-top: 18px">
+				<strong>ステップ⑧も省略しない。</strong>
+				放置するとどうなるか——実際にこのリポジトリでは、マージ済みのブランチが7本放置され、
+				どれが安全に消せるか（<code>git branch --merged</code>・<code>git diff --stat</code>・
+				<code>gh pr list</code>でのPR状態確認）を後から1本ずつ手作業で調べる羽目になりました。
+				マージした直後に消せば、この調査は不要です。
+			</div>
+
+			<p class="section-intro" style="margin-top: 18px;">
+				まとめてコピペする場合はこちら。番号は上のインタラクティブな図と揃えています。
+			</p>
+			<pre><code># ① 出発点：作業前に最新化
+git checkout main
+git pull
+
+# ② ブランチを切る
+git checkout -b feat/xxx
+
+# ③ 作業してコミット
+# ...実装...
+git add .
+git commit -m "..."
+
+# ④ push
+git push -u origin feat/xxx
+
+# ⑤ PRを作る（CIはここから実行される）
+gh pr create --fill
+
+# ⑥ CIが緑になったらマージ（squash）
+gh pr merge --squash    # お好みで --merge や --rebase も選べる
+
+# ⑦ ローカルのmainを追従させる
+git checkout main
+git pull
+
+# ⑧ 役目を終えたブランチを消す
+git branch -d feat/xxx                  # ローカル
+git push origin --delete feat/xxx       # リモート（gh pr merge --delete-branch なら両方まとめて）</code></pre>
+		</section>
+
+		<section id="naming">
+			<p class="section-kicker">02 · Naming</p>
+			<h2>ブランチ名・コミットメッセージの規約</h2>
+			<p class="section-intro">
+				このリポジトリの過去35件以上のPRですでに使われている規約に揃えます。新規に決めるものではありません。
+			</p>
+			<h3>ブランチ名: <code>&lt;種別&gt;/&lt;issue番号&gt;-&lt;短い説明&gt;</code></h3>
+				<div class="callout" style="margin-bottom: 16px;">
+					<strong>2026-08-30に規約変更。</strong> 2026-08-08〜2026-08-29は
+					<code>&lt;種別&gt;/&lt;短い説明&gt;</code>（Issue番号なし。例:
+					<code>docs/141</code>のように番号のみのブランチも存在した）でしたが、
+					どのIssueの作業か名前から分からないため、Issue番号を先頭に入れる形に変更しました。
+					既存ブランチの改名は行いません。
+				</div>
+				<div class="table-wrap">
+					<table>
+						<thead><tr><th>接頭辞</th><th>用途</th><th>例</th></tr></thead>
+						<tbody>
+							<tr><td><code>feat/</code></td><td>新機能</td><td><code>feat/133-put-delete-user-api</code></td></tr>
+							<tr><td><code>fix/</code></td><td>バグ修正・レビュー指摘対応</td><td><code>fix/135-auth-display-name</code></td></tr>
+							<tr><td><code>docs/</code></td><td><code>docs/</code>ディレクトリ・<code>README.md</code>のみの変更</td><td><code>docs/141-team-lane-restructure</code></td></tr>
+							<tr><td><code>chore/</code></td><td>製品挙動を変えないツール・依存関係の変更</td><td><code>chore/deps-bump</code></td></tr>
+							<tr><td><code>ci/</code></td><td>CIワークフローの変更</td><td><code>ci/add-lint-job</code></td></tr>
+						</tbody>
+					</table>
+				</div>
+				<p class="section-intro" style="margin-top: 16px;">
+					<code>&lt;issue番号&gt;</code>はそのブランチが対応するGitHubのIssue番号そのもの
+					（後述のとおりレーンIDではない）。<code>claude/...</code> や
+					<code>samatsum/...</code> のような個人名プレフィックスの新規作成は今後も避けます。
+					AIが作るブランチも<code>&lt;種別&gt;/&lt;issue番号&gt;-&lt;説明&gt;</code>に揃えてください。
+				</p>
+				<h3 style="margin-top: 28px;">コミットメッセージ: Conventional Commits</h3>
+				<p>
+					<code>feat:</code> / <code>fix:</code> / <code>docs:</code> / <code>chore:</code> /
+					<code>ci:</code> / <code>build:</code> / <code>lint:</code>。
+					<strong>2026-08-30以降、スコープにはレーンIDではなくGitHub Issue番号そのものを入れます</strong>
+					（<code>fix(133): address CodeRabbit review feedback</code>）。それ以前のコミット
+					（<code>fix(F-01): ...</code>のようなレーンIDスコープ）はそのまま残し、書き換えません。
+					1行目の要約は日本語・英語どちらでも構いませんが、同じブランチ内で言語を混ぜないこと。
+				</p>
+		</section>
+
+		<section id="merge">
+			<p class="section-kicker">03 · Merge strategy</p>
+			<h2>マージ方式の選び方</h2>
+			<div class="grid grid-2">
+				<article class="card tone-green">
+					<p class="card-label">既定</p>
+					<h3><code>--squash</code></h3>
+					<p>
+						1 PR = 1 コミットに畳む。作業中の修正コミット・CodeRabbit指摘対応コミットなどが
+						ブランチ内でどれだけ雑に積まれていても、<code>main</code>のログは
+						「出荷単位の一覧」として綺麗に保たれる。<strong>迷ったらこれ。</strong>
+					</p>
+				</article>
+				<article class="card tone-yellow">
+					<p class="card-label">例外1</p>
+					<h3><code>--merge</code></h3>
+					<p>
+						ブランチ内の個々のコミットにそれぞれ独立した意味があり、後から個別に参照したい
+						場合のみ。頻度は低い。
+					</p>
+				</article>
+				<article class="card tone-yellow">
+					<p class="card-label">例外2</p>
+					<h3><code>--rebase</code></h3>
+					<p>
+						短く・すでに綺麗で・単一目的のブランチで、マージコミット自体がノイズになる場合のみ。
+					</p>
+				</article>
+				<article class="card tone-red">
+					<p class="card-label">禁止</p>
+					<h3>mainへの直接プッシュ全般</h3>
+					<p>
+						直接コミット・ローカルでマージしてpush・force-push、いずれも禁止。下の
+						「なぜPR経由か」の理由により、必ずブランチ→PR→CI→GitHub上でマージ、を通す。
+						履歴を書き換える必要があるなら、それはマージ前のブランチ単位で行う話であって、
+						共有履歴に対して事後にやることではない。
+						<strong>GitHubのruleset（ブランチ保護）でmainへの直接push・force-pushは
+						実際にブロックされている</strong>——人の注意力だけに頼らず、仕組みでも守られている。
+					</p>
+				</article>
+			</div>
+		</section>
+
 		<section id="why">
-			<p class="section-kicker">01 · Why</p>
+			<p class="section-kicker">04 · Why</p>
 			<h2>ローカルマージではなく、PR経由が良い理由</h2>
 			<p class="section-intro">
-				チームが解散し、いまはsamatsum単独稼働です（詳細は
-				<a href="../はじめに/チーム体制.html">チーム体制.html</a>）。レビュアーはもういません。
-				それでもPRを経由する意味は残っています。理由はレビューではなく
-				<strong>CIがいつ走るか</strong>です。
+				このルールを制定した2026-08-07時点はチームが解散し、samatsum単独稼働でした。
+				いまは複数人がブランチをpushしています（現在の体制は
+				<a href="../はじめに/チーム体制.html">チーム体制.html</a>）。単独稼働だった当時は
+				レビュアーが不在という理由でPRを経由していましたが、複数人になった今も理由は
+				変わらず<strong>CIがいつ走るか</strong>です。
 			</p>
 			<div class="table-wrap">
 				<table>
@@ -77,139 +240,26 @@
 			</div>
 		</section>
 
-		<section id="flow">
-			<p class="section-kicker">02 · The flow</p>
-			<h2>標準の5ステップ</h2>
-			<p class="section-intro">
-				すべての変更（1行のdocs修正でも）はこの流れに乗せます。<code>main</code> へ直接
-				コミットすることはありません。
-			</p>
-			<pre><code># 1. 作業前に最新化
-git checkout main
-git pull
-
-# 2. ブランチを切って作業
-git checkout -b feat/xxx
-# ...実装・コミット...
-
-# 3. ブランチをpushしてPRを作る
-git push -u origin feat/xxx
-gh pr create --fill
-
-# 4. CIが緑になったらGitHub上でマージ（gh pr merge でも、Web UIでも可）
-gh pr merge --squash    # お好みで --merge や --rebase も選べる
-
-# 5. ローカルのmainを追従させる
-git checkout main
-git pull</code></pre>
-			<div class="callout warning" style="margin-top: 18px">
-				<strong>ステップ5は省略しない。</strong>
-				今回、ローカル <code>main</code> が <code>origin/main</code> より31コミットも
-				遅れていた原因はまさにこれで、しばらく<code>git pull</code>していなかったせいで
-				古い<code>main</code>を土台にした作業ブランチが1本まるごと発生し、後から手作業で
-				<code>origin/main</code>と突き合わせる羽目になりました。
-			</div>
-		</section>
-
-		<section id="naming">
-			<p class="section-kicker">03 · Naming</p>
-			<h2>ブランチ名・コミットメッセージの規約</h2>
-			<p class="section-intro">
-				このリポジトリの過去35件以上のPRですでに使われている規約に揃えます。新規に決めるものではありません。
-			</p>
-			<h3>ブランチ名: <code>&lt;種別&gt;/&lt;短い説明&gt;</code></h3>
-			<div class="table-wrap">
-				<table>
-					<thead><tr><th>接頭辞</th><th>用途</th><th>例</th></tr></thead>
-					<tbody>
-						<tr><td><code>feat/</code></td><td>新機能</td><td><code>feat/f-01-scaffold</code></td></tr>
-						<tr><td><code>fix/</code></td><td>バグ修正・レビュー指摘対応</td><td><code>fix/design-gaps-3-6</code></td></tr>
-						<tr><td><code>docs/</code></td><td><code>docs/</code>ディレクトリ・<code>README.md</code>のみの変更</td><td><code>docs/w-08-design-complete</code></td></tr>
-						<tr><td><code>chore/</code></td><td>製品挙動を変えないツール・依存関係の変更</td><td><code>chore/deps-bump</code></td></tr>
-						<tr><td><code>ci/</code></td><td>CIワークフローの変更</td><td><code>ci/add-lint-job</code></td></tr>
-					</tbody>
-				</table>
-			</div>
-			<p class="section-intro" style="margin-top: 16px;">
-				<code>claude/...</code> や <code>samatsum/...</code>
-				のような個人名プレフィックスの新規作成は今後避けます。何を含むブランチかが
-				名前から分からず、関連する作業の隣にソートもされないため。AIが作るブランチも
-				<code>&lt;種別&gt;/&lt;説明&gt;</code>に揃えてください。
-			</p>
-			<h3 style="margin-top: 28px;">コミットメッセージ: Conventional Commits</h3>
-			<p>
-				<code>feat:</code> / <code>fix:</code> / <code>docs:</code> / <code>chore:</code> /
-				<code>ci:</code> / <code>build:</code> / <code>lint:</code>。
-				スコープ付きも可（<code>fix(F-01): address CodeRabbit review feedback</code>）。
-				1行目の要約は日本語・英語どちらでも構いませんが、同じブランチ内で言語を混ぜないこと。
-			</p>
-		</section>
-
-		<section id="merge">
-			<p class="section-kicker">04 · Merge strategy</p>
-			<h2>マージ方式の選び方</h2>
-			<div class="grid grid-2">
-				<article class="card">
-					<p class="card-label">既定</p>
-					<h3><code>--squash</code></h3>
-					<p>
-						1 PR = 1 コミットに畳む。作業中の修正コミット・CodeRabbit指摘対応コミットなどが
-						ブランチ内でどれだけ雑に積まれていても、<code>main</code>のログは
-						「出荷単位の一覧」として綺麗に保たれる。<strong>迷ったらこれ。</strong>
-					</p>
-				</article>
-				<article class="card">
-					<p class="card-label">例外1</p>
-					<h3><code>--merge</code></h3>
-					<p>
-						ブランチ内の個々のコミットにそれぞれ独立した意味があり、後から個別に参照したい
-						場合のみ。頻度は低い。
-					</p>
-				</article>
-				<article class="card">
-					<p class="card-label">例外2</p>
-					<h3><code>--rebase</code></h3>
-					<p>
-						短く・すでに綺麗で・単一目的のブランチで、マージコミット自体がノイズになる場合のみ。
-					</p>
-				</article>
-				<article class="card">
-					<p class="card-label">禁止</p>
-					<h3>ローカルで<code>--ff-only</code>してpush</h3>
-					<p>
-						上の「01 なぜPR経由か」の理由により、必ずGitHub側でマージし、CIをその
-						マージ結果に対して走らせること。
-					</p>
-				</article>
-			</div>
-		</section>
-
-		<section id="cleanup">
-			<p class="section-kicker">05 · Cleanup</p>
-			<h2>マージ後は、ブランチを消す</h2>
-			<p class="section-intro">
-				マージされたブランチはもう役目を終えています。ローカルとリモート両方から削除します。
-			</p>
-			<pre><code>git branch -d feat/xxx                  # ローカル
-git push origin --delete feat/xxx       # リモート（gh pr merge --delete-branch なら両方まとめて）</code></pre>
-			<div class="callout" style="margin-top: 18px">
-				<strong>放置するとどうなるか</strong> — 実際にこのリポジトリでは、マージ済みの
-				ブランチが7本放置され、どれが安全に消せるか
-				（<code>git branch --merged</code>・<code>git diff --stat</code>・
-				<code>gh pr list</code>でのPR状態確認）を後から1本ずつ手作業で調べる羽目になりました。
-				マージした直後に消せば、この調査は不要です。
-			</div>
-		</section>
-
 		<section id="lanes">
-			<p class="section-kicker">05.5 · Lane prefixes</p>
+			<p class="section-kicker">05 · Lane prefixes</p>
 			<h2>レーン接頭辞と、2026-08-08の改名</h2>
 			<div class="callout">
 				<strong>この節がレーン定義の正本です。</strong>
 				以前は<a href="../はじめに/チーム体制.html#lanes">⑥ チーム体制</a>§03と
-				<a href="../はじめに/オンボーディング.html#lanes">オンボーディング</a>にも別の語彙でレーンの定義が置かれ、
+				<a href="../はじめに/オンボーディング.html">オンボーディング</a>にも別の語彙でレーンの定義が置かれ、
 				3つの語彙が並立していました。2026-08-08にここへ一本化し、他の2ページからはこの節を参照する形にしています。
 				レーンを増やす・境界を動かす場合は、まずここを直してください。
+			</div>
+			<div class="callout warning">
+				<strong>2026-08-30、上の表は「そのIssueが属するレーン」の定義としては維持しつつ、
+				ID接頭辞としての新規採番は廃止しました。</strong>
+				チーム運用が実際に始まり、新規Issueにレーン付きIDを振る運用が回らなくなったため
+				（新しいIssueはGitHubの生番号のみで作られています）、レーンは
+				<code>lane:engine</code> / <code>lane:backend</code> / <code>lane:infra</code> /
+				<code>lane:frontend</code> / <code>lane:gameview</code> ラベルだけで表すことにしました。
+				レーンごとに分かれていたGitHub Projectsも単一の"all" Projectへ統合済みです。
+				既存の<code>backlog.md</code>の行・過去のコミット・クローズ済みIssueに残るレーン付きID
+				はそのまま残り、読み方は下の「旧IDとの対応」節と同じです。
 			</div>
 			<p class="section-intro">
 				Issue番号の頭文字はレーンを表します。<strong>レーンは「どこで動くか」ではなく
@@ -316,8 +366,8 @@ git push origin --delete feat/xxx       # リモート（gh pr merge --delete-br
 				<table>
 					<thead><tr><th>項目</th><th>ルール</th></tr></thead>
 					<tbody>
-						<tr><td>タイトル</td><td><code>&lt;Issue番号&gt;: &lt;短い説明&gt;</code>（例:「G-11: FPSの射撃機構がプレイヤー同士を排除できてしまう」）</td></tr>
-						<tr><td>ラベル</td><td>接頭辞に対応するレーンラベルを1つ——<code>E-</code>/<code>G-</code>→<code>lane:engine</code>（上の「レーン接頭辞」表の通り1レーン）、<code>B-</code>→<code>lane:backend</code>、<code>I-</code>→<code>lane:infra</code>、<code>F-</code>→<code>lane:frontend</code>、<code>GV-</code>→<code>lane:gameview</code>（接頭辞6つに対しラベル5つ。<code>H-</code>は特定レーンの作業ではない最終ゲートなのでラベル無し）。＋<code>backlog-tracked</code>＋<code>bug</code>か<code>enhancement</code>。<strong>2026-08-09に修正</strong>: Issue #46〜#48がこの表と矛盾する<code>lane:gameplay</code>を誤って付けられていた（このラベルは廃止し、<code>lane:engine</code>へ付け替え済み）</td></tr>
+						<tr><td>タイトル</td><td>プレフィックス無しの短い説明のみ（例:「GET, POST, PUT, DELETEのエンドポイント」）。GitHub自体のIssue番号が識別子。2026-08-30より前は<code>&lt;Issue番号&gt;: &lt;短い説明&gt;</code>（例:「G-11: FPSの射撃機構がプレイヤー同士を排除できてしまう」）でしたが、既存Issueのタイトルは書き換えません</td></tr>
+						<tr><td>ラベル</td><td>対象領域に対応するレーンラベルを1つ——<code>E-</code>/<code>G-</code>→<code>lane:engine</code>（上の「レーン接頭辞」表の通り1レーン）、<code>B-</code>→<code>lane:backend</code>、<code>I-</code>→<code>lane:infra</code>、<code>F-</code>→<code>lane:frontend</code>、<code>GV-</code>→<code>lane:gameview</code>（接頭辞6つに対しラベル5つ。<code>H-</code>は特定レーンの作業ではない最終ゲートなのでラベル無し）。＋<code>backlog-tracked</code>＋<code>bug</code>か<code>enhancement</code>。<strong>2026-08-09に修正</strong>: Issue #46〜#48がこの表と矛盾する<code>lane:gameplay</code>を誤って付けられていた（このラベルは廃止し、<code>lane:engine</code>へ付け替え済み）</td></tr>
 						<tr><td>本文中のコード引用</td><td><strong>絶対URL</strong>（<code>https://github.com/samatsum/ft_Transcendence/blob/main/...</code>）を使う。<code>../../</code>のような相対パスは、Issue本文がリポジトリのファイルツリーの外にあるため<strong>静かに解決しません</strong>（docs/内では同じ書き方が問題なく動くので特に注意）</td></tr>
 						<tr><td>相互リンク</td><td>backlog.mdの行からIssue番号へ、Issue本文からbacklog.mdの節へ、両方向にリンクする</td></tr>
 						<tr><td>クローズのタイミング</td><td>対応するbacklog.mdの行がマージ済みPRで完了マークされた時だけ閉じる（両者がズレないように）</td></tr>
@@ -332,22 +382,9 @@ git push origin --delete feat/xxx       # リモート（gh pr merge --delete-br
 			<ol class="path-list">
 				<li>
 					<div>
-						<strong><code>main</code>への直接コミット</strong>
-						<span>ローカルでもpush後でも禁止。1行のdocs修正でも必ずブランチを切る。</span>
-					</div>
-				</li>
-				<li>
-					<div>
 						<strong>ブランチをローカル<code>main</code>にマージして終わりにする</strong>
 						<span><code>origin/main</code>に乗り、ローカル<code>main</code>がそれを
 							<code>pull</code>で追従するまでは「完了」ではない。</span>
-					</div>
-				</li>
-				<li>
-					<div>
-						<strong><code>main</code>のforce-push</strong>
-						<span>いかなる理由でも行わない。履歴を書き換える必要があるなら、それは
-							マージ前のブランチ単位で行う話であって、共有履歴に対して事後にやることではない。</span>
 					</div>
 				</li>
 				<li>
@@ -369,11 +406,202 @@ git push origin --delete feat/xxx       # リモート（gh pr merge --delete-br
 				</li>
 			</ol>
 		</section>
+
+		<section id="changelog">
+			<p class="section-kicker">08 · Changelog</p>
+			<h2>この運用ルールの変遷</h2>
+			<dl class="changelog">
+				<dt>2026-08-07</dt>
+				<dd>制定。ローカル<code>main</code>が<code>origin/main</code>より31コミット遅れていた
+					事故を受けて、samatsumとの会話で「ローカルmainへのマージだけで終える運用は
+					事故のもと」と確認した内容を明文化したもので、旧資料からの翻訳ではない</dd>
+				<dt>2026-08-30</dt>
+				<dd>チーム運用開始に伴い全面見直し（Issue
+					<a href="https://github.com/samatsum/ft_Transcendence/issues/141">#141</a>）。
+					レーンID新規採番の廃止、8ステップのインタラクティブな図（ローカル/origin並列表示）の
+					追加、マージ方式カードの色分け、main直接pushに関する記述の一本化などを反映</dd>
+			</dl>
+		</section>
 	</main>
 
 	<footer class="shell">
-		<p>2026-08-07 制定。AI向けの同内容は <a href="../../ai/git-workflow.md"><code>docs/ai/git-workflow.md</code></a>。samatsumとの会話で
-			「ローカルmainへのマージだけで終える運用は事故のもと」と確認した内容を明文化したもので、旧資料からの翻訳ではない。</p>
+		<p>AI向けの同内容は <a href="../../ai/git-workflow.md"><code>docs/ai/git-workflow.md</code></a>。</p>
 	</footer>
+
+	<script type="module">
+		import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+		mermaid.initialize({
+			startOnLoad: false,
+			theme: "base",
+			themeVariables: {
+				darkMode: true,
+				background: "#07111f",
+				primaryColor: "#12243a",
+				primaryTextColor: "#edf6ff",
+				primaryBorderColor: "#29415d",
+				lineColor: "#5de4d6",
+				secondaryColor: "#0d1b2d",
+				secondaryTextColor: "#edf6ff",
+				secondaryBorderColor: "#29415d",
+				tertiaryColor: "#0d1b2d",
+				tertiaryTextColor: "#edf6ff",
+				tertiaryBorderColor: "#29415d",
+				fontFamily: "Inter, 'Noto Sans JP', sans-serif",
+				git0: "#5de4d6",
+				git1: "#ffd166",
+				gitBranchLabel0: "#07111f",
+				gitBranchLabel1: "#07111f",
+				commitLabelColor: "#edf6ff",
+				commitLabelBackground: "#12243a",
+				commitLabelFontSize: "13px",
+				tagLabelBackground: "#12243a",
+				tagLabelColor: "#edf6ff",
+				tagLabelBorder: "#29415d"
+			}
+		});
+
+		const MAIN_ONLY = `gitGraph\n  commit id: "A"\n  commit id: "B"`;
+		const MAIN_WITH_BRANCH_POINT = `gitGraph\n  commit id: "A"\n  commit id: "B"\n  branch feat/xxx`;
+		const MAIN_PLUS_FEATURE_COMMITS = `gitGraph\n  commit id: "A"\n  commit id: "B"\n  branch feat/xxx\n  checkout feat/xxx\n  commit id: "C"\n  commit id: "D"`;
+		const MAIN_MERGED_LOCAL_BEHIND = MAIN_PLUS_FEATURE_COMMITS;
+		const MAIN_MERGED = `gitGraph\n  commit id: "A"\n  commit id: "B"\n  branch feat/xxx\n  checkout feat/xxx\n  commit id: "C"\n  commit id: "D"\n  checkout main\n  commit id: "E (squash)"`;
+		const MAIN_AFTER_CLEANUP = `gitGraph\n  commit id: "A"\n  commit id: "B"\n  commit id: "E (squash)"`;
+
+		const steps = [
+			{
+				label: "① 出発点",
+				command: "git checkout main && git pull",
+				localSource: MAIN_ONLY,
+				remoteSource: MAIN_ONLY,
+				badges: [],
+				caption: "origin/main が唯一の正本。作業を始める前に、ローカルmainをそこへ最新化しておく。この時点では両方ともB。"
+			},
+			{
+				label: "② ブランチを切る",
+				command: "git checkout -b feat/xxx",
+				localSource: MAIN_WITH_BRANCH_POINT,
+				remoteSource: MAIN_ONLY,
+				badges: [],
+				caption: "feat/xxxはまだローカルにしか存在しない。originはmainのままB。"
+			},
+			{
+				label: "③ 作業してコミット",
+				command: "git add . && git commit -m \"...\"",
+				localSource: MAIN_PLUS_FEATURE_COMMITS,
+				remoteSource: MAIN_ONLY,
+				badges: [],
+				caption: "feat/xxx上で実装・コミット（C, D）を積む。origin側はまだ何も変わっていない。"
+			},
+			{
+				label: "④ push",
+				command: "git push -u origin feat/xxx",
+				localSource: MAIN_PLUS_FEATURE_COMMITS,
+				remoteSource: MAIN_PLUS_FEATURE_COMMITS,
+				badges: [],
+				caption: "ここで初めてoriginにfeat/xxxが現れる。ローカルとoriginのfeat/xxxが一致した。"
+			},
+			{
+				label: "⑤ PR作成・CI実行中",
+				command: "gh pr create --fill",
+				localSource: MAIN_PLUS_FEATURE_COMMITS,
+				remoteSource: MAIN_PLUS_FEATURE_COMMITS,
+				badges: ["📝 PR: open", "🔄 CI: 実行中"],
+				caption: "CIはorigin側のfeat/xxxに対して走る。main（ローカル・origin共に）はまだ触っていない。"
+			},
+			{
+				label: "⑥ マージ（squash）",
+				command: "gh pr merge --squash",
+				localSource: MAIN_MERGED_LOCAL_BEHIND,
+				remoteSource: MAIN_MERGED,
+				badges: ["✅ CI: green"],
+				caption: "origin/mainにだけEが追加される。squashなのでC・Dの2コミットは1つの新しいコミットEにまとまり、feat/xxxの親子関係はmainに引き継がれない。ローカルmainはまだB——ここでズレたままにするのが事故のもと。"
+			},
+			{
+				label: "⑦ ローカルを追従",
+				command: "git checkout main && git pull",
+				localSource: MAIN_MERGED,
+				remoteSource: MAIN_MERGED,
+				badges: [],
+				caption: "ローカルmainがoriginに追いつき、両方ともEになる。ここまでやって初めて「完了」。"
+			},
+			{
+				label: "⑧ ブランチを消す",
+				command: "git branch -d feat/xxx && git push origin --delete feat/xxx",
+				localSource: MAIN_AFTER_CLEANUP,
+				remoteSource: MAIN_AFTER_CLEANUP,
+				badges: [],
+				caption: "feat/xxxはもう役目を終えている。ローカル・リモート両方から消して、main一本の状態に戻す。"
+			}
+		];
+
+		let current = 0;
+		let renderCount = 0;
+		const localDiagramEl = document.getElementById("gitflow-diagram-local");
+		const remoteDiagramEl = document.getElementById("gitflow-diagram-remote");
+		const commandEl = document.getElementById("gitflow-command");
+		const captionEl = document.getElementById("gitflow-caption");
+		const labelEl = document.getElementById("gitflow-label");
+		const badgesEl = document.getElementById("gitflow-badges");
+		const dotsEl = document.getElementById("gitflow-dots");
+		const prevBtn = document.getElementById("gitflow-prev");
+		const nextBtn = document.getElementById("gitflow-next");
+
+		for (let i = 0; i < steps.length; i++) {
+			const dot = document.createElement("span");
+			dotsEl.appendChild(dot);
+		}
+
+		async function renderGraph(el, source) {
+			renderCount++;
+			const { svg } = await mermaid.render("gitflow-svg-" + renderCount, source);
+			el.innerHTML = svg;
+		}
+
+		async function render(i) {
+			const step = steps[i];
+			await Promise.all([
+				renderGraph(localDiagramEl, step.localSource),
+				renderGraph(remoteDiagramEl, step.remoteSource)
+			]);
+			commandEl.innerHTML = "";
+			const code = document.createElement("code");
+			code.textContent = step.command;
+			commandEl.appendChild(code);
+			captionEl.textContent = step.caption;
+			labelEl.textContent = (i + 1) + " / " + steps.length + "：" + step.label;
+			badgesEl.innerHTML = "";
+			for (const b of step.badges) {
+				const span = document.createElement("span");
+				span.className = "tag";
+				span.textContent = b;
+				badgesEl.appendChild(span);
+			}
+			const dots = dotsEl.children;
+			for (let j = 0; j < dots.length; j++) {
+				dots[j].classList.toggle("active", j === i);
+			}
+			prevBtn.disabled = i === 0;
+			nextBtn.disabled = i === steps.length - 1;
+		}
+
+		prevBtn.addEventListener("click", () => {
+			if (current > 0) {
+				current--;
+				render(current);
+			}
+		});
+		nextBtn.addEventListener("click", () => {
+			if (current < steps.length - 1) {
+				current++;
+				render(current);
+			}
+		});
+		document.addEventListener("keydown", (e) => {
+			if (e.key === "ArrowLeft" && !prevBtn.disabled) prevBtn.click();
+			if (e.key === "ArrowRight" && !nextBtn.disabled) nextBtn.click();
+		});
+
+		render(current);
+	</script>
 </body>
 </html>

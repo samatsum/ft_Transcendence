@@ -10,9 +10,9 @@
 > **Design-time header caveat (updated 2026-08-09)**: *both* the "Team: 4 members" and "Duration: 5 days" lines
 > above are the original design-time plan, and neither describes the present.
 >
-> - **Team**: that 4-person team dissolved on 2026-08-05 and **samatsum is currently the sole active
->   contributor**. **4 new members are confirmed to join** (joining date not set), which will make a 5-person
->   team once they do. Authoritative source:
+> - **Team**: that 4-person team dissolved on 2026-08-05, went through a single-contributor period
+>   (samatsum, through 2026-08-09), and **team operation started 2026-08-30**: the project is now a
+>   7-person team (PO/PM/TL/2 Developers/2 Supporters). Authoritative source:
 >   [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html).
 > - **Duration**: the day-by-day breakdown that made "5 days" actionable was deleted on 2026-08-05 along with
 >   the per-person assignments, and nothing replaced it — **no calendar schedule is currently in effect**. See
@@ -350,7 +350,8 @@ lineup, decide whether this project passes.
 
 ## 6. Team role allocation (4 members)
 
-> **Note: actual operations changed twice.** First on 2026-07-23: this section records the original plan (4 lanes = 4 people). In practice, samatsum completed the Engine (E-01–E-14) and Gameplay (G-01–G-10) lanes single-handedly, so **the remaining Backend and Frontend lanes were reassigned across the 4 people**. Then, more fundamentally, on 2026-08-05: the team dissolved, and **samatsum is now the sole active contributor across every lane** (torinoue / mamiyaza / hminemur are no longer active). The table below is kept as a historical record of who built what; it is not a current assignment. The authoritative current team status is [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html).
+> **Note: actual operations changed twice.** First on 2026-07-23: this section records the original plan (4 lanes = 4 people). In practice, samatsum completed the Engine (E-01–E-14) and Gameplay (G-01–G-10) lanes single-handedly, so **the remaining Backend and Frontend lanes were reassigned across the 4 people**. Then, more fundamentally, on 2026-08-05: the team dissolved, and samatsum became the sole active contributor across every lane through 2026-08-09 (torinoue / mamiyaza / hminemur were no longer active). **Team operation started 2026-08-30** under a new 7-person roster (torinoue included, rejoined as PM;
+mamiyaza also counted as a nominal Supporter member with no GitHub presence). The table below is kept as a historical record of who built what; it is not a current assignment. The authoritative current team status is [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html).
 >
 > The subject's mandatory roles (PO / PM / Tech Lead / Developer) are still assigned as described below.
 
@@ -424,10 +425,11 @@ The subject's mandatory roles (PO / PM / Tech Lead / Developer) are assigned acr
 ## 9. README and evaluation-criteria mapping
 
 > **Note: this section's *content* (the demo script and checklist itself) remains current, but its *name assignments* do not.**
-> §9.1 was written on 2026-07-27 for the then-4-person team; as of 2026-08-05 that team has dissolved and
-> **samatsum is the sole active contributor**, filling every role below. Read every `torinoue` / `mamiyaza` / `hminemur`
-> cell in §9 and §9.1 as "unassigned — samatsum covers it solo until a role is reassigned," not as a live task
-> handout. See [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html) for the authoritative current team status.
+> §9.1 was written on 2026-07-27 for the then-4-person team, which dissolved 2026-08-05, went through a
+> single-contributor period, and was replaced 2026-08-30 by a new 7-person team under different names.
+> Read every `torinoue` / `mamiyaza` / `hminemur` cell in §9 and §9.1 as historical, not as a live task
+> handout — note that `torinoue` has since rejoined the new team under a different GitHub account. See
+> [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html) for the authoritative current team status.
 >
 > **No calendar schedule is in effect (§7).** Below, "the hardening gate" means the hardening / rehearsal /
 > submission gate — [backlog.md §6](./backlog.md)'s `H-01` row, the last gate in the sequence — not a date.
@@ -483,5 +485,5 @@ Mapped 1:1 to the inspection steps on the evaluation sheet (42evalhub / ft_trans
 | Main game | RSP 2v2, first to 10 points (a rock-paper-scissors win = +1 point). Human/AI input is swapped into the existing 4-combatant structure |
 | Second game | FPS 1v1 race (collect → door → first to goal). Enemies act as hazards |
 | Modules | **Mandatory target is core 14pt**, holding only modules that are hard to reject and cheap to finish. The 4 bonus items (+5pt) count as points and also absorb a rejection; advanced 3D sits there deliberately because its "library" wording carries interpretive risk. Revised 2026-08-08 (D-19, §4.5) after auditing all 55 subject modules. No custom Major is declared |
-| Team structure (as planned; superseded 2026-08-05) | **samatsum** = Tech Lead / Engine + Gameplay (complete) + game server, **torinoue** = PM / Backend foundation, **mamiyaza** = PO / Frontend foundation, **hminemur** = Developer / Frontend game screens. Critical areas use a two-person model. Task management via GitHub, communication via Discord. **The team has since dissolved; samatsum is now the sole active contributor covering every role** (current authoritative source: [チーム体制.html](../human/はじめに/チーム体制.html)) |
+| Team structure (as planned; superseded 2026-08-05, then again 2026-08-30) | **samatsum** = Tech Lead / Engine + Gameplay (complete) + game server, **torinoue** = PM / Backend foundation, **mamiyaza** = PO / Frontend foundation, **hminemur** = Developer / Frontend game screens. Critical areas use a two-person model. Task management via GitHub, communication via Discord. **That team dissolved 2026-08-05; after a single-contributor period, team operation started 2026-08-30 with a new 7-person roster** (current authoritative source: [チーム体制.html](../human/はじめに/チーム体制.html)) |
 | Quality gates | Gate 1 (WASM rendering) → Gate 2 (full 2v2 RSP playthrough) → Gate 3 (all 19pt working) → hardening (H-01, disqualification-risk checks). **No calendar schedule is in effect (see §7); the live definition of each gate, and the criteria for passing it, is [backlog.md §6](./backlog.md)** |

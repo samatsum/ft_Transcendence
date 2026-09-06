@@ -4,11 +4,13 @@ This directory is the **AI-facing documentation set**: English Markdown, written
 assistant (e.g. Claude Code) to consult while implementing or reviewing code in this repository.
 
 The **human-facing** documentation set is the parallel `docs/human/` directory: Japanese HTML,
-written for samatsum. Start there instead if you're a person, not an AI — [`../human/index.html`](../human/index.html).
-It includes a lane-by-lane Japanese terminology glossary under `docs/human/専門用語/` (samatsum is
-working toward the Technical Lead role and knows only the `codes/` C engine so far) — if you're
-asked to explain a term to samatsum, check whether it's already defined there before improvising
-your own explanation, so the vocabulary stays consistent across sessions.
+written for the team (see [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html)
+for the current roster). Start there instead if you're a person, not an AI —
+[`../human/index.html`](../human/index.html). It includes a Japanese terminology glossary under
+`docs/human/専門用語/`, organized by area (engine / backend-infra / frontend / game rules / overall,
+not by lane-ID prefix as of 2026-08-30) — if you're asked to explain a term to a team member, check
+whether it's already defined there before improvising your own explanation, so the vocabulary stays
+consistent across sessions.
 
 Superseded/original documents (the Japanese Markdown these files were translated from, plus
 material that didn't carry forward into either the AI or human doc set) live under
@@ -28,24 +30,29 @@ material that didn't carry forward into either the AI or human doc set) live und
   **Gate 2** (2 browsers, 2v2 RSP match working end-to-end), which needs F-05 and GV-08 (both not
   started — GV-06/GV-07 currently have no lobby to launch from).
 
-## Team status (important — read before assuming a multi-person workflow)
+## Team status (updated 2026-08-30 — read before assuming a solo workflow)
 
-As of 2026-08-05 the former 4-person team (torinoue / mamiyaza / hminemur, plus samatsum) has
-**dissolved**. **samatsum is the only active contributor.** **4 new members are confirmed to join** (as of
-2026-08-08; joining date not set), which will make a 5-person team — but none of them have started yet, so
-every statement below about solo development still describes the present.
+The single-contributor period (samatsum, 2026-08-05 → 2026-08-09) is over. **Team operation actually
+started**, and the project is now a 7-person team, meeting the subject's 4–5 person requirement:
+PO (kmitsuki), PM/Scrum Master (torinoue — rejoined under a new GitHub account after the earlier
+dissolution), Technical Lead (ttsubo — took over the role from samatsum), two Developers (kkurose,
+tvaroux), samatsum stepped back to a Supporter role, and mamiyaza (a second Supporter — no GitHub
+account, no commits, counted as a nominal member for headcount purposes). Full roster with
+GitHub-handle mapping: [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html).
 
-- Do not expect or generate per-person task assignments, hand-off routing, or "ask X about Y"
-  guidance — that information was deliberately removed from the docs during the 2026-08-05
-  refactor because there is no one to route it to.
-- The project brief requires a 4–5 person team. The 4 confirmed joiners would satisfy that, but until
-  they actually start, the discrepancy is live — and separately, the repo's own README still lists the
-  three departed members as current role holders, which is wrong either way. See
-  [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html) §04 for the human-facing writeup of both.
-  Don't try to resolve them; just be aware of them.
-- Role/lane framework (PO / PM·SM / Technical Lead / Developer; Engine / Backend·DevOps /
-  Frontend / Gameplay) is preserved as a structural requirement, with samatsum currently filling
-  every active slot and the rest marked open.
+- Per-person task assignment is now tracked in GitHub (Issue assignees + the single unified Project
+  board, not per-lane boards — see below), not in `docs/`. Don't expect docs to say who is doing what
+  right now; that's a GitHub query, not a doc fact.
+- **Lane-ID issue numbering (`B-12`, `F-05`, etc.) was deprecated 2026-08-30.** New issues are
+  identified by their plain GitHub number only; which lane they belong to is a `lane:*` label, not a
+  prefix. The lane-specific GitHub Projects were also consolidated into one unified Project ("all").
+  See [`./git-workflow.md`](./git-workflow.md) §"Lane labels replace lane IDs" for the mechanics —
+  this changes how you should read/write new Issue titles, branch names, and commit scopes, but does
+  not retroactively change existing `backlog.md` rows or history.
+- Role framework (PO / PM·SM / Technical Lead / Developer, per subject II.1.1) is filled per the
+  roster above; the *lane* framework (Engine / Backend·DevOps / Frontend / Gameplay) is retained only
+  as a code-ownership concept (see [`./git-workflow.md`](./git-workflow.md)), not as a way people are
+  assigned.
 
 ## Documents
 

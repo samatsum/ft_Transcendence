@@ -14,9 +14,10 @@ specification a restore would start from — B-13 in particular is restore candi
 (B-02–B-05) are unaffected: Chapter III mandates them independently of module choice. It also serves
 as the source of truth for the REST API contract consumed by the frontend. The frontend-foundation work
 (F-01 scaffold, F-02 fetch wrapper) that consumes this contract is **done** (implemented solo by samatsum);
-F-03–F-05 (auth screens, layout, lobby) are not started. This REST work and the original frontend-foundation
-plan were assigned to torinoue and mamiyaza respectively; as of 2026-08-05 neither is active. B-02 and B-03 were
-completed solo by samatsum; B-04–B-05 and F-03–F-05 remain unassigned — see
+F-03–F-05 (auth screens, layout, lobby) are not started. This REST work and the original frontend-foundation plan were assigned to torinoue and mamiyaza
+respectively under the original 4-person team (dissolved 2026-08-05); B-02 and B-03 were later
+completed solo by samatsum during the single-contributor period. Team operation started 2026-08-30
+under a different roster — for current assignment, see
 [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html).
 **Principle**: This document contains no implementation code.
 The implementation source of truth for message schemas is the zod definitions in `shared/api/`; if this document

@@ -26,6 +26,7 @@
 
 	<nav class="topnav" aria-label="ページ内目次">
 		<div class="shell nav-inner">
+			<a href="../index.html">← ドキュメント地図</a>
 			<a href="#tracks">どちらの系統か</a>
 			<a href="#template">HTMLテンプレート</a>
 			<a href="#css">共通CSS</a>
@@ -48,14 +49,14 @@
 					<tbody>
 						<tr><td>言語</td><td>英語</td><td>日本語</td></tr>
 						<tr><td>形式</td><td>Markdown（<code>.md</code>）</td><td>HTML（<code>.html</code>）</td></tr>
-						<tr><td>読者</td><td>AIコーディングアシスタント</td><td>samatsum</td></tr>
+						<tr><td>読者</td><td>AIコーディングアシスタント</td><td>チーム</td></tr>
 						<tr><td>ファイル名</td><td>英語kebab-case（<code>ws-protocol.md</code>）</td><td>内容が分かる日本語（直訳・ローマ字は不可。例: <code>チーム体制.html</code>であって<code>team-plan.html</code>ではない）</td></tr>
 					</tbody>
 				</table>
 			</div>
 			<p class="section-intro" style="margin-top: 16px;">
 				実装時にAIが参照する事実（プロトコル仕様・バックログ・コーディング規約・Git運用）は
-				<code>ai/</code>へ。samatsumが読んで理解・学習するもの（オンボーディング・専門用語・
+				<code>ai/</code>へ。チームが読んで理解・学習するもの（オンボーディング・専門用語・
 				「なぜこう作ったか」の解説・プロジェクト概要）は<code>human/</code>へ。迷ったら
 				<strong>両方作る</strong>——コマンドや正確なパスなど機械的な事実は片方だけに正本を置き、
 				もう片方はそこへリンクするだけにします（二重管理で内容がズレるのを防ぐため）。
@@ -81,7 +82,7 @@
 						<tr><td><code>はじめに/</code></td><td>初めて読む人向けの全体像（プロジェクト概要・チーム体制・オンボーディング）</td></tr>
 						<tr><td><code>運用/</code></td><td>作業する上でのルール（Git運用フロー、このページ）——製品そのものの話ではない</td></tr>
 						<tr><td><code>開発状況/</code></td><td>更新され続ける進捗ドキュメント（B系・I系とF系・GV系の2ページ）</td></tr>
-						<tr><td><code>説明用/</code></td><td>「なぜこう作ったか」の深掘り解説＋TL自己確認Q&amp;A</td></tr>
+						<tr><td><code>説明用/</code></td><td>「なぜこう作ったか」の深掘り解説＋エンジンQ&amp;A（自己確認シート）</td></tr>
 						<tr><td><code>専門用語/</code></td><td>レーン別の専門用語集</td></tr>
 						<tr><td><code>プレイヤー向け/</code></td><td>作る人向けではなく、遊ぶ人（プレイヤー・評価者）向けの製品ドキュメント</td></tr>
 					</tbody>
@@ -126,6 +127,15 @@
 				ページだけに付けます。短いページ（セクションが数個だけ）は省略して構いません
 				（<code>はじめに/チーム体制.html</code>が省略例）。
 			</p>
+			<div class="callout">
+				<strong>全ページからindex.htmlへ戻れるようにする</strong>（2026-08-30追加——それまで
+				どのページも戻るリンクを持たず、index.html以外に着地すると行き止まりだった）。
+				<code>nav.topnav</code>があるページは、その先頭（ページ内アンカーより前）に
+				<code>&lt;a href="../index.html"&gt;← ドキュメント地図&lt;/a&gt;</code>を置く
+				（階層が深い場合は相対パスを調整——<code>説明用/技術スタック/</code>のような2階層下なら
+				<code>../../index.html</code>）。<code>nav.topnav</code>が無いページは、同じリンクを
+				<code>footer</code>の先頭行に置く。<code>docs/human/index.html</code>自身には不要。
+			</div>
 		</section>
 
 		<section id="css">
@@ -368,19 +378,33 @@ EOF</code></pre>
 			<p class="section-kicker">07 · Status wording</p>
 			<h2>担当・進捗表記のルール</h2>
 			<p class="section-intro">
-				正本は<a href="../はじめに/チーム体制.html">チーム体制.html</a>。何度も出てくる判断なのでここにも要約します。
+				現在のメンバー・役割の正本は<a href="../はじめに/チーム体制.html">チーム体制.html</a>だが、
+				以下は「担当・進捗をどう書くか」というこのページ固有のルールで、チーム体制.htmlが
+				定義しているものではない。
 			</p>
 			<ul>
-				<li>旧メンバー（torinoue / mamiyaza / hminemur）を、未完成タスクの<strong>現在の担当者</strong>として書かない。
-					名前の代わりに<strong>完了 / 未完成 / 担当未定</strong>を使う。</li>
+				<li><strong>GitHubが持てる情報はdocs/に置かない</strong>（2026-08-30決定。経緯は
+					<code>docs/drafts/141-docs-restructure.md</code>）。誰が何を担当しているか、
+					今どこまで進んでいるかはGitHub Issues/Projectsの仕事——「担当未定」「完了/未完成」の
+					ような表記を工夫して書く前に、そもそも書かないこと。進捗カウント・完了率・
+					Issueごとの状態タグ・「n件中m件完了」のようなカードも同様、「一目で分かって便利」
+					に見えてもGitHub側と二重管理になり、どちらかが動いた瞬間から古くなり始める
+					（このリポジトリでは実際にREADME.mdの状態表、42モジュール対応表.htmlの完了タグ、
+					開発状況/ページの進捗グリッドとIssueカードをすでに削除した）。
+					<code>docs/ai/backlog.md</code>が持つのは受入条件・依存関係・意思決定の理由で
+					あって、現在の進捗率・担当者ではない。「書く前に裏取りする」ではなく
+					「そもそも書かない」——このリポジトリは過去に何度も「ドキュメントが未実装と
+					書いていたのにoriginでは実装済みだった（逆もあり）」を踏んでおり、書く限り
+					このズレは再発する。</li>
 				<li>過去の経緯（実際に誰が作ったか、いつ決まったか）としての言及は問題ない
 					——「過去の事実」か「現在進行中に見えるか」を見分ける。誤読されそうなら
 					削除ではなく注記を足す（<code>architecture.md</code> §6/§9のパターン: 元の表は残しつつ、
 					「これは過去の計画で現在は無効」という注記を上に足す）。</li>
-				<li>進捗を書く前に<code>docs/ai/backlog.md</code>、疑わしければ
-					<code>git log origin/main</code>で裏取りする。記憶だけで書かない
-					——このリポジトリは過去に何度も「ドキュメントが未実装と書いていたのに
-					originでは実装済みだった（逆もあり）」を踏んでいる。</li>
+				<li><strong>地の文で個人に言及するときは、個人名ではなく役割名を使う</strong>
+					（2026-08-30決定）——「ttsubo」ではなく「テクニカルリード」のように。人が
+					交代するたびに本文を書き換えずに済む。例外は、<code>チーム体制.html</code>の
+					ロースター表や<code>README.md</code>のTeam表のように、「今誰がその役割か」を
+					宣言すること自体が目的のページ——そこは実名が本来の役割なので対象外。</li>
 			</ul>
 		</section>
 	</main>
