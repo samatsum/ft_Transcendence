@@ -5,9 +5,8 @@ import { Card } from '../components/Card.js';
 import { useAuth } from '../contexts/AuthContext.js';
 import { useLobby } from '../contexts/LobbyContext.js';
 
-// F-05 ロビーの入口となるハブ画面。「部屋を作る」「部屋に参加する」の2択と補助導線だけを持つ。
-// /ws/lobby への接続は useLobbySocket（F-05 の残り）で入れるため、ここではまだ張らない。
-
+// F-05 ロビーの入口となるハブ画面。「部屋を作る」「部屋に参加する」の2択と補助導線を持つ。
+// /ws/lobby への接続は LobbyProvider が持つので、この画面は useLobby で状態を読むだけ。
 
 const STATUS_LABEL: Record<string, { text: string; cls: string }> = {
 	connecting: { text: '接続中…', cls: 'text-fg-muted' },
