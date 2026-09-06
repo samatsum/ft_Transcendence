@@ -1,6 +1,9 @@
 // ゲーム入力の React フック（GV-06 / ④ §3.3 の入力キャプチャ契約）。
 //
 // - Canvas クリックでキャプチャ開始、Esc で解除（解除中は移動入力を送らない）。
+//   Esc は #113 で「退出ポップアップを開く」も兼ねるようになった（`onRequestExit`）。
+//   本物の Pointer Lock API は使っていない（capturedRef は自前のフラグ）ので、
+//   ブラウザに Esc を予約されておらず、この割り当ては自由に決められる。
 // - keydown/keyup は held ビットマスクを書き換えるだけ（穴5 の決定）。
 // - setInterval 30Hz で最新 held + localYaw を全量送信（② §5-A: 状態駆動）。
 // - ArrowLeft/Right は setInterval 側で localYaw に積分して即時反映
@@ -37,6 +40,12 @@ export interface UseGameInputOptions {
 	spectator: boolean;
 	/** true なら送信ループを起動する（welcome 受信後・playing 状態など） */
 	enabled: boolean;
+	/**
+	 * Esc が押されたときに呼ばれる（#113 退出ポップアップを開く）。
+	 * **キャプチャの有無に関わらず呼ばれる** — キャプチャ前でも退出できないと
+	 * キーボードだけで詰む（④ §6-7）。
+	 */
+	onRequestExit?: () => void;
 }
 
 export interface UseGameInputResult {
@@ -53,6 +62,7 @@ export function useGameInput({
 	send,
 	spectator,
 	enabled,
+	onRequestExit,
 }: UseGameInputOptions): UseGameInputResult {
 	const heldMvRef = useRef<number>(0);
 	const rotateRef = useRef<RotateHeld>({ left: false, right: false });
@@ -60,6 +70,13 @@ export function useGameInput({
 	const seqRef = useRef<number>(0);
 	const capturedRef = useRef<boolean>(false);
 	const captureListenerRef = useRef<((c: boolean) => void) | null>(null);
+	// onRequestExit を ref 越しに持つ。直接 deps に入れると、呼び出し側が
+	// useCallback を外した瞬間に毎レンダでキーイベントを貼り直すことになる
+	// （setOnCaptureChange を安定化させたのと同じ理由）
+	const exitRequestRef = useRef<(() => void) | null>(null);
+	useEffect(() => {
+		exitRequestRef.current = onRequestExit ?? null;
+	}, [onRequestExit]);
 
 	// setInterval 送信ループ（穴5: 状態駆動・30Hz 全量送信）
 	useEffect(() => {
@@ -100,6 +117,17 @@ export function useGameInput({
 			captureListenerRef.current?.(next);
 		}
 		function onKeyDown(ev: KeyboardEvent) {
+			// #113: Esc は「キャプチャ解除」と「退出ポップアップを開く」を兼ねる。
+			// **キャプチャ判定より前に見る** — キャプチャしていない状態でも退出できないと、
+			// マウスを使わない利用者が GameView から出られなくなる（④ §6-7）。
+			// ポップアップ表示中の2度目の Esc は Modal 側のハンドラが閉じる方に効き、
+			// ここは open 状態を再セットするだけなので二重発火しても無害。
+			if (ev.code === 'Escape') {
+				ev.preventDefault();
+				setCaptured(false);
+				exitRequestRef.current?.();
+				return;
+			}
 			if (!capturedRef.current) {
 				// CodeRabbit 指摘: キーボードのみ操作の要件（④ §6-7）。
 				// canvas に focus 済みの状態で Enter / Space を押したら capture 開始
@@ -125,9 +153,6 @@ export function useGameInput({
 			} else if (ev.code === 'ArrowUp' || ev.code === 'ArrowDown') {
 				// キャプチャ中のスクロール抑止（矢印は視点回転のみ、上下は使わない）
 				ev.preventDefault();
-			} else if (ev.code === 'Escape') {
-				ev.preventDefault();
-				setCaptured(false);
 			}
 		}
 		function onKeyUp(ev: KeyboardEvent) {
