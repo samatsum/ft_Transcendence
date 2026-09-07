@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { roomCodeSchema } from '@ft/shared';
@@ -7,7 +7,7 @@ import { Button } from '../components/Button.js';
 import { Card } from '../components/Card.js';
 import { FormField } from '../components/FormField.js';
 import { Input } from '../components/Input.js';
-import { useToast } from '../contexts/ToastContext.js';
+import { useLobby } from '../contexts/LobbyContext.js';
 
 // F-05 の部屋参加画面。サーバの room_join は { code } しか受け取らない（パスワードは無い）。
 // 検証はバックエンドと同じ roomCodeSchema を使うので、判定がずれることがない。
@@ -21,13 +21,23 @@ export const JOIN_ERROR_TEXT: Record<string, string> = {
 
 export default function RoomJoinPage() {
 	const navigate = useNavigate();
-	const { push } = useToast();
+	const { status, room, error: lobbyError, send } = useLobby();
 	const [code, setCode] = useState('');
 	const [error, setError] = useState<string | null>(null);
 	const [submitting, setSubmitting] = useState(false);
 
-	// TODO(F-05): useLobbySocket 実装後に room_join { code } の送信へ差し替える。
-	// 失敗時は上の JOIN_ERROR_TEXT でサーバのエラーコードを文言に変換して表示する
+	// 入室できたかは、サーバが全員へ配る room_state が届いたかで判断する
+	useEffect(() => {
+		if (room) navigate('/lobby', { replace: true });
+	}, [room, navigate]);
+
+	// サーバが返した拒否理由を、この画面の文言へ変換して出す
+	useEffect(() => {
+		if (!lobbyError) return;
+		setSubmitting(false);
+		setError(JOIN_ERROR_TEXT[lobbyError.code] ?? lobbyError.message);
+	}, [lobbyError]);
+
 	function handleSubmit(event: FormEvent) {
 		event.preventDefault();
 		const parsed = roomCodeSchema.safeParse(code);
@@ -37,11 +47,10 @@ export default function RoomJoinPage() {
 		}
 		setError(null);
 		setSubmitting(true);
-		push({
-			kind: 'info',
-			message: `room_join { code: "${parsed.data}" } を送信します（ロビー接続は F-05 の残りで実装）`,
-		});
-		setSubmitting(false);
+		if (!send({ t: 'room_join', d: { code: parsed.data } })) {
+			setSubmitting(false);
+			setError('ロビーに接続していません。少し待ってからもう一度お試しください。');
+		}
 	}
 
 	return (
@@ -79,8 +88,11 @@ export default function RoomJoinPage() {
 				</FormField>
 
 				<div className="flex flex-wrap gap-3">
-					<Button type="submit" disabled={submitting || code.length === 0}>
-						参加する
+					<Button
+						type="submit"
+						disabled={submitting || code.length === 0 || status !== 'open'}
+					>
+						{submitting ? '参加中…' : '参加する'}
 					</Button>
 					<Button variant="ghost" onClick={() => navigate('/lobby')}>
 						戻る

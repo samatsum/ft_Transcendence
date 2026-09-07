@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import type { LobbyMode } from '@ft/shared';
 
 import { Button } from '../components/Button.js';
 import { Card } from '../components/Card.js';
-import { useToast } from '../contexts/ToastContext.js';
+import { useLobby } from '../contexts/LobbyContext.js';
 
 // F-05 の部屋作成画面。サーバの room_create は { mode, rules? } しか受け取らないため、
 // この画面で選ぶのはゲームモードだけ。マップと先取点は部屋を作ったあとに
@@ -30,19 +30,25 @@ const MODES: { value: LobbyMode; title: string; players: string; summary: string
 
 export default function RoomCreatePage() {
 	const navigate = useNavigate();
-	const { push } = useToast();
+	const { status, room, error, send } = useLobby();
 	const [mode, setMode] = useState<LobbyMode>('rsp');
 	const [submitting, setSubmitting] = useState(false);
 
-	// TODO(F-05): useLobbySocket 実装後に room_create { mode } の送信へ差し替える。
-	// 送信の成否ではなく、サーバから room_state が届いた時点で待機画面へ遷移させる
+	// 遷移は送信の成否ではなく、サーバから room_state が届いた時点で行う。
+	// WebSocket には「送信に対する返事」が無く、部屋ができたことは全員へ配られる
+	// room_state で分かるため
+	useEffect(() => {
+		if (room) navigate('/lobby', { replace: true });
+	}, [room, navigate]);
+
+	// エラーが返ってきたら送信中の表示を解く（サーバは error メッセージで理由を返す）
+	useEffect(() => {
+		if (error) setSubmitting(false);
+	}, [error]);
+
 	function handleCreate() {
 		setSubmitting(true);
-		push({
-			kind: 'info',
-			message: `room_create { mode: "${mode}" } を送信します（ロビー接続は F-05 の残りで実装）`,
-		});
-		setSubmitting(false);
+		if (!send({ t: 'room_create', d: { mode } })) setSubmitting(false);
 	}
 
 	return (
@@ -89,13 +95,19 @@ export default function RoomCreatePage() {
 			</fieldset>
 
 			<div className="flex flex-wrap gap-3">
-				<Button onClick={handleCreate} disabled={submitting}>
-					この設定で部屋を作る
+				<Button onClick={handleCreate} disabled={submitting || status !== 'open'}>
+					{submitting ? '作成中…' : 'この設定で部屋を作る'}
 				</Button>
 				<Button variant="ghost" onClick={() => navigate('/lobby')}>
 					戻る
 				</Button>
 			</div>
+
+			{error && (
+				<p className="text-body text-rose-400" role="alert">
+					部屋を作れませんでした（{error.code}）
+				</p>
+			)}
 
 			<Card>
 				<p className="text-caption text-fg-muted">
