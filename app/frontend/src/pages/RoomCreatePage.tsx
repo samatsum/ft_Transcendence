@@ -38,7 +38,7 @@ export default function RoomCreatePage() {
 	// WebSocket には「送信に対する返事」が無く、部屋ができたことは全員へ配られる
 	// room_state で分かるため
 	useEffect(() => {
-		if (room) navigate('/lobby', { replace: true });
+		if (room) navigate('/lobby/matching', { replace: true });
 	}, [room, navigate]);
 
 	// エラーが返ってきたら送信中の表示を解く（サーバは error メッセージで理由を返す）

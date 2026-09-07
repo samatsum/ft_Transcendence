@@ -28,7 +28,7 @@ export default function RoomJoinPage() {
 
 	// 入室できたかは、サーバが全員へ配る room_state が届いたかで判断する
 	useEffect(() => {
-		if (room) navigate('/lobby', { replace: true });
+		if (room) navigate('/lobby/matching', { replace: true });
 	}, [room, navigate]);
 
 	// サーバが返した拒否理由を、この画面の文言へ変換して出す
