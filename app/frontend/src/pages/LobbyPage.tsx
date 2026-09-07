@@ -113,7 +113,8 @@ export default function LobbyPage() {
 							</li>
 						))}
 					</ul>
-					<div>
+					<div className="flex flex-wrap gap-3">
+						<Button onClick={() => navigate('/lobby/matching')}>待機画面へ</Button>
 						{/* サーバは退室の成功時に何も返さない（失敗時だけ error）。
 						    room_state も届かないので、送信できたら画面側で捨てる。
 						    開始処理中は leave が拒否されるため、その間は押させない */}

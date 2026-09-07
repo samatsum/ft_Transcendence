@@ -11,6 +11,7 @@ import DesignSystemPage from './pages/DesignSystemPage.js';
 import GameView from './pages/GameView.js';
 import HowToPlayPage from './pages/HowToPlayPage.js';
 import LobbyPage from './pages/LobbyPage.js';
+import MatchingPage from './pages/MatchingPage.js';
 import RoomCreatePage from './pages/RoomCreatePage.js';
 import RoomJoinPage from './pages/RoomJoinPage.js';
 import LoginPage from './pages/LoginPage.js';
@@ -98,6 +99,7 @@ export default function App() {
 					<Route path="/lobby" element={<LobbyPage />} />
 					<Route path="/lobby/create" element={<RoomCreatePage />} />
 					<Route path="/lobby/join" element={<RoomJoinPage />} />
+					<Route path="/lobby/matching" element={<MatchingPage />} />
 					<Route path="/lobby/how-to" element={<HowToPlayPage />} />
 				</Route>
 				{/* Layout 外（全画面 Canvas。④ §3.3「Header/Footer は非表示」） */}
