@@ -8,33 +8,31 @@ import {
 	useState,
 	type ReactNode,
 } from 'react';
-import { z } from 'zod';
+import { authApi, type Self } from '@ft/shared';
 
-import { apiFetch, isAbortError } from '../api/apiFetch.js';
+import { isAbortError } from '../api/apiFetch.js';
+import { plainRequester } from '../api/requester.js';
 
 // ④ D-12「fetch ラッパ + Context + zod」の Auth Context。
 // - 起動時に GET /api/auth/me を叩き、ログイン中なら user を保持（④ §1）
 // - B-04 未実装のため 401/404/network error はすべて「未ログイン」扱いにする
 //   （F-01 の推奨決定#3）
 // - VITE_DEV_AUTOLOGIN=1 でネットワーク接続なしにダミー user を注入する
-// - user shape は B-04 の /api/auth/me レスポンス確定後、shared 側の zod へ寄せる想定。
-//   現時点では最小のフィールドだけを持つ（暫定 schema を api 呼び出しへ渡す）
+// - API 呼び出しは #163 の shared ヘルパー（`authApi`）経由。URL とレスポンススキーマの
+//   対応は shared/src/api/auth.ts が持つ
 
 export interface AuthUser {
 	id: number;
 	displayName: string;
 }
 
-// B-04 完成時に shared/api/ 側の zod へ置き換える暫定スキーマ。
-// `/api/auth/me` の実レスポンス（selfSchema・③§2-A）は snake_case の
-// display_name を返すため、ここで camelCase の AuthUser へ変換する。
+// `/api/auth/me` の実レスポンス（selfSchema・③§2-A）は snake_case の display_name を
+// 返すため、camelCase の AuthUser へ変換する。#163 以前はここに selfSchema の複製
+// （authUserSchema）を置いていたが、shared の契約と二重管理だったので変換だけを残した。
 // export しているのは AuthContext.test.ts から直接検査するため（#135回帰）
-export const authUserSchema = z
-	.object({
-		id: z.number(),
-		display_name: z.string(),
-	})
-	.transform(({ id, display_name }) => ({ id, displayName: display_name }));
+export function toAuthUser(self: Self): AuthUser {
+	return { id: self.id, displayName: self.display_name };
+}
 
 export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
 
@@ -51,7 +49,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 async function fetchMe(signal: AbortSignal): Promise<AuthUser | null> {
 	try {
-		return await apiFetch<AuthUser>('/api/auth/me', { signal }, authUserSchema);
+		return toAuthUser(await authApi.me(plainRequester, { signal }));
 	} catch (err) {
 		// F-02 の apiFetch は AbortError をそのまま再スロー、
 		// その他は ApiError（unauthenticated / network_error / invalid_response 等）に統一。
@@ -121,9 +119,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	const logout = useCallback(async () => {
 		invalidateBootstrap();
 		// B-04 未実装なので失敗は握って state だけ落とす。
-		// F-02 の apiFetch 経由(credentials・error 統一)。204 が返る前提なので schema なし
+		// #163 の shared ヘルパー経由。204 が返る前提なので schema なし
 		try {
-			await apiFetch('/api/auth/logout', { method: 'POST' });
+			await authApi.logout(plainRequester);
 		} catch {
 			// swallow（AuthContext の logout は「見た目 UI 状態を落とす」ことが主目的で、
 			// 失敗しても user を null に落とすのが安全）

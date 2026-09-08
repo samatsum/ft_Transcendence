@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import type { ApiRequester, RequestExtras } from './requester.js';
+
 // ③ §2-E: `GET /api/maps?mode=` のクエリ契約。FE/BE 双方がこの定義で検証する
 // （③§1-B「全ボディ/クエリを shared/api/ の zod スキーマで検証」の実体）。
 export const gameModeSchema = z.enum(['rsp', 'fps']);
@@ -23,3 +25,23 @@ const mapEntrySchema = z.object({
 });
 
 export const listMapsResponseSchema = z.array(mapEntrySchema);
+
+export type ListMapsResponse = z.infer<typeof listMapsResponseSchema>;
+
+// #163: `GET /api/maps` の呼び出しヘルパー。クエリ組み立て（`?mode=`）も
+// ここに閉じ込め、呼び出し側が URL 文字列を手で組まなくて済むようにする
+export const mapsApi = {
+	/** ③§2-E `GET /api/maps?mode=`（mode 省略で全モード） */
+	list<R extends ApiRequester>(
+		api: R,
+		query: ListMapsQuery = {},
+		opts?: RequestExtras<R>,
+	): Promise<ListMapsResponse> {
+		const url = query.mode ? `/api/maps?mode=${encodeURIComponent(query.mode)}` : '/api/maps';
+		return api.request<ListMapsResponse>(url, {
+			...opts,
+			method: 'GET',
+			schema: listMapsResponseSchema,
+		});
+	},
+};
