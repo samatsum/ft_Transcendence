@@ -1,13 +1,19 @@
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { Button } from '../components/Button.js';
 import { Card } from '../components/Card.js';
 import { useAuth } from '../contexts/AuthContext.js';
 import { useLobby } from '../contexts/LobbyContext.js';
+import { GameCustomizationFields } from '../lobby/GameCustomizationFields.js';
+import {
+	DEFAULT_TARGET_SCORE,
+	buildRoomUpdateRulesMessage,
+	canEditRoomRules,
+} from '../lobby/gameCustomization.js';
+import { useGameMaps } from '../lobby/useGameMaps.js';
 
-// F-05 ロビーの入口となるハブ画面。「部屋を作る」「部屋に参加する」の2択と補助導線だけを持つ。
-// /ws/lobby への接続は useLobbySocket（F-05 の残り）で入れるため、ここではまだ張らない。
-
+// ロビーの入口と参加中ルームの状態を1本の共有WS接続で表示する
 
 const STATUS_LABEL: Record<string, { text: string; cls: string }> = {
 	connecting: { text: '接続中…', cls: 'text-fg-muted' },
@@ -18,8 +24,87 @@ const STATUS_LABEL: Record<string, { text: string; cls: string }> = {
 
 export default function LobbyPage() {
 	const { user } = useAuth();
-	const { status, room, error, send, clearRoom } = useLobby();
+	const { status, room, error, send, clearError, clearRoom } = useLobby();
 	const navigate = useNavigate();
+	const { maps, status: mapsStatus } = useGameMaps(room?.mode ?? null);
+	const [mapChoice, setMapChoice] = useState('');
+	const [targetScore, setTargetScore] = useState(DEFAULT_TARGET_SCORE);
+	const [settingsError, setSettingsError] = useState<string | null>(null);
+	const [settingsDirty, setSettingsDirty] = useState(false);
+	const [updatingRules, setUpdatingRules] = useState(false);
+	const pendingRoomRef = useRef<typeof room>(null);
+
+	useEffect(() => {
+		if (!room) {
+			setSettingsDirty(false);
+			setUpdatingRules(false);
+			pendingRoomRef.current = null;
+			return;
+		}
+		const receivedUpdate = pendingRoomRef.current && room !== pendingRoomRef.current;
+		if (!settingsDirty || receivedUpdate) {
+			setMapChoice(room.rules.map);
+			setTargetScore(
+				room.mode === 'rsp' ? String(room.rules.target_score) : DEFAULT_TARGET_SCORE,
+			);
+			setSettingsError(null);
+			setSettingsDirty(false);
+		}
+		if (receivedUpdate) {
+			setUpdatingRules(false);
+			pendingRoomRef.current = null;
+		}
+	}, [room, settingsDirty]);
+
+	useEffect(() => {
+		if (!error || !pendingRoomRef.current) return;
+		if (room) {
+			setMapChoice(room.rules.map);
+			setTargetScore(
+				room.mode === 'rsp' ? String(room.rules.target_score) : DEFAULT_TARGET_SCORE,
+			);
+			setSettingsDirty(false);
+		}
+		setUpdatingRules(false);
+		pendingRoomRef.current = null;
+	}, [error, room]);
+
+	const isHost = Boolean(room && user && room.host_id === user.id);
+	const canEditRules = canEditRoomRules(room, user?.id);
+	const mapsUnavailable = mapsStatus !== 'ready' || maps.length === 0;
+	const mapHint =
+		mapsStatus === 'loading'
+			? 'マップ一覧を読み込んでいます。'
+			: mapsStatus === 'error'
+				? 'マップ一覧を取得できませんでした。'
+				: maps.length === 0
+					? 'このモードで利用できるマップがありません。'
+					: isHost
+						? 'ランダムは更新時に1つ抽選します。'
+						: undefined;
+
+	function handleUpdateRules() {
+		if (!room || !canEditRules) return;
+		const result = buildRoomUpdateRulesMessage({
+			mode: room.mode,
+			mapChoice,
+			targetScore,
+			maps,
+		});
+		if (!result.success) {
+			setSettingsError(result.error);
+			return;
+		}
+		setSettingsError(null);
+		clearError();
+		setUpdatingRules(true);
+		pendingRoomRef.current = room;
+		if (!send(result.message)) {
+			setUpdatingRules(false);
+			pendingRoomRef.current = null;
+			setSettingsError('ロビーへ接続されていません。');
+		}
+	}
 
 	return (
 		<div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-10">
@@ -103,6 +188,48 @@ export default function LobbyPage() {
 					<div>
 						<p className="text-caption text-fg-muted">部屋コード（友達に伝えてください）</p>
 						<p className="text-heading-lg tracking-[0.3em] text-sky-300">{room.code}</p>
+					</div>
+					<div className="rounded-md border border-slate-700 bg-slate-900/40 p-4">
+						<GameCustomizationFields
+							mode={room.mode}
+							maps={maps}
+							mapChoice={mapChoice || room.rules.map}
+							targetScore={targetScore}
+							onMapChange={(choice) => {
+								setMapChoice(choice);
+								setSettingsDirty(true);
+								setSettingsError(null);
+							}}
+							onTargetScoreChange={(score) => {
+								setTargetScore(score);
+								setSettingsDirty(true);
+								setSettingsError(null);
+							}}
+							disabled={updatingRules || status !== 'open' || mapsUnavailable}
+							readOnly={!canEditRules || mapsUnavailable}
+							mapHint={mapHint}
+							targetScoreError={
+								settingsError?.startsWith('先取点') ? settingsError : null
+							}
+						/>
+						{canEditRules && (
+							<div className="mt-4">
+								<Button
+									variant="secondary"
+									disabled={
+										!settingsDirty || updatingRules || status !== 'open' || mapsUnavailable
+									}
+									onClick={handleUpdateRules}
+								>
+									{updatingRules ? '更新中…' : 'ゲーム設定を更新する'}
+								</Button>
+							</div>
+						)}
+						{settingsError && !settingsError.startsWith('先取点') && (
+							<p className="text-body mt-2 text-rose-400" role="alert">
+								{settingsError}
+							</p>
+						)}
 					</div>
 					<ul className="flex flex-col gap-1">
 						{room.seats.map((seat) => (
