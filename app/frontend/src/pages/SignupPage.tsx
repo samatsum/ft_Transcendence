@@ -124,9 +124,12 @@ export default function SignupPage() {
 			<h1 className="text-heading-lg">アカウント作成</h1>
 
 			<Card>
-				<form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+				<form className="flex flex-col gap-4" noValidate onSubmit={handleSubmit}>
 					{errors.form && (
-						<p className="rounded-md border border-rose-500 bg-rose-950/40 px-3 py-2 text-body text-rose-200">
+						<p
+							className="rounded-md border border-rose-500 bg-rose-950/40 px-3 py-2 text-body text-rose-200"
+							role="alert"
+						>
 							{errors.form}
 						</p>
 					)}
