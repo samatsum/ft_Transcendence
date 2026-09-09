@@ -27,6 +27,17 @@ export interface ApiRequester {
 }
 
 /**
+ * ワイヤー形状（何をどう送るか）を決める options のキー。
+ *
+ * 型で除外する `RequestExtras` と、実行時に落とす `callerExtras` の両方が、ここを唯一の
+ * 出どころにする。以前は2箇所に別々のリストを持っていたため、型側にだけ `json` / `headers`
+ * を足して実行時側を直し忘れ、`method` / `body` / `schema` が実行時に素通りしていた
+ * （PR #179 レビュー指摘）。リストを1つにすれば同じずれ方はしない。
+ */
+const WIRE_OPTION_KEYS = ['method', 'body', 'schema', 'json', 'headers'] as const;
+type WireOptionKey = (typeof WIRE_OPTION_KEYS)[number];
+
+/**
  * 渡された requester 固有の追加オプションを、その型から逆算する。
  *
  * `useApi()` を渡した呼び出しでは `toast` / `onError` がそのまま補完され型検査も効くが、
@@ -45,7 +56,7 @@ export interface ApiRequester {
  */
 export type RequestExtras<R extends ApiRequester> = Omit<
 	NonNullable<Parameters<R['request']>[1]>,
-	'method' | 'body' | 'schema' | 'json' | 'headers'
+	WireOptionKey
 >;
 
 /**
@@ -57,6 +68,7 @@ export type RequestExtras<R extends ApiRequester> = Omit<
  * `Record<string, unknown>` として扱う。
  */
 export function callerExtras<R extends ApiRequester>(opts: RequestExtras<R> | undefined): object {
-	const { json, headers, ...rest } = (opts ?? {}) as Record<string, unknown>;
+	const rest = { ...(opts ?? {}) } as Record<string, unknown>;
+	for (const key of WIRE_OPTION_KEYS) delete rest[key];
 	return rest;
 }

@@ -1,4 +1,4 @@
-import { authApi, mapsApi } from '@ft/shared';
+import { authApi, mapsApi, selfSchema, type RequestExtras } from '@ft/shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { plainRequester } from './requester.js';
@@ -160,5 +160,40 @@ describe('ワイヤー形状は呼び出し側から上書きできない（PR #
 		expect(fetchMock.mock.calls[0]![1]!.headers).toMatchObject({
 			'Content-Type': 'application/json',
 		});
+	});
+});
+
+describe('型を経由しない呼び出しでもワイヤー形状は守られる（PR #179 レビュー指摘）', () => {
+	// JS からの呼び出しや `as any` を模す。RequestExtras は型で弾くので、
+	// 実行時の歯止め（callerExtras）だけを検査するためにここで型を外す
+	function smuggle(opts: Record<string, unknown>): RequestExtras<typeof plainRequester> {
+		return opts as unknown as RequestExtras<typeof plainRequester>;
+	}
+
+	it('me に body を混入させても GET のまま body は付かない', async () => {
+		const fetchMock = mockFetch(async () => jsonResponse(200, SELF));
+		await authApi.me(plainRequester, smuggle({ body: { evil: true } }));
+
+		const init = fetchMock.mock.calls[0]![1]!;
+		expect(init.method).toBe('GET');
+		expect(init.body).toBeUndefined();
+	});
+
+	it('logout に schema を混入させても 204 が成功のまま扱われる', async () => {
+		// logout は 204 No Content。schema が届くと apiFetch が
+		// ApiError('invalid_response') を投げてしまう
+		const fetchMock = mockFetch(async () => new Response(null, { status: 204 }));
+		await expect(
+			authApi.logout(plainRequester, smuggle({ schema: selfSchema })),
+		).resolves.toBeUndefined();
+
+		expect(fetchMock.mock.calls[0]![1]!.method).toBe('POST');
+	});
+
+	it('method を混入させてもエンドポイントの指定が勝つ', async () => {
+		const fetchMock = mockFetch(async () => jsonResponse(200, SELF));
+		await authApi.me(plainRequester, smuggle({ method: 'DELETE' }));
+
+		expect(fetchMock.mock.calls[0]![1]!.method).toBe('GET');
 	});
 });
