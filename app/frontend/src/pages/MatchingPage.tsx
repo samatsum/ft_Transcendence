@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { Button } from '../components/Button.js';
@@ -21,29 +21,29 @@ export default function MatchingPage() {
 	const filled = room?.seats.filter((s) => s.user_id !== null || s.is_ai).length ?? 0;
 	const total = room?.seats.length ?? 0;
 
-	// この画面を直接開いた（再読み込みした）直後は、まだ room_state が届いていない。
-	// そこで「部屋が無い」と判断するとロビーへ弾いてしまうので、接続が開いてから
-	// 少しだけ待つ。サーバは接続時に在室者へ room_state を送り直す（ws.ts の resendContext）
-	const [settled, setSettled] = useState(false);
-	useEffect(() => {
-		if (status !== 'open') return;
-		const timer = setTimeout(() => setSettled(true), 1000);
-		return () => clearTimeout(timer);
-	}, [status]);
+	// 「部屋にいない」を示すメッセージはプロトコルに無い（lobby_hello の self.status は
+	// 部屋で待機中も online）。時間で打ち切ると、再送が遅れただけの在室者を締め出すため、
+	// 一度でも部屋が見えたかどうかで判断する。
+	// 見えた後に消えた＝退室・解散なので、そのときだけ自動でロビーへ戻す。
+	// 一度も見えていないうちは自動遷移せず、下の案内から手で戻ってもらう
+	const seenRoom = useRef(false);
+	if (room) seenRoom.current = true;
 
-	// 部屋から出た（退室・解散）ならロビーへ戻す
 	useEffect(() => {
-		if (!room && settled) navigate('/lobby', { replace: true });
-	}, [room, settled, navigate]);
+		if (!room && seenRoom.current) navigate('/lobby', { replace: true });
+	}, [room, navigate]);
 
 	// マッチ成立時の遷移は LobbyScope の MatchFoundRedirect が受け持つ。
 	// ロビーに戻っている人も試合へ入れるようにするため、この画面には置かない
 
 	if (!room) {
 		return (
-			<p className="text-body text-fg-muted px-4 py-10">
-				{settled ? '部屋が見つかりません。ロビーへ戻ります…' : '部屋の情報を読み込んでいます…'}
-			</p>
+			<div className="mx-auto flex max-w-2xl flex-col items-start gap-4 px-4 py-10">
+				<p className="text-body text-fg-muted">部屋の情報を読み込んでいます…</p>
+				<Button variant="ghost" onClick={() => navigate('/lobby', { replace: true })}>
+					ロビーへ戻る
+				</Button>
+			</div>
 		);
 	}
 
@@ -134,7 +134,7 @@ export default function MatchingPage() {
 			<div className="flex flex-wrap gap-3">
 				{isHost && (
 					<Button
-						disabled={starting}
+						disabled={starting || status !== 'open'}
 						onClick={() => send({ t: 'room_start', d: {} })}
 						title="空いている席は AI が埋めます"
 					>
@@ -146,7 +146,7 @@ export default function MatchingPage() {
 				    捨てないと room が残り続け、上の useEffect が動かずこの画面から出られない */}
 				<Button
 					variant="ghost"
-					disabled={starting}
+					disabled={starting || status !== 'open'}
 					onClick={() => {
 						if (send({ t: 'room_leave', d: {} })) clearRoom();
 					}}
