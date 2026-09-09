@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import type { FpsAiSpeed } from '@ft/shared';
+
 import { Button } from '../components/Button.js';
 import { Card } from '../components/Card.js';
 import { useAuth } from '../contexts/AuthContext.js';
 import { useLobby } from '../contexts/LobbyContext.js';
 import { GameCustomizationFields } from '../lobby/GameCustomizationFields.js';
 import {
+	DEFAULT_AI_SPEED,
 	DEFAULT_TARGET_SCORE,
 	buildRoomUpdateRulesMessage,
 	canEditRoomRules,
@@ -29,6 +32,7 @@ export default function LobbyPage() {
 	const { maps, status: mapsStatus } = useGameMaps(room?.mode ?? null);
 	const [mapChoice, setMapChoice] = useState('');
 	const [targetScore, setTargetScore] = useState(DEFAULT_TARGET_SCORE);
+	const [aiSpeed, setAiSpeed] = useState<FpsAiSpeed>(DEFAULT_AI_SPEED);
 	const [settingsError, setSettingsError] = useState<string | null>(null);
 	const [settingsDirty, setSettingsDirty] = useState(false);
 	const [updatingRules, setUpdatingRules] = useState(false);
@@ -47,6 +51,7 @@ export default function LobbyPage() {
 			setTargetScore(
 				room.mode === 'rsp' ? String(room.rules.target_score) : DEFAULT_TARGET_SCORE,
 			);
+			setAiSpeed(room.mode === 'fps' ? room.rules.ai_speed : DEFAULT_AI_SPEED);
 			setSettingsError(null);
 			setSettingsDirty(false);
 		}
@@ -63,6 +68,7 @@ export default function LobbyPage() {
 			setTargetScore(
 				room.mode === 'rsp' ? String(room.rules.target_score) : DEFAULT_TARGET_SCORE,
 			);
+			setAiSpeed(room.mode === 'fps' ? room.rules.ai_speed : DEFAULT_AI_SPEED);
 			setSettingsDirty(false);
 		}
 		setUpdatingRules(false);
@@ -89,6 +95,7 @@ export default function LobbyPage() {
 			mode: room.mode,
 			mapChoice,
 			targetScore,
+			aiSpeed,
 			maps,
 		});
 		if (!result.success) {
@@ -195,6 +202,7 @@ export default function LobbyPage() {
 							maps={maps}
 							mapChoice={mapChoice || room.rules.map}
 							targetScore={targetScore}
+							aiSpeed={aiSpeed}
 							onMapChange={(choice) => {
 								setMapChoice(choice);
 								setSettingsDirty(true);
@@ -202,6 +210,11 @@ export default function LobbyPage() {
 							}}
 							onTargetScoreChange={(score) => {
 								setTargetScore(score);
+								setSettingsDirty(true);
+								setSettingsError(null);
+							}}
+							onAiSpeedChange={(speed) => {
+								setAiSpeed(speed);
 								setSettingsDirty(true);
 								setSettingsError(null);
 							}}

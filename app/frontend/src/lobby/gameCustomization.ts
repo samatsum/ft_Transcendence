@@ -1,6 +1,7 @@
 import {
 	lobbyRoomCreateMessageSchema,
 	lobbyRoomUpdateRulesSchema,
+	type FpsAiSpeed,
 	type LobbyClientMessage,
 	type LobbyMode,
 	type RoomStatePayload,
@@ -9,6 +10,7 @@ import {
 export const DEFAULT_MAP_CHOICE = '';
 export const RANDOM_MAP_CHOICE = '__random__';
 export const DEFAULT_TARGET_SCORE = '10';
+export const DEFAULT_AI_SPEED: FpsAiSpeed = 'normal';
 
 export interface GameMapOption {
 	id: string;
@@ -21,6 +23,7 @@ export interface GameCustomizationDraft {
 	mode: LobbyMode;
 	mapChoice: string;
 	targetScore: string;
+	aiSpeed: FpsAiSpeed;
 	maps: GameMapOption[];
 }
 
@@ -108,7 +111,10 @@ export function buildRoomCreateMessage(
 			t: 'room_create',
 			d: {
 				mode: 'fps',
-				...(resolved.map ? { rules: { map: resolved.map } } : {}),
+				rules: {
+					...(resolved.map ? { map: resolved.map } : {}),
+					ai_speed: draft.aiSpeed,
+				},
 			},
 		};
 	}
@@ -136,7 +142,10 @@ export function buildRoomUpdateRulesMessage(
 			d: { map: resolved.map, target_score: targetScore },
 		};
 	} else {
-		candidate = { t: 'room_update_rules', d: { map: resolved.map } };
+		candidate = {
+			t: 'room_update_rules',
+			d: { map: resolved.map, ai_speed: draft.aiSpeed },
+		};
 	}
 	const parsed = lobbyRoomUpdateRulesSchema.safeParse(candidate);
 	return parsed.success
