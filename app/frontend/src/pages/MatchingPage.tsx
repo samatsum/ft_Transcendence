@@ -17,7 +17,7 @@ type MapEntry = (typeof listMapsResponseSchema)['_output'][number];
 const RSP_SCORES = [3, 5, 7, 10, 15, 21];
 
 export default function MatchingPage() {
-	const { room, matchFound, error, send, clearMatchFound } = useLobby();
+	const { room, matchFound, error, send, clearMatchFound, clearRoom } = useLobby();
 	const { user } = useAuth();
 	const navigate = useNavigate();
 	const [maps, setMaps] = useState<MapEntry[]>([]);
@@ -41,11 +41,13 @@ export default function MatchingPage() {
 		navigate(`/game/${roomId}`, { replace: true });
 	}, [matchFound, clearMatchFound, navigate]);
 
-	// 選べるマップはモードごとに違うので、部屋のモードで問い合わせる
+	// 選べるマップはモードごとに違うので、部屋のモードで問い合わせる。
+	// room 全体を依存にすると席が動くたびに取り直すので、モードだけを見る
+	const mode = room?.mode;
 	useEffect(() => {
-		if (!room) return;
+		if (!mode) return;
 		const controller = new AbortController();
-		fetch(`/api/maps?mode=${room.mode}`, { credentials: 'include', signal: controller.signal })
+		fetch(`/api/maps?mode=${mode}`, { credentials: 'include', signal: controller.signal })
 			.then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
 			.then((body: unknown) => {
 				const parsed = listMapsResponseSchema.safeParse(body);
@@ -53,7 +55,7 @@ export default function MatchingPage() {
 			})
 			.catch(() => undefined);
 		return () => controller.abort();
-	}, [room?.mode]);
+	}, [mode]);
 
 	if (!room) return null;
 
@@ -84,7 +86,7 @@ export default function MatchingPage() {
 				<p className="text-caption text-fg-muted">部屋コード（友達に伝えてください）</p>
 				<p className="text-heading-lg tracking-[0.3em] text-sky-300">{room.code}</p>
 				<p className="text-caption text-fg-muted">
-					モード {room.mode.toUpperCase()}　／　試合が始まるとこのコードは使えなくなります
+					モード {room.mode.toUpperCase()} ／ 試合が始まるとこのコードは使えなくなります
 				</p>
 			</Card>
 
@@ -177,10 +179,15 @@ export default function MatchingPage() {
 						{starting ? '開始しています…' : '開始する（空席は AI）'}
 					</Button>
 				)}
+				{/* サーバは退室の成功時に何も返さない（失敗時だけ error）。
+				    room_state も届かないので、送信できたら画面側で捨てる。
+				    捨てないと room が残り続け、上の useEffect が動かずこの画面から出られない */}
 				<Button
 					variant="ghost"
 					disabled={starting}
-					onClick={() => send({ t: 'room_leave', d: {} })}
+					onClick={() => {
+						if (send({ t: 'room_leave', d: {} })) clearRoom();
+					}}
 				>
 					退室する
 				</Button>
