@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import type { ApiRequester, RequestExtras } from './requester.js';
+import { callerExtras, type ApiRequester, type RequestExtras } from './requester.js';
 
 // ③ §2-E: `GET /api/maps?mode=` のクエリ契約。FE/BE 双方がこの定義で検証する
 // （③§1-B「全ボディ/クエリを shared/api/ の zod スキーマで検証」の実体）。
@@ -39,7 +39,7 @@ export const mapsApi = {
 	): Promise<ListMapsResponse> {
 		const url = query.mode ? `/api/maps?mode=${encodeURIComponent(query.mode)}` : '/api/maps';
 		return api.request<ListMapsResponse>(url, {
-			...opts,
+			...callerExtras<R>(opts),
 			method: 'GET',
 			schema: listMapsResponseSchema,
 		});

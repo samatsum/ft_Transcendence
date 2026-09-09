@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import type { ApiRequester, RequestExtras } from './requester.js';
+import { callerExtras, type ApiRequester, type RequestExtras } from './requester.js';
 
 // B-04: ③ §2-A の認証エンドポイント契約。ワイヤーは snake_case（D-9）。
 // ③ §1-B の検証ルールをそのままスキーマ化し、FE/BE 双方がこの定義で検証する。
@@ -53,9 +53,10 @@ export const authApi = {
 		opts?: RequestExtras<R>,
 	): Promise<Self> {
 		return api.request<Self>('/api/auth/signup', {
-			...opts,
+			...callerExtras<R>(opts),
 			method: 'POST',
 			body,
+			json: true,
 			schema: selfSchema,
 		});
 	},
@@ -63,20 +64,25 @@ export const authApi = {
 	/** ③§2-A `POST /api/auth/login`（200・失敗は 401 `unauthenticated`） */
 	login<R extends ApiRequester>(api: R, body: LoginRequest, opts?: RequestExtras<R>): Promise<Self> {
 		return api.request<Self>('/api/auth/login', {
-			...opts,
+			...callerExtras<R>(opts),
 			method: 'POST',
 			body,
+			json: true,
 			schema: selfSchema,
 		});
 	},
 
 	/** ③§2-A `POST /api/auth/logout`（204 No Content なので schema は付けない） */
 	logout<R extends ApiRequester>(api: R, opts?: RequestExtras<R>): Promise<void> {
-		return api.request<void>('/api/auth/logout', { ...opts, method: 'POST' });
+		return api.request<void>('/api/auth/logout', { ...callerExtras<R>(opts), method: 'POST' });
 	},
 
 	/** ③§2-A `GET /api/auth/me`（未ログインは 401 `unauthenticated`） */
 	me<R extends ApiRequester>(api: R, opts?: RequestExtras<R>): Promise<Self> {
-		return api.request<Self>('/api/auth/me', { ...opts, method: 'GET', schema: selfSchema });
+		return api.request<Self>('/api/auth/me', {
+			...callerExtras<R>(opts),
+			method: 'GET',
+			schema: selfSchema,
+		});
 	},
 };

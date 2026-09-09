@@ -126,3 +126,39 @@ describe('mapsApi', () => {
 		expect(maps[0]!.id).toBe('arena');
 	});
 });
+
+describe('ワイヤー形状は呼び出し側から上書きできない（PR #179 レビュー指摘）', () => {
+	it('json: false を渡しても JSON 直列化と Content-Type は維持される', async () => {
+		const fetchMock = mockFetch(async () => jsonResponse(200, SELF));
+		const body = { email: 'player@example.test', password: 'password123' };
+
+		await authApi.login(
+			plainRequester,
+			body,
+			// @ts-expect-error `json` は RequestExtras から除外済み。もし渡せてしまうと
+			// apiFetch が JSON.stringify を飛ばし、body が "[object Object]" として
+			// Content-Type 無しで飛ぶ（サーバの zod 検証に到達しない）
+			{ json: false },
+		);
+
+		const init = fetchMock.mock.calls[0]![1]!;
+		expect(init.headers).toMatchObject({ 'Content-Type': 'application/json' });
+		expect(JSON.parse(init.body as string)).toEqual(body);
+	});
+
+	it('headers で Content-Type を差し替えることもできない', async () => {
+		const fetchMock = mockFetch(async () => jsonResponse(201, SELF));
+
+		await authApi.signup(
+			plainRequester,
+			{ email: 'player@example.test', password: 'password123', display_name: 'player' },
+			// @ts-expect-error `headers` も同様。Content-Type を上書きされると
+			// apiFetch は application/json を付けなくなる
+			{ headers: { 'Content-Type': 'text/plain' } },
+		);
+
+		expect(fetchMock.mock.calls[0]![1]!.headers).toMatchObject({
+			'Content-Type': 'application/json',
+		});
+	});
+});
