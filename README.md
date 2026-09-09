@@ -18,7 +18,7 @@ is exactly the kind of fact that goes stale (see [`docs/drafts/141-docs-restruct
 for why). Check:
 
 - [Issues](https://github.com/samatsum/ft_Transcendence/issues) and the
-  [Project board](https://github.com/users/samatsum/projects/1) for what's open/closed and in progress
+  [Project board](https://github.com/users/samatsum/projects/1/views/4) for what's open/closed and in progress
 - [`docs/ai/backlog.md`](./docs/ai/backlog.md) for acceptance criteria, dependencies, and the
   decision log (this file doesn't restate current % done, only *why* something was built the way it was)
 
