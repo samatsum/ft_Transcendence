@@ -48,10 +48,9 @@ export default function RoomCreatePage() {
 	// WebSocket には「送信に対する返事」が無く、部屋ができたことは全員へ配られる
 	// room_state で分かるため
 	useEffect(() => {
-		if (room) navigate('/lobby/matching', { replace: true });
 		if (room) {
 			setSubmitting(false);
-			navigate('/lobby', { replace: true });
+			navigate('/lobby/matching', { replace: true });
 		}
 	}, [room, navigate]);
 

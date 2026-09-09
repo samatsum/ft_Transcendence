@@ -1,72 +1,50 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { listMapsResponseSchema } from '@ft/shared';
-
 import { Button } from '../components/Button.js';
 import { Card } from '../components/Card.js';
 import { useAuth } from '../contexts/AuthContext.js';
 import { useLobby } from '../contexts/LobbyContext.js';
+import { GameCustomizationFields } from '../lobby/GameCustomizationFields.js';
+import { useRoomRulesDraft } from '../lobby/useRoomRulesDraft.js';
 
-// F-05 の待機画面。部屋ができてから試合が始まるまでの間、ここに全員が滞在する。
-// マップと先取点はサーバの設計上「部屋を作った後」に変えるものなので、この画面が持つ。
-
-// 型名は shared 側で export されていないので、スキーマから起こす
-type MapEntry = (typeof listMapsResponseSchema)['_output'][number];
-
-const RSP_SCORES = [3, 5, 7, 10, 15, 21];
+// F-05 の待機画面。部屋ができてから試合が始まるまでの間、全員がここに滞在する。
+// 設定フォームはロビーの「参加中の部屋」と同じ部品・同じ状態遷移を使う。
 
 export default function MatchingPage() {
-	const { room, matchFound, error, send, clearMatchFound, clearRoom } = useLobby();
+	const { status, room, error, send, clearRoom } = useLobby();
 	const { user } = useAuth();
 	const navigate = useNavigate();
-	const [maps, setMaps] = useState<MapEntry[]>([]);
+	const rules = useRoomRulesDraft();
 
 	const isHost = room != null && user != null && room.host_id === user.id;
 	const filled = room?.seats.filter((s) => s.user_id !== null || s.is_ai).length ?? 0;
 	const total = room?.seats.length ?? 0;
 
+	// この画面を直接開いた（再読み込みした）直後は、まだ room_state が届いていない。
+	// そこで「部屋が無い」と判断するとロビーへ弾いてしまうので、接続が開いてから
+	// 少しだけ待つ。サーバは接続時に在室者へ room_state を送り直す（ws.ts の resendContext）
+	const [settled, setSettled] = useState(false);
+	useEffect(() => {
+		if (status !== 'open') return;
+		const timer = setTimeout(() => setSettled(true), 1000);
+		return () => clearTimeout(timer);
+	}, [status]);
+
 	// 部屋から出た（退室・解散）ならロビーへ戻す
 	useEffect(() => {
-		if (!room) navigate('/lobby', { replace: true });
-	}, [room, navigate]);
+		if (!room && settled) navigate('/lobby', { replace: true });
+	}, [room, settled, navigate]);
 
-	// マッチが成立したら対戦画面へ。room_id はサーバが決める。
-	// 遷移したら matchFound を捨てる。残したままだと、試合後にロビーへ戻った瞬間に
-	// 古い値でまた対戦画面へ弾き返される（レビュー指摘 #157）
-	useEffect(() => {
-		if (!matchFound) return;
-		const roomId = matchFound.room_id;
-		clearMatchFound();
-		navigate(`/game/${roomId}`, { replace: true });
-	}, [matchFound, clearMatchFound, navigate]);
+	// マッチ成立時の遷移は LobbyScope の MatchFoundRedirect が受け持つ。
+	// ロビーに戻っている人も試合へ入れるようにするため、この画面には置かない
 
-	// 選べるマップはモードごとに違うので、部屋のモードで問い合わせる。
-	// room 全体を依存にすると席が動くたびに取り直すので、モードだけを見る
-	const mode = room?.mode;
-	useEffect(() => {
-		if (!mode) return;
-		const controller = new AbortController();
-		fetch(`/api/maps?mode=${mode}`, { credentials: 'include', signal: controller.signal })
-			.then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
-			.then((body: unknown) => {
-				const parsed = listMapsResponseSchema.safeParse(body);
-				if (parsed.success) setMaps(parsed.data);
-			})
-			.catch(() => undefined);
-		return () => controller.abort();
-	}, [mode]);
-
-	if (!room) return null;
-
-	// ルール変更はホストだけが送れる（サーバも not_host で弾く）
-	function updateRules(patch: { map?: string; target_score?: number }) {
-		if (!room) return;
-		const next =
-			room.mode === 'rsp'
-				? { map: patch.map ?? room.rules.map, target_score: patch.target_score ?? room.rules.target_score }
-				: { map: patch.map ?? room.rules.map };
-		send({ t: 'room_update_rules', d: next });
+	if (!room) {
+		return (
+			<p className="text-body text-fg-muted px-4 py-10">
+				{settled ? '部屋が見つかりません。ロビーへ戻ります…' : '部屋の情報を読み込んでいます…'}
+			</p>
+		);
 	}
 
 	const starting = room.state === 'starting';
@@ -113,53 +91,37 @@ export default function MatchingPage() {
 			<Card className="flex flex-col gap-4">
 				<div className="flex items-baseline justify-between gap-2">
 					<h2 className="text-heading-sm">試合の設定</h2>
-					{!isHost && (
-						<p className="text-caption text-fg-muted">ホストだけが変更できます</p>
-					)}
+					{!isHost && <p className="text-caption text-fg-muted">ホストだけが変更できます</p>}
 				</div>
-
-				<div className="flex flex-col gap-2">
-					<p className="text-label">マップ</p>
-					<div className="grid gap-2 sm:grid-cols-2">
-						{maps.map((m) => {
-							const selected = room.rules.map === m.id;
-							return (
-								<button
-									key={m.id}
-									type="button"
-									disabled={!isHost || starting}
-									onClick={() => updateRules({ map: m.id })}
-									className={`rounded-lg border p-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
-										selected
-											? 'border-sky-500 bg-sky-500/10'
-											: 'border-slate-700 bg-slate-800 enabled:hover:border-slate-600'
-									}`}
-								>
-									<span className="text-label">{m.name}</span>
-									<span className="text-caption text-fg-muted mt-1 block">{m.description}</span>
-								</button>
-							);
-						})}
+				<GameCustomizationFields
+					mode={room.mode}
+					maps={rules.maps}
+					mapChoice={rules.mapChoice || room.rules.map}
+					targetScore={rules.targetScore}
+					onMapChange={rules.onMapChange}
+					onTargetScoreChange={rules.onTargetScoreChange}
+					disabled={rules.fieldsDisabled || starting}
+					readOnly={rules.readOnly}
+					mapHint={rules.mapHint}
+					targetScoreError={
+						rules.settingsError?.startsWith('先取点') ? rules.settingsError : null
+					}
+				/>
+				{rules.canEditRules && (
+					<div>
+						<Button
+							variant="secondary"
+							disabled={rules.submitDisabled || starting}
+							onClick={rules.updateRules}
+						>
+							{rules.updatingRules ? '更新中…' : 'ゲーム設定を更新する'}
+						</Button>
 					</div>
-				</div>
-
-				{/* 先取点は RSP だけの概念。FPS は収集レースなので存在しない */}
-				{room.mode === 'rsp' && (
-					<div className="flex flex-col gap-2">
-						<p className="text-label">先取点</p>
-						<div className="flex flex-wrap gap-2">
-							{RSP_SCORES.map((score) => (
-								<Button
-									key={score}
-									variant={room.rules.target_score === score ? 'primary' : 'ghost'}
-									disabled={!isHost || starting}
-									onClick={() => updateRules({ target_score: score })}
-								>
-									{score}
-								</Button>
-							))}
-						</div>
-					</div>
+				)}
+				{rules.settingsError && !rules.settingsError.startsWith('先取点') && (
+					<p className="text-body text-rose-400" role="alert">
+						{rules.settingsError}
+					</p>
 				)}
 			</Card>
 
