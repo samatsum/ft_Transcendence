@@ -273,6 +273,10 @@ function checkQueueAndClaims(): void {
 	timeoutQueue.fillStart(30);
 	assert.equal(timeoutPlans.length, 1);
 	assert.deepEqual(timeoutPlans[0]?.source, { kind: 'quick', reason: 'timeout' });
+	assert.deepEqual(timeoutPlans[0]?.rules, {
+		map: 'fps_duel',
+		ai_speed: 'normal',
+	});
 
 	// rollback は接続中だけ元FIFOへ。切断済みuserと古いtokenは戻らない
 	const rollbackClock = new FakeClock();
@@ -326,6 +330,18 @@ function checkLobbyRooms(): void {
 	const secondCode = second.ok ? second.value : '';
 	assert.equal(firstCode, 'AAAAAA');
 	assert.equal(secondCode, 'BBBBBB');
+	assert.deepEqual(rooms.getState(secondCode)?.rules, {
+		map: 'fps_duel',
+		ai_speed: 'normal',
+	});
+	assert.equal(
+		rooms.updateRules(5, { map: 'fps_duel', ai_speed: 'fast' }).ok,
+		true,
+	);
+	assert.deepEqual(rooms.getState(secondCode)?.rules, {
+		map: 'fps_duel',
+		ai_speed: 'fast',
+	});
 	rooms.leave(5);
 
 	for (const id of [2, 3, 4]) {
