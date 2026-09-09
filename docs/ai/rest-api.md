@@ -16,7 +16,7 @@ as the source of truth for the REST API contract consumed by the frontend. The f
 (F-01 scaffold, F-02 fetch wrapper) that consumes this contract is **done** (implemented solo by samatsum);
 F-03–F-05 (auth screens, layout, lobby) are not started. This REST work and the original frontend-foundation plan were assigned to torinoue and mamiyaza
 respectively under the original 4-person team (dissolved 2026-08-05); B-02 and B-03 were later
-completed solo by samatsum during the single-contributor period. Team operation started 2026-08-30
+completed solo by samatsum during the single-contributor period. Team operation kicked off 2026-08-08
 under a different roster — for current assignment, see
 [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html).
 **Principle**: This document contains no implementation code.

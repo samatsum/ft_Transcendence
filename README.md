@@ -27,27 +27,28 @@ Current team roster and roles: [`docs/human/はじめに/チーム体制.html`](
 
 ## Team
 
-ft_transcendence is a 4–5-person group project per the subject (Chapter II). **As of 2026-08-30 the
+ft_transcendence is a 4–5-person group project per the subject (Chapter II). **As of 2026-08-23 the
 5 submitted members** (up from a single active contributor through 2026-08-09) meet the subject's
 person-count requirement (see
 [`docs/human/はじめに/チーム体制.html`](./docs/human/はじめに/チーム体制.html) for the full writeup,
-including 2 additional supporters not counted here — see below).
+including 1 additional supporter not counted here — see below).
 
 | Required role (subject II.1.1) | Current holder | Notes |
 |---|---|---|
-| Technical Lead / Architect | **ttsubo** (GitHub: `cacapon`) | Designed and built the engine (`codes/`, `web/`); handed the TL role here 2026-08-30 |
+| Technical Lead / Architect | **ttsubo** (GitHub: `cacapon`) | Designed and built the engine (`codes/`, `web/`); handed the TL role here 2026-08-23 |
 | Project Manager / Scrum Master | **torinoue** (GitHub: `tototec1234`) | Rejoined 2026-08-28 under a new GitHub account after the earlier team dissolution |
 | Product Owner | **kmitsuki** (GitHub: `mitsukio-o`) | |
 | Developer | **kkurose** (GitHub: `kkur0z`), **tvaroux** (GitHub: `tomtomvx`) | |
 
-The 5 people above are the submitted team members (the subject caps submission at 5). Two more people
-support the project without being part of that submitted group: **samatsum** (GitHub: `samatsum`,
-stepped back from core membership 2026-08-30; previously sole TL/PM/PO/Developer through 2026-08-09)
-and **mamiyaza** (no GitHub account, no commits). Neither is counted toward the person-count
-requirement above, and neither appears in the project's opening declaration for that reason.
+The 5 people above are the submitted team members (the subject caps submission at 5). One more person
+supports the project without being part of that submitted group: **samatsum** (GitHub: `samatsum`,
+stepped back from core membership 2026-08-23; previously sole TL/PM/PO/Developer through 2026-08-09).
+They are not counted toward the person-count requirement above, and do not appear in the project's
+opening declaration for that reason.
 
 Historical contributors (per git history, no longer active): **hminemur** (frontend game-screen
-planning). Their planned ownership is recorded in
+planning) and **mamiyaza** (PO / frontend foundation under the original 4-person team; confirmed by
+DM on 2026-08-23 that they had left). Their planned ownership is recorded in
 [`docs/ai/architecture.md`](./docs/ai/architecture.md) §6 as a historical record, not a current
 assignment.
 
