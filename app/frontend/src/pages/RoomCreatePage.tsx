@@ -6,10 +6,16 @@ import type { LobbyMode } from '@ft/shared';
 import { Button } from '../components/Button.js';
 import { Card } from '../components/Card.js';
 import { useLobby } from '../contexts/LobbyContext.js';
+import { GameCustomizationFields } from '../lobby/GameCustomizationFields.js';
+import {
+	DEFAULT_MAP_CHOICE,
+	DEFAULT_TARGET_SCORE,
+	buildRoomCreateMessage,
+} from '../lobby/gameCustomization.js';
+import { useGameMaps } from '../lobby/useGameMaps.js';
 
 // F-05 の部屋作成画面。サーバの room_create は { mode, rules? } しか受け取らないため、
-// この画面で選ぶのはゲームモードだけ。マップと先取点は部屋を作ったあとに
-// room_update_rules で変更する設計なので、待機画面（F-05 の残り）側に置く。
+// #139 のマップ・先取点設定を同じメッセージへ含める
 
 const MODES: { value: LobbyMode; title: string; players: string; summary: string }[] = [
 	{
@@ -30,15 +36,22 @@ const MODES: { value: LobbyMode; title: string; players: string; summary: string
 
 export default function RoomCreatePage() {
 	const navigate = useNavigate();
-	const { status, room, error, send } = useLobby();
+	const { status, room, error, send, clearError } = useLobby();
 	const [mode, setMode] = useState<LobbyMode>('rsp');
+	const { maps, status: mapsStatus } = useGameMaps(mode);
+	const [mapChoice, setMapChoice] = useState(DEFAULT_MAP_CHOICE);
+	const [targetScore, setTargetScore] = useState(DEFAULT_TARGET_SCORE);
+	const [settingsError, setSettingsError] = useState<string | null>(null);
 	const [submitting, setSubmitting] = useState(false);
 
 	// 遷移は送信の成否ではなく、サーバから room_state が届いた時点で行う。
 	// WebSocket には「送信に対する返事」が無く、部屋ができたことは全員へ配られる
 	// room_state で分かるため
 	useEffect(() => {
-		if (room) navigate('/lobby', { replace: true });
+		if (room) {
+			setSubmitting(false);
+			navigate('/lobby/matching', { replace: true });
+		}
 	}, [room, navigate]);
 
 	// エラーが返ってきたら送信中の表示を解く（サーバは error メッセージで理由を返す）
@@ -47,9 +60,33 @@ export default function RoomCreatePage() {
 	}, [error]);
 
 	function handleCreate() {
+		const result = buildRoomCreateMessage({ mode, mapChoice, targetScore, maps });
+		if (!result.success) {
+			setSettingsError(result.error);
+			return;
+		}
+		setSettingsError(null);
+		clearError();
 		setSubmitting(true);
-		if (!send({ t: 'room_create', d: { mode } })) setSubmitting(false);
+		if (!send(result.message)) setSubmitting(false);
 	}
+
+	function handleModeChange(nextMode: LobbyMode) {
+		setMode(nextMode);
+		setMapChoice(DEFAULT_MAP_CHOICE);
+		setTargetScore(DEFAULT_TARGET_SCORE);
+		setSettingsError(null);
+	}
+
+	const mapsUnavailable = mapsStatus !== 'ready' || maps.length === 0;
+	const mapHint =
+		mapsStatus === 'loading'
+			? 'マップ一覧を読み込んでいます。'
+			: mapsStatus === 'error'
+				? 'マップ一覧を取得できませんでした。'
+				: maps.length === 0
+					? 'このモードで利用できるマップがありません。'
+					: '指定しない場合はサーバー既定、ランダムは作成時に1つ抽選します。';
 
 	return (
 		<div className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-10">
@@ -80,7 +117,7 @@ export default function RoomCreatePage() {
 									name="mode"
 									value={m.value}
 									checked={selected}
-									onChange={() => setMode(m.value)}
+									onChange={() => handleModeChange(m.value)}
 									className="sr-only"
 								/>
 								<div className="flex items-baseline justify-between gap-2">
@@ -94,8 +131,30 @@ export default function RoomCreatePage() {
 				</div>
 			</fieldset>
 
+			<GameCustomizationFields
+				mode={mode}
+				maps={maps}
+				mapChoice={mapChoice}
+				targetScore={targetScore}
+				onMapChange={(choice) => {
+					setMapChoice(choice);
+					setSettingsError(null);
+				}}
+				onTargetScoreChange={(score) => {
+					setTargetScore(score);
+					setSettingsError(null);
+				}}
+				disabled={submitting || mapsUnavailable}
+				allowDefault
+				mapHint={mapHint}
+				targetScoreError={settingsError?.startsWith('先取点') ? settingsError : null}
+			/>
+
 			<div className="flex flex-wrap gap-3">
-				<Button onClick={handleCreate} disabled={submitting || status !== 'open'}>
+				<Button
+					onClick={handleCreate}
+					disabled={submitting || status !== 'open' || mapsUnavailable}
+				>
 					{submitting ? '作成中…' : 'この設定で部屋を作る'}
 				</Button>
 				<Button variant="ghost" onClick={() => navigate('/lobby')}>
@@ -108,10 +167,15 @@ export default function RoomCreatePage() {
 					部屋を作れませんでした（{error.code}）
 				</p>
 			)}
+			{settingsError && !settingsError.startsWith('先取点') && (
+				<p className="text-body text-rose-400" role="alert">
+					{settingsError}
+				</p>
+			)}
 
 			<Card>
 				<p className="text-caption text-fg-muted">
-					マップと先取点は、部屋を作ったあとの待機画面でホストが変更できます。
+					部屋を作った後も、ロビーでホストがゲーム設定を変更できます。
 				</p>
 			</Card>
 		</div>

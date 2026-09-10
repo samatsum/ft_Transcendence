@@ -17,6 +17,7 @@
     "dev": "npm run dev --workspace @ft/backend & npm run dev --workspace @ft/frontend",
     "dev:backend": "npm run dev --workspace @ft/backend",
     "dev:frontend": "npm run dev --workspace @ft/frontend",
+    "dev:room": "npm run dev:room --workspace @ft/backend",
     "check:lobby": "npm run check:lobby --workspace @ft/backend",
     "check:http": "npm run check:http --workspace @ft/backend",
     "build": "npm run build --workspace @ft/shared && npm run build --workspace @ft/backend && npm run build --workspace @ft/frontend",
