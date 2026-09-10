@@ -80,10 +80,15 @@ export function useGameSocket(roomId: string): UseGameSocketResult {
 	const [closeCode, setCloseCode] = useState<number | null>(null);
 	const wsRef = useRef<WebSocket | null>(null);
 	const attemptRef = useRef(0);
-	const teardownRef = useRef(false);
 
 	useEffect(() => {
-		teardownRef.current = false;
+		// StrictMode（開発時）は effect を「実行 → 破棄 → 再実行」する。破棄フラグを
+		// コンポーネント共有の ref に置くと、再実行が false に戻した後で中断済み接続の
+		// onclose（CONNECTING 中の close は 1006 = 再接続対象）が走り、破棄済みの
+		// クロージャから再接続が始まる。結果、同一ユーザー・同一ルームの接続が2本
+		// 同時に開き、サーバが古い方を close 4004 で置換する（② §1）。
+		// LobbyContext と同じく、実行ごとのローカル変数にする
+		let cancelled = false;
 		// CodeRabbit 指摘#4: roomId 変更で新規セッション扱いにするため
 		// backoff counter をリセット
 		attemptRef.current = 0;
@@ -97,6 +102,7 @@ export function useGameSocket(roomId: string): UseGameSocketResult {
 		let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
 		function connect() {
+			if (cancelled) return;
 			// 再接続時にも「切断されました」バナーが残らないよう、接続開始で closeCode を戻す
 			setCloseCode(null);
 			setStatus(attemptRef.current === 0 ? 'connecting' : 'reconnecting');
@@ -104,6 +110,7 @@ export function useGameSocket(roomId: string): UseGameSocketResult {
 			wsRef.current = ws;
 
 			ws.onopen = () => {
+				if (cancelled || wsRef.current !== ws) return;
 				attemptRef.current = 0;
 				setStatus('open');
 				// ② §5-A: join のペイロードは Cookie 認証と participant 登録で本人確定するので空
@@ -111,6 +118,7 @@ export function useGameSocket(roomId: string): UseGameSocketResult {
 			};
 
 			ws.onmessage = (ev: MessageEvent<string>) => {
+				if (cancelled || wsRef.current !== ws) return;
 				let raw: unknown;
 				try {
 					raw = JSON.parse(ev.data);
@@ -163,9 +171,13 @@ export function useGameSocket(roomId: string): UseGameSocketResult {
 			};
 
 			ws.onclose = (ev: CloseEvent) => {
+				// 置換や遅れて届いた close が、張り直した新しい接続の状態を潰さないようにする。
+				// `cancelled` は effect ごと破棄された場合、`wsRef.current !== ws` は
+				// 同じ effect の中で既に次の接続へ移っている場合を弾く
+				if (cancelled || wsRef.current !== ws) return;
 				setCloseCode(ev.code);
 				wsRef.current = null;
-				if (teardownRef.current || !shouldReconnect(ev.code)) {
+				if (!shouldReconnect(ev.code)) {
 					setStatus('closed');
 					return;
 				}
@@ -185,7 +197,7 @@ export function useGameSocket(roomId: string): UseGameSocketResult {
 		connect();
 
 		return () => {
-			teardownRef.current = true;
+			cancelled = true;
 			if (reconnectTimer) clearTimeout(reconnectTimer);
 			const ws = wsRef.current;
 			wsRef.current = null;

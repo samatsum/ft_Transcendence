@@ -1,12 +1,17 @@
 // ゲーム入力の React フック（GV-06 / ④ §3.3 の入力キャプチャ契約）。
 //
 // - Canvas クリックでキャプチャ開始、Esc で解除（解除中は移動入力を送らない）。
+//   Esc は #113 で「退出ポップアップを開く」も兼ねるようになった（`onRequestExit`）。
+//   本物の Pointer Lock API は使っていない（capturedRef は自前のフラグ）ので、
+//   ブラウザに Esc を予約されておらず、この割り当ては自由に決められる。
 // - keydown/keyup は held ビットマスクを書き換えるだけ（穴5 の決定）。
 // - setInterval 30Hz で最新 held + localYaw を全量送信（② §5-A: 状態駆動）。
 // - ArrowLeft/Right は setInterval 側で localYaw に積分して即時反映
 //   （② §5-C の「自分の yaw のみローカル優先」＝唯一の予測）。
 // - タブ非表示/blur は全キー解放（押しっぱなし事故防止）。localYaw は保持。
 // - spectator は input を送らない（サーバも黙って破棄するが二重防御）。
+// - captureAllowed=false ではキャプチャを開始させない（④ D-13 の閲覧のみモード）。
+//   spectator と違い Esc は生かす＝どの画面幅でも退出できる。
 
 import { useCallback, useEffect, useRef, type RefObject } from 'react';
 import type { GameClientMessage } from '@ft/shared';
@@ -37,6 +42,21 @@ export interface UseGameInputOptions {
 	spectator: boolean;
 	/** true なら送信ループを起動する（welcome 受信後・playing 状態など） */
 	enabled: boolean;
+	/**
+	 * Esc が押されたときに呼ばれる（#113 退出ポップアップを開く）。
+	 * **キャプチャの有無に関わらず呼ばれる** — キャプチャ前でも退出できないと
+	 * キーボードだけで詰む（④ §6-7）。
+	 */
+	onRequestExit?: () => void;
+	/**
+	 * false ならキャプチャを開始させない（④ D-13 のモバイル幅＝閲覧のみモード）。
+	 * 既に掴んでいた場合は解除する。
+	 *
+	 * **Esc だけは塞がない。** 退出はどの画面幅でもできる必要がある。
+	 * `spectator` を流用しないのもこれが理由で、あちらはキーイベントの登録ごと
+	 * 落とすため、退出の経路まで一緒に消えてしまう。
+	 */
+	captureAllowed?: boolean;
 }
 
 export interface UseGameInputResult {
@@ -53,6 +73,8 @@ export function useGameInput({
 	send,
 	spectator,
 	enabled,
+	onRequestExit,
+	captureAllowed = true,
 }: UseGameInputOptions): UseGameInputResult {
 	const heldMvRef = useRef<number>(0);
 	const rotateRef = useRef<RotateHeld>({ left: false, right: false });
@@ -60,6 +82,13 @@ export function useGameInput({
 	const seqRef = useRef<number>(0);
 	const capturedRef = useRef<boolean>(false);
 	const captureListenerRef = useRef<((c: boolean) => void) | null>(null);
+	// onRequestExit を ref 越しに持つ。直接 deps に入れると、呼び出し側が
+	// useCallback を外した瞬間に毎レンダでキーイベントを貼り直すことになる
+	// （setOnCaptureChange を安定化させたのと同じ理由）
+	const exitRequestRef = useRef<(() => void) | null>(null);
+	useEffect(() => {
+		exitRequestRef.current = onRequestExit ?? null;
+	}, [onRequestExit]);
 
 	// setInterval 送信ループ（穴5: 状態駆動・30Hz 全量送信）
 	useEffect(() => {
@@ -99,11 +128,25 @@ export function useGameInput({
 			if (!next) clearAll();
 			captureListenerRef.current?.(next);
 		}
+		// 幅が狭くなる等で許可が消えたら掴んだままにしない（④ D-13）
+		if (!captureAllowed) setCaptured(false);
 		function onKeyDown(ev: KeyboardEvent) {
+			// #113: Esc は「キャプチャ解除」と「退出ポップアップを開く」を兼ねる。
+			// **キャプチャ判定より前に見る** — キャプチャしていない状態でも退出できないと、
+			// マウスを使わない利用者が GameView から出られなくなる（④ §6-7）。
+			// ポップアップ表示中の2度目の Esc は Modal 側のハンドラが閉じる方に効き、
+			// ここは open 状態を再セットするだけなので二重発火しても無害。
+			if (ev.code === 'Escape') {
+				ev.preventDefault();
+				setCaptured(false);
+				exitRequestRef.current?.();
+				return;
+			}
 			if (!capturedRef.current) {
 				// CodeRabbit 指摘: キーボードのみ操作の要件（④ §6-7）。
 				// canvas に focus 済みの状態で Enter / Space を押したら capture 開始
 				if (
+					captureAllowed &&
 					(ev.code === 'Enter' || ev.code === 'Space') &&
 					document.activeElement === canvasRef.current
 				) {
@@ -125,9 +168,6 @@ export function useGameInput({
 			} else if (ev.code === 'ArrowUp' || ev.code === 'ArrowDown') {
 				// キャプチャ中のスクロール抑止（矢印は視点回転のみ、上下は使わない）
 				ev.preventDefault();
-			} else if (ev.code === 'Escape') {
-				ev.preventDefault();
-				setCaptured(false);
 			}
 		}
 		function onKeyUp(ev: KeyboardEvent) {
@@ -145,6 +185,7 @@ export function useGameInput({
 			}
 		}
 		function onClick() {
+			if (!captureAllowed) return;
 			setCaptured(true);
 			// canvas に focus を移して window key handler に届くようにする
 			canvasRef.current?.focus();
@@ -168,7 +209,7 @@ export function useGameInput({
 			document.removeEventListener('visibilitychange', onVisibilityChange);
 			window.removeEventListener('blur', onBlur);
 		};
-	}, [canvasRef, spectator]);
+	}, [canvasRef, spectator, captureAllowed]);
 
 	// CodeRabbit 指摘: identity を安定化させて GameView 側の useEffect が
 	// 再レンダごとに再セットアップされないようにする
