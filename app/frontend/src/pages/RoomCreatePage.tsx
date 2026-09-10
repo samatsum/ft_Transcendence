@@ -50,7 +50,7 @@ export default function RoomCreatePage() {
 	useEffect(() => {
 		if (room) {
 			setSubmitting(false);
-			navigate('/lobby', { replace: true });
+			navigate('/lobby/matching', { replace: true });
 		}
 	}, [room, navigate]);
 
