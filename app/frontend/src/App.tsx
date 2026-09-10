@@ -1,16 +1,18 @@
-import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Navigate, Outlet, Route, Routes, useNavigate } from 'react-router-dom';
 
 import { Layout } from './components/Layout.js';
 import { RedirectIfAuth } from './components/RedirectIfAuth.js';
 import { RequireAuth } from './components/RequireAuth.js';
 import { useAuth } from './contexts/AuthContext.js';
 import { DevSession } from './contexts/DevSession.js';
-import { LobbyProvider } from './contexts/LobbyContext.js';
+import { LobbyProvider, useLobby } from './contexts/LobbyContext.js';
 
 import DesignSystemPage from './pages/DesignSystemPage.js';
 import GameView from './pages/GameView.js';
 import HowToPlayPage from './pages/HowToPlayPage.js';
 import LobbyPage from './pages/LobbyPage.js';
+import MatchingPage from './pages/MatchingPage.js';
 import RoomCreatePage from './pages/RoomCreatePage.js';
 import RoomJoinPage from './pages/RoomJoinPage.js';
 import LoginPage from './pages/LoginPage.js';
@@ -42,9 +44,27 @@ function RootRedirect() {
 // ロビーWS を共有する枝。/lobby 配下と対戦画面が1本の接続を使う。
 // Provider を各ページの element に置くと、画面を移るたびに unmount されて接続が切れる。
 // 対戦画面まで含めるのは、試合結果(match_result)がゲームWSではなくロビーWSに届くため
+// マッチが成立したら、ロビーのどの画面にいても対戦画面へ送る。待機画面だけで受けると、
+// ロビーへ戻っている人が試合に入れないまま取り残される。
+// 遷移前に捨てるのは、試合後にロビーへ戻った瞬間に古い値でまた弾き返されないため（#157）
+function MatchFoundRedirect() {
+	const { matchFound, clearMatchFound } = useLobby();
+	const navigate = useNavigate();
+
+	useEffect(() => {
+		if (!matchFound) return;
+		const roomId = matchFound.room_id;
+		clearMatchFound();
+		navigate(`/game/${roomId}`, { replace: true });
+	}, [matchFound, clearMatchFound, navigate]);
+
+	return null;
+}
+
 function LobbyScope() {
 	const scoped = (
 		<LobbyProvider>
+			<MatchFoundRedirect />
 			<Outlet />
 		</LobbyProvider>
 	);
@@ -98,6 +118,7 @@ export default function App() {
 					<Route path="/lobby" element={<LobbyPage />} />
 					<Route path="/lobby/create" element={<RoomCreatePage />} />
 					<Route path="/lobby/join" element={<RoomJoinPage />} />
+					<Route path="/lobby/matching" element={<MatchingPage />} />
 					<Route path="/lobby/how-to" element={<HowToPlayPage />} />
 				</Route>
 				{/* Layout 外（全画面 Canvas。④ §3.3「Header/Footer は非表示」） */}

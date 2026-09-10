@@ -1,20 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-import type { FpsAiSpeed } from '@ft/shared';
 
 import { Button } from '../components/Button.js';
 import { Card } from '../components/Card.js';
 import { useAuth } from '../contexts/AuthContext.js';
 import { useLobby } from '../contexts/LobbyContext.js';
 import { GameCustomizationFields } from '../lobby/GameCustomizationFields.js';
-import {
-	DEFAULT_AI_SPEED,
-	DEFAULT_TARGET_SCORE,
-	buildRoomUpdateRulesMessage,
-	canEditRoomRules,
-} from '../lobby/gameCustomization.js';
-import { useGameMaps } from '../lobby/useGameMaps.js';
+import { useRoomRulesDraft } from '../lobby/useRoomRulesDraft.js';
 
 // ロビーの入口と参加中ルームの状態を1本の共有WS接続で表示する
 
@@ -27,91 +18,10 @@ const STATUS_LABEL: Record<string, { text: string; cls: string }> = {
 
 export default function LobbyPage() {
 	const { user } = useAuth();
-	const { status, room, error, send, clearError, clearRoom } = useLobby();
+	const { status, room, error, send, clearRoom } = useLobby();
 	const navigate = useNavigate();
-	const { maps, status: mapsStatus } = useGameMaps(room?.mode ?? null);
-	const [mapChoice, setMapChoice] = useState('');
-	const [targetScore, setTargetScore] = useState(DEFAULT_TARGET_SCORE);
-	const [aiSpeed, setAiSpeed] = useState<FpsAiSpeed>(DEFAULT_AI_SPEED);
-	const [settingsError, setSettingsError] = useState<string | null>(null);
-	const [settingsDirty, setSettingsDirty] = useState(false);
-	const [updatingRules, setUpdatingRules] = useState(false);
-	const pendingRoomRef = useRef<typeof room>(null);
-
-	useEffect(() => {
-		if (!room) {
-			setSettingsDirty(false);
-			setUpdatingRules(false);
-			pendingRoomRef.current = null;
-			return;
-		}
-		const receivedUpdate = pendingRoomRef.current && room !== pendingRoomRef.current;
-		if (!settingsDirty || receivedUpdate) {
-			setMapChoice(room.rules.map);
-			setTargetScore(
-				room.mode === 'rsp' ? String(room.rules.target_score) : DEFAULT_TARGET_SCORE,
-			);
-			setAiSpeed(room.mode === 'fps' ? room.rules.ai_speed : DEFAULT_AI_SPEED);
-			setSettingsError(null);
-			setSettingsDirty(false);
-		}
-		if (receivedUpdate) {
-			setUpdatingRules(false);
-			pendingRoomRef.current = null;
-		}
-	}, [room, settingsDirty]);
-
-	useEffect(() => {
-		if (!error || !pendingRoomRef.current) return;
-		if (room) {
-			setMapChoice(room.rules.map);
-			setTargetScore(
-				room.mode === 'rsp' ? String(room.rules.target_score) : DEFAULT_TARGET_SCORE,
-			);
-			setAiSpeed(room.mode === 'fps' ? room.rules.ai_speed : DEFAULT_AI_SPEED);
-			setSettingsDirty(false);
-		}
-		setUpdatingRules(false);
-		pendingRoomRef.current = null;
-	}, [error, room]);
-
-	const isHost = Boolean(room && user && room.host_id === user.id);
-	const canEditRules = canEditRoomRules(room, user?.id);
-	const mapsUnavailable = mapsStatus !== 'ready' || maps.length === 0;
-	const mapHint =
-		mapsStatus === 'loading'
-			? 'マップ一覧を読み込んでいます。'
-			: mapsStatus === 'error'
-				? 'マップ一覧を取得できませんでした。'
-				: maps.length === 0
-					? 'このモードで利用できるマップがありません。'
-					: isHost
-						? 'ランダムは更新時に1つ抽選します。'
-						: undefined;
-
-	function handleUpdateRules() {
-		if (!room || !canEditRules) return;
-		const result = buildRoomUpdateRulesMessage({
-			mode: room.mode,
-			mapChoice,
-			targetScore,
-			aiSpeed,
-			maps,
-		});
-		if (!result.success) {
-			setSettingsError(result.error);
-			return;
-		}
-		setSettingsError(null);
-		clearError();
-		setUpdatingRules(true);
-		pendingRoomRef.current = room;
-		if (!send(result.message)) {
-			setUpdatingRules(false);
-			pendingRoomRef.current = null;
-			setSettingsError('ロビーへ接続されていません。');
-		}
-	}
+	// 設定フォームの状態は待機画面（#111）と共通なのでフックへ寄せた
+	const rules = useRoomRulesDraft();
 
 	return (
 		<div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-10">
@@ -199,48 +109,34 @@ export default function LobbyPage() {
 					<div className="rounded-md border border-slate-700 bg-slate-900/40 p-4">
 						<GameCustomizationFields
 							mode={room.mode}
-							maps={maps}
-							mapChoice={mapChoice || room.rules.map}
-							targetScore={targetScore}
-							aiSpeed={aiSpeed}
-							onMapChange={(choice) => {
-								setMapChoice(choice);
-								setSettingsDirty(true);
-								setSettingsError(null);
-							}}
-							onTargetScoreChange={(score) => {
-								setTargetScore(score);
-								setSettingsDirty(true);
-								setSettingsError(null);
-							}}
-							onAiSpeedChange={(speed) => {
-								setAiSpeed(speed);
-								setSettingsDirty(true);
-								setSettingsError(null);
-							}}
-							disabled={updatingRules || status !== 'open' || mapsUnavailable}
-							readOnly={!canEditRules || mapsUnavailable}
-							mapHint={mapHint}
+							maps={rules.maps}
+							mapChoice={rules.mapChoice || room.rules.map}
+							targetScore={rules.targetScore}
+							aiSpeed={rules.aiSpeed}
+							onMapChange={rules.onMapChange}
+							onTargetScoreChange={rules.onTargetScoreChange}
+							onAiSpeedChange={rules.onAiSpeedChange}
+							disabled={rules.fieldsDisabled}
+							readOnly={rules.readOnly}
+							mapHint={rules.mapHint}
 							targetScoreError={
-								settingsError?.startsWith('先取点') ? settingsError : null
+								rules.settingsError?.startsWith('先取点') ? rules.settingsError : null
 							}
 						/>
-						{canEditRules && (
+						{rules.canEditRules && (
 							<div className="mt-4">
 								<Button
 									variant="secondary"
-									disabled={
-										!settingsDirty || updatingRules || status !== 'open' || mapsUnavailable
-									}
-									onClick={handleUpdateRules}
+									disabled={rules.submitDisabled}
+									onClick={rules.updateRules}
 								>
-									{updatingRules ? '更新中…' : 'ゲーム設定を更新する'}
+									{rules.updatingRules ? '更新中…' : 'ゲーム設定を更新する'}
 								</Button>
 							</div>
 						)}
-						{settingsError && !settingsError.startsWith('先取点') && (
+						{rules.settingsError && !rules.settingsError.startsWith('先取点') && (
 							<p className="text-body mt-2 text-rose-400" role="alert">
-								{settingsError}
+								{rules.settingsError}
 							</p>
 						)}
 					</div>
@@ -253,7 +149,8 @@ export default function LobbyPage() {
 							</li>
 						))}
 					</ul>
-					<div>
+					<div className="flex flex-wrap gap-3">
+						<Button onClick={() => navigate('/lobby/matching')}>待機画面へ</Button>
 						{/* サーバは退室の成功時に何も返さない（失敗時だけ error）。
 						    room_state も届かないので、送信できたら画面側で捨てる。
 						    開始処理中は leave が拒否されるため、その間は押させない */}
