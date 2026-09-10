@@ -98,8 +98,10 @@ export default function MatchingPage() {
 					maps={rules.maps}
 					mapChoice={rules.mapChoice || room.rules.map}
 					targetScore={rules.targetScore}
+					aiSpeed={rules.aiSpeed}
 					onMapChange={rules.onMapChange}
 					onTargetScoreChange={rules.onTargetScoreChange}
+					onAiSpeedChange={rules.onAiSpeedChange}
 					disabled={rules.fieldsDisabled || starting}
 					readOnly={rules.readOnly}
 					mapHint={rules.mapHint}

@@ -1,4 +1,4 @@
-import type { LobbyMode } from '@ft/shared';
+import type { FpsAiSpeed, LobbyMode } from '@ft/shared';
 
 import { FormField } from '../components/FormField.js';
 import { Input } from '../components/Input.js';
@@ -13,8 +13,10 @@ interface GameCustomizationFieldsProps {
 	maps: GameMapOption[];
 	mapChoice: string;
 	targetScore: string;
+	aiSpeed: FpsAiSpeed;
 	onMapChange: (mapChoice: string) => void;
 	onTargetScoreChange: (targetScore: string) => void;
+	onAiSpeedChange: (aiSpeed: FpsAiSpeed) => void;
 	disabled?: boolean;
 	readOnly?: boolean;
 	allowDefault?: boolean;
@@ -28,8 +30,10 @@ export function GameCustomizationFields({
 	maps,
 	mapChoice,
 	targetScore,
+	aiSpeed,
 	onMapChange,
 	onTargetScoreChange,
+	onAiSpeedChange,
 	disabled = false,
 	readOnly = false,
 	allowDefault = false,
@@ -41,6 +45,11 @@ export function GameCustomizationFields({
 		mapChoice === RANDOM_MAP_CHOICE
 			? 'ランダム'
 			: selectedMap?.name ?? (mapChoice || 'サーバー既定');
+	const aiSpeedLabel = {
+		slow: '遅い',
+		normal: '標準',
+		fast: '速い',
+	}[aiSpeed];
 
 	if (readOnly) {
 		return (
@@ -57,6 +66,12 @@ export function GameCustomizationFields({
 						<div>
 							<dt className="text-caption text-fg-muted">先取点</dt>
 							<dd className="text-body">{targetScore}点</dd>
+						</div>
+					)}
+					{mode === 'fps' && (
+						<div>
+							<dt className="text-caption text-fg-muted">AI速度</dt>
+							<dd className="text-body">{aiSpeedLabel}</dd>
 						</div>
 					)}
 				</dl>
@@ -102,6 +117,20 @@ export function GameCustomizationFields({
 						onChange={(event) => onTargetScoreChange(event.target.value)}
 						inputMode="numeric"
 					/>
+				</FormField>
+			)}
+
+			{mode === 'fps' && (
+				<FormField label="AI速度" required hint="AIの行動速度を3段階から選択します。">
+					<select
+						value={aiSpeed}
+						onChange={(event) => onAiSpeedChange(event.target.value as FpsAiSpeed)}
+						className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-body text-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+					>
+						<option value="slow">遅い</option>
+						<option value="normal">標準</option>
+						<option value="fast">速い</option>
+					</select>
 				</FormField>
 			)}
 		</fieldset>

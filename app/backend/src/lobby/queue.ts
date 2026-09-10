@@ -295,7 +295,7 @@ export class MatchQueue {
 			rules:
 				mode === 'rsp'
 					? { map: 'rsp', target_score: 10 }
-					: { map: 'fps_duel' },
+					: { map: 'fps_duel', ai_speed: 'normal' },
 			seats,
 			participants: humans.map((entry, slot) => ({ userId: entry.userId, slot })),
 			humanSlots: humans.map((_, slot) => slot),

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import type { LobbyMode } from '@ft/shared';
+import type { FpsAiSpeed, LobbyMode } from '@ft/shared';
 
 import { Button } from '../components/Button.js';
 import { Card } from '../components/Card.js';
@@ -9,6 +9,7 @@ import { useLobby } from '../contexts/LobbyContext.js';
 import { GameCustomizationFields } from '../lobby/GameCustomizationFields.js';
 import {
 	DEFAULT_MAP_CHOICE,
+	DEFAULT_AI_SPEED,
 	DEFAULT_TARGET_SCORE,
 	buildRoomCreateMessage,
 } from '../lobby/gameCustomization.js';
@@ -41,6 +42,7 @@ export default function RoomCreatePage() {
 	const { maps, status: mapsStatus } = useGameMaps(mode);
 	const [mapChoice, setMapChoice] = useState(DEFAULT_MAP_CHOICE);
 	const [targetScore, setTargetScore] = useState(DEFAULT_TARGET_SCORE);
+	const [aiSpeed, setAiSpeed] = useState<FpsAiSpeed>(DEFAULT_AI_SPEED);
 	const [settingsError, setSettingsError] = useState<string | null>(null);
 	const [submitting, setSubmitting] = useState(false);
 
@@ -60,7 +62,7 @@ export default function RoomCreatePage() {
 	}, [error]);
 
 	function handleCreate() {
-		const result = buildRoomCreateMessage({ mode, mapChoice, targetScore, maps });
+		const result = buildRoomCreateMessage({ mode, mapChoice, targetScore, aiSpeed, maps });
 		if (!result.success) {
 			setSettingsError(result.error);
 			return;
@@ -75,6 +77,7 @@ export default function RoomCreatePage() {
 		setMode(nextMode);
 		setMapChoice(DEFAULT_MAP_CHOICE);
 		setTargetScore(DEFAULT_TARGET_SCORE);
+		setAiSpeed(DEFAULT_AI_SPEED);
 		setSettingsError(null);
 	}
 
@@ -136,12 +139,17 @@ export default function RoomCreatePage() {
 				maps={maps}
 				mapChoice={mapChoice}
 				targetScore={targetScore}
+				aiSpeed={aiSpeed}
 				onMapChange={(choice) => {
 					setMapChoice(choice);
 					setSettingsError(null);
 				}}
 				onTargetScoreChange={(score) => {
 					setTargetScore(score);
+					setSettingsError(null);
+				}}
+				onAiSpeedChange={(speed) => {
+					setAiSpeed(speed);
 					setSettingsError(null);
 				}}
 				disabled={submitting || mapsUnavailable}

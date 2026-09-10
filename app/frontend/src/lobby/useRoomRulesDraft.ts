@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 
+import type { FpsAiSpeed } from '@ft/shared';
+
 import { useAuth } from '../contexts/AuthContext.js';
 import { useLobby } from '../contexts/LobbyContext.js';
 import {
+	DEFAULT_AI_SPEED,
 	DEFAULT_TARGET_SCORE,
 	buildRoomUpdateRulesMessage,
 	canEditRoomRules,
@@ -20,6 +23,7 @@ export interface RoomRulesDraft {
 	mapChoice: string;
 	targetScore: string;
 	settingsError: string | null;
+	aiSpeed: FpsAiSpeed;
 	updatingRules: boolean;
 	canEditRules: boolean;
 	maps: GameMapOption[];
@@ -33,6 +37,7 @@ export interface RoomRulesDraft {
 	onMapChange: (choice: string) => void;
 	onTargetScoreChange: (score: string) => void;
 	updateRules: () => void;
+	onAiSpeedChange: (speed: FpsAiSpeed) => void;
 }
 
 export function useRoomRulesDraft(): RoomRulesDraft {
@@ -41,6 +46,7 @@ export function useRoomRulesDraft(): RoomRulesDraft {
 	const { maps, status: mapsStatus } = useGameMaps(room?.mode ?? null);
 	const [mapChoice, setMapChoice] = useState('');
 	const [targetScore, setTargetScore] = useState(DEFAULT_TARGET_SCORE);
+	const [aiSpeed, setAiSpeed] = useState<FpsAiSpeed>(DEFAULT_AI_SPEED);
 	const [settingsError, setSettingsError] = useState<string | null>(null);
 	const [settingsDirty, setSettingsDirty] = useState(false);
 	const [updatingRules, setUpdatingRules] = useState(false);
@@ -59,6 +65,7 @@ export function useRoomRulesDraft(): RoomRulesDraft {
 			setTargetScore(
 				room.mode === 'rsp' ? String(room.rules.target_score) : DEFAULT_TARGET_SCORE,
 			);
+			setAiSpeed(room.mode === 'fps' ? room.rules.ai_speed : DEFAULT_AI_SPEED);
 			setSettingsError(null);
 			setSettingsDirty(false);
 		}
@@ -75,6 +82,7 @@ export function useRoomRulesDraft(): RoomRulesDraft {
 			setTargetScore(
 				room.mode === 'rsp' ? String(room.rules.target_score) : DEFAULT_TARGET_SCORE,
 			);
+			setAiSpeed(room.mode === 'fps' ? room.rules.ai_speed : DEFAULT_AI_SPEED);
 			setSettingsDirty(false);
 		}
 		setUpdatingRules(false);
@@ -101,6 +109,7 @@ export function useRoomRulesDraft(): RoomRulesDraft {
 			mode: room.mode,
 			mapChoice,
 			targetScore,
+			aiSpeed,
 			maps,
 		});
 		if (!result.success) {
@@ -124,6 +133,7 @@ export function useRoomRulesDraft(): RoomRulesDraft {
 		mapChoice,
 		targetScore,
 		settingsError,
+		aiSpeed,
 		updatingRules,
 		canEditRules,
 		maps,
@@ -138,6 +148,11 @@ export function useRoomRulesDraft(): RoomRulesDraft {
 		},
 		onTargetScoreChange: (score) => {
 			setTargetScore(score);
+			setSettingsDirty(true);
+			setSettingsError(null);
+		},
+		onAiSpeedChange: (speed) => {
+			setAiSpeed(speed);
 			setSettingsDirty(true);
 			setSettingsError(null);
 		},

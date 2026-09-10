@@ -172,9 +172,11 @@ function checkSharedWire(): void {
 		{ t: 'queue_fill_start', d: {} },
 		{ t: 'room_create', d: { mode: 'rsp', rules: { map: 'rsp', target_score: 3 } } },
 		{ t: 'room_create', d: { mode: 'fps' } },
+		{ t: 'room_create', d: { mode: 'fps', rules: { map: 'fps_duel', ai_speed: 'normal' } } },
 		{ t: 'room_join', d: { code: ' abcd23 ' } },
 		{ t: 'room_leave' },
 		{ t: 'room_update_rules', d: { map: 'rsp', target_score: 21 } },
+		{ t: 'room_update_rules', d: { map: 'fps_duel', ai_speed: 'fast' } },
 		{ t: 'room_start' },
 	];
 	for (const message of valid) assert.equal(lobbyClientMessageSchema.safeParse(message).success, true);
@@ -189,6 +191,13 @@ function checkSharedWire(): void {
 		lobbyClientMessageSchema.safeParse({
 			t: 'room_create',
 			d: { mode: 'fps', rules: { map: 'fps_duel', ai_level: 2 } },
+		}).success,
+		false,
+	);
+	assert.equal(
+		lobbyClientMessageSchema.safeParse({
+			t: 'room_create',
+			d: { mode: 'fps', rules: { map: 'fps_duel', ai_speed: 'random' } },
 		}).success,
 		false,
 	);
@@ -273,6 +282,10 @@ function checkQueueAndClaims(): void {
 	timeoutQueue.fillStart(30);
 	assert.equal(timeoutPlans.length, 1);
 	assert.deepEqual(timeoutPlans[0]?.source, { kind: 'quick', reason: 'timeout' });
+	assert.deepEqual(timeoutPlans[0]?.rules, {
+		map: 'fps_duel',
+		ai_speed: 'normal',
+	});
 
 	// rollback は接続中だけ元FIFOへ。切断済みuserと古いtokenは戻らない
 	const rollbackClock = new FakeClock();
@@ -326,6 +339,18 @@ function checkLobbyRooms(): void {
 	const secondCode = second.ok ? second.value : '';
 	assert.equal(firstCode, 'AAAAAA');
 	assert.equal(secondCode, 'BBBBBB');
+	assert.deepEqual(rooms.getState(secondCode)?.rules, {
+		map: 'fps_duel',
+		ai_speed: 'normal',
+	});
+	assert.equal(
+		rooms.updateRules(5, { map: 'fps_duel', ai_speed: 'fast' }).ok,
+		true,
+	);
+	assert.deepEqual(rooms.getState(secondCode)?.rules, {
+		map: 'fps_duel',
+		ai_speed: 'fast',
+	});
 	rooms.leave(5);
 
 	for (const id of [2, 3, 4]) {
