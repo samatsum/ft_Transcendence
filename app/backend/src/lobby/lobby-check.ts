@@ -172,9 +172,11 @@ function checkSharedWire(): void {
 		{ t: 'queue_fill_start', d: {} },
 		{ t: 'room_create', d: { mode: 'rsp', rules: { map: 'rsp', target_score: 3 } } },
 		{ t: 'room_create', d: { mode: 'fps' } },
+		{ t: 'room_create', d: { mode: 'fps', rules: { map: 'fps_duel', ai_speed: 'normal' } } },
 		{ t: 'room_join', d: { code: ' abcd23 ' } },
 		{ t: 'room_leave' },
 		{ t: 'room_update_rules', d: { map: 'rsp', target_score: 21 } },
+		{ t: 'room_update_rules', d: { map: 'fps_duel', ai_speed: 'fast' } },
 		{ t: 'room_start' },
 	];
 	for (const message of valid) assert.equal(lobbyClientMessageSchema.safeParse(message).success, true);
@@ -189,6 +191,13 @@ function checkSharedWire(): void {
 		lobbyClientMessageSchema.safeParse({
 			t: 'room_create',
 			d: { mode: 'fps', rules: { map: 'fps_duel', ai_level: 2 } },
+		}).success,
+		false,
+	);
+	assert.equal(
+		lobbyClientMessageSchema.safeParse({
+			t: 'room_create',
+			d: { mode: 'fps', rules: { map: 'fps_duel', ai_speed: 'random' } },
 		}).success,
 		false,
 	);
