@@ -574,7 +574,7 @@ interface W09Harness {
 /** 実GameRoomまたは注入factoryを使うB-09検査runtimeを構築する */
 function createW09Harness(
 	overrides: Partial<
-		Pick<MatchPreparationOptions, 'createRoom' | 'discardRoom'>
+		Pick<MatchPreparationOptions, 'createRoom' | 'discardRoom' | 'onError'>
 	> = {},
 ): W09Harness {
 	const clock = new FakeClock();
@@ -602,7 +602,7 @@ function createW09Harness(
 						runtime.registry.releaseMatch(userId, roomId),
 					broadcastMatchResult: (result) =>
 						runtime.registry.broadcastMatchResult(result),
-					onError: (error) => errors.push(error),
+					onError: overrides.onError ?? ((error) => errors.push(error)),
 				}),
 			);
 		},
@@ -731,6 +731,29 @@ async function checkW09Integration(): Promise<void> {
 	assert.equal((failed.errors[0] as Error).message, 'injected creation failure');
 	failed.runtime.destroy();
 	assert.equal(failed.clock.pending(), 0);
+
+	// onError 自体が投げても、prepareMatch は reject せず false を返し、ロールバックする
+	const throwingLogger = createW09Harness({
+		createRoom: async () => {
+			throw new Error('injected creation failure');
+		},
+		onError: () => {
+			throw new Error('injected logger failure');
+		},
+	});
+	const throwingConnection = connect(throwingLogger.runtime.registry, 86);
+	throwingLogger.runtime.queue.join(86, 'eighty-six', 'rsp');
+	throwingLogger.runtime.queue.fillStart(86);
+	assert.deepEqual(await Promise.all(throwingLogger.preparations), [false]);
+	assert.equal(throwingLogger.runtime.registry.getContext(86).kind, 'queued');
+	assert.equal(
+		throwingConnection.messages.some(
+			(message) => message.t === 'error' && message.d.code === 'internal_error',
+		),
+		true,
+	);
+	throwingLogger.runtime.destroy();
+	assert.equal(throwingLogger.clock.pending(), 0);
 
 	// 5秒timeout後にfactoryが成功してもcommitせず、生成物を1回だけ破棄。
 	const lateDeferred: {

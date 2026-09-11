@@ -71,7 +71,13 @@ export async function prepareMatch(
 		return controls.commit(room.roomId, () => discard(room.roomId));
 	} catch (error) {
 		if (controls.signal.aborted) return false;
-		options.onError?.(error);
+		// 診断用の callback が投げても、ロールバックは必ず行う。ここから例外が漏れると
+		// 呼び出し側（ws.ts の `void prepareMatch(...)`）で未処理 rejection になる
+		try {
+			options.onError?.(error);
+		} catch {
+			// 記録に失敗しても続行する
+		}
 		controls.fail('match preparation failed');
 		return false;
 	}
