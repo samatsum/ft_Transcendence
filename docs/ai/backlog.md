@@ -164,12 +164,25 @@ Numbered items in the acceptance-criteria column indicate mapping to acceptance 
 >   the whole 212 MB moves as roughly 8 MB. nginx must enable gzip for these files — `gzip_static` with
 >   pre-compressed `.tex.gz` is the better form, since re-compressing 212 MB per request is wasteful.
 >   **Without this, a browser downloads 212 MB.**
+>   **Implemented 2026-09-11 under [#138](https://github.com/samatsum/ft_Transcendence/issues/138).**
+>   `codes/PythonCodes/xpm_to_tex.py` writes a `.tex.gz` next to every `.tex`,
+>   `make frontend-engine-assets` gzips the `.wasm`, and `infra/docker/nginx/nginx.conf` serves both with
+>   `gzip_static` and `Cache-Control: no-cache`. Measured on the compose stack with `curl`: `Goal.tex`
+>   goes out as 313,401 B with `Content-Encoding: gzip`, and the decompressed SHA-256 matches the file.
+>   The 99 textures now total **221.2 MB → 8.6 MB** as `.tex.gz` (the set has grown since the 212 MB
+>   figure above). In Firefox the largest single transfer was 745 KB, and in the nginx log a second
+>   match revalidated all 43 `.tex`/`.wasm` requests as `304`. The `.tex` location must keep `default_type application/octet-stream`
+>   — the comment in `nginx.conf` explains why.
 > - **The same 212 MB currently exists in three places** (636 MB on disk): `web/assets/` (generated) ->
 >   `app/frontend/public/engine/assets/` (copied by `make frontend-engine-assets`) ->
 >   `app/frontend/dist/engine/assets/` (copied by Vite, because `public/` is copied verbatim). I-15 should
 >   decide whether to bake these into the image or pass them through a named volume from `engine-build`,
 >   and whether the `public/engine/` hop can be dropped. Baking 636 MB into an image would make
 >   `docker compose up` painfully slow on the evaluator's machine.
+>   **Still true after `gzip_static` (checked 2026-09-11)** — it only shrinks the transfer, and each copy
+>   now also carries the 8.6 MB of `.tex.gz`. The `public/` and `dist/` copies are rewritten on **every**
+>   `docker compose up`, not only on rebuilds: a second `up` with no changes left `web/assets/` untouched
+>   but gave both copies new mtimes.
 | I-16 | CI (integrates E-14: 3-target build + `make check` + native smoke + FE lint/typecheck) ([Issue #82](https://github.com/samatsum/ft_Transcendence/issues/82)) | Runs automatically on every PR | I-01, E-05, E-11 |
 | **B-17 (new, 2026-08-08)** | Server side of `spectate` — accept a non-participant connection, answer `welcome` with `role: "spectator"`, and include it in the snapshot fan-out ([Issue #80](https://github.com/samatsum/ft_Transcendence/issues/80)) | A third browser connects to a live match and receives snapshots without occupying a seat; the match's player count and AI-takeover logic are unaffected by spectators | B-11 |
 
