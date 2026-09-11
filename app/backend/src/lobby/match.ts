@@ -32,6 +32,8 @@ export interface MatchPreparationOptions {
 	discardRoom?(roomId: string): void;
 	releaseMatch(userId: number, roomId: string): boolean;
 	broadcastMatchResult(result: MatchResultPayload): void;
+	/** 生成失敗の例外を記録する。クライアントには internal_error としか届かないため */
+	onError?(error: unknown): void;
 }
 
 /**
@@ -67,8 +69,9 @@ export async function prepareMatch(
 		});
 		preparedRoomId = room.roomId;
 		return controls.commit(room.roomId, () => discard(room.roomId));
-	} catch {
+	} catch (error) {
 		if (controls.signal.aborted) return false;
+		options.onError?.(error);
 		controls.fail('match preparation failed');
 		return false;
 	}

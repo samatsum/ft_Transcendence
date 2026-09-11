@@ -567,6 +567,8 @@ interface W09Harness {
 	runtime: LobbyRuntime;
 	plans: MatchPlan[];
 	preparations: Promise<boolean>[];
+	/** prepareMatch が onError へ渡した例外 */
+	errors: unknown[];
 }
 
 /** 実GameRoomまたは注入factoryを使うB-09検査runtimeを構築する */
@@ -578,6 +580,7 @@ function createW09Harness(
 	const clock = new FakeClock();
 	const plans: MatchPlan[] = [];
 	const preparations: Promise<boolean>[] = [];
+	const errors: unknown[] = [];
 	let runtime: LobbyRuntime;
 	const createRoom =
 		overrides.createRoom ??
@@ -599,11 +602,12 @@ function createW09Harness(
 						runtime.registry.releaseMatch(userId, roomId),
 					broadcastMatchResult: (result) =>
 						runtime.registry.broadcastMatchResult(result),
+					onError: (error) => errors.push(error),
 				}),
 			);
 		},
 	});
-	return { clock, runtime, plans, preparations };
+	return { clock, runtime, plans, preparations, errors };
 }
 
 /** harnessが現在受け取った全MatchPlan準備の完了を待つ */
@@ -641,6 +645,7 @@ async function checkW09Integration(): Promise<void> {
 	closeRoom(fullRoomId);
 	assert.equal(full.runtime.registry.getContext(80).kind, 'idle');
 	assert.equal(full.runtime.registry.getContext(81).kind, 'idle');
+	assert.equal(full.errors.length, 0);
 	full.runtime.destroy();
 	assert.equal(full.clock.pending(), 0);
 
@@ -721,6 +726,9 @@ async function checkW09Integration(): Promise<void> {
 		),
 		true,
 	);
+	// クライアントには internal_error しか届かないので、原因は onError 経由でしか残らない（#188）
+	assert.equal(failed.errors.length, 1);
+	assert.equal((failed.errors[0] as Error).message, 'injected creation failure');
 	failed.runtime.destroy();
 	assert.equal(failed.clock.pending(), 0);
 
