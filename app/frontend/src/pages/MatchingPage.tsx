@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { Button } from '../components/Button.js';
@@ -23,15 +22,12 @@ export default function MatchingPage() {
 
 	// 「部屋にいない」を示すメッセージはプロトコルに無い（lobby_hello の self.status は
 	// 部屋で待機中も online）。時間で打ち切ると、再送が遅れただけの在室者を締め出すため、
-	// 一度でも部屋が見えたかどうかで判断する。
-	// 見えた後に消えた＝退室・解散なので、そのときだけ自動でロビーへ戻す。
-	// 一度も見えていないうちは自動遷移せず、下の案内から手で戻ってもらう
-	const seenRoom = useRef(false);
-	if (room) seenRoom.current = true;
-
-	useEffect(() => {
-		if (!room && seenRoom.current) navigate('/lobby', { replace: true });
-	}, [room, navigate]);
+	// room が無いときは自動遷移せず、下の案内から手で戻ってもらう。
+	//
+	// **「room が消えたらロビーへ戻す」useEffect は置かないこと（#190）。** room が消えるのは
+	// 退室ボタンと match_found（サーバが部屋を削除した合図）の2通りで、後者のときに
+	// ロビーへ戻すと、同じコミットで走る MatchFoundRedirect の /game 遷移を上書きする
+	// （兄弟の後ろにあるこの画面の effect が後に実行されるため）。退室時の遷移はボタンで行う
 
 	// マッチ成立時の遷移は LobbyScope の MatchFoundRedirect が受け持つ。
 	// ロビーに戻っている人も試合へ入れるようにするため、この画面には置かない
@@ -144,13 +140,15 @@ export default function MatchingPage() {
 					</Button>
 				)}
 				{/* サーバは退室の成功時に何も返さない（失敗時だけ error）。
-				    room_state も届かないので、送信できたら画面側で捨てる。
-				    捨てないと room が残り続け、上の useEffect が動かずこの画面から出られない */}
+				    room_state も届かないので、送信できたら画面側で捨ててロビーへ戻る。
+				    遷移を useEffect に任せない理由は上のコメント（#190） */}
 				<Button
 					variant="ghost"
 					disabled={starting || status !== 'open'}
 					onClick={() => {
-						if (send({ t: 'room_leave', d: {} })) clearRoom();
+						if (!send({ t: 'room_leave', d: {} })) return;
+						clearRoom();
+						navigate('/lobby', { replace: true });
 					}}
 				>
 					退室する

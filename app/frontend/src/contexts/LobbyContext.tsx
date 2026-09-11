@@ -130,6 +130,11 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
 						break;
 					case 'match_found':
 						setMatchFound(msg.d);
+						// サーバは部屋を削除してから match_found を送る（ws-protocol.md §4-E）。
+						// 削除の通知は別に来ないので、ここで消さないと試合後も 'starting' の
+						// 部屋が残り、作成・参加・退出のボタンがすべて無効のままになる（#190）。
+						// 下の match_result は B-13 不採用のため届かない
+						setRoom(null);
 						break;
 					case 'match_result':
 						setMatchResult(msg.d);
