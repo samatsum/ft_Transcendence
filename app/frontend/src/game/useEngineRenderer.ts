@@ -8,8 +8,9 @@
 //     `_web_apply_snapshot` → `_web_render_frame` → ImageData present。
 //   - unmount で rAF / Module 解放（React 19 StrictMode の二重マウントに耐える）。
 //
-// 補間の時計基準: 最初の snapshot 受信時刻を playhead=0 とし、以後 elapsed - 100ms を
-//   描画時刻とする。サーバ tick との絶対同期は取らず、到着間隔から相対時間を導く（② §8）。
+// 補間の時計基準: `performance.now() - 100ms` を描画時刻とし、snapshot の到着時刻
+//   （同じ performance.now）と比べて2枚を選ぶ。サーバ tick との絶対同期は取らない（② §8）。
+//   基準時刻を持たない理由は interpClock.ts（#194）。
 
 import { useEffect, useState, type RefObject } from 'react';
 import type { WelcomeMessage } from '@ft/shared';
@@ -18,6 +19,7 @@ import { interpolate } from '../engine/snapshotInterp.js';
 import { loadTextures, type LoadTexturesProgress } from '../engine/loadTextures.js';
 import { createRenderModule, writeCString } from '../engine/renderModule.js';
 import type { RenderModule } from '../engine/render.d.ts';
+import { selectFrame } from './interpClock.js';
 import type { TimedSnapshot } from './useGameSocket.js';
 
 const INTERP_DELAY_MS = 100;
@@ -77,8 +79,6 @@ export function useEngineRenderer({
 		let rafHandle = 0;
 		let imageData: ImageData | null = null;
 		let ctx: CanvasRenderingContext2D | null = null;
-		let playheadStartMs = 0;
-		let firstSnapshotReceivedAt = 0;
 		let fpsFrames = 0;
 		let fpsWindowStart = performance.now();
 
@@ -109,58 +109,16 @@ export function useEngineRenderer({
 
 		function loop() {
 			if (cancelled || !mod) return;
-			const buf = snapshotBufferRef.current;
-			if (!buf || buf.length === 0) {
+			// 描画時刻を過ぎた最後の snapshot で止まる（決着後や通信断でループしない。#194）。
+			// 旧実装にあった「tail を追い越したら基準を打ち直す」処理（CodeRabbit 指摘への
+			// 対策）は、基準時刻を持たなくなったので不要。通信が戻れば新しい snapshot との
+			// 間でそのまま補間が再開する
+			const sel = selectFrame(snapshotBufferRef.current, performance.now() - INTERP_DELAY_MS);
+			if (!sel) {
 				rafHandle = requestAnimationFrame(loop);
 				return;
 			}
-			const head = buf[0];
-			if (!head) {
-				rafHandle = requestAnimationFrame(loop);
-				return;
-			}
-			// 補間時計: 最初の snapshot 到着時刻を基準にする
-			if (firstSnapshotReceivedAt === 0) {
-				firstSnapshotReceivedAt = head.receivedAtMs;
-				playheadStartMs = performance.now();
-			}
-			// CodeRabbit 指摘: playhead が tail を超えて進んだ場合（長時間の無通信の後）、
-			// 補間クロックが固定のままだと、通信が再開しても「未来」を再生し続けて
-			// alpha が退化する。tail が現在時刻の外に出たら基準を打ち直し、
-			// 100ms の補間遅延を保ちながら次の snapshot が来たら滑らかに繋がるようにする
-			const tail = buf[buf.length - 1];
-			if (tail) {
-				const tailRelUnderCurrent = tail.receivedAtMs - firstSnapshotReceivedAt;
-				const currentPlayAt = (performance.now() - playheadStartMs) - INTERP_DELAY_MS;
-				if (currentPlayAt > tailRelUnderCurrent) {
-					firstSnapshotReceivedAt = tail.receivedAtMs;
-					playheadStartMs = performance.now();
-				}
-			}
-			const nowElapsed = performance.now() - playheadStartMs;
-			const playAtServerMs = nowElapsed - INTERP_DELAY_MS;
-			// buf は「サーバ到着時刻の相対時間」で並んでいる（receivedAtMs - firstSnapshotReceivedAt）
-			let i = 0;
-			while (i + 1 < buf.length) {
-				const nx = buf[i + 1];
-				if (!nx) break;
-				if (nx.receivedAtMs - firstSnapshotReceivedAt > playAtServerMs) break;
-				i += 1;
-			}
-			const cur = buf[i];
-			if (!cur) {
-				rafHandle = requestAnimationFrame(loop);
-				return;
-			}
-			const next = buf[i + 1] ?? null;
-			let alpha = 0;
-			if (next) {
-				const t0 = cur.receivedAtMs - firstSnapshotReceivedAt;
-				const t1 = next.receivedAtMs - firstSnapshotReceivedAt;
-				alpha = t1 > t0 ? (playAtServerMs - t0) / (t1 - t0) : 0;
-				if (alpha < 0) alpha = 0;
-				if (alpha > 1) alpha = 1;
-			}
+			const { cur, next, alpha } = sel;
 			// 穴3 の決定: 自席（welcome.combatant_id）の dir を localYaw で上書き
 			const overrideDir = combatantId !== null
 				? { id: combatantId, dir: localYawRef.current }
