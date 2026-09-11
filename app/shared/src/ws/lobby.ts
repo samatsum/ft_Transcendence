@@ -25,7 +25,15 @@ export const rspRulesSchema = z
 	})
 	.strict();
 
-export const fpsRulesSchema = z.object({ map: z.string().min(1) }).strict();
+export const fpsAiSpeedSchema = z.enum(['slow', 'normal', 'fast']);
+export type FpsAiSpeed = z.infer<typeof fpsAiSpeedSchema>;
+
+export const fpsRulesSchema = z
+	.object({
+		map: z.string().min(1),
+		ai_speed: fpsAiSpeedSchema,
+	})
+	.strict();
 
 export const canonicalRulesSchema = z.union([rspRulesSchema, fpsRulesSchema]);
 export type CanonicalRules = z.infer<typeof canonicalRulesSchema>;
