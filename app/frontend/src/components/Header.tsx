@@ -19,28 +19,58 @@ export function Header() {
 
 	return (
 		<header className="border-b border-slate-800 bg-slate-950">
-			<div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
+			{/*
+			 * ヘッダー全体を横並びにする flex コンテナ。
+			 * flex-wrap: どうしても幅が足りないときは2行に折り返してはみ出しを防ぐ。
+			 * gap-y-2: 折り返したときの上下のすき間。
+			 */}
+			<div className="mx-auto flex h-auto min-h-14 max-w-6xl flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-2 sm:h-14 sm:flex-nowrap sm:py-0">
+				{/*
+				 * ロゴリンク。
+				 * min-w-0 + truncate: flex の子はデフォルトで縮まないので、
+				 * 明示的に「縮んで省略記号(…)で切っていい」と伝える。
+				 * shrink-0 は付けない（ロゴ側も多少譲る）。
+				 */}
 				<Link
 					to={user ? '/lobby' : '/'}
-					className="text-heading-sm text-slate-100 hover:text-white"
+					className="min-w-0 truncate text-heading-sm text-slate-100 hover:text-white"
 				>
 					ft_transcendence
 				</Link>
+	
 				{status === 'authenticated' && user && (
-					<div className="flex items-center gap-3">
+					/*
+					 * ログイン中だけ出る右側ブロック。
+					 * shrink-0: 右側（ログアウトボタン）は潰さない。
+					 * ml-auto: 折り返したときに右寄せにする。
+					 */
+					<div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
 						<Link
 							to={`/profile/${user.id}`}
-							className="flex items-center gap-2 rounded-md px-2 py-1 text-body text-slate-200 hover:bg-slate-800"
+							className="flex min-w-0 items-center gap-2 rounded-md px-2 py-1 text-body text-slate-200 hover:bg-slate-800"
 						>
 							<span
-								className="flex h-7 w-7 items-center justify-center rounded-full bg-sky-600 text-xs font-bold text-white"
+								className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sky-600 text-xs font-bold text-white"
 								aria-hidden
 							>
 								{user.displayName.charAt(0).toUpperCase()}
 							</span>
-							<span>{user.displayName}</span>
+							{/*
+							 * 表示名は sm(640px) 未満では非表示。
+							 * 375px ではアバターだけにして Header の横幅を節約する。
+							 */}
+							<span className="hidden max-w-[8rem] truncate sm:inline">
+								{user.displayName}
+							</span>
 						</Link>
-						<Button variant="ghost" onClick={handleLogout}>
+						{/*
+						 * whitespace-nowrap: 「ログアウト」を1行のまま保つ（縦折り返し防止）。
+						 */}
+						<Button
+							variant="ghost"
+							className="whitespace-nowrap px-2 sm:px-4"
+							onClick={handleLogout}
+						>
 							ログアウト
 						</Button>
 					</div>
