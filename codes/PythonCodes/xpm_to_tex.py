@@ -1,9 +1,26 @@
 #!/usr/bin/env python3
+#
+# XPM → `.tex`（無圧縮 RGBA + 8バイトヘッダ）と、その gzip 版を書き出す。
+#
+# **`.tex` の形式は変えない**（docs/ai/backlog.md I-15 の決定）。C エンジンは
+# これを memcpy でそのまま取り込むので、ファイル自体を圧縮するとエンジン側に
+# デコーダが要る。代わりに転送時だけ縮める。
+#
+# `.tex.gz` を並べて置くのは nginx の `gzip_static` に食わせるため。221.2MB が
+# 8.6MB として流れる。リクエストごとに 221MB を再圧縮するのは無駄なので、
+# ビルド時に一度だけ作る。**フロントエンドと manifest は無改修**——
+# gzip_static は同じ URL のまま透過的に .gz を返すので、`.tex` を fetch する
+# 側は何も知らなくてよい。
+import gzip
 import json
 import re
 import struct
 import sys
 from pathlib import Path
+
+# ビルド時に一度だけ走るので最大圧縮で構わない。
+# 実測（Hand_Red_Paper.tex 16.8MB）: level 6 で 3.87% / 0.13 秒、level 9 で 3.83% / 0.27 秒。
+GZIP_LEVEL = 9
 
 
 def quoted_lines(text):
@@ -66,13 +83,22 @@ def main():
 	texture_root = Path(sys.argv[1])
 	out_root = Path(sys.argv[2])
 	manifest = []
+	raw_bytes = 0
+	packed_bytes = 0
 	for xpm in sorted(texture_root.rglob('*.xpm')):
 		rel = xpm.relative_to(Path('.'))
 		out_rel = rel.with_suffix('.tex')
 		out_path = out_root / out_rel
 		out_path.parent.mkdir(parents=True, exist_ok=True)
 		width, height, data = convert_xpm(xpm)
-		out_path.write_bytes(struct.pack('<II', width, height) + data)
+		blob = struct.pack('<II', width, height) + data
+		out_path.write_bytes(blob)
+		# mtime を固定して、同じ入力からは同じ .gz が出るようにする
+		# （ビルドの再現性。Docker のレイヤキャッシュも効きやすくなる）
+		packed = gzip.compress(blob, compresslevel=GZIP_LEVEL, mtime=0)
+		out_path.with_suffix('.tex.gz').write_bytes(packed)
+		raw_bytes += len(blob)
+		packed_bytes += len(packed)
 		manifest.append({
 			'path': rel.as_posix(),
 			'tex': out_path.relative_to(out_root.parent).as_posix(),
@@ -80,7 +106,11 @@ def main():
 			'height': height,
 		})
 	(out_root / 'manifest.json').write_text(json.dumps(manifest, separators=(',', ':')) + '\n')
-	print(f'converted {len(manifest)} textures into {out_root}')
+	print(
+		f'converted {len(manifest)} textures into {out_root} '
+		f'({raw_bytes / 1e6:.1f}MB, gzip {packed_bytes / 1e6:.1f}MB '
+		f'= {packed_bytes * 100 / raw_bytes:.1f}%)'
+	)
 	return 0
 
 

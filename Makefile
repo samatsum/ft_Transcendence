@@ -196,6 +196,10 @@ frontend-engine-assets: web sim
 	@mkdir -p $(FE_ENGINE_DIR)/build $(FE_ENGINE_DIR)/assets
 	cp -r $(WEB_BUILD_DIR)/. $(FE_ENGINE_DIR)/build/
 	cp -r $(WEB_ASSET_DIR)/. $(FE_ENGINE_DIR)/assets/
+# nginx の gzip_static 用。`.tex.gz` は xpm_to_tex.py が作るが、wasm は
+# emcc の出力なのでここで圧縮する。事前生成が無いと gzip_static は素の
+# ファイルへ黙って落ちるだけで、エラーにはならない
+	@for f in $(FE_ENGINE_DIR)/build/*.wasm; do gzip -9 -kf "$$f"; done
 
 # sim 公開 API のゲームプレイ受入テスト（native ビルドなので emcc 不要）。
 # lint の対象は srcs/ と includes/ のみなので tests/ は CR 検査に掛からない
