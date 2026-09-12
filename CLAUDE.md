@@ -120,6 +120,8 @@ docker compose run --rm engine-build make frontend-engine-assets
 | 画面仕様 | [`docs/ai/frontend.md`](docs/ai/frontend.md) |
 | 誰がどのレーンにいるか | [`docs/human/はじめに/チーム体制.html`](docs/human/はじめに/チーム体制.html) |
 
+---
+
 **採用モジュールは改訂されることがあります。** 不採用にした Issue は削除せず「不採用」と明記して
 残す方針なので、バックログに行があること＝作業予定があること**ではありません**。
 古いドキュメントやコミットが「予定」と書いていても、`architecture.md` §4 の現行の宣言が優先します。
