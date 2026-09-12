@@ -32,6 +32,8 @@ export interface MatchPreparationOptions {
 	discardRoom?(roomId: string): void;
 	releaseMatch(userId: number, roomId: string): boolean;
 	broadcastMatchResult(result: MatchResultPayload): void;
+	/** 生成失敗の例外を記録する。クライアントには internal_error としか届かないため */
+	onError?(error: unknown): void;
 }
 
 /**
@@ -67,8 +69,15 @@ export async function prepareMatch(
 		});
 		preparedRoomId = room.roomId;
 		return controls.commit(room.roomId, () => discard(room.roomId));
-	} catch {
+	} catch (error) {
 		if (controls.signal.aborted) return false;
+		// 診断用の callback が投げても、ロールバックは必ず行う。ここから例外が漏れると
+		// 呼び出し側（ws.ts の `void prepareMatch(...)`）で未処理 rejection になる
+		try {
+			options.onError?.(error);
+		} catch {
+			// 記録に失敗しても続行する
+		}
 		controls.fail('match preparation failed');
 		return false;
 	}

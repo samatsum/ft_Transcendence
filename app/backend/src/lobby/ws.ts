@@ -270,6 +270,9 @@ export function registerLobbyWs(
 			void prepareMatch(plan, controls, {
 				releaseMatch: (userId, roomId) => runtime.registry.releaseMatch(userId, roomId),
 				broadcastMatchResult: (result) => runtime.registry.broadcastMatchResult(result),
+				// pino が stack まで出すのは `err` キーだけ（`error` だと `{}` になる）
+				onError: (err) =>
+					app.log.error({ err, mode: plan.mode }, 'B-09: match preparation 失敗'),
 			});
 		});
 	runtime = new LobbyRuntime({ ...options, onMatchPlan });
