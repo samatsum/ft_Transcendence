@@ -362,8 +362,11 @@ async function handleConnection(
 	try {
 		displayName = await profileResolver.getDisplayName(user.userId);
 		if (!displayName) throw new Error('empty display name');
-	} catch (error) {
-		app.log.warn({ user: user.userId, error }, 'B-08: user profile 解決失敗');
+	} catch (err) {
+		// キーは err にすること。pino は err だけを専用シリアライザで展開し、
+		// それ以外のキーに Error を渡すと列挙可能な自前プロパティが無いため
+		// "error":{} になって message も stack も残らない（#199）
+		app.log.warn({ user: user.userId, err }, 'B-08: user profile 解決失敗');
 		socket.close(WS_CLOSE.unauthenticated, 'user profile unavailable');
 		return;
 	}
