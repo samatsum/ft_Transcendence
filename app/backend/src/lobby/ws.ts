@@ -270,6 +270,9 @@ export function registerLobbyWs(
 			void prepareMatch(plan, controls, {
 				releaseMatch: (userId, roomId) => runtime.registry.releaseMatch(userId, roomId),
 				broadcastMatchResult: (result) => runtime.registry.broadcastMatchResult(result),
+				// pino が stack まで出すのは `err` キーだけ（`error` だと `{}` になる）
+				onError: (err) =>
+					app.log.error({ err, mode: plan.mode }, 'B-09: match preparation 失敗'),
 			});
 		});
 	runtime = new LobbyRuntime({ ...options, onMatchPlan });
@@ -359,8 +362,11 @@ async function handleConnection(
 	try {
 		displayName = await profileResolver.getDisplayName(user.userId);
 		if (!displayName) throw new Error('empty display name');
-	} catch (error) {
-		app.log.warn({ user: user.userId, error }, 'B-08: user profile 解決失敗');
+	} catch (err) {
+		// キーは err にすること。pino は err だけを専用シリアライザで展開し、
+		// それ以外のキーに Error を渡すと列挙可能な自前プロパティが無いため
+		// "error":{} になって message も stack も残らない（#199）
+		app.log.warn({ user: user.userId, err }, 'B-08: user profile 解決失敗');
 		socket.close(WS_CLOSE.unauthenticated, 'user profile unavailable');
 		return;
 	}

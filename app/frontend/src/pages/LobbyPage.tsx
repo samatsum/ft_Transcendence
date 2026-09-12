@@ -4,10 +4,10 @@ import { Button } from '../components/Button.js';
 import { Card } from '../components/Card.js';
 import { useAuth } from '../contexts/AuthContext.js';
 import { useLobby } from '../contexts/LobbyContext.js';
+import { GameCustomizationFields } from '../lobby/GameCustomizationFields.js';
+import { useRoomRulesDraft } from '../lobby/useRoomRulesDraft.js';
 
-// F-05 ロビーの入口となるハブ画面。「部屋を作る」「部屋に参加する」の2択と補助導線だけを持つ。
-// /ws/lobby への接続は useLobbySocket（F-05 の残り）で入れるため、ここではまだ張らない。
-
+// ロビーの入口と参加中ルームの状態を1本の共有WS接続で表示する
 
 const STATUS_LABEL: Record<string, { text: string; cls: string }> = {
 	connecting: { text: '接続中…', cls: 'text-fg-muted' },
@@ -20,6 +20,8 @@ export default function LobbyPage() {
 	const { user } = useAuth();
 	const { status, room, error, send, clearRoom } = useLobby();
 	const navigate = useNavigate();
+	// 設定フォームの状態は待機画面（#111）と共通なのでフックへ寄せた
+	const rules = useRoomRulesDraft();
 
 	return (
 		<div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-10">
@@ -104,6 +106,40 @@ export default function LobbyPage() {
 						<p className="text-caption text-fg-muted">部屋コード（友達に伝えてください）</p>
 						<p className="text-heading-lg tracking-[0.3em] text-sky-300">{room.code}</p>
 					</div>
+					<div className="rounded-md border border-slate-700 bg-slate-900/40 p-4">
+						<GameCustomizationFields
+							mode={room.mode}
+							maps={rules.maps}
+							mapChoice={rules.mapChoice || room.rules.map}
+							targetScore={rules.targetScore}
+							aiSpeed={rules.aiSpeed}
+							onMapChange={rules.onMapChange}
+							onTargetScoreChange={rules.onTargetScoreChange}
+							onAiSpeedChange={rules.onAiSpeedChange}
+							disabled={rules.fieldsDisabled}
+							readOnly={rules.readOnly}
+							mapHint={rules.mapHint}
+							targetScoreError={
+								rules.settingsError?.startsWith('先取点') ? rules.settingsError : null
+							}
+						/>
+						{rules.canEditRules && (
+							<div className="mt-4">
+								<Button
+									variant="secondary"
+									disabled={rules.submitDisabled}
+									onClick={rules.updateRules}
+								>
+									{rules.updatingRules ? '更新中…' : 'ゲーム設定を更新する'}
+								</Button>
+							</div>
+						)}
+						{rules.settingsError && !rules.settingsError.startsWith('先取点') && (
+							<p className="text-body mt-2 text-rose-400" role="alert">
+								{rules.settingsError}
+							</p>
+						)}
+					</div>
 					<ul className="flex flex-col gap-1">
 						{room.seats.map((seat) => (
 							<li key={seat.slot} className="text-body">
@@ -113,7 +149,8 @@ export default function LobbyPage() {
 							</li>
 						))}
 					</ul>
-					<div>
+					<div className="flex flex-wrap gap-3">
+						<Button onClick={() => navigate('/lobby/matching')}>待機画面へ</Button>
 						{/* サーバは退室の成功時に何も返さない（失敗時だけ error）。
 						    room_state も届かないので、送信できたら画面側で捨てる。
 						    開始処理中は leave が拒否されるため、その間は押させない */}

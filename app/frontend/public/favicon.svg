@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="ft_transcendence">
+	<!-- 色はデザインシステムのトークンに合わせる（背景 slate-950 / 前景 sky-400）。
+	     16px でも潰れないよう、細部は持たせず輪郭の太い照準だけにする -->
+	<rect width="32" height="32" rx="7" fill="#020617" />
+	<circle cx="16" cy="16" r="9" fill="none" stroke="#38bdf8" stroke-width="3.5" />
+	<circle cx="16" cy="16" r="2.5" fill="#38bdf8" />
+</svg>

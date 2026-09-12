@@ -9,9 +9,16 @@
 
 import { useEffect, useState, type ReactNode } from 'react';
 
-async function ensureSession(): Promise<void> {
+import { selfSchema } from '@ft/shared';
+
+import { useAuth } from './AuthContext.js';
+
+// 実セッションの持ち主を返す。VITE_DEV_AUTOLOGIN は id:0 の偽ユーザーを入れるため、
+// これを AuthContext へ流し込まないと「自分がホストか」の判定（room.host_id との比較）が
+// 常に false になり、待機画面の開始ボタンが出ない
+async function ensureSession(): Promise<{ id: number; displayName: string }> {
 	const me = await fetch('/api/auth/me', { credentials: 'include' });
-	if (me.ok) return;
+	if (me.ok) return toUser(await me.json());
 
 	const stamp = Date.now();
 	const signup = await fetch('/api/auth/signup', {
@@ -29,18 +36,29 @@ async function ensureSession(): Promise<void> {
 	if (!signup.ok) {
 		throw new Error(`signup ${signup.status}`);
 	}
+	return toUser(await signup.json());
+}
+
+function toUser(body: unknown): { id: number; displayName: string } {
+	const parsed = selfSchema.safeParse(body);
+	if (!parsed.success) throw new Error('unexpected /api/auth/me response');
+	return { id: parsed.data.id, displayName: parsed.data.display_name };
 }
 
 type State = { kind: 'loading' } | { kind: 'ready' } | { kind: 'failed'; reason: string };
 
 export function DevSession({ children }: { children: ReactNode }) {
+	const { setUser } = useAuth();
 	const [state, setState] = useState<State>({ kind: 'loading' });
 
 	useEffect(() => {
 		let alive = true;
 		ensureSession()
-			.then(() => {
-				if (alive) setState({ kind: 'ready' });
+			.then((user) => {
+				if (!alive) return;
+				// 見た目だけの偽ユーザーを、実セッションの持ち主で置き換える
+				setUser(user);
+				setState({ kind: 'ready' });
 			})
 			.catch((error: unknown) => {
 				if (!alive) return;
@@ -52,7 +70,7 @@ export function DevSession({ children }: { children: ReactNode }) {
 		return () => {
 			alive = false;
 		};
-	}, []);
+	}, [setUser]);
 
 	if (state.kind === 'loading') {
 		return (

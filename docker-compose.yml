@@ -35,6 +35,10 @@ services:
       context: .
       dockerfile: infra/docker/backend/Dockerfile
     init: true
+    depends_on:
+      # 試合ごとに web/build/sim.js（sim.wasm）を読むため、生成が終わってから起動する
+      engine-build:
+        condition: service_completed_successfully
     environment:
       NODE_ENV: production
       HOST: 0.0.0.0
@@ -43,6 +47,16 @@ services:
       ALLOWED_ORIGIN: ${ALLOWED_ORIGIN:-https://localhost}
     volumes:
       - app-data:/data
+      # engine-build が生成した sim.wasm を渡す（app/backend/src/game/sim.ts が
+      # /workspace/web/build/sim.js を読む）。イメージには焼かない——.dockerignore が
+      # web/build を除外しており、engine-build はイメージのビルド後に走るため。
+      #
+      # **`./web/build` ではなく `./web` をマウントする。** backend コンテナは
+      # engine-build の完了前に作成される。空の clone では web/build/ がまだ無く、
+      # bind mount の元が無いとデーモンがディレクトリを作る。Linux ではそれが
+      # root 所有になり、HOST_UID で走る engine-build が書き込めなくなるおそれがある。
+      # web/ は git 管理下なので必ず存在し、この問題が起きない
+      - ./web:/workspace/web:ro
     expose:
       - "3000"
     healthcheck:

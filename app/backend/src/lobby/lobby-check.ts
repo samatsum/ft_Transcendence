@@ -172,9 +172,11 @@ function checkSharedWire(): void {
 		{ t: 'queue_fill_start', d: {} },
 		{ t: 'room_create', d: { mode: 'rsp', rules: { map: 'rsp', target_score: 3 } } },
 		{ t: 'room_create', d: { mode: 'fps' } },
+		{ t: 'room_create', d: { mode: 'fps', rules: { map: 'fps_duel', ai_speed: 'normal' } } },
 		{ t: 'room_join', d: { code: ' abcd23 ' } },
 		{ t: 'room_leave' },
 		{ t: 'room_update_rules', d: { map: 'rsp', target_score: 21 } },
+		{ t: 'room_update_rules', d: { map: 'fps_duel', ai_speed: 'fast' } },
 		{ t: 'room_start' },
 	];
 	for (const message of valid) assert.equal(lobbyClientMessageSchema.safeParse(message).success, true);
@@ -189,6 +191,13 @@ function checkSharedWire(): void {
 		lobbyClientMessageSchema.safeParse({
 			t: 'room_create',
 			d: { mode: 'fps', rules: { map: 'fps_duel', ai_level: 2 } },
+		}).success,
+		false,
+	);
+	assert.equal(
+		lobbyClientMessageSchema.safeParse({
+			t: 'room_create',
+			d: { mode: 'fps', rules: { map: 'fps_duel', ai_speed: 'random' } },
 		}).success,
 		false,
 	);
@@ -273,6 +282,10 @@ function checkQueueAndClaims(): void {
 	timeoutQueue.fillStart(30);
 	assert.equal(timeoutPlans.length, 1);
 	assert.deepEqual(timeoutPlans[0]?.source, { kind: 'quick', reason: 'timeout' });
+	assert.deepEqual(timeoutPlans[0]?.rules, {
+		map: 'fps_duel',
+		ai_speed: 'normal',
+	});
 
 	// rollback は接続中だけ元FIFOへ。切断済みuserと古いtokenは戻らない
 	const rollbackClock = new FakeClock();
@@ -326,6 +339,18 @@ function checkLobbyRooms(): void {
 	const secondCode = second.ok ? second.value : '';
 	assert.equal(firstCode, 'AAAAAA');
 	assert.equal(secondCode, 'BBBBBB');
+	assert.deepEqual(rooms.getState(secondCode)?.rules, {
+		map: 'fps_duel',
+		ai_speed: 'normal',
+	});
+	assert.equal(
+		rooms.updateRules(5, { map: 'fps_duel', ai_speed: 'fast' }).ok,
+		true,
+	);
+	assert.deepEqual(rooms.getState(secondCode)?.rules, {
+		map: 'fps_duel',
+		ai_speed: 'fast',
+	});
 	rooms.leave(5);
 
 	for (const id of [2, 3, 4]) {
@@ -542,17 +567,20 @@ interface W09Harness {
 	runtime: LobbyRuntime;
 	plans: MatchPlan[];
 	preparations: Promise<boolean>[];
+	/** prepareMatch が onError へ渡した例外 */
+	errors: unknown[];
 }
 
 /** 実GameRoomまたは注入factoryを使うB-09検査runtimeを構築する */
 function createW09Harness(
 	overrides: Partial<
-		Pick<MatchPreparationOptions, 'createRoom' | 'discardRoom'>
+		Pick<MatchPreparationOptions, 'createRoom' | 'discardRoom' | 'onError'>
 	> = {},
 ): W09Harness {
 	const clock = new FakeClock();
 	const plans: MatchPlan[] = [];
 	const preparations: Promise<boolean>[] = [];
+	const errors: unknown[] = [];
 	let runtime: LobbyRuntime;
 	const createRoom =
 		overrides.createRoom ??
@@ -574,11 +602,12 @@ function createW09Harness(
 						runtime.registry.releaseMatch(userId, roomId),
 					broadcastMatchResult: (result) =>
 						runtime.registry.broadcastMatchResult(result),
+					onError: overrides.onError ?? ((error) => errors.push(error)),
 				}),
 			);
 		},
 	});
-	return { clock, runtime, plans, preparations };
+	return { clock, runtime, plans, preparations, errors };
 }
 
 /** harnessが現在受け取った全MatchPlan準備の完了を待つ */
@@ -616,6 +645,7 @@ async function checkW09Integration(): Promise<void> {
 	closeRoom(fullRoomId);
 	assert.equal(full.runtime.registry.getContext(80).kind, 'idle');
 	assert.equal(full.runtime.registry.getContext(81).kind, 'idle');
+	assert.equal(full.errors.length, 0);
 	full.runtime.destroy();
 	assert.equal(full.clock.pending(), 0);
 
@@ -696,8 +726,34 @@ async function checkW09Integration(): Promise<void> {
 		),
 		true,
 	);
+	// クライアントには internal_error しか届かないので、原因は onError 経由でしか残らない（#188）
+	assert.equal(failed.errors.length, 1);
+	assert.equal((failed.errors[0] as Error).message, 'injected creation failure');
 	failed.runtime.destroy();
 	assert.equal(failed.clock.pending(), 0);
+
+	// onError 自体が投げても、prepareMatch は reject せず false を返し、ロールバックする
+	const throwingLogger = createW09Harness({
+		createRoom: async () => {
+			throw new Error('injected creation failure');
+		},
+		onError: () => {
+			throw new Error('injected logger failure');
+		},
+	});
+	const throwingConnection = connect(throwingLogger.runtime.registry, 86);
+	throwingLogger.runtime.queue.join(86, 'eighty-six', 'rsp');
+	throwingLogger.runtime.queue.fillStart(86);
+	assert.deepEqual(await Promise.all(throwingLogger.preparations), [false]);
+	assert.equal(throwingLogger.runtime.registry.getContext(86).kind, 'queued');
+	assert.equal(
+		throwingConnection.messages.some(
+			(message) => message.t === 'error' && message.d.code === 'internal_error',
+		),
+		true,
+	);
+	throwingLogger.runtime.destroy();
+	assert.equal(throwingLogger.clock.pending(), 0);
 
 	// 5秒timeout後にfactoryが成功してもcommitせず、生成物を1回だけ破棄。
 	const lateDeferred: {

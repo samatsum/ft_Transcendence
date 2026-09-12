@@ -9,6 +9,7 @@ import {
 	roomCodeSchema,
 	rspRulesSchema,
 	type CanonicalRules,
+	type FpsAiSpeed,
 	type LobbyMode,
 	type LobbySeat,
 	type LobbyServerMessage,
@@ -79,7 +80,7 @@ export class LobbyRooms {
 		displayName: string,
 		input:
 			| { mode: 'rsp'; rules?: { map?: string; target_score?: number } }
-			| { mode: 'fps'; rules?: { map?: string } },
+			| { mode: 'fps'; rules?: { map?: string; ai_speed?: FpsAiSpeed } },
 	): LobbyOperationResult<string> {
 		const unavailable = contextError(this.registry, userId);
 		if (unavailable) return unavailable;
@@ -444,10 +445,13 @@ function contextError(
 	return failure('already_in_game', 'match is already starting or running');
 }
 
-/** modeとmap整合を確認し、既定値を補ったcanonical rulesへ変換する */
+/** modeとmap整合を確認し、既定値を補った確定済みrulesへ変換する */
 function canonicalizeRules(
 	mode: LobbyMode,
-	input: { map?: string; target_score?: number } | CanonicalRules | undefined,
+	input:
+		| { map?: string; target_score?: number; ai_speed?: FpsAiSpeed }
+		| CanonicalRules
+		| undefined,
 	requireComplete = false,
 ): CanonicalRules | null {
 	const map = input?.map ?? (requireComplete ? undefined : defaultMapId(mode));
@@ -455,6 +459,7 @@ function canonicalizeRules(
 	const entry = findMap(map);
 	if (!entry || entry.mode !== mode) return null;
 	if (mode === 'rsp') {
+		if (input && 'ai_speed' in input) return null;
 		const requestedTargetScore =
 			input && 'target_score' in input ? input.target_score : undefined;
 		const targetScore =
@@ -467,9 +472,15 @@ function canonicalizeRules(
 		return parsed.success ? parsed.data : null;
 	}
 	if (input && 'target_score' in input) return null;
-	const parsed = fpsRulesSchema.safeParse({ map });
-	if (!parsed.success) return null;
-	return { map };
+	const requestedAiSpeed = input && 'ai_speed' in input ? input.ai_speed : undefined;
+	const aiSpeed =
+		requestedAiSpeed !== undefined
+			? requestedAiSpeed
+			: requireComplete
+				? undefined
+				: 'normal';
+	const parsed = fpsRulesSchema.safeParse({ map, ai_speed: aiSpeed });
+	return parsed.success ? parsed.data : null;
 }
 
 /** mode定員ぶんの空席配列を生成する */
