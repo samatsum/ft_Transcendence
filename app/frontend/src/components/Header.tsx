@@ -45,8 +45,13 @@ export function Header() {
 					 * ml-auto: 折り返したときに右寄せにする。
 					 */
 					<div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
+						{/*
+						 * aria-label: sm 未満では表示名が visually hidden なので、
+						 * リンクの accessible name を明示する（見た目は変えない）。
+						 */}
 						<Link
 							to={`/profile/${user.id}`}
+							aria-label={`${user.displayName}のプロフィール`}
 							className="flex min-w-0 items-center gap-2 rounded-md px-2 py-1 text-body text-slate-200 hover:bg-slate-800"
 						>
 							<span
@@ -59,7 +64,7 @@ export function Header() {
 							 * 表示名は sm(640px) 未満では非表示。
 							 * 375px ではアバターだけにして Header の横幅を節約する。
 							 */}
-							<span className="hidden max-w-[8rem] truncate sm:inline">
+							<span className="hidden max-w-[8rem] truncate sm:inline" aria-hidden>
 								{user.displayName}
 							</span>
 						</Link>
