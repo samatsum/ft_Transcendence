@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext.js';
 import { useToast } from '../contexts/ToastContext.js';
 import { ApiError } from './apiError.js';
 import { apiFetch, isAbortError, type ApiFetchOptions } from './apiFetch.js';
+import { decideErrorAction } from './errorPolicy.js';
 
 // F-02 の hook。pure な apiFetch に React 世界の副作用(Toast / Auth / navigate)を巻き付ける。
 //
@@ -22,6 +23,14 @@ export interface UseApiCallOptions<T> extends ApiFetchOptions {
 	toast?: boolean;
 	/** 呼び出し側で code 別ハンドリング(Toast の後にも呼ばれる) */
 	onError?: (err: ApiError) => void;
+	/**
+	 * true(既定) なら 401 をセッション切れとみなし、AuthContext を落として /login へ送る。
+	 *
+	 * **ログイン画面のように 401 が正常系（パスワードが違う）の呼び出しは false にする。**
+	 * 既定のままだと自分自身へリダイレクトし、「ログイン後に元のページへ戻る」ための
+	 * 戻り先が /login で上書きされる（#201）
+	 */
+	redirectOn401?: boolean;
 }
 
 type Shortcut<T> = Omit<UseApiCallOptions<T>, 'method' | 'body'>;
@@ -46,20 +55,21 @@ export function useApi(): UseApiResult {
 
 	const request = useCallback(
 		async <T = unknown>(url: string, opts: UseApiCallOptions<T> = {}): Promise<T> => {
-			const { schema, toast = true, onError, ...fetchOpts } = opts;
+			const { schema, toast = true, onError, redirectOn401 = true, ...fetchOpts } = opts;
 			try {
 				return await apiFetch<T>(url, fetchOpts, schema);
 			} catch (err) {
 				if (isAbortError(err)) throw err;
 				if (err instanceof ApiError) {
-					if (err.code === 'unauthenticated') {
+					// 判定は errorPolicy.ts の純関数に置いてある（hook のままだとテストできないため）
+					const action = decideErrorAction(err.code, { toast, redirectOn401 });
+					if (action === 'redirect') {
 						setUser(null);
 						navigate('/login', {
 							replace: true,
 							state: { from: location.pathname + location.search },
 						});
-						// Toast は出さない(推奨決定#1)
-					} else if (toast) {
+					} else if (action === 'toast') {
 						push({ kind: 'error', message: err.message });
 					}
 					onError?.(err);
