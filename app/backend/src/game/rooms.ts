@@ -72,6 +72,7 @@ export async function createRoomFromRules(options: {
 	seed?: number;
 	participants?: RoomOptions['participants'];
 	humanSlots?: number[];
+	devAutoFpsWinner?: RoomOptions['devAutoFpsWinner'];
 	onBroadcast?: RoomOptions['onBroadcast'];
 	persistMatch?: RoomOptions['persistMatch'];
 	onMatchResult?: RoomOptions['onMatchResult'];
@@ -96,6 +97,7 @@ export async function createRoomFromRules(options: {
 		seed: options.seed ?? 0,
 		participants: options.participants,
 		humanSlots: options.humanSlots,
+		devAutoFpsWinner: options.devAutoFpsWinner,
 		onBroadcast: options.onBroadcast,
 		persistMatch: options.persistMatch,
 		onMatchResult: options.onMatchResult,

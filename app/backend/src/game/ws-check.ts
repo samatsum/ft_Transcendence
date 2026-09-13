@@ -4,6 +4,7 @@
 // 検査1: 対人戦の疎通 — 2クライアントが join → welcome → input → snapshot → match_end
 // 検査2: ② §10 受入条件 №6 — 不正メッセージ4種がそれぞれ仕様どおりに扱われる
 // 検査3: B-12 — 30秒grace内の復帰、満了AI確定、RSP abandon、FPS forfeit
+// 検査5: 開発用FPS自動リザルト — 最終snapshot → goal → match_end
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
@@ -886,6 +887,125 @@ async function checkMaps(baseUrl: string): Promise<string[]> {
 	return bad;
 }
 
+/* ── 検査5: 開発用FPS自動リザルト ──────────────────────────────── */
+
+async function checkDevAutoFpsResult(): Promise<string[]> {
+	const bad: string[] = [];
+
+	for (const expectedWinner of [0, 1]) {
+		let now = 0;
+		let persisted = false;
+		const messages: GameServerMessage[] = [];
+		const room = await createRoomFromRules({
+			roomId: `dev-auto-fps-${expectedWinner}`,
+			mode: 'fps',
+			rules: { map: 'fps_duel' },
+			participants: [{ userId: 700 + expectedWinner, slot: 0 }],
+			humanSlots: [0],
+			now: () => now,
+			devAutoFpsWinner: () => expectedWinner,
+			onBroadcast: (message) => messages.push(message),
+			persistMatch: async () => {
+				persisted = true;
+				return null;
+			},
+			log: { info: () => {}, warn: () => {} },
+		});
+		room.join(0);
+		now += 3_000;
+		room.pump();
+		await waitUntil(
+			() => messages.some((message) => message.t === 'event' && message.d.kind === 'match_end'),
+			`dev auto FPS winner=${expectedWinner}`,
+			bad,
+		);
+
+		const finalSnapshotIndex = messages.findIndex(
+			(message) => message.t === 'snapshot' && message.d.match.state === 'finished',
+		);
+		const goalIndex = messages.findIndex(
+			(message) => message.t === 'event' && message.d.kind === 'goal',
+		);
+		const endIndex = messages.findIndex(
+			(message) => message.t === 'event' && message.d.kind === 'match_end',
+		);
+		const finalSnapshot = messages[finalSnapshotIndex];
+		const matchEnd = messages[endIndex];
+		if (
+			finalSnapshotIndex < 0 ||
+			goalIndex <= finalSnapshotIndex ||
+			endIndex <= goalIndex ||
+			!finalSnapshot ||
+			finalSnapshot.t !== 'snapshot' ||
+			finalSnapshot.d.match.winner !== expectedWinner ||
+			!matchEnd ||
+			matchEnd.t !== 'event' ||
+			matchEnd.d.kind !== 'match_end' ||
+			matchEnd.d.winner !== expectedWinner ||
+			matchEnd.d.reason !== 'goal' ||
+			matchEnd.d.match_id !== null ||
+			persisted ||
+			room.getState() !== 'finished'
+		) {
+			bad.push(`winner=${expectedWinner}: 最終snapshot→goal→match_endの契約が不正`);
+		}
+		closeRoom(room.roomId);
+	}
+
+	const unchangedCases = [
+		{
+			roomId: 'dev-auto-off-fps',
+			mode: 'fps' as const,
+			winner: undefined,
+			expectWarning: false,
+		},
+		{
+			roomId: 'dev-auto-rsp',
+			mode: 'rsp' as const,
+			winner: () => 0,
+			expectWarning: false,
+		},
+		{
+			roomId: 'dev-auto-invalid-fps',
+			mode: 'fps' as const,
+			winner: () => 2,
+			expectWarning: true,
+		},
+	];
+	for (const testCase of unchangedCases) {
+		let now = 0;
+		let warned = false;
+		const messages: GameServerMessage[] = [];
+		const room = await createRoomFromRules({
+			roomId: testCase.roomId,
+			mode: testCase.mode,
+			rules: testCase.mode === 'fps'
+				? { map: 'fps_duel' }
+				: { map: 'rsp', target_score: 21 },
+			participants: [{ userId: 710, slot: 0 }],
+			humanSlots: [0],
+			now: () => now,
+			devAutoFpsWinner: testCase.winner,
+			onBroadcast: (message) => messages.push(message),
+			log: { info: () => {}, warn: () => { warned = true; } },
+		});
+		room.join(0);
+		now += 3_000;
+		room.pump();
+		await waitUntil(() => room.getTick() >= 2, `${testCase.roomId} first snapshot`, bad);
+		if (
+			room.getState() !== 'playing' ||
+			messages.some((message) => message.t === 'event' && message.d.kind === 'match_end') ||
+			warned !== testCase.expectWarning
+		) {
+			bad.push(`${testCase.roomId}: 自動決着の対象外なのに終了した`);
+		}
+		closeRoom(room.roomId);
+	}
+
+	return bad;
+}
+
 /* ── 実行 ─────────────────────────────────────────────────────── */
 
 async function main(): Promise<void> {
@@ -911,10 +1031,18 @@ async function main(): Promise<void> {
 	const bad4 = await checkMaps(`http://127.0.0.1:${PORT}`);
 	console.log(bad4.length ? `  NG:\n    ${bad4.join('\n    ')}` : '  OK');
 
+	console.log('\n検査5: 開発用FPS自動リザルト');
+	const bad5 = await checkDevAutoFpsResult();
+	console.log(
+		bad5.length
+			? `  NG:\n    ${bad5.join('\n    ')}`
+			: '  OK: ランダム勝者の結果配信と対象外を確認',
+	);
+
 	closeAllRooms();
 	await app.close();
 
-	if (bad1.length || bad2.length || bad3.length || bad4.length) {
+	if (bad1.length || bad2.length || bad3.length || bad4.length || bad5.length) {
 		console.error('\nW-11 / B-12 / B-14: 失敗');
 		process.exit(1);
 	}

@@ -383,6 +383,19 @@ docker compose up --build
 
 By default, Compose runs the container as root to avoid bind-mount permission errors right after a fresh clone. If you want generated files on Linux/WSL to be owned by yourself, specify the real UID/GID as in `HOST_UID=$(id -u) HOST_GID=$(id -g) docker compose up --build`.
 
+To inspect the FPS result flow without playing to the goal, explicitly enable the development-only
+auto-result switch:
+
+```bash
+DEV_AUTO_FPS_RESULT=true HOST_UID=$(id -u) HOST_GID=$(id -g) docker compose up --build
+```
+
+Every FPS match started through the normal lobby UI then ends on its first 15 Hz snapshot with a
+random slot 0/1 goal winner. The server still sends the ordinary final snapshot → `goal` →
+`match_end` sequence, so GameView exercises the real result-screen path. RSP and an unset/false
+switch are unchanged. Never enable this switch for normal evaluation or production use; these
+forced results are visual-development data, not official match outcomes.
+
 ### Coding Standards
 
 The authoritative source for the C coding rules is [CODING_RULES.md](./coding-rules.md). The `CRxxx` identifiers shown in `make check` output correspond to rule IDs in that document.

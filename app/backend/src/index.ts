@@ -1,6 +1,7 @@
 // I-01 の起動骨格に B-02 で zod 検証パイプライン・③§1 エラーエンベロープ/
 // レート制限を配線した。B-03 で Prisma、B-08〜B-12 で WS と GameRoom
 // （sim.wasm）が載る。
+import { randomInt } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 
 import Fastify from 'fastify';
@@ -53,6 +54,10 @@ export interface BuildServerOptions {
 export async function buildServer(options: BuildServerOptions = {}) {
 	const app = Fastify({ logger: loggerOptions() });
 	const connectionManager = options.connectionManager ?? new ConnectionManager();
+	const devAutoFpsResult = process.env.DEV_AUTO_FPS_RESULT === 'true';
+	if (devAutoFpsResult) {
+		app.log.warn('開発用FPS自動リザルトが有効（通常の評価・本番運用では無効にすること）');
+	}
 
 	// ③§1-A: 全ルート共通のエラーエンベロープ。ZodError の自動変換もここに載る
 	registerErrorHandler(app);
@@ -121,7 +126,11 @@ export async function buildServer(options: BuildServerOptions = {}) {
 	};
 	await app.register(async (scoped) => {
 		registerGameWs(scoped, connectionManager);
-		registerLobbyWs(scoped, { connectionManager, profileResolver });
+		registerLobbyWs(scoped, {
+			connectionManager,
+			profileResolver,
+			devAutoFpsWinner: devAutoFpsResult ? () => randomInt(2) : undefined,
+		});
 	});
 	app.addHook('onClose', async () => {
 		closeAllRooms();

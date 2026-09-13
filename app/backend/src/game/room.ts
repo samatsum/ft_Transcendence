@@ -129,6 +129,8 @@ export interface RoomOptions {
 	 * 省略時は `humanSlots` を、それも無ければ全席を人間とみなす。
 	 */
 	participants?: ReadonlyArray<{ userId: number; slot: number }>;
+	/** 開発用FPSリザルト確認。最初のsnapshot配信時に返したslotをgoal勝者にする */
+	devAutoFpsWinner?: () => number;
 	/**
 	 * 全参加者へ配信する。B-11 が WS へ差し替える。
 	 *
@@ -227,6 +229,8 @@ export class GameRoom {
 	 * state はまだ 'playing'（match_end 発火時に 'finished' へ落とす）。
 	 */
 	private finishStarted = false;
+	/** 不正なselectorでも毎snapshotで再試行・再警告しないための印 */
+	private devAutoFpsResultAttempted = false;
 	private readonly opts: Required<Pick<RoomOptions, 'now' | 'log'>> & RoomOptions;
 
 	private constructor(options: RoomOptions) {
@@ -525,13 +529,54 @@ export class GameRoom {
 		// ② §6-A: 偶数 tick のみ配信（実効 15Hz）
 		const broadcastedThisTick = this.tick % 2 === 0;
 		if (broadcastedThisTick) {
-			const message = decodeSnapshot(sim.readSnapshot(), this.tick, this.mode);
+			let message = decodeSnapshot(sim.readSnapshot(), this.tick, this.mode);
+			let forcedWinner: number | null = null;
+			if (
+				this.mode === 'fps' &&
+				this.opts.devAutoFpsWinner &&
+				!this.devAutoFpsResultAttempted
+			) {
+				this.devAutoFpsResultAttempted = true;
+				let selected: number | undefined;
+				try {
+					selected = this.opts.devAutoFpsWinner();
+				} catch (err) {
+					this.opts.log.warn(
+						{ room: this.roomId, err },
+						'GameRoom: 開発用FPS winner selectorが失敗したため自動決着を無効化',
+					);
+				}
+				if (selected === 0 || selected === 1) {
+					forcedWinner = selected;
+					message = {
+						...message,
+						d: {
+							...message.d,
+							match: { ...message.d.match, state: 'finished', winner: selected },
+						},
+					};
+				} else if (selected !== undefined) {
+					this.opts.log.warn(
+						{ room: this.roomId, winner: selected },
+						'GameRoom: 開発用FPS winner selectorが不正な値を返したため自動決着を無効化',
+					);
+				}
+			}
 			this.broadcast(message);
 			// snapshot を配ってからイベントを出す（値の正本が先に届く。② §5-D）
-			for (const event of diffEvents(this.previous, message.d, this.mode)) {
+			const events = diffEvents(this.previous, message.d, this.mode);
+			for (const event of events) {
 				this.broadcast(event);
 			}
 			this.previous = message.d;
+			if (forcedWinner !== null) {
+				// 最初のsnapshotではpreviousがnullなのでgoalを明示的に通知する
+				if (!events.some((event) => event.d.kind === 'goal')) {
+					this.broadcast({ t: 'event', d: { kind: 'goal', id: forcedWinner } });
+				}
+				this.finish('decided', true, forcedWinner, false);
+				return;
+			}
 		}
 		if (finished) {
 			// 偶数 tick で決着した場合、直上で最終 snapshot を配信済み。
@@ -561,6 +606,8 @@ export class GameRoom {
 	/**
 	 * @param outcome decided = sim決着 / abandon = 全員離脱 / forfeit = FPS離脱負け
 	 * @param alreadyBroadcasted 同じ tick で最終 snapshot を配信済みか
+	 * @param winnerOverride 開発用強制決着またはforfeitで使う勝者slot
+	 * @param persistResult 正式な試合結果として永続化するか
 	 *
 	 * ② §6-C の同期部分（1. 最終 snapshot 配信）だけをここで行う。
 	 * 永続化（2.）と `event(match_end)` 発火（3.）は
@@ -573,7 +620,8 @@ export class GameRoom {
 	private finish(
 		outcome: 'decided' | 'abandon' | 'forfeit',
 		alreadyBroadcasted = false,
-		forfeitWinner?: number,
+		winnerOverride?: number,
+		persistResult = true,
 	): void {
 		if (this.finishStarted) return; // 二重起動防止（onTick と leave の両方から来うる）
 		this.finishStarted = true;
@@ -589,12 +637,9 @@ export class GameRoom {
 			}
 			this.previous = last.d;
 		}
-		const winner =
-			outcome === 'abandon'
-				? null
-				: outcome === 'forfeit'
-					? (forfeitWinner ?? null)
-					: last.d.match.winner;
+		const winner = outcome === 'abandon'
+			? null
+			: (winnerOverride ?? last.d.match.winner);
 		// ② §5-D: reason は score|goal|forfeit|abandon。forfeit は B-12（leave / 猶予満了）で使う
 		const reason: MatchEndReason =
 			outcome === 'abandon'
@@ -606,7 +651,12 @@ export class GameRoom {
 						: 'score';
 		// state は 'playing' のまま持ち越し（タイマー停止済み・入力反映も stopTimer で
 		// 次 tick が来ないので実質固まる）。await 完了後に 'finished' へ落とす。
-		void this.persistAndAnnounceEnd(winner, reason, [last.d.match.score[0], last.d.match.score[1]]);
+		void this.persistAndAnnounceEnd(
+			winner,
+			reason,
+			[last.d.match.score[0], last.d.match.score[1]],
+			persistResult,
+		);
 	}
 
 	/**
@@ -623,10 +673,11 @@ export class GameRoom {
 		winner: number | null,
 		reason: MatchEndReason,
 		score: readonly [number, number],
+		persistResult: boolean,
 	): Promise<void> {
 		let matchId: number | null = null;
 		let matchResult: MatchResultPayload | null = null;
-		if (this.opts.persistMatch) {
+		if (persistResult && this.opts.persistMatch) {
 			try {
 				const persisted = await this.opts.persistMatch({
 					roomId: this.roomId,
