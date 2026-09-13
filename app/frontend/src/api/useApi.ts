@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { ZodType } from 'zod';
+import type { ApiRequester } from '@ft/shared';
 
 import { useAuth } from '../contexts/AuthContext.js';
 import { useToast } from '../contexts/ToastContext.js';
@@ -25,7 +26,10 @@ export interface UseApiCallOptions<T> extends ApiFetchOptions {
 
 type Shortcut<T> = Omit<UseApiCallOptions<T>, 'method' | 'body'>;
 
-export interface UseApiResult {
+// #163: shared のエンドポイントヘルパーへ渡せることを型で固定する。
+// この extends が外れると `authApi.login(api, ...)` がコンパイルエラーになるので、
+// 契約が壊れたことをここで検出できる
+export interface UseApiResult extends ApiRequester {
 	request: <T = unknown>(url: string, opts?: UseApiCallOptions<T>) => Promise<T>;
 	get: <T = unknown>(url: string, opts?: Shortcut<T>) => Promise<T>;
 	post: <T = unknown>(url: string, body?: unknown, opts?: Shortcut<T>) => Promise<T>;
