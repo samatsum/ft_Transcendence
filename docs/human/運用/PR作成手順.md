@@ -176,6 +176,13 @@ npm run dev:frontend
 
 **Issue #104 は「ユーザー名」表記、REST API（B-04）は `email` + `password`:** ラベルは Issue に合わせ、API 接続 PR で整合を取る。本 PR の「未検証・スコープ外」に明記する。
 
+> **2026-09-13 決着（[#168](https://github.com/samatsum/ft_Transcendence/issues/168)）: 認証画面は `email` + `password` に統一する。**
+> signup は `email` + `password` + `display_name`。サーバの `loginRequestSchema` / `signupRequestSchema` が
+> この形しか受け付けず、新規作成画面（[#178](https://github.com/samatsum/ft_Transcendence/pull/178)）も email で実装済み。
+> **上の表の「ユーザー名入力」は #104 当時の画面の記述**で、ログイン画面の入力欄は
+> [#172](https://github.com/samatsum/ft_Transcendence/issues/172) の API 接続で「メールアドレス」に変わる。
+> 以後、新しい Issue や PR で「ユーザー名」表記を見つけたら、その場で直すかコメントを残すこと。
+
 ### frontend と backend
 
 ```
