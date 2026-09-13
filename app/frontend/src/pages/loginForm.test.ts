@@ -115,9 +115,9 @@ describe('loginDestination', () => {
 		expect(loginDestination(state)).toBe('/lobby');
 	});
 
-	// #186 回帰: useApi 経由だと 401 のたびに state.from が現在地('/login')で
+	// #186 回帰: useApi の既定だと 401 のたびに state.from が現在地('/login')で
 	// 上書きされ、「打ち間違えた後は正しく入れても画面が変わらない」形で壊れた。
-	// 統合版は plainRequester を使うので上書き自体が起きないが、戻り先の判定でも塞ぐ
+	// 統合版は `redirectOn401: false`（#202）で上書き自体を起こさないが、戻り先の判定でも塞ぐ。
 	// 末尾スラッシュと大文字小文字も塞ぐ（CodeRabbit 指摘 + 実測で判明した範囲）。
 	// React Router 7 の matchRoutes は '/login/' も '/LOGIN' も /login ルートに入れる
 	it.each([
