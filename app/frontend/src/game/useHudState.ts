@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import type { GameEvent, WelcomeMessage } from '@ft/shared';
+import type { WelcomeMessage } from '@ft/shared';
 
-import type { TimedSnapshot } from './useGameSocket.js';
+import type { QueuedGameEvent, TimedSnapshot } from './useGameSocket.js';
 import {
 	applyGameEvent,
 	createInitialHudState,
@@ -11,7 +11,7 @@ import {
 } from './hudState.js';
 
 // GV-07: HudOverlay が消費する派生 state を1本の hook に集約。
-// - lastEvent の変化ごとに applyGameEvent
+// - pendingEvents を到着順に applyGameEvent してから確認済みにする
 // - 200ms 間隔で snapshotBufferRef.current の tail を読んでスコア/seats を更新
 //   (snapshot ref は再レンダを走らせないので明示的にサンプリングする)
 // - countdown は event(countdown, seconds:3) を受けて 3→2→1 と1秒ずつデクリメント
@@ -20,7 +20,8 @@ import {
 interface UseHudStateOptions {
 	welcome: WelcomeMessage['d'] | null;
 	snapshotBufferRef: { current: TimedSnapshot[] };
-	lastEvent: GameEvent['d'] | null;
+	pendingEvents: QueuedGameEvent[];
+	acknowledgeEvents: (throughId: number) => void;
 }
 
 const HUD_POLL_MS = 200;
@@ -28,7 +29,8 @@ const HUD_POLL_MS = 200;
 export function useHudState({
 	welcome,
 	snapshotBufferRef,
-	lastEvent,
+	pendingEvents,
+	acknowledgeEvents,
 }: UseHudStateOptions): HudState {
 	const [state, setState] = useState<HudState>(createInitialHudState);
 	// setState の関数形式内から現行 state を参照するとリアクトのバッチ挙動と絡んで
@@ -39,9 +41,20 @@ export function useHudState({
 	combatantIdRef.current = welcome?.combatant_id ?? null;
 	// countdown を1秒ずつ刻むための ID
 	const countdownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-	// event object の identity で「既に処理したか」を判定(useGameSocket は同じ event を
-	// state で保持するので、複数回 useEffect が走ってもここで dedup する)
-	const lastEventRef = useRef<GameEvent['d'] | null>(null);
+	// acknowledge の state 更新前に effect が再実行されても同じ event を二重適用しない
+	const lastProcessedEventIdRef = useRef(0);
+
+	// roomId 変更時は useGameSocket が welcome を null に戻すため、HUD の派生状態も初期化する
+	useEffect(() => {
+		if (welcome !== null) return;
+		setState(createInitialHudState());
+		seatsInitializedRef.current = false;
+		lastProcessedEventIdRef.current = 0;
+		if (countdownTimerRef.current) {
+			clearInterval(countdownTimerRef.current);
+			countdownTimerRef.current = null;
+		}
+	}, [welcome]);
 
 	// snapshot polling: 200ms ごとに tail を読んで seats/score を反映
 	useEffect(() => {
@@ -67,21 +80,43 @@ export function useHudState({
 		return () => clearInterval(id);
 	}, [snapshotBufferRef]);
 
-	// event を state に反映
+	// event を到着順にまとめて state へ反映する
+	// React が複数の WS 受信を同じ描画へ
+	// batch しても、中間 event は pendingEvents に残るため取りこぼさない
 	useEffect(() => {
-		if (!lastEvent) return;
-		if (lastEventRef.current === lastEvent) return; // 同 identity なら処理済み
-		lastEventRef.current = lastEvent;
-		// hand_changed は自席のみフラッシュ(それ以外の席の hand 変更は演出しない)
-		if (lastEvent.kind === 'hand_changed' && lastEvent.id !== combatantIdRef.current) {
+		if (pendingEvents.length === 0) return;
+		const eventsToProcess = pendingEvents.filter(({ id }) => id > lastProcessedEventIdRef.current);
+		const throughId = pendingEvents[pendingEvents.length - 1]!.id;
+		if (eventsToProcess.length === 0) {
+			acknowledgeEvents(throughId);
 			return;
 		}
-		setState((prev) => applyGameEvent(prev, lastEvent, performance.now()));
+		lastProcessedEventIdRef.current = eventsToProcess[eventsToProcess.length - 1]!.id;
+		const tail = snapshotBufferRef.current[snapshotBufferRef.current.length - 1];
+		const finalSnapshotScore = tail?.payload.match.score;
+		const nowMs = performance.now();
+		let countdownCommand: { kind: 'start'; seconds: number } | { kind: 'stop' } | null = null;
+		for (const { event } of eventsToProcess) {
+			if (event.kind === 'countdown') {
+				countdownCommand = { kind: 'start', seconds: event.seconds };
+			} else if (event.kind === 'match_start') {
+				countdownCommand = { kind: 'stop' };
+			}
+		}
 
-		// countdown を1秒ずつ刻む
-		if (lastEvent.kind === 'countdown') {
+		setState((prev) => {
+			let next = prev;
+			for (const { event } of eventsToProcess) {
+				// hand_changed は自席のみフラッシュ(それ以外の席の hand 変更は演出しない)
+				if (event.kind === 'hand_changed' && event.id !== combatantIdRef.current) continue;
+				next = applyGameEvent(next, event, nowMs, finalSnapshotScore);
+			}
+			return next;
+		});
+
+		if (countdownCommand?.kind === 'start') {
 			if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
-			let remaining = lastEvent.seconds;
+			let remaining = countdownCommand.seconds;
 			countdownTimerRef.current = setInterval(() => {
 				remaining -= 1;
 				if (remaining <= 0) {
@@ -92,13 +127,13 @@ export function useHudState({
 					setState((prev) => ({ ...prev, countdownSeconds: remaining }));
 				}
 			}, 1000);
-		}
-		// match_start が来たら countdown timer を停止(applyGameEvent 側で state は消える)
-		if (lastEvent.kind === 'match_start' && countdownTimerRef.current) {
+		} else if (countdownCommand?.kind === 'stop' && countdownTimerRef.current) {
 			clearInterval(countdownTimerRef.current);
 			countdownTimerRef.current = null;
 		}
-	}, [lastEvent]);
+
+		acknowledgeEvents(throughId);
+	}, [pendingEvents, acknowledgeEvents, snapshotBufferRef]);
 
 	// unmount で countdown timer を掃除
 	useEffect(() => {
