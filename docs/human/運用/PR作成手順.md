@@ -197,6 +197,12 @@ npm run dev:frontend
 
 ### C. 任意 — backend あり（2 ターミナル）
 
+> **先に `.env` へ `ALLOWED_ORIGIN=http://localhost:5173` を足すこと**（#207）。
+> 無いとログインもアカウント作成も必ず `403 forbidden` になり、画面には
+> 「この Origin からのリクエストは許可されていません」と出る。**認証画面の不具合に
+> 見えるので誤診しやすい。** `docker compose` に戻すときはコメントアウトし直すこと
+> （compose は同じ `.env` を読むので、dev 用の値が残っていると今度は compose が 403 になる）。
+
 ```bash
 # ターミナル 1
 npm run dev:backend
