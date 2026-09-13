@@ -80,7 +80,10 @@ export function loginDestination(state: unknown): string {
 	if (!from.startsWith('/')) return fallback;
 	if (from.startsWith('//') || from.startsWith('/\\')) return fallback;
 
-	const path = from.split(/[?#]/, 1)[0];
+	// React Router 7 の照合は末尾スラッシュを無視し、大文字小文字も区別しない
+	// （実測: '/login/' も '/LOGIN' も /login ルートに入る）。同じ正規化をしてから比べないと
+	// 素通りする
+	const path = (from.split(/[?#]/, 1)[0] ?? '').replace(/\/+$/, '').toLowerCase();
 	if (path === '/login' || path === '/signup') return fallback;
 
 	return from;
