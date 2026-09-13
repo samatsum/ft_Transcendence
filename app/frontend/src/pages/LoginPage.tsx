@@ -1,31 +1,65 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, type FormEvent } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { authApi, loginRequestSchema } from '@ft/shared';
 
+import { ApiError } from '../api/apiError.js';
+import { plainRequester } from '../api/requester.js';
 import { Button } from '../components/Button.js';
 import { Card } from '../components/Card.js';
 import { FormField } from '../components/FormField.js';
 import { Input } from '../components/Input.js';
 import { useAuth } from '../contexts/AuthContext.js';
+import { loginApiError, loginDestination, zodFieldErrors, type FieldErrors } from './loginForm.js';
+
+// F-03(#172/#162)。#182 と #186 の統合版。
+//
+// **requester は `useApi()` ではなく `plainRequester`（副作用なし）を渡す。**
+// useApi は 401 を「セッション切れ」とみなして setUser(null) + /login へ navigate する
+// （useApi.ts の 401 分岐）。ところがこの画面では 401 こそパスワード誤りの正常系で、
+// しかもその navigate は state.from を**現在地で上書き**する。つまり
+//   /lobby で弾かれる → /login（from='/lobby'）→ 1度打ち間違える → from='/login' に化ける
+//   → 正しく入れ直して成功 → /login へ戻され、ログイン済みなのに画面が変わらない
+// という形で壊れる。plainRequester なら Toast も navigate も付かないので起きない。
 
 export default function LoginPage() {
 	const navigate = useNavigate();
+	const location = useLocation();
 	const { setUser } = useAuth();
-	const [username, setUsername] = useState('');
+
+	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
-	const [error, setError] = useState<string | null>(null);
+	const [errors, setErrors] = useState<FieldErrors>({});
+	const [submitting, setSubmitting] = useState(false);
 
-	function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+	async function handleSubmit(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
+		if (submitting) return;
 
-		if (!username || !password) {
-			setError('ユーザー名とパスワードを入力してください');
+		setErrors({});
+
+		// 送る前に shared のスキーマで確かめる。往復を1回省けるうえ、
+		// サーバと同じ定義なので画面とサーバで判定がずれない
+		const parsed = loginRequestSchema.safeParse({ email, password });
+		if (!parsed.success) {
+			setErrors(zodFieldErrors(parsed.error.issues));
 			return;
 		}
 
-		// TODO(F-03): 実際の POST /api/auth/login に差し替える
-		setUser({ id: 0, displayName: username });
+		setSubmitting(true);
+		try {
+			// URL・メソッド・req/res スキーマの対応は #163 のヘルパー側に閉じている
+			const user = await authApi.login(plainRequester, parsed.data);
 
-		navigate('/lobby');
+			// セッション Cookie はサーバが httpOnly で付ける。画面側は本人情報だけ持つ
+			setUser({ id: user.id, displayName: user.display_name });
+			navigate(loginDestination(location.state), { replace: true });
+		} catch (err) {
+			setErrors(
+				err instanceof ApiError ? loginApiError(err) : { form: 'ログインに失敗しました' },
+			);
+		} finally {
+			setSubmitting(false);
+		}
 	}
 
 	return (
@@ -33,32 +67,46 @@ export default function LoginPage() {
 			<h1 className="text-heading-lg">ログイン</h1>
 
 			<Card>
-				<form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-					<FormField label="ユーザー名" required>
+				{/* noValidate: 付けないとブラウザ標準の検証が先に出て、自前の文言が表示されない */}
+				<form className="flex flex-col gap-4" noValidate onSubmit={handleSubmit}>
+					{errors.form && (
+						<p
+							className="rounded-md border border-rose-500 bg-rose-950/40 px-3 py-2 text-body text-rose-200"
+							role="alert"
+						>
+							{errors.form}
+						</p>
+					)}
+
+					<FormField label="メールアドレス" error={errors.email} required>
 						<Input
-							value={username}
-							onChange={(event) => setUsername(event.target.value)}
-							autoComplete="username"
+							type="email"
+							value={email}
+							onChange={(event) => setEmail(event.target.value)}
+							autoComplete="email"
+							disabled={submitting}
 						/>
 					</FormField>
 
-					<FormField label="パスワード" error={error} required>
+					<FormField label="パスワード" error={errors.password} required>
 						<Input
 							type="password"
 							value={password}
 							onChange={(event) => setPassword(event.target.value)}
 							autoComplete="current-password"
+							disabled={submitting}
 						/>
 					</FormField>
 
-					<Button type="submit" fullWidth>
-						ログイン
+					<Button type="submit" fullWidth disabled={submitting}>
+						{submitting ? 'ログイン中…' : 'ログイン'}
 					</Button>
 
 					<Button
 						type="button"
 						variant="secondary"
 						fullWidth
+						disabled={submitting}
 						onClick={() => navigate('/signup')}
 					>
 						新規作成
