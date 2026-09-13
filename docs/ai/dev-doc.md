@@ -451,8 +451,17 @@ node web/bench_render.mjs          # per-internal-resolution throughput measurem
 
 An npm-workspaces monorepo independent of the C engine. See the README for details.
 
+> **`ALLOWED_ORIGIN` is required on this path, and differs from the Docker value** (#207).
+> Without it every auth request returns `403 forbidden`, which reads as a bug in the auth screens.
+> `isAllowedOrigin` (`app/backend/src/auth/session.ts`) only falls back to loopback origins when
+> `NODE_ENV=development` *and* `ALLOW_DEV_AUTH=true`, and `.env.example` ships both commented out.
+> Use `http://localhost:5173` for `npm run dev`; set nothing for `docker compose`, whose default
+> `https://localhost` already matches nginx. **Comment it out again when switching back to
+> Compose** — Compose reads the same `.env`, so a leftover dev value breaks the Docker path.
+
 ```
 npm install
+echo 'ALLOWED_ORIGIN=http://localhost:5173' >> .env   # required for auth — see the note above
 npm run dev:backend    # Fastify :3000
 npm run dev:frontend   # Vite :5173 (/api proxied to :3000)
 npm run typecheck      # type-checks all 3 workspaces

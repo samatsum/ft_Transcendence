@@ -150,14 +150,31 @@ and all 4 online-match maps. CI runs this on every PR.
 
 ### E. Web app dev servers (backend + frontend, without Docker)
 
+> **`ALLOWED_ORIGIN` is required on this path, and its value is *not* the one Docker uses.**
+>
+> Without it, every auth request fails with `403 forbidden` ("この Origin からのリクエストは
+> 許可されていません"), which looks like a bug in the auth screens.
+> [`isAllowedOrigin`](app/backend/src/auth/session.ts) falls back to allowing loopback origins only
+> when `NODE_ENV=development` *and* `ALLOW_DEV_AUTH=true`, and `.env.example` ships both commented
+> out.
+>
+> | How you start it | What the browser's `Origin` is | What to set |
+> |---|---|---|
+> | `npm run dev` | `http://localhost:5173` | `ALLOWED_ORIGIN=http://localhost:5173` |
+> | `docker compose` | `https://localhost` (via nginx) | nothing — the Compose default already matches |
+>
+> **Comment it out again before going back to `docker compose`.** Compose reads this same `.env`
+> for `${ALLOWED_ORIGIN:-https://localhost}`, so a leftover dev value breaks the Docker path
+> instead. See #207.
+
 ```bash
-npm install                # once, installs all 3 workspaces
-npm run dev:backend        # Fastify on :3000
-npm run dev:frontend       # Vite on :5173, proxies /api to :3000
+npm install                                            # once, installs all 3 workspaces
+echo 'ALLOWED_ORIGIN=http://localhost:5173' >> .env    # required — see the note above
+npm run dev:backend                                    # Fastify on :3000
+npm run dev:frontend                                   # Vite on :5173, proxies /api to :3000
 ```
 
-Open `http://localhost:5173`. The auth screens and lobby are stubs, so there is not much to click
-yet.
+Open `http://localhost:5173` and sign up from `/signup` to get a session.
 
 > **The `/game/dev-room` link on `/lobby` does not currently work from a browser**, despite what its
 > label says. Two independent blockers, and they are waiting on *different* issues:
