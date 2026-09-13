@@ -31,6 +31,14 @@ Issue ID の接頭辞。**レーンは「どこで動くか」ではなく「何
 クローズ済み Issue には残っており、書き換え不可能です。読むときは接頭辞だけ置換し番号はそのまま
 （`W-12` は今の `B-12`）。対応表は [`docs/ai/git-workflow.md`](docs/ai/git-workflow.md) が正本。
 
+**レーン付き Issue ID の新規採番は 2026-08-30 に廃止しました。** 新規 Issue は GitHub の生番号のみで
+識別し（例: `#133`）、どのレーンかは `lane:engine` / `lane:backend` / `lane:infra` / `lane:frontend` /
+`lane:gameview` ラベル（上表の5分類と1:1対応）で示します。レーン別に分かれていた GitHub Projects も
+単一の Project（"all"）へ統合済みです。**新規に `B-` `F-` 等の ID を採番しないこと。** ただし
+`docs/ai/backlog.md` の既存行・過去のコミット・クローズ済み Issue に残るレーン付き ID は書き換え
+不可能なので、読むときは上表のレーンとして解釈すること。詳細は
+[`docs/ai/git-workflow.md`](docs/ai/git-workflow.md) が正本。
+
 ## ドキュメントの二重構成
 
 | 置き場 | 読者 | 形式 |
@@ -63,15 +71,21 @@ Issue ID の接頭辞。**レーンは「どこで動くか」ではなく「何
 下位 PR が先に squash された時点で上位 PR の成果物が `main` に到達しません。実際に PR #56 で
 起きています。必ず `origin/main` から切ること。
 
-ブランチ名は `<type>/<slug>`（`feat/` `fix/` `docs/` `chore/` `ci/`）。
+ブランチ名は `<type>/<issue-no>-<slug>`（`feat/` `fix/` `docs/` `chore/` `ci/`）。
+GitHub Issue 番号を先頭に入れる（例: `docs/141-team-lane-restructure`）。2026-08-30 以前は
+`<type>/<slug>` や番号のみ（`docs/141`）のブランチも存在するが、新規ブランチはこの形式に従うこと。
 
 ## コミットメッセージ
 
-件名は [Conventional Commits](https://www.conventionalcommits.org/)。scope に Issue ID を入れる。
+件名は [Conventional Commits](https://www.conventionalcommits.org/)。scope に GitHub Issue 番号を入れる。
+**2026-08-30 以降、レーン付き ID（`B-12` 等）を新規の scope に書かないこと**——レーンは
+`lane:*` ラベルのみで表す。
 
 ```text
-fix(B-12): 再接続時に seat が解放されない問題を直す
+fix(133): 再接続時に seat が解放されない問題を直す
 ```
+
+過去のコミット（`fix(B-12): ...`）はそのまま残る。読み方は [レーン記号](#レーン記号) を参照。
 
 - 件名は英語でも日本語でもよいが、**1行の中で混ぜない**。周囲のコミットに合わせる
 - **本文は日本語。** 差分を読めば分かることではなく、**なぜそうしたか**を書く

@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<title>チーム体制 — ft_transcendence（2026-08-09版・退役）</title>
+<link rel="stylesheet" href="../../../docs/human/assets/style.css">
+</head>
+<body>
+
+<div class="shell hero" style="background:#3a1d1d;border:1px solid #a33;">
+	<p class="eyebrow">Archived — superseded 2026-08-30</p>
+	<h1>この版は退役しました</h1>
+	<p class="hero-lead">
+		このページは<code>docs/human/はじめに/チーム体制.html</code>の2026-08-09時点の版を、
+		Issue <a href="https://github.com/samatsum/ft_Transcendence/issues/141">#141</a>（ドキュメントの新調）
+		に伴い保存したものです。samatsum単独稼働・新メンバー4名合流待ちという前提で書かれており、
+		現在の6人体制（PO/PM/TL/Developer×2/Supporter）とは一致しません。
+		現行版は <a href="../../../docs/human/はじめに/チーム体制.html">docs/human/はじめに/チーム体制.html</a> を参照してください。
+	</p>
+</div>
+
+<main class="shell">
+
+<div class="shell hero">
+	<p class="eyebrow">Team Structure</p>
+	<h1>チーム体制</h1>
+	<p class="hero-lead">
+		本書はもともと4人体制の作業分担計画だったが、旧チーム（torinoue / mamiyaza / hminemur）は解散し、
+		2026-08-05 時点で稼働しているのは <strong>samatsum 1人のみ</strong>。
+		その後<strong>新メンバー4名の加入が確定した</strong>（合流時期は未定）。合流すれば samatsum を含めて
+		<strong>5人体制</strong>となり、課題書の4〜5人要件を満たす見込みだが、それまでは単独稼働が続く。
+		個人別のタスク割当・日割り・引き継ぎ経路は、相談相手が不在のあいだ書いても意味を持たないため
+		全削除してある（合流後に、そのときのメンバーで書き直す）。
+		一方で、課題書（II.1.1）が定める役割の「枠」自体はチーム再編に備えて残す。
+	</p>
+	<div class="hero-note">
+		<strong>更新: 2026-08-09</strong>
+		<span>体制: samatsum 単独稼働（新メンバー4名の加入が確定・時期未定）</span>
+	</div>
+</div>
+
+<section id="status">
+	<p class="section-kicker">01 — Current Status</p>
+	<h2>現在の体制</h2>
+	<p class="section-intro">
+		当初の設計は「4レーン = 4人」（Engine / Backend・DevOps / Frontend / Gameplay）を前提にしていた。
+		いまはその前提が崩れ、全レーンを samatsum が兼務している状態。
+	</p>
+	<div class="grid grid-3">
+		<div class="card">
+			<p class="card-label">稼働人数（現在）</p>
+			<p class="metric">1<small> / 4〜5人（課題要件）</small></p>
+			<p class="metric-note">samatsum のみ。旧チーム3名は離脱済み。合流後は5人になる見込み。</p>
+		</div>
+		<div class="card">
+			<p class="card-label">加入確定の新メンバー</p>
+			<p class="metric">4<small> 名</small></p>
+			<p class="metric-note">加入は確定、合流時期は未定。合流後は samatsum を含め5人体制。</p>
+		</div>
+		<div class="card">
+			<p class="card-label">役割の枠</p>
+			<p class="metric">維持</p>
+			<p class="metric-note">課題書 II.1.1 の必須役割は削除せず、空きスロットとして残す。</p>
+		</div>
+	</div>
+</section>
+
+<section id="roles">
+	<p class="section-kicker">02 — Required Roles</p>
+	<h2>管理役割の枠（課題書 II.1.1）</h2>
+	<p class="section-intro">
+		課題書 II.1.1 は PO / PM・スクラムマスター / テクニカルリード / 開発者（全員）の割当を義務づけ、
+		README.md への明記を求めている。この枠組みは維持し、現状は samatsum が全役割を兼任する。
+		残りの人数分は将来の合流に備えた空きスロットとして扱う。
+	</p>
+	<div class="table-wrap">
+		<table>
+			<thead>
+				<tr><th>管理役割</th><th>主な責務</th><th>現在の担当</th></tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td>プロダクトオーナー (PO)</td>
+					<td>機能の優先順位付け、完了検証、バックログ管理、評価者との窓口</td>
+					<td>samatsum（兼任）<br><span class="tag">空きスロットあり</span></td>
+				</tr>
+				<tr>
+					<td>プロジェクトマネージャー / スクラムマスター</td>
+					<td>進捗・期限の追跡、ブロッカー管理、定例の調整</td>
+					<td>samatsum（兼任）<br><span class="tag">空きスロットあり</span></td>
+				</tr>
+				<tr>
+					<td>テクニカルリード / アーキテクト</td>
+					<td>アーキテクチャと技術決定、重要変更のレビュー（sim / WS プロトコル境界）</td>
+					<td>samatsum（固定）<br><span class="tag owner">cub3D エンジンの設計・実装元</span></td>
+				</tr>
+				<tr>
+					<td>開発者（全員）</td>
+					<td>実装・コードレビュー・自分の実装のテスト・文書化</td>
+					<td>samatsum</td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+	<p class="section-intro" style="margin-top:16px;">
+		テクニカルリードのみ samatsum 固定（エンジンの設計・実装知識を要するため）。
+		PO と PM・SM は、新メンバーが加入した時点で希望・得意に応じて配分し直せる。
+	</p>
+</section>
+
+<section id="lanes">
+	<p class="section-kicker">03 — Development Lanes</p>
+	<h2>各レーンの稼働状況</h2>
+	<div class="callout">
+		<strong>レーンの定義はこのページには置いていない。</strong>
+		2026-08-08に<a href="../../../docs/human/運用/Git運用フロー.html#lanes">Git運用フロー §05.5</a>へ一本化した。
+		どのレーンがどこまでを持つか、Issue番号の接頭辞が何を表すか、旧<code>W-</code>との対応は
+		すべてそちらが正本。このページが扱うのは<strong>「今そのレーンに誰がいるか」だけ</strong>。
+	</div>
+	<p class="section-intro">
+		現状は全レーンを samatsum が兼務している。Backend・Infra・Frontend・GameView は
+		本来複数人で分担する前提だったため、空きスロットが大きい。
+		<strong>2026-08-08時点で新規メンバー4名の加入が決まっている（合流後は samatsum を含め5人体制）が、
+		参加時期も経験も揃っていないため、担当の割り振りはまだ行っていない。</strong>
+	</p>
+	<div class="table-wrap">
+		<table>
+			<thead><tr><th>レーン</th><th>Issue</th><th>現在の担当</th><th>状況</th></tr></thead>
+			<tbody>
+				<tr>
+					<td><strong>Engine</strong></td>
+					<td><code>E-</code> / <code>G-</code></td>
+					<td>samatsum</td>
+					<td>E-01〜E-14 / G-01〜G-10 の予定作業はすべて完了。後から見つかった<strong>G-11・G-12はともに2026-08-09に修正済み</strong>。FPSのオンライン対戦が現状成立しないのは、この2件ではなく認証（B-04）・ロビー（F-05）が未着手のため</td>
+				</tr>
+				<tr>
+					<td><strong>Backend</strong></td>
+					<td><code>B-</code></td>
+					<td>samatsum（兼務）</td>
+					<td>B-09〜B-12 とマップ配布（B-14）は完了。<strong>B-08 はコア実装済みで、B-04/B-05 の本認証との結合が残る</strong>。基盤側（B-02〜B-05）と観戦（B-17）は未着手
+					<span class="tag">空きスロットあり</span></td>
+				</tr>
+				<tr>
+					<td><strong>Infra / DevOps</strong></td>
+					<td><code>I-</code></td>
+					<td>samatsum（兼務）</td>
+					<td>I-01 完了。I-15（Docker/TLS）・I-16（CI拡張）が未着手
+					<span class="tag">空きスロットあり</span></td>
+				</tr>
+				<tr>
+					<td><strong>Frontend</strong></td>
+					<td><code>F-</code></td>
+					<td>samatsum（兼務）</td>
+					<td>F-01・F-02 完了。F-03〜F-05・F-11 が未着手
+					<span class="tag">空きスロットあり</span></td>
+				</tr>
+				<tr>
+					<td><strong>GameView</strong></td>
+					<td><code>GV-</code></td>
+					<td>samatsum（兼務）</td>
+					<td>GV-06・GV-07 はコードはマージ済みだが、<strong>ブラウザでの受入（2ブラウザ対戦）は現在再現できない</strong>。GV-08・GV-12 が未着手
+					<span class="tag">空きスロットあり</span></td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+	<p class="section-intro">
+		課題書 II 章が想定する4レーン（Engine / Backend・DevOps / Frontend / Gameplay）との対応は、
+		<code>B-</code>＋<code>I-</code>＝Backend・DevOps、<code>F-</code>＋<code>GV-</code>＝Frontend。
+		<code>E-</code>と<code>G-</code>は<strong>運用上は1本のEngineレーン</strong>だが、課題書の枠に当てはめると
+		<code>G-</code>の中身がGameplayに相当する（上の表がレーンを5行で示しているのは運用の単位、
+		課題書の4本は科目としての枠、という違い）。
+		上の5本は課題書の4本をより細かく割ったもので、枠組みを外れたわけではない。
+	</p>
+</section>
+
+<section id="risk">
+	<p class="section-kicker">04 — Unresolved Risk</p>
+	<h2>未解決リスク：人数要件との齟齬</h2>
+	<div class="callout warning">
+		<p>
+			<strong>解消の見込みは立ったが、まだ未解決。</strong>
+			課題書は本プロジェクトを4〜5人のグループプロジェクトと定義しており（課題書 II章）、
+			II.1.1 の必須役割割当もその人数を前提にしている。
+			新メンバー4名の加入が確定したため、<strong>合流すれば samatsum を含め5人となり人数要件そのものは満たす</strong>
+			見込みだが、<strong>合流時期が未定である以上、現時点の実態は依然として単独稼働</strong>であり、
+			今日評価を受ければ齟齬は残る。
+		</p>
+		<p style="margin-bottom:0;">
+			加えて、リポジトリ直下の <code>README.md</code> 冒頭の宣言文（課題書第VI章が要求する
+			「このプロジェクトは42カリキュラムの一環として誰が作ったか」の1行）は、
+			<strong>いまも旧チーム4名（samatsum / torinoue / mamiyaza / hminemur）を並べたまま</strong>である。
+			同ファイルの Team 節の役割表は2026-08-05に更新済みで、4役すべてが samatsum、離脱3名は
+			「Historical contributors」として区別されているので、<strong>齟齬が残っているのは冒頭の宣言文だけ</strong>
+			（2026-08-09に実ファイルを確認。それ以前の本節は「役割表も旧4名のまま」と書いていたが、これは誤りだった）。
+			宣言文は<strong>新メンバーが合流した時点で、そのときの実メンバーへ書き換える必要がある</strong>。
+			本書ではどちらも解消せず、事実として記録するにとどめる。
+		</p>
+	</div>
+</section>
+
+</main>
+
+<footer class="shell">
+	元資料: md_files/02_設計書/6-チーム分担計画.md（archive/ に移設。2026-08-05にsamatsum単独稼働体制へ更新、
+	2026-08-09に新メンバー4名の加入確定を反映）。
+	元資料の §5.1「5日間の日割り」は2026-08-05の個人別情報削除で本ページから落としており、
+	現在有効な日程は存在しない（ゲートの順序と合格条件は
+	<a href="../../../docs/ai/backlog.md">backlog.md</a> §6 が正本）。
+	<br><br>
+	<strong>2026-08-30追記:</strong> この版はIssue #141の「ドキュメントの新調」に伴い退役し、
+	<code>archive/docs-human/</code>へ移設した。現行版は
+	<a href="../../../docs/human/はじめに/チーム体制.html">docs/human/はじめに/チーム体制.html</a>。
+</footer>
+
+</body>
+</html>

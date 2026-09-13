@@ -22,9 +22,9 @@ project) invisible to anyone grading the repository. It does not count as "done"
 ## Why: the CI trigger is what makes PRs still worth it
 
 This repo's `.github/workflows/ci.yml` triggers on both `push: branches: [main]` and
-`pull_request`. That difference in *timing* is the entire reason to keep using PRs even now that
-the team has dissolved to a single active contributor (samatsum — see
-[`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html)):
+`pull_request`. That difference in *timing* is the entire reason to keep using PRs — true when this
+was written for a single active contributor (samatsum), and just as true now that multiple people are
+pushing branches (see [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html)):
 
 | Route | When CI runs | Consequence if it fails |
 |---|---|---|
@@ -70,6 +70,11 @@ against `origin/main` afterward.
 > in two *different* vocabularies — in [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html)
 > §03 and [`../human/はじめに/オンボーディング.html`](../human/はじめに/オンボーディング.html), so three
 > competing vocabularies coexisted. They now point here instead. Change a lane boundary here first.
+
+> **Superseded 2026-08-08 → 2026-08-30**: the table below still defines what each lane *owns* (the
+> ownership-boundary reasoning hasn't changed), but as of 2026-08-30 it is no longer expressed as a
+> per-issue ID prefix. See [Lane labels replace lane IDs](#lane-labels-replace-lane-ids-added-2026-08-30)
+> below for the current mechanism.
 
 Issue ids carry a lane prefix. **Lanes are divided by what the code is and who maintains it — not by
 where it runs.** That is why `render.wasm` belongs to the Engine lane even though it executes in the
@@ -121,30 +126,57 @@ and can never be rewritten, so both vocabularies will coexist in the history per
 Reading an old commit: substitute the prefix, keep the number. `W-12` in a 2026-07 commit is today's
 `B-12`; `F-07` in [PR #35](https://github.com/samatsum/ft_Transcendence/pull/35) is today's `GV-07`.
 
+## Lane labels replace lane IDs (added 2026-08-30)
+
+Team operation actually started (multiple active contributors — see
+[`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html) once it's rewritten), and two
+things broke down in practice: per-issue lane-ID assignment stopped happening (new issues just get
+GitHub's own number, e.g. `#133`, `#141`), and the separate per-lane GitHub Projects were consolidated
+into one unified Project ("all").
+
+**Decision, 2026-08-30: stop assigning lane-ID prefixes to new issues.** Going forward:
+
+- An issue/PR is identified only by its plain GitHub number. Don't invent a new `B-`/`F-`/etc. ID for
+  it.
+- Which lane it belongs to is conveyed **only** by a `lane:*` label (`lane:engine`, `lane:backend`,
+  `lane:infra`, `lane:frontend`, `lane:gameview`) — same 5-way split as the table above, just no
+  longer expressed as a number prefix.
+- All lanes are tracked in a single GitHub Project instead of one board per lane. The labels are what
+  make an area filterable within that one board now.
+
+This does **not** retroactively change anything: existing `docs/ai/backlog.md` rows, merged PRs, and
+closed Issues that carry a lane-ID keep it — see [Mapping from the old ids](#mapping-from-the-old-ids)
+above for how to read them. It only stops the practice of minting new ones.
+
 ## Branch naming
 
-Match the convention already established across 35+ PRs in this repo's history — `<type>/<slug>`:
+`<type>/<issue-no>-<slug>` (decided 2026-08-30; supersedes the plain `<type>/<slug>` form used through
+2026-08-08–2026-08-29, e.g. `docs/141`):
 
 | Prefix | Use for |
 |---|---|
-| `feat/` | New functionality (`feat/f-01-scaffold`, `feat/b-08-lobby`) |
+| `feat/` | New functionality (`feat/133-put-delete-user-api`) |
 | `fix/` | Bug fixes, review-feedback fixups |
 | `docs/` | `docs/` directory or `README.md` changes only, no code |
 | `chore/` | Tooling, deps, config with no product-facing behavior change |
 | `ci/` | CI workflow changes |
 
-`<slug>` is a short kebab-case description, optionally prefixed with the Issue id it implements
-(`feat/b-12-reconnect`, `docs/b-08-design-complete`). Avoid personal-name-prefixed branches
-(`claude/...`, `samatsum/...`) going forward — they don't sort next to the work they relate to and
-don't communicate what they contain; prefer `<type>/<slug>` even for AI-authored branches.
+`<issue-no>` is the plain GitHub Issue number the branch implements (not a lane-ID — see
+[Lane labels replace lane IDs](#lane-labels-replace-lane-ids-added-2026-08-30) above). `<slug>` is a
+short kebab-case description, e.g. `docs/141-team-lane-restructure`. Avoid personal-name-prefixed
+branches (`claude/...`, `samatsum/...`) going forward — they don't sort next to the work they relate
+to and don't communicate what they contain; prefer `<type>/<issue-no>-<slug>` even for AI-authored
+branches. Branches created before 2026-08-30 (`docs/141`, `feat/133`, `feat/f-05-room-create-join`,
+etc.) are not renamed retroactively.
 
 ## Commit messages
 
 [Conventional Commits](https://www.conventionalcommits.org/), matching what's already in the log:
-`feat:`, `fix:`, `docs:`, `chore:`, `ci:`, `build:`, `lint:`, with an optional scope —
-`fix(F-01): address CodeRabbit review feedback`. Write the summary line in English or Japanese,
-whichever matches the surrounding commits on that branch; don't mix languages within one summary
-line.
+`feat:`, `fix:`, `docs:`, `chore:`, `ci:`, `build:`, `lint:`, with an optional scope. **As of
+2026-08-30, the scope is the plain GitHub Issue number**, not a lane-ID — `fix(133): address
+CodeRabbit review feedback`. Pre-2026-08-30 commits used a lane-ID scope (`fix(F-01): ...`) and stay
+as-is; don't rewrite history to match. Write the summary line in English or Japanese, whichever
+matches the surrounding commits on that branch; don't mix languages within one summary line.
 
 ## Merge strategy
 
@@ -192,16 +224,22 @@ scope for this backfill. `H-01` doesn't get a `lane:*` label (it isn't on the la
 final cross-cutting hardening gate, not one lane's work). Two lane labels were created for this pass
 that didn't exist yet: `lane:infra` (I-series) and `lane:gameview` (GV-series).
 
+**Superseded 2026-08-30**: the per-lane GitHub Projects this section originally assumed have been
+consolidated into a single unified Project ("all"). See
+[Lane labels replace lane IDs](#lane-labels-replace-lane-ids-added-2026-08-30) above — new issues no
+longer get a lane-ID title prefix either.
+
 When filing one:
 
-- **Title**: `<Issue-ID>: <short description>` (e.g. "G-11: FPS's shoot mechanic can eliminate the
-  other seat").
-- **Labels**: one lane label matching the prefix — `E-`/`G-` → `lane:engine` (one lane, per the table
-  in [Lane prefixes](#lane-prefixes-and-the-2026-08-08-rename) above), `B-` → `lane:backend`,
-  `I-` → `lane:infra`, `F-` → `lane:frontend`, `GV-` → `lane:gameview` (six prefixes, five labels;
-  `H-` gets none, it's the cross-cutting final gate). Plus `backlog-tracked`, plus `bug` or
-  `enhancement` as fits. **Fixed 2026-08-09**: issues #46–#48 had been mislabeled `lane:gameplay`
-  (a label that contradicted this table and has been retired) — relabeled to `lane:engine`.
+- **Title**: plain short description, no ID prefix (e.g. "GET, POST, PUT, DELETEのエンドポイント",
+  `#137`) — GitHub's own issue number is the identifier now. (Before 2026-08-30 the convention was
+  `<Issue-ID>: <short description>`, e.g. "G-11: FPS's shoot mechanic can eliminate the other seat";
+  existing issues keep that title.)
+- **Labels**: one lane label matching the area — `lane:engine` (Engine, both `E-`/`G-`-era work),
+  `lane:backend`, `lane:infra`, `lane:frontend`, `lane:gameview` — plus `backlog-tracked`, plus `bug`
+  or `enhancement` as fits. `H-`-equivalent cross-cutting work gets none. **Fixed 2026-08-09**: issues
+  #46–#48 had been mislabeled `lane:gameplay` (a label that contradicted this table and has been
+  retired) — relabeled to `lane:engine`.
 - **Body**: cite file:line with **absolute GitHub URLs**
   (`https://github.com/samatsum/ft_Transcendence/blob/main/...`), never repo-relative paths — an
   Issue body isn't part of the file tree, so `../../` links silently fail to resolve there even
