@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { authApi, loginRequestSchema } from '@ft/shared';
 
 import { ApiError } from '../api/apiError.js';
-import { plainRequester } from '../api/requester.js';
+import { useApi } from '../api/useApi.js';
 import { Button } from '../components/Button.js';
 import { Card } from '../components/Card.js';
 import { FormField } from '../components/FormField.js';
@@ -13,17 +13,19 @@ import { loginApiError, loginDestination, zodFieldErrors, type FieldErrors } fro
 
 // F-03(#172/#162)。#182 と #186 の統合版。
 //
-// **requester は `useApi()` ではなく `plainRequester`（副作用なし）を渡す。**
-// useApi は 401 を「セッション切れ」とみなして setUser(null) + /login へ navigate する
-// （useApi.ts の 401 分岐）。ところがこの画面では 401 こそパスワード誤りの正常系で、
-// しかもその navigate は state.from を**現在地で上書き**する。つまり
+// **401 は `redirectOn401: false` で自分で受ける（#201 / #202）。**
+// useApi の既定は 401 を「セッション切れ」とみなして setUser(null) + /login へ navigate する。
+// ところがこの画面では 401 こそパスワード誤りの正常系で、しかもその navigate は
+// state.from を**現在地で上書き**する。既定のままだと
 //   /lobby で弾かれる → /login（from='/lobby'）→ 1度打ち間違える → from='/login' に化ける
 //   → 正しく入れ直して成功 → /login へ戻され、ログイン済みなのに画面が変わらない
-// という形で壊れる。plainRequester なら Toast も navigate も付かないので起きない。
+// という形で壊れる（#201 の再現手順そのもの）。
+// エラーは画面内に出すので toast も切る。Toast / 401 以外の共通処理は useApi のまま使える。
 
 export default function LoginPage() {
 	const navigate = useNavigate();
 	const location = useLocation();
+	const api = useApi();
 	const { setUser } = useAuth();
 
 	const [email, setEmail] = useState('');
@@ -48,7 +50,10 @@ export default function LoginPage() {
 		setSubmitting(true);
 		try {
 			// URL・メソッド・req/res スキーマの対応は #163 のヘルパー側に閉じている
-			const user = await authApi.login(plainRequester, parsed.data);
+			const user = await authApi.login(api, parsed.data, {
+				toast: false,
+				redirectOn401: false,
+			});
 
 			// セッション Cookie はサーバが httpOnly で付ける。画面側は本人情報だけ持つ
 			setUser({ id: user.id, displayName: user.display_name });
