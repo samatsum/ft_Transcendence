@@ -8,20 +8,38 @@
 // アセット配布は Makefile の `frontend-engine-assets` が
 // `app/frontend/public/engine/assets/` へ配る（穴1 の決定）。
 
+import type { LobbyMode } from '@ft/shared';
+
 import type { RenderModule } from './render.d.ts';
 import { writeCString } from './renderModule.js';
 
 const MANIFEST_URL = '/engine/assets/manifest.json';
 const ASSETS_BASE = '/engine/assets';
 
-interface ManifestEntry {
+export interface ManifestEntry {
 	/** cub 由来のパス文字列（D-16 のパス契約キー） */
 	path: string;
 	/** 変換済み .tex の相対パス（assets/ から） */
 	tex: string;
 }
 
-function isRequired(entry: ManifestEntry, mapText: string): boolean {
+// モードによって「そもそも C が読まないカテゴリ」がある（#165）。
+//
+// - `arm/` は fps/core/fps_assets.c の load_player_assets だけが読む。RSP は
+//   render_rsp_hand で手を描くので腕を使わない
+// - `hand/` は rsp/core/rsp_assets.c だけが読む
+//
+// どちらも読み込み失敗を致命としない作りなので、C は無改修のまま送らないだけでよい。
+// `enemy/` は common/core/init.c の init_enemy_textures がモード分岐の外で呼び、
+// 失敗を致命扱いにするため**両モードで必要**。絞るには C の変更が要る（#165 の範囲外）
+const MODE_ONLY_PREFIXES: Record<LobbyMode, string> = {
+	rsp: 'textures/arm/',
+	fps: 'textures/hand/',
+};
+
+/** テストから直接叩くため export している（loadTextures は fetch と wasm を要るので呼べない） */
+export function isRequired(entry: ManifestEntry, mapText: string, mode: LobbyMode): boolean {
+	if (entry.path.startsWith(MODE_ONLY_PREFIXES[mode])) return false;
 	if (
 		entry.path.startsWith('textures/wall/') ||
 		entry.path.startsWith('textures/object/')
@@ -67,16 +85,19 @@ export interface LoadTexturesProgress {
 export async function loadTextures(
 	mod: RenderModule,
 	mapText: string,
+	mode: LobbyMode,
 	onProgress?: (p: LoadTexturesProgress) => void,
 ): Promise<void> {
 	const res = await fetch(MANIFEST_URL);
 	if (!res.ok) throw new Error(`texture manifest fetch failed: ${MANIFEST_URL}`);
 	const manifest = (await res.json()) as ManifestEntry[];
-	const required = manifest.filter((e) => isRequired(e, mapText));
+	const required = manifest.filter((e) => isRequired(e, mapText, mode));
 	let loaded = 0;
 	onProgress?.({ loaded, total: required.length });
 	// 直列でロード（GATE1_REPORT 申し送り: 進捗表示が意味を持つよう順に落とす）。
-	// 現状は 42/99 前後で数百KB、序盤の描画までは1〜2秒
+	// .tex は無圧縮 RGBA なので 2048x2048 が1枚 16MB になる。rsp.cub では
+	// 42枚 209.4MB 相当（#165 の実測）で、うち arm/ の 72MB をこのモード判定で落とす。
+	// 転送量そのものは nginx の gzip_static が別途縮める（#192）
 	for (const entry of required) {
 		await registerOne(mod, entry);
 		loaded += 1;
