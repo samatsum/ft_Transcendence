@@ -402,7 +402,9 @@ The subject's mandatory roles (PO / PM / Tech Lead / Developer) are assigned acr
 > → hardening, defined in [backlog.md §6](./backlog.md) with §6.1/§6.2 spelling out the criteria. No dates are
 > attached to them.
 >
-> **Progress (2026-08-07)**: of the original plan's 4 parallel lanes, the **entire Engine and Gameplay schedules are complete** (E-01–E-14 / G-01–G-10; Gate 1 passed). Backend/DevOps has completed I-01/B-08 core/B-09/B-10/B-11/B-12/B-14; Frontend has F-01/F-02/GV-06/GV-07 done (GV-07 merged via [PR #35](https://github.com/samatsum/ft_Transcendence/pull/35)). **Gate 2 is not yet met** — what remains server-side is wiring B-04/B-05 into B-08, and frontend-side is F-05 (lobby, not started) and GV-08 (match transition, not started).
+> **Gate 2** is the end-to-end acceptance gate for a 2v2 RSP match between two browsers. Its dependencies
+> include the lobby flow (F-05) and match transition flow (GV-08); current ownership and progress are
+> tracked in GitHub Issues and Projects.
 
 **Fallbacks**: If Gate 1 fails → fall back to Option B (TS raycaster, using the C implementation as a spec; First and Fourth join the port). If Gate 2 fails → the game modules (#1/#2/#3/#5, 8pt) are what's at risk, and no substitution recovers that much; the response is to fix F-05/F-03 rather than re-pick modules (§4.5). If Gate 3 fails → drop non-working modules from the declaration (never declare a 0pt module).
 

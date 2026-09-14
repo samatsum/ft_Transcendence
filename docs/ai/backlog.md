@@ -219,7 +219,8 @@ Numbered items in the acceptance-criteria column indicate mapping to acceptance 
 > GV-07 were nonetheless completed by samatsum solo** (2026-07-30–31; GV-07 merged 2026-08-07 via
 > [PR #35](https://github.com/samatsum/ft_Transcendence/pull/35) — its own description notes hminemur was the
 > planned owner but unreachable, so samatsum implemented it instead) — see the per-issue status below.
-> F-03–F-05 and GV-08・F-11・GV-12 remain unassigned and not started (未完成), open for a future team member.
+> F-03–F-05, F-11, GV-08, and GV-12 are tracked as GitHub Issues; this document keeps their acceptance
+> criteria and dependencies rather than live ownership or progress.
 > F-09 and F-10 are **no longer declared** as of 2026-08-08 (D-19) — see the note under the table. Also see
 > [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html).
 
@@ -283,7 +284,7 @@ development. `GameView`/`HudOverlay` currently have no lobby to be launched from
 | Gate | Content | Issues that converge here | Status |
 |---|---|---|---|
 | Gate 1 | Canvas rendering of a static map | E-01–E-07 | **Passed (go)**, 2026-07-11 |
-| Gate 2 | **A 2v2 RSP match is playable start to finish between 2 browsers** | E-08–E-12 / G-01–G-05 / B-08–B-11 / F-05・GV-06・GV-07・GV-08 | Not yet (**E, G, B-08 core, B-09–B-12, and GV-06/GV-07 are done**. What remains on the server side is B-08 integration with B-04/B-05; on the frontend side, F-05 (lobby, not started — GV-06/GV-07 currently have no lobby to launch from) and GV-08 (match transition, not started))<br>**B-12 (disconnect/reconnect/AI takeover) is not counted toward Gate 2 — it wasn't part of Gate 2's original scope (it belonged to Gate 3's window under the old plan) and was completed ahead of that**. B-12 is ②§10-B №4 and is not something to be dropped |
+| Gate 2 | **A 2v2 RSP match is playable start to finish between 2 browsers** | E-08–E-12 / G-01–G-05 / B-08–B-11 / F-05・GV-06・GV-07・GV-08 | Pass when §6.1's browser-based acceptance criteria are satisfied. **B-12 (disconnect/reconnect/AI takeover) is not counted toward Gate 2** — it was not part of the original Gate 2 scope and remains ②§10-B №4 |
 | Gate 3 | Core 14pt fully working in the integrated environment | B-14, F-11, B-17・GV-12 (spectator bonus), G-06–G-09 (FPS-related), and everything else. **Revised 2026-08-08**: B-13 and F-09/F-10 no longer converge here | Not yet (**G-06–G-09 and B-14 are done**) |
 | Hardening | Hardening day (every item per the ARCHITECTURE §9.1 script) | Turned into a single Issue, H-01 ([Issue #89](https://github.com/samatsum/ft_Transcendence/issues/89); whole team) | Not yet |
 
@@ -340,8 +341,8 @@ development. `GameView`/`HudOverlay` currently have no lobby to be launched from
 auth into the lobby WS), plus **B-17** for the declared spectator bonus. B-03 landed the schema but nothing
 reads or writes it yet — **B-04 is the first consumer**, and it is also what makes `displayNameLower` correct
 (it must be written alongside `displayName`). B-13 is no longer on this path.
-In parallel on the frontend side: F-01, F-02, GV-06, and GV-07 are done. F-05 + GV-08 (both not started,
-unassigned) are what's left to converge on Gate 2.
+On the frontend side, F-05 and GV-08 converge on Gate 2; their current status is managed in GitHub Issues
+and Projects.
 The C side (E-series, G-series) is entirely Done; only the TypeScript Backend/DevOps and Frontend lanes remain.
 See [チーム体制.html](../human/はじめに/チーム体制.html) for current team status — the original 4-person plan dissolved 2026-08-05, and a new 6-person team kicked off 2026-08-08 under a PO/PM/TL/Developer/Supporter structure (not the original 4 names or roles).
 

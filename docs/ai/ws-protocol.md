@@ -498,7 +498,7 @@ created ──all humans join, or 10s──► countdown(3s) ──► playing �
 | created | no | no | `game_create` + `game_add_combatant` done for every seat. Waiting for connections. **Receives the "list of human seat slots" at creation time** (below) |
 | countdown | no | no | `event(countdown)` → 3 seconds later `event(match_start)` |
 | playing | a **30Hz `setInterval`** runs `game_step(game, 1/30)`; on even ticks, `game_snapshot` → JSON → broadcast to all | yes | the sole authoritative state |
-| finished | no (final snapshot already sent) | no | optional persistence (§6-C) → `match_end` → connection held open 60s for the result screen → close 1000 |
+| finished | no | no | `decided` sends the final snapshot first; FPS `forfeit` and RSP `abandon` do not add one. Then optional persistence (§6-C) → `match_end` → connection held open 60s for the result screen → close 1000 |
 | closed | — | — | `game_destroy`, removed from the Map |
 
 > **Addendum (2026-07-27) — per-seat state is a separate dimension, orthogonal to room state**
@@ -544,7 +544,7 @@ created ──all humans join, or 10s──► countdown(3s) ──► playing �
 > is normally null. The persistence ordering below remains the contract to use if B-13 is restored;
 > null indicates a failure only when a persistence callback was actually configured.
 
-1. Send the final snapshot (`match.state=finished`). At this point the client already knows the outcome and final score (source of truth is still the snapshot).
+1. For an ordinary decision (`score` / `goal`), send the final snapshot (`match.state=finished`) before persistence; the client uses it as the outcome and final-score source of truth. FPS `forfeit` and RSP `abandon` do not add a final snapshot because sim remains `playing`; their result is conveyed by `match_end` after the optional persistence step.
 2. Write `Match` + `MatchPlayer` via Prisma (**AI seats are recorded as rows too**, per §3.3). `result` attribution rules:
 
 | case | recorded as |
