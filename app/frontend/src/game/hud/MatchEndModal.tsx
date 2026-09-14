@@ -1,13 +1,12 @@
+import { Link } from 'react-router-dom';
+
 import { Button } from '../../components/Button.js';
 import { Modal } from '../../components/Modal.js';
 import type { MatchEndState } from '../hudState.js';
 
-// ④ §3.3 HUD 表 match_end モーダル:
-//   勝敗・最終スコア・「ロビーへ戻る」。
-//   match_id が正整数なら REST から各プレイヤー成績も表示、null なら保存失敗を通知し
-//   最終 snapshot だけで結果表示
-// GV-07 の推奨決定#4: /api/matches/:id は toast:false で試み、B-13 未完成期間は
-// 失敗を握って snapshot だけで表示。matchDetails は親から渡す(fetch は GameView 側)
+// ④ §3.3 の match_end リザルト画面
+// Web では React 側を結果表示の正本にし、
+// 不透明な全画面背景で render.wasm のクリア画面を覆う
 
 interface MatchEndModalProps {
 	end: MatchEndState;
@@ -39,12 +38,18 @@ function describeWinner(end: MatchEndState, mode: 'rsp' | 'fps'): string {
 	return `Player ${end.winner} の勝利`;
 }
 
-const REASON_LABEL: Record<MatchEndState['reason'], string> = {
-	score: '先取点到達',
-	goal: 'ゴール到達',
-	forfeit: '不戦勝',
-	abandon: '打ち切り',
-};
+export function describeResultMessage(reason: MatchEndState['reason']): string | null {
+	switch (reason) {
+		case 'score':
+			return null;
+		case 'goal':
+			return 'ゴールに到達して試合が終了しました';
+		case 'forfeit':
+			return 'プレイヤーの退出または切断により試合が終了しました';
+		case 'abandon':
+			return '参加者がいなくなったため試合を打ち切りました';
+	}
+}
 
 export function MatchEndModal({
 	end,
@@ -53,24 +58,42 @@ export function MatchEndModal({
 	detailsError,
 	onReturnToLobby,
 }: MatchEndModalProps) {
+	const resultMessage = describeResultMessage(end.reason);
+
 	return (
 		<Modal
 			open
 			onClose={onReturnToLobby}
 			title={describeWinner(end, mode)}
+			backdropClassName="bg-slate-950"
+			panelClassName="max-w-xl border-slate-700 bg-slate-900 text-center [&_h2]:text-heading-lg"
 			actions={
-				<Button variant="primary" onClick={onReturnToLobby}>
+				<Button variant="primary" fullWidth onClick={onReturnToLobby}>
 					ロビーへ戻る
 				</Button>
 			}
 		>
-			<div className="flex flex-col gap-3">
-				<p className="text-body text-slate-300">
-					事由: {REASON_LABEL[end.reason]} ／ 最終スコア:{' '}
-					<span className="font-mono">{end.finalScore[0]} - {end.finalScore[1]}</span>
-				</p>
+			<div className="flex flex-col gap-5">
+				<p className="text-label uppercase tracking-[0.2em] text-sky-400">Match Result</p>
+				{mode === 'rsp' && (
+					<div
+						className="flex items-center justify-center gap-5 font-mono"
+						aria-label={`最終スコア ${end.finalScore[0]} 対 ${end.finalScore[1]}`}
+					>
+						<div className="flex min-w-20 flex-col gap-1 text-rose-400">
+							<span className="text-caption font-sans">RED</span>
+							<span className="text-5xl font-semibold">{end.finalScore[0]}</span>
+						</div>
+						<span className="text-heading-md text-slate-500" aria-hidden>—</span>
+						<div className="flex min-w-20 flex-col gap-1 text-sky-400">
+							<span className="text-caption font-sans">BLUE</span>
+							<span className="text-5xl font-semibold">{end.finalScore[1]}</span>
+						</div>
+					</div>
+				)}
+				{resultMessage && <p className="text-body text-slate-300">{resultMessage}</p>}
 				{matchDetails && matchDetails.players.length > 0 && (
-					<table className="w-full text-caption">
+					<table className="w-full text-left text-caption">
 						<thead>
 							<tr className="border-b border-slate-700 text-left text-slate-400">
 								<th className="py-1">Slot</th>
@@ -89,17 +112,17 @@ export function MatchEndModal({
 						</tbody>
 					</table>
 				)}
-				{end.matchId === null && (
-					<p className="text-caption text-amber-400">
-						※ 試合の永続化に失敗したため、詳細は表示できません(最終 snapshot のみ)。
-					</p>
-				)}
 				{end.matchId !== null && !matchDetails && !detailsError && (
 					<p className="text-caption text-slate-500">試合詳細を取得しています…</p>
 				)}
 				{detailsError && (
-					<p className="text-caption text-slate-500">試合詳細の取得に失敗しました(最終 snapshot のみ表示)。</p>
+					<p className="text-caption text-slate-500">試合詳細を取得できませんでした。</p>
 				)}
+				<nav className="flex items-center justify-center gap-3 text-caption text-slate-500">
+					<Link to="/privacy" className="hover:text-slate-300">Privacy Policy</Link>
+					<span aria-hidden>·</span>
+					<Link to="/terms" className="hover:text-slate-300">Terms of Service</Link>
+				</nav>
 			</div>
 		</Modal>
 	);

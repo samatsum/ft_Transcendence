@@ -458,7 +458,7 @@ A closed enumeration built around the 4 types from ARCHITECTURE §2.3, plus room
 | `point_scored` | `team`, `score:[a,b]`, `by_id` | on an RSP score (a presentation/SFX trigger; the source of truth for the value is the snapshot) |
 | `hand_changed` | `id`, `hand` | on a hand-sign change (same as above) |
 | `goal` | `id` | FPS goal reached |
-| `match_end` | `winner`, `reason: score\|goal\|forfeit\|abandon`, `match_id:int\|null` | decision reached. `match_id` is the positive integer of the persisted DB row (the result screen fetches details via REST). **Fires after persistence completes, per the ordering in §6-C**. It is null only when persistence fails, since there is then no DB row — and `match_result` is also never sent in that case. The client shows the result screen using only the final snapshot's win/loss and score |
+| `match_end` | `winner`, `reason: score\|goal\|forfeit\|abandon`, `match_id:int\|null` | decision reached. With B-13 not declared, the current runtime normally sends null and the result screen uses the final snapshot without showing an error. If persistence is restored, a positive id enables REST details and null means that the configured persistence attempt failed. Delivery follows the optional ordering in §6-C |
 | `player_disconnected` | `slot`, `grace_ms: 30000` | disconnect detected (→ player_status: grace) |
 | `player_reconnected` | `slot` | reconnected within the grace period (→ player_status: connected) |
 | `ai_takeover` | `slot` | grace expired, or AI-ized by `leave` (→ player_status: ai) |
@@ -498,7 +498,7 @@ created ──all humans join, or 10s──► countdown(3s) ──► playing �
 | created | no | no | `game_create` + `game_add_combatant` done for every seat. Waiting for connections. **Receives the "list of human seat slots" at creation time** (below) |
 | countdown | no | no | `event(countdown)` → 3 seconds later `event(match_start)` |
 | playing | a **30Hz `setInterval`** runs `game_step(game, 1/30)`; on even ticks, `game_snapshot` → JSON → broadcast to all | yes | the sole authoritative state |
-| finished | no (final snapshot already sent) | no | persistence (§6-C) → connection held open 60s for the result screen → close 1000 |
+| finished | no | no | `decided` sends the final snapshot first; FPS `forfeit` and RSP `abandon` do not add one. Then optional persistence (§6-C) → `match_end` → connection held open 60s for the result screen → close 1000 |
 | closed | — | — | `game_destroy`, removed from the Map |
 
 > **Addendum (2026-07-27) — per-seat state is a separate dimension, orthogonal to room state**
@@ -540,7 +540,11 @@ created ──all humans join, or 10s──► countdown(3s) ──► playing �
 
 ### 6-C. Persistence and result delivery at match end
 
-1. Send the final snapshot (`match.state=finished`). At this point the client already knows the outcome and final score (source of truth is still the snapshot).
+> **Current declared lineup:** B-13 is not declared, so step 2 is skipped and `match_end.match_id`
+> is normally null. The persistence ordering below remains the contract to use if B-13 is restored;
+> null indicates a failure only when a persistence callback was actually configured.
+
+1. For an ordinary decision (`score` / `goal`), send the final snapshot (`match.state=finished`) before persistence; the client uses it as the outcome and final-score source of truth. FPS `forfeit` and RSP `abandon` do not add a final snapshot because sim remains `playing`; their result is conveyed by `match_end` after the optional persistence step.
 2. Write `Match` + `MatchPlayer` via Prisma (**AI seats are recorded as rows too**, per §3.3). `result` attribution rules:
 
 | case | recorded as |
@@ -550,7 +554,7 @@ created ──all humans join, or 10s──► countdown(3s) ──► playing �
 | RSP: left mid-match and never returned before decision | that user is **abandon regardless of team outcome**. If they reconnected, the ordinary outcome applies |
 | all humans left, match cut short | `winnerTeam=null`; every departed user is abandon (AI seats are treated as draw and excluded from statistics) |
 
-3. **Deliver `event(match_end)` over the game WS** (`d.match_id` carries the positive integer assigned in step 2; it is null, with a failure log, only when persistence fails). **This order (persist → match_end) must never be reversed.** The implementation starts persistence right after the final snapshot and sends only after `await`-ing it.
+3. **Deliver `event(match_end)` over the game WS** (`d.match_id` carries the positive integer assigned in step 2, or null when persistence is not configured or its attempt fails). When persistence is configured, **the order persist → match_end must never be reversed**; the implementation starts persistence right after the final snapshot and sends only after `await`-ing it.
 4. `match_result` is broadcast over the lobby WS (§3-A) only on successful persistence, including the same `match_id` as the DB row, sent after the game WS's `match_end`. On failure, since there is no DB row or ID, `match_result` is never fabricated.
 5. Close with 1000 after 60 seconds → `game_destroy`. Result-screen details (history, stats reflection) are fetched via REST (③). **The 60-second count starts at the moment `event(match_end)` fires** (to avoid a truncated window if persistence takes a long time).
 

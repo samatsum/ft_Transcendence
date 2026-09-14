@@ -2,7 +2,7 @@
 
 > Source: translated from the Japanese original at md_files/02_設計書/4-フロントエンド設計.md (archived).
 
-**Positioning**: This document translates the API contracts from [ARCHITECTURE_DESIGN.md](./architecture.md) §2.4/§3.1, [WS_PROTOCOL_DESIGN.md](./ws-protocol.md) (②) §3/§5/§7-B, and [REST_API_DESIGN.md](./rest-api.md) (③) into screen specifications. It corresponds to the Frontend lane's work instructions, structurally split into non-game screens and GameView/HUD — originally planned across mamiyaza (non-game) and hminemur (GameView/HUD) under the 4-person team that dissolved 2026-08-05. **F-01, F-02, GV-06, and GV-07 were done during the single-contributor period** (implemented solo by samatsum; GV-07 merged via [PR #35](https://github.com/samatsum/ft_Transcendence/pull/35)); see [backlog.md](./backlog.md) §5 for per-issue status. F-03, F-04, GV-08・F-11・GV-12 were **未完成 (not started)** as of the single-contributor period; **team operation kicked off 2026-08-08 with a new roster** (see [`../human/はじめに/チーム体制.html`](../human/はじめに/チーム体制.html)), so check `backlog.md` for whether that status has since moved — this document does not track it live. **F-09 and F-10 are no longer declared** as of 2026-08-08 (D-19) — their screen specs below are retained as the recovery plan, not as work orders — while **GV-12 was promoted from reserve to required**.
+**Positioning**: This document translates the API contracts from [ARCHITECTURE_DESIGN.md](./architecture.md) §2.4/§3.1, [WS_PROTOCOL_DESIGN.md](./ws-protocol.md) (②) §3/§5/§7-B, and [REST_API_DESIGN.md](./rest-api.md) (③) into screen specifications. It is structured into non-game screens and GameView/HUD. GitHub Issues and Projects are the source of truth for current ownership and progress, including F-05 and GV-08. **F-09 and F-10 are no longer declared** as of 2026-08-08 (D-19) — their screen specs below are retained as the recovery plan, not as work orders — while **GV-12 was promoted from reserve to required**.
 **Principle**: This document contains no implementation code (only screen composition, state, data sources, and acceptance criteria).
 
 ---
@@ -36,7 +36,7 @@ An SPA built with React Router. Unauthenticated access to a protected route redi
 ## 2. Common layout
 
 - **Header**: Logo (→ `/lobby`), the user's own avatar + name (→ `/profile/:me`), logout.
-- **Footer**: **Links to Privacy Policy / Terms of Service are always present on every screen** (satisfies the rejection criterion "reachable from the footer". Also shown outside the match_end modal on the game screen).
+- **Footer**: **Links to Privacy Policy / Terms of Service are always present on every screen** (satisfies the rejection criterion "reachable from the footer". On the game route, the links move into the full-screen result layer after `match_end`).
 - **Toast**: Common display area for errors/notifications (shows the `msg` field from the error envelope in ③ §1-A; the `code` field is never emitted to the developer console — zero-console operation).
 - **ErrorBoundary**: Shows a reload path on render exceptions (prevents blank screens and unhandled console exceptions).
 - Breakpoints: Tailwind defaults (evaluated at two points: mobile < 768px / desktop ≥ 1024px).
@@ -78,8 +78,9 @@ Layer structure (bottom to top):
 ```text
 [Canvas 960x540 internal resolution, CSS letterbox-scaled]   ← rendered by render.wasm (world + own hand)
 [HUD overlay (DOM, pointer-events: none)]                    ← score, status, effects
-[Modal layer (countdown / match_end / disconnect banner)]    ← has interaction
-[Header/Footer hidden; Footer links collapse into the match_end modal]
+[Modal layer (countdown / disconnect banner)]                ← has interaction
+[Opaque React result layer after match_end]                  ← covers the Canvas and has interaction
+[Header/Footer hidden; Footer links move into the result layer]
 ```
 
 | HUD element | Content | Data source |
@@ -89,7 +90,7 @@ Layer structure (bottom to top):
 | Own hand | **Not shown in the HUD** (drawn at the bottom of the screen by the C renderer's `render_rsp_hand`). On `hand_changed` (own) only a flash at the Canvas edge occurs | `event(hand_changed)` |
 | Scoring effect | On `point_scored`, flash the screen edge in the scoring team's color + emphasize the score bar | `event(point_scored)` (the authoritative value comes from the snapshot side — this event is used for the effect only. ② §5-D) |
 | Countdown | Full-screen `3・2・1` overlay → disappears on `match_start` | `event(countdown / match_start)` |
-| match_end modal | Win/loss, final score, "Return to lobby" button. If `match_id` is a positive integer, per-player results are also shown from REST. If null, notifies that saving failed and shows results from the final snapshot only | `event(match_end).d.match_id` → `GET /api/matches/:id` (only when non-null) |
+| match_end result screen | Opaque full-viewport React layer that covers the renderer's clear screen. RSP shows the winning team and authoritative final snapshot score without repeating the ordinary `score` reason. FPS shows the winning combatant without the always-zero score and explains goal completion. Forfeit and abandon show a human-readable explanation instead of a generic "end reason" label. All variants include "Return to lobby" and Privacy/Terms links. A null `match_id` is normal while B-13 is not declared and shows no error; a future positive id enables per-player REST details. On `match_end`, the tab records the finished room in `sessionStorage`; reloading its result route redirects to `/lobby` before mounting GameView, so the Canvas never flashes. Server close 4003 remains the fallback when storage is unavailable | final `snapshot.match.score` + `event(match_end)`; `GET /api/matches/:id` only when non-null |
 | Own connection banner | On own WS disconnect, a "Reconnecting…" banner + automatic reconnect. On recovery, a "Reconnected" toast is shown when `welcome.resume=true` | `useGameSocket` state machine (§4) |
 | Spectator HUD (**GV-12, required as of 2026-08-08**) | When `role=spectator`, adds a viewpoint switch button (seats 1–4). Needs **B-17** (the server side of `spectate`) first | `welcome.role`. Switching only changes the viewpoint target on the client side (② §5-E) |
 

@@ -112,8 +112,13 @@ export function applyPlayerStatus(
 	return { ...state, seats };
 }
 
-/** イベントを受けて HUD state を更新(pure)。時刻は performance.now を注入 */
-export function applyGameEvent(state: HudState, event: GameEvent['d'], nowMs: number): HudState {
+/** イベントを受けて HUD state を更新(pure)、時刻と決着時の正本スコアは呼び出し側から注入 */
+export function applyGameEvent(
+	state: HudState,
+	event: GameEvent['d'],
+	nowMs: number,
+	finalSnapshotScore?: readonly [number, number],
+): HudState {
 	switch (event.kind) {
 		case 'countdown':
 			return { ...state, countdownSeconds: event.seconds, matchStarted: false };
@@ -142,7 +147,9 @@ export function applyGameEvent(state: HudState, event: GameEvent['d'], nowMs: nu
 					winner: event.winner,
 					reason: event.reason,
 					matchId: event.match_id,
-					finalScore: state.score,
+					finalScore: finalSnapshotScore
+						? [finalSnapshotScore[0], finalSnapshotScore[1]]
+						: state.score,
 				},
 			};
 		case 'player_disconnected':

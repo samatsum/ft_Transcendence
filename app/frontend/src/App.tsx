@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { Navigate, Outlet, Route, Routes, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Navigate, Outlet, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 
 import { Layout } from './components/Layout.js';
 import { RedirectIfAuth } from './components/RedirectIfAuth.js';
@@ -7,6 +7,7 @@ import { RequireAuth } from './components/RequireAuth.js';
 import { useAuth } from './contexts/AuthContext.js';
 import { DevSession } from './contexts/DevSession.js';
 import { LobbyProvider, useLobby } from './contexts/LobbyContext.js';
+import { isGameRoomFinished } from './game/gameRouteState.js';
 
 import DesignSystemPage from './pages/DesignSystemPage.js';
 import GameView from './pages/GameView.js';
@@ -71,6 +72,16 @@ function LobbyScope() {
 	return import.meta.env.DEV ? <DevSession>{scoped}</DevSession> : scoped;
 }
 
+// リザルト表示後の再読み込みでは Canvas をマウントせず、最初の描画からロビーへ戻す
+// 進行中のルームには印が無いため、通常の再接続フローを維持する
+function GameRoute() {
+	const { roomId = '' } = useParams();
+	// 初回マウント時だけ読む。対戦中に match_end が記録されても、表示中のリザルトを
+	// 即座に閉じず、再読み込みや履歴からの再訪時にだけロビーへ戻す
+	const [finishedBeforeMount] = useState(() => isGameRoomFinished(roomId));
+	return finishedBeforeMount ? <Navigate to="/lobby" replace /> : <GameView />;
+}
+
 export default function App() {
 	return (
 		<Routes>
@@ -122,7 +133,7 @@ export default function App() {
 					<Route path="/lobby/how-to" element={<HowToPlayPage />} />
 				</Route>
 				{/* Layout 外（全画面 Canvas。④ §3.3「Header/Footer は非表示」） */}
-				<Route path="/game/:roomId" element={<GameView />} />
+				<Route path="/game/:roomId" element={<GameRoute />} />
 			</Route>
 		</Routes>
 	);
