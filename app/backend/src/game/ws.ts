@@ -16,6 +16,7 @@ import {
 	envelopeSchema,
 	gameClientMessageSchema,
 	makeWsError,
+	type GameServerMessage,
 	type PlayerStatusMessage,
 	type WelcomeMessage,
 	type WsErrorCode,
@@ -40,6 +41,30 @@ const OPEN = 1;
 const BACKPRESSURE_SKIP_SNAPSHOT_BYTES = 64 * 1024;
 /** これを超えたら回線が死んだと判断して close 4005 */
 const BACKPRESSURE_CLOSE_BYTES = 1024 * 1024;
+
+/**
+ * 接続ごとの送信バッファとメッセージ種別から配信方法を決める。
+ *
+ * 通常の snapshot は次の全量 snapshot で自己回復できるため混雑時に落としてよい。
+ * ただし終了 snapshot は `match_end` の結果表示に使う正本なので、skip 閾値を超えても
+ * event より先に配信する。hard limit 超過時だけは種類を問わず接続を閉じる。
+ */
+export function gameMessageDelivery(
+	message: GameServerMessage,
+	bufferedAmount: number,
+): 'send' | 'skip' | 'close' {
+	if (bufferedAmount > BACKPRESSURE_CLOSE_BYTES) return 'close';
+	const isTerminalSnapshot =
+		message.t === 'snapshot' && message.d.match.state === 'finished';
+	if (
+		message.t === 'snapshot' &&
+		!isTerminalSnapshot &&
+		bufferedAmount > BACKPRESSURE_SKIP_SNAPSHOT_BYTES
+	) {
+		return 'skip';
+	}
+	return 'send';
+}
 /** ② §5-A: yaw を [-π, π) に正規化する。有限値チェックは zod 側（申し送り 7） */
 function normalizeYaw(yaw: number): number {
 	const wrapped = ((yaw + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
@@ -188,19 +213,18 @@ function ensureRoomConnections(roomId: string, room: GameRoom): Set<Connection> 
 	peers = new Set<Connection>();
 	connectionsByRoom.set(roomId, peers);
 	const unsubscribe = room.subscribe((message, serialized) => {
-		const isSnapshot = message.t === 'snapshot';
 		for (const c of peers) {
 			if (!c.joined || c.socket.readyState !== OPEN) continue;
 
 			// ② §8 バックプレッシャ: 回線が詰まっている接続を切らずに守る。
 			// **snapshot は落としてよい**（次が全量なので自己回復する）が、
 			// event は落とすと二度と届かないので必ず送る
-			const buffered = c.socket.bufferedAmount;
-			if (buffered > BACKPRESSURE_CLOSE_BYTES) {
+			const delivery = gameMessageDelivery(message, c.socket.bufferedAmount);
+			if (delivery === 'close') {
 				c.socket.close(WS_CLOSE.rateLimited, 'send buffer overflow');
 				continue;
 			}
-			if (isSnapshot && buffered > BACKPRESSURE_SKIP_SNAPSHOT_BYTES) continue;
+			if (delivery === 'skip') continue;
 
 			c.socket.send(serialized);
 		}

@@ -93,7 +93,7 @@ describe('applyGameEvent — player_disconnected/reconnected/ai_takeover', () =>
 });
 
 describe('applyGameEvent — match_end', () => {
-	it('match_end で注入された最終 snapshot の score を優先する', () => {
+	it('match_end で終端 snapshot の score を優先する', () => {
 		const s0 = { ...createInitialHudState(), score: [10, 3] as [number, number] };
 		const s1 = applyGameEvent(
 			s0,

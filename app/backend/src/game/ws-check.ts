@@ -13,6 +13,7 @@ import { WS_CLOSE, type GameServerMessage } from '@ft/shared';
 
 import { buildServer } from '../index.js';
 import { listMaps, loadMapText } from './maps.js';
+import { gameMessageDelivery } from './ws.js';
 import {
 	closeAllRooms,
 	closeRoom,
@@ -949,6 +950,26 @@ async function checkDevAutoFpsResult(): Promise<string[]> {
 		) {
 			bad.push(`winner=${expectedWinner}: 最終snapshot→goal→match_endの契約が不正`);
 		}
+		if (!finalSnapshot || finalSnapshot.t !== 'snapshot') {
+			bad.push(`winner=${expectedWinner}: バックプレッシャー検査用の終端snapshotが不足`);
+		} else {
+			// 自動決着は最初の配信を終端snapshotに置き換えるため、同じwire形状で
+			// state だけが playing の通常snapshotを作り、配信判定の差だけを検査する。
+			const ordinarySnapshot = {
+				...finalSnapshot,
+				d: { ...finalSnapshot.d, match: { ...finalSnapshot.d.match, state: 'playing' as const } },
+			};
+			const buffered = 64 * 1024 + 1;
+			if (gameMessageDelivery(ordinarySnapshot, buffered) !== 'skip') {
+				bad.push(`winner=${expectedWinner}: 通常snapshotが混雑時にskipされない`);
+			}
+			if (gameMessageDelivery(finalSnapshot, buffered) !== 'send') {
+				bad.push(`winner=${expectedWinner}: 終端snapshotが混雑時に配信されない`);
+			}
+			if (gameMessageDelivery(finalSnapshot, 1024 * 1024 + 1) !== 'close') {
+				bad.push(`winner=${expectedWinner}: hard limit超過で接続を閉じない`);
+			}
+		}
 		closeRoom(room.roomId);
 	}
 
@@ -1031,12 +1052,12 @@ async function main(): Promise<void> {
 	const bad4 = await checkMaps(`http://127.0.0.1:${PORT}`);
 	console.log(bad4.length ? `  NG:\n    ${bad4.join('\n    ')}` : '  OK');
 
-	console.log('\n検査5: 開発用FPS自動リザルト');
+	console.log('\n検査5: 開発用FPS自動リザルトと終端snapshot配信');
 	const bad5 = await checkDevAutoFpsResult();
 	console.log(
 		bad5.length
 			? `  NG:\n    ${bad5.join('\n    ')}`
-			: '  OK: ランダム勝者の結果配信と対象外を確認',
+			: '  OK: ランダム勝者、終端snapshotの配信保証、対象外を確認',
 	);
 
 	closeAllRooms();
