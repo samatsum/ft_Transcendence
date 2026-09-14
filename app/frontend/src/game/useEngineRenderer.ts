@@ -166,7 +166,7 @@ export function useEngineRenderer({
 				mod = m;
 				setStatus('loading-textures');
 				setTextureProgress({ loaded: 0, total: 0 });
-				await loadTextures(m, mapText, (p) => setTextureProgress(p));
+				await loadTextures(m, mapText, mode, (p) => setTextureProgress(p));
 				if (cancelled) return;
 				// map テキストを wasm ヒープへ書き、web_init
 				const mapPtr = writeCString(m, mapText);
