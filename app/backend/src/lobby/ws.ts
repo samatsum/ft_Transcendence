@@ -74,8 +74,6 @@ export interface LobbyRuntimeOptions {
 	onMatchPlan?: (plan: MatchPlan, controls: MatchPlanControls) => void;
 	clock?: LobbyClock;
 	randomInt?: (maxExclusive: number) => number;
-	/** Composeの開発フラグ有効時だけFPSへ渡す勝者selector */
-	devAutoFpsWinner?: () => number;
 	connectionManager?: ConnectionManager;
 }
 
@@ -272,7 +270,6 @@ export function registerLobbyWs(
 			void prepareMatch(plan, controls, {
 				releaseMatch: (userId, roomId) => runtime.registry.releaseMatch(userId, roomId),
 				broadcastMatchResult: (result) => runtime.registry.broadcastMatchResult(result),
-				devAutoFpsWinner: options.devAutoFpsWinner,
 				// pino が stack まで出すのは `err` キーだけ（`error` だと `{}` になる）
 				onError: (err) =>
 					app.log.error({ err, mode: plan.mode }, 'B-09: match preparation 失敗'),

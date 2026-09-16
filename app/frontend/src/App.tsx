@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Navigate, Outlet, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 
 import { Layout } from './components/Layout.js';
@@ -22,6 +22,12 @@ import PrivacyPage from './pages/PrivacyPage.js';
 import ProfilePage from './pages/ProfilePage.js';
 import SignupPage from './pages/SignupPage.js';
 import TermsPage from './pages/TermsPage.js';
+
+// preview module は Vite 開発時だけ動的 import する。本番 bundle へ fixture と結果画面の
+// 開発導線を含めず、通常の試合進行を変えずに同じ MatchEndModal を確認できるようにする
+const ResultPreviewPage = import.meta.env.DEV
+	? lazy(() => import('./pages/ResultPreviewPage.js'))
+	: null;
 
 // ④ §1 のルート表を実装。
 // - Layout Route（Header/Footer あり）と GameView（Layout 外・全画面 Canvas）で
@@ -118,6 +124,26 @@ export default function App() {
 				{/* 開発用デザインシステムカタログ。本番ビルドには含めない */}
 				{import.meta.env.DEV && (
 					<Route path="/dev/design-system" element={<DesignSystemPage />} />
+				)}
+				{ResultPreviewPage && (
+					<Route
+						path="/dev/result-preview"
+						element={
+							<Suspense fallback={null}>
+								<ResultPreviewPage variant="goal" />
+							</Suspense>
+						}
+					/>
+				)}
+				{ResultPreviewPage && (
+					<Route
+						path="/dev/result-preview/forfeit"
+						element={
+							<Suspense fallback={null}>
+								<ResultPreviewPage variant="forfeit" />
+							</Suspense>
+						}
+					/>
 				)}
 				<Route path="*" element={<NotFoundPage />} />
 			</Route>

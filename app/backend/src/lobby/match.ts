@@ -21,7 +21,6 @@ export interface PrepareMatchRoomOptions {
 	rules: MatchPlan['rules'];
 	participants: MatchPlan['participants'];
 	humanSlots: number[];
-	devAutoFpsWinner?: () => number;
 	reservationToken: string;
 	signal: AbortSignal;
 	onLifecycle(state: RoomState, reason: RoomLifecycleReason): void;
@@ -33,8 +32,6 @@ export interface MatchPreparationOptions {
 	discardRoom?(roomId: string): void;
 	releaseMatch(userId: number, roomId: string): boolean;
 	broadcastMatchResult(result: MatchResultPayload): void;
-	/** Composeの開発フラグ有効時だけFPSへ渡す勝者selector */
-	devAutoFpsWinner?: () => number;
 	/** 生成失敗の例外を記録する。クライアントには internal_error としか届かないため */
 	onError?(error: unknown): void;
 }
@@ -60,9 +57,6 @@ export async function prepareMatch(
 			rules: plan.rules,
 			participants: plan.participants,
 			humanSlots: [...plan.humanSlots],
-			...(plan.mode === 'fps' && options.devAutoFpsWinner
-				? { devAutoFpsWinner: options.devAutoFpsWinner }
-				: {}),
 			reservationToken: plan.token,
 			signal: controls.signal,
 			onLifecycle: (state) => {

@@ -28,7 +28,7 @@ export interface MatchDetailsView {
 	}>;
 }
 
-function describeWinner(end: MatchEndState, mode: 'rsp' | 'fps'): string {
+export function describeWinner(end: MatchEndState, mode: 'rsp' | 'fps'): string {
 	if (end.reason === 'abandon') return '試合が打ち切られました';
 	if (end.winner === null) return '引き分け';
 	if (mode === 'rsp') {

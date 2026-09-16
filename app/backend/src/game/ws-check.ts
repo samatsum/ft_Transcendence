@@ -4,7 +4,6 @@
 // 検査1: 対人戦の疎通 — 2クライアントが join → welcome → input → snapshot → match_end
 // 検査2: ② §10 受入条件 №6 — 不正メッセージ4種がそれぞれ仕様どおりに扱われる
 // 検査3: B-12 — 30秒grace内の復帰、満了AI確定、RSP abandon、FPS forfeit
-// 検査5: 開発用FPS自動リザルト — 最終snapshot → goal → match_end
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
@@ -251,7 +250,10 @@ async function checkTwoClientsPlay(): Promise<string[]> {
 	}
 	if (!kinds.includes('match_start')) bad.push('match_start が無い');
 	if (!kinds.includes('match_end')) bad.push('match_end が無い');
-	const matchEnd = a.received.find((m) => m.t === 'event' && m.d.kind === 'match_end');
+	const matchEndIndex = a.received.findIndex(
+		(m) => m.t === 'event' && m.d.kind === 'match_end',
+	);
+	const matchEnd = a.received[matchEndIndex];
 	if (
 		!matchEnd ||
 		matchEnd.t !== 'event' ||
@@ -262,6 +264,28 @@ async function checkTwoClientsPlay(): Promise<string[]> {
 	}
 	if (deliveredMatchId !== 123 || resultOrder.join('>') !== 'persist>match_end>match_result') {
 		bad.push(`永続化→match_end→match_result の順序が不正 (${resultOrder.join('>')})`);
+	}
+	const finalSnapshotIndex = a.received.findIndex(
+		(m) => m.t === 'snapshot' && m.d.match.state === 'finished',
+	);
+	const finalSnapshot = a.received[finalSnapshotIndex];
+	if (!finalSnapshot || finalSnapshot.t !== 'snapshot' || finalSnapshotIndex >= matchEndIndex) {
+		bad.push('自然決着の終端snapshotが match_end より先に届いていない');
+	} else {
+		const ordinarySnapshot = {
+			...finalSnapshot,
+			d: { ...finalSnapshot.d, match: { ...finalSnapshot.d.match, state: 'playing' as const } },
+		};
+		const buffered = 64 * 1024 + 1;
+		if (gameMessageDelivery(ordinarySnapshot, buffered) !== 'skip') {
+			bad.push('通常snapshotが混雑時にskipされない');
+		}
+		if (gameMessageDelivery(finalSnapshot, buffered) !== 'send') {
+			bad.push('終端snapshotが混雑時に配信されない');
+		}
+		if (gameMessageDelivery(finalSnapshot, 1024 * 1024 + 1) !== 'close') {
+			bad.push('hard limit超過で終端snapshot接続を閉じない');
+		}
 	}
 
 	const sizes = a.received.filter((m) => m.t === 'snapshot').map((m) => JSON.stringify(m).length);
@@ -888,145 +912,6 @@ async function checkMaps(baseUrl: string): Promise<string[]> {
 	return bad;
 }
 
-/* ── 検査5: 開発用FPS自動リザルト ──────────────────────────────── */
-
-async function checkDevAutoFpsResult(): Promise<string[]> {
-	const bad: string[] = [];
-
-	for (const expectedWinner of [0, 1]) {
-		let now = 0;
-		let persisted = false;
-		const messages: GameServerMessage[] = [];
-		const room = await createRoomFromRules({
-			roomId: `dev-auto-fps-${expectedWinner}`,
-			mode: 'fps',
-			rules: { map: 'fps_duel' },
-			participants: [{ userId: 700 + expectedWinner, slot: 0 }],
-			humanSlots: [0],
-			now: () => now,
-			devAutoFpsWinner: () => expectedWinner,
-			onBroadcast: (message) => messages.push(message),
-			persistMatch: async () => {
-				persisted = true;
-				return null;
-			},
-			log: { info: () => {}, warn: () => {} },
-		});
-		room.join(0);
-		now += 3_000;
-		room.pump();
-		await waitUntil(
-			() => messages.some((message) => message.t === 'event' && message.d.kind === 'match_end'),
-			`dev auto FPS winner=${expectedWinner}`,
-			bad,
-		);
-
-		const finalSnapshotIndex = messages.findIndex(
-			(message) => message.t === 'snapshot' && message.d.match.state === 'finished',
-		);
-		const goalIndex = messages.findIndex(
-			(message) => message.t === 'event' && message.d.kind === 'goal',
-		);
-		const endIndex = messages.findIndex(
-			(message) => message.t === 'event' && message.d.kind === 'match_end',
-		);
-		const finalSnapshot = messages[finalSnapshotIndex];
-		const matchEnd = messages[endIndex];
-		if (
-			finalSnapshotIndex < 0 ||
-			goalIndex <= finalSnapshotIndex ||
-			endIndex <= goalIndex ||
-			!finalSnapshot ||
-			finalSnapshot.t !== 'snapshot' ||
-			finalSnapshot.d.match.winner !== expectedWinner ||
-			!matchEnd ||
-			matchEnd.t !== 'event' ||
-			matchEnd.d.kind !== 'match_end' ||
-			matchEnd.d.winner !== expectedWinner ||
-			matchEnd.d.reason !== 'goal' ||
-			matchEnd.d.match_id !== null ||
-			persisted ||
-			room.getState() !== 'finished'
-		) {
-			bad.push(`winner=${expectedWinner}: 最終snapshot→goal→match_endの契約が不正`);
-		}
-		if (!finalSnapshot || finalSnapshot.t !== 'snapshot') {
-			bad.push(`winner=${expectedWinner}: バックプレッシャー検査用の終端snapshotが不足`);
-		} else {
-			// 自動決着は最初の配信を終端snapshotに置き換えるため、同じwire形状で
-			// state だけが playing の通常snapshotを作り、配信判定の差だけを検査する。
-			const ordinarySnapshot = {
-				...finalSnapshot,
-				d: { ...finalSnapshot.d, match: { ...finalSnapshot.d.match, state: 'playing' as const } },
-			};
-			const buffered = 64 * 1024 + 1;
-			if (gameMessageDelivery(ordinarySnapshot, buffered) !== 'skip') {
-				bad.push(`winner=${expectedWinner}: 通常snapshotが混雑時にskipされない`);
-			}
-			if (gameMessageDelivery(finalSnapshot, buffered) !== 'send') {
-				bad.push(`winner=${expectedWinner}: 終端snapshotが混雑時に配信されない`);
-			}
-			if (gameMessageDelivery(finalSnapshot, 1024 * 1024 + 1) !== 'close') {
-				bad.push(`winner=${expectedWinner}: hard limit超過で接続を閉じない`);
-			}
-		}
-		closeRoom(room.roomId);
-	}
-
-	const unchangedCases = [
-		{
-			roomId: 'dev-auto-off-fps',
-			mode: 'fps' as const,
-			winner: undefined,
-			expectWarning: false,
-		},
-		{
-			roomId: 'dev-auto-rsp',
-			mode: 'rsp' as const,
-			winner: () => 0,
-			expectWarning: false,
-		},
-		{
-			roomId: 'dev-auto-invalid-fps',
-			mode: 'fps' as const,
-			winner: () => 2,
-			expectWarning: true,
-		},
-	];
-	for (const testCase of unchangedCases) {
-		let now = 0;
-		let warned = false;
-		const messages: GameServerMessage[] = [];
-		const room = await createRoomFromRules({
-			roomId: testCase.roomId,
-			mode: testCase.mode,
-			rules: testCase.mode === 'fps'
-				? { map: 'fps_duel' }
-				: { map: 'rsp', target_score: 21 },
-			participants: [{ userId: 710, slot: 0 }],
-			humanSlots: [0],
-			now: () => now,
-			devAutoFpsWinner: testCase.winner,
-			onBroadcast: (message) => messages.push(message),
-			log: { info: () => {}, warn: () => { warned = true; } },
-		});
-		room.join(0);
-		now += 3_000;
-		room.pump();
-		await waitUntil(() => room.getTick() >= 2, `${testCase.roomId} first snapshot`, bad);
-		if (
-			room.getState() !== 'playing' ||
-			messages.some((message) => message.t === 'event' && message.d.kind === 'match_end') ||
-			warned !== testCase.expectWarning
-		) {
-			bad.push(`${testCase.roomId}: 自動決着の対象外なのに終了した`);
-		}
-		closeRoom(room.roomId);
-	}
-
-	return bad;
-}
-
 /* ── 実行 ─────────────────────────────────────────────────────── */
 
 async function main(): Promise<void> {
@@ -1052,18 +937,10 @@ async function main(): Promise<void> {
 	const bad4 = await checkMaps(`http://127.0.0.1:${PORT}`);
 	console.log(bad4.length ? `  NG:\n    ${bad4.join('\n    ')}` : '  OK');
 
-	console.log('\n検査5: 開発用FPS自動リザルトと終端snapshot配信');
-	const bad5 = await checkDevAutoFpsResult();
-	console.log(
-		bad5.length
-			? `  NG:\n    ${bad5.join('\n    ')}`
-			: '  OK: ランダム勝者、終端snapshotの配信保証、対象外を確認',
-	);
-
 	closeAllRooms();
 	await app.close();
 
-	if (bad1.length || bad2.length || bad3.length || bad4.length || bad5.length) {
+	if (bad1.length || bad2.length || bad3.length || bad4.length) {
 		console.error('\nW-11 / B-12 / B-14: 失敗');
 		process.exit(1);
 	}

@@ -45,7 +45,6 @@ services:
       BACKEND_PORT: 3000
       DATABASE_URL: file:/data/app.db
       ALLOWED_ORIGIN: ${ALLOWED_ORIGIN:-https://localhost}
-      DEV_AUTO_FPS_RESULT: ${DEV_AUTO_FPS_RESULT:-false}
     volumes:
       - app-data:/data
       # engine-build が生成した sim.wasm を渡す（app/backend/src/game/sim.ts が
