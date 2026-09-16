@@ -221,7 +221,7 @@
 
 	function initGame(Module, mapText) {
 		const mapPtr = writeCString(Module, mapText);
-		const ok = Module._web_init(mapPtr, isRsp, resW, resH);
+		const ok = Module._web_init(mapPtr, isRsp, resW, resH, 0);
 		Module._free(mapPtr);
 		return ok;
 	}

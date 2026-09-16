@@ -66,6 +66,7 @@ export function useEngineRenderer({
 	const mapText = welcome?.map_text ?? null;
 	const mode = welcome?.mode ?? null;
 	const combatantId = welcome?.combatant_id ?? null;
+	const targetScore = welcome?.rules.target_score ?? 0;
 
 	useEffect(() => {
 		if (!mapText || !mode) return;
@@ -173,7 +174,7 @@ export function useEngineRenderer({
 				try {
 					const isRsp = mode === 'rsp' ? 1 : 0;
 					// 内部解像度は既定（960x540）。0 は「指定なし」（E-13 の web_init 引数）
-					const ok = m._web_init(mapPtr, isRsp, 0, 0);
+					const ok = m._web_init(mapPtr, isRsp, 0, 0, targetScore);
 					if (!ok) throw new Error('web_init failed');
 				} finally {
 					m._free(mapPtr);
@@ -203,7 +204,7 @@ export function useEngineRenderer({
 			// GC 任せ（unmount 後の rAF は cancelled で止まっているので副作用なし）
 			mod = null;
 		};
-	}, [mapText, mode, combatantId, canvasRef, snapshotBufferRef, localYawRef]);
+	}, [mapText, mode, combatantId, targetScore, canvasRef, snapshotBufferRef, localYawRef]);
 
 	return { status, textureProgress, errorMessage, fps };
 }
