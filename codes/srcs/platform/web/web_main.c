@@ -16,7 +16,7 @@
 
 /* ************************************************************************** */
 int
-web_init(const char* map_text, int is_rsp, int width, int height,
+	web_init(const char* map_text, int is_rsp, int width, int height,
 		int target_score);
 int
 	web_render(double delta_time);
@@ -54,7 +54,7 @@ static int		g_ready;
 // モードは JS がマップパス（maps/rsp_map/ 配下か）から判定して is_rsp で渡す。
 // native の validate_check と同じ「配置ディレクトリでモード決定」を web でも踏襲する
 int
-web_init(const char* map_text, int is_rsp, int width, int height,
+	web_init(const char* map_text, int is_rsp, int width, int height,
 	int target_score)
 {
 	g_game = (t_game){0};
