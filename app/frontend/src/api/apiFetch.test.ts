@@ -67,7 +67,7 @@ describe('apiFetch', () => {
 		);
 		const err = (await apiFetch('/api/x').catch((e: unknown) => e)) as ApiError;
 		expect(err).toBeInstanceOf(ApiError);
-		expect(err.code).toBe('unauthenticated');
+		expect(err.code).toBe('BROKEN_ON_PURPOSE_205');
 		expect(err.status).toBe(401);
 		expect(err.message).toBe('セッションが切れました');
 	});
