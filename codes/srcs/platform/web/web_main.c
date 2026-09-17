@@ -16,7 +16,8 @@
 
 /* ************************************************************************** */
 int
-	web_init(const char* map_text, int is_rsp, int width, int height);
+	web_init(const char* map_text, int is_rsp, int width, int height,
+		int target_score);
 int
 	web_render(double delta_time);
 int
@@ -53,7 +54,8 @@ static int		g_ready;
 // モードは JS がマップパス（maps/rsp_map/ 配下か）から判定して is_rsp で渡す。
 // native の validate_check と同じ「配置ディレクトリでモード決定」を web でも踏襲する
 int
-	web_init(const char* map_text, int is_rsp, int width, int height)
+	web_init(const char* map_text, int is_rsp, int width, int height,
+	int target_score)
 {
 	g_game = (t_game){0};
 	g_game.mode = MODE_FPS;
@@ -69,6 +71,9 @@ int
 	g_game.config.requested_width = (width > 0) ? (unsigned int)width : WEB_RENDER_WIDTH;
 	g_game.config.requested_height = (height > 0) ? (unsigned int)height : WEB_RENDER_HEIGHT;
 	init_game(&g_game);
+	if (is_rsp && target_score > 0) {
+		g_game.rsp.target_score = target_score;
+	}
 	if (!finish_init(&g_game)) {
 		return (0);
 	}
