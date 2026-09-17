@@ -8,6 +8,7 @@
 //   №6 不正メッセージ … 本ファイルの `handleMessage` が全部引き受ける
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import {
+	ACT_FIRE,
 	MAX_CLIENT_MESSAGE_BYTES,
 	MAX_CONSECUTIVE_SCHEMA_VIOLATIONS,
 	WS_CLOSE,
@@ -377,6 +378,9 @@ function handleInput(
 		// 「有限値チェック（zod）+ [-π,π) 正規化」のみ。回転チートは許容リスク。
 		// 正規化しないと 1e30 のような巨大値が三角関数で精度を失う
 		yaw: normalizeYaw(input.yaw),
+		// act の bit0=射撃（#187）。押下状態をそのまま渡し、連射間隔は sim の席が持つ。
+		// act は省略可能なので、未指定は「撃っていない」
+		fire: ((input.act ?? 0) & ACT_FIRE) !== 0,
 	});
 }
 

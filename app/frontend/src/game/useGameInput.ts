@@ -1,10 +1,14 @@
 // ゲーム入力の React フック（GV-06 / ④ §3.3 の入力キャプチャ契約）。
 //
-// - Canvas クリックでキャプチャ開始、Esc で解除（解除中は移動入力を送らない）。
+// - Canvas クリック（または focus 中の Enter）でキャプチャ開始、Esc で解除
+//   （解除中は移動・射撃入力を送らない）。
 //   Esc は #113 で「退出ポップアップを開く」も兼ねるようになった（`onRequestExit`）。
 //   本物の Pointer Lock API は使っていない（capturedRef は自前のフラグ）ので、
 //   ブラウザに Esc を予約されておらず、この割り当ては自由に決められる。
 // - keydown/keyup は held ビットマスクを書き換えるだけ（穴5 の決定）。
+// - Space はキャプチャ中の射撃（#187）。押している間 act の bit0 を立て続け、
+//   連射間隔はサーバの sim が決める。自分の武器モーションは fireHeldRef を見た
+//   描画側（useEngineRenderer）が出す。キャプチャ開始には使わない（Enter とクリックのみ）。
 // - setInterval 30Hz で最新 held + localYaw を全量送信（② §5-A: 状態駆動）。
 // - ArrowLeft/Right は setInterval 側で localYaw に積分して即時反映
 //   （② §5-C の「自分の yaw のみローカル優先」＝唯一の予測）。
@@ -14,7 +18,7 @@
 //   spectator と違い Esc は生かす＝どの画面幅でも退出できる。
 
 import { useCallback, useEffect, useRef, type RefObject } from 'react';
-import type { GameClientMessage } from '@ft/shared';
+import { ACT_FIRE, type GameClientMessage } from '@ft/shared';
 
 // ② §5-A: mv 4bit ビットマスク
 const MV_FORWARD = 0b0001;
@@ -62,6 +66,8 @@ export interface UseGameInputOptions {
 export interface UseGameInputResult {
 	/** 現在の local yaw（描画側が overrideDir に渡すため ref で公開） */
 	localYawRef: RefObject<number>;
+	/** キャプチャ中に Space（射撃）を押しているか（描画側が武器モーションを出すため ref で公開） */
+	fireHeldRef: RefObject<boolean>;
 	/** キャプチャ中か */
 	capturedRef: RefObject<boolean>;
 	/** キャプチャ状態を外から見たいときの状態通知フック */
@@ -77,6 +83,7 @@ export function useGameInput({
 	captureAllowed = true,
 }: UseGameInputOptions): UseGameInputResult {
 	const heldMvRef = useRef<number>(0);
+	const fireHeldRef = useRef<boolean>(false);
 	const rotateRef = useRef<RotateHeld>({ left: false, right: false });
 	const localYawRef = useRef<number>(0);
 	const seqRef = useRef<number>(0);
@@ -107,10 +114,11 @@ export function useGameInput({
 				while (localYawRef.current < -Math.PI) localYawRef.current += 2 * Math.PI;
 			}
 			const mv = capturedRef.current ? heldMvRef.current : 0;
+			const act = capturedRef.current && fireHeldRef.current ? ACT_FIRE : 0;
 			seqRef.current = (seqRef.current + 1) >>> 0; // uint32
 			send({
 				t: 'input',
-				d: { seq: seqRef.current, yaw: localYawRef.current, mv, act: 0 },
+				d: { seq: seqRef.current, yaw: localYawRef.current, mv, act },
 			});
 		}, Math.floor(1000 / INPUT_HZ));
 		return () => clearInterval(id);
@@ -121,6 +129,7 @@ export function useGameInput({
 		if (spectator) return;
 		function clearAll() {
 			heldMvRef.current = 0;
+			fireHeldRef.current = false;
 			rotateRef.current = { left: false, right: false };
 		}
 		function setCaptured(next: boolean) {
@@ -144,10 +153,12 @@ export function useGameInput({
 			}
 			if (!capturedRef.current) {
 				// CodeRabbit 指摘: キーボードのみ操作の要件（④ §6-7）。
-				// canvas に focus 済みの状態で Enter / Space を押したら capture 開始
+				// canvas に focus 済みの状態で Enter を押したら capture 開始。
+				// Space は #187 で射撃に割り当てたので、開始には使わない
+				// （開始と射撃が同じキーだと、掴んだ瞬間の押しっぱなしで撃ってしまう）
 				if (
 					captureAllowed &&
-					(ev.code === 'Enter' || ev.code === 'Space') &&
+					ev.code === 'Enter' &&
 					document.activeElement === canvasRef.current
 				) {
 					ev.preventDefault();
@@ -159,6 +170,10 @@ export function useGameInput({
 			if (bit !== undefined) {
 				ev.preventDefault();
 				heldMvRef.current |= bit;
+			} else if (ev.code === 'Space') {
+				// preventDefault しないとページがスクロールする
+				ev.preventDefault();
+				fireHeldRef.current = true;
 			} else if (ev.code === 'ArrowLeft') {
 				ev.preventDefault();
 				rotateRef.current.left = true;
@@ -176,6 +191,9 @@ export function useGameInput({
 			if (bit !== undefined) {
 				ev.preventDefault();
 				heldMvRef.current &= ~bit;
+			} else if (ev.code === 'Space') {
+				ev.preventDefault();
+				fireHeldRef.current = false;
 			} else if (ev.code === 'ArrowLeft') {
 				ev.preventDefault();
 				rotateRef.current.left = false;
@@ -222,6 +240,7 @@ export function useGameInput({
 
 	return {
 		localYawRef,
+		fireHeldRef,
 		capturedRef,
 		setOnCaptureChange,
 	};

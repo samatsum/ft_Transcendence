@@ -6,6 +6,8 @@
 //   - requestAnimationFrame で `now - 100ms` を挟む2snapshot を補間、
 //     自席（welcome.combatant_id）の dir は localYawRef で上書き、
 //     `_web_apply_snapshot` → `_web_render_frame` → ImageData present。
+//   - 射撃ボタン押下中は `_web_play_shot` で自分の武器モーションだけを出す（#187）。
+//     命中はサーバの sim が決め、C 側がクールダウン中の呼び出しを無視するので毎フレーム呼んでよい。
 //   - unmount で rAF / Module 解放（React 19 StrictMode の二重マウントに耐える）。
 //
 // 補間の時計基準: `performance.now() - 100ms` を描画時刻とし、snapshot の到着時刻
@@ -39,6 +41,8 @@ export interface UseEngineRendererOptions {
 	snapshotBufferRef: { current: TimedSnapshot[] };
 	/** 自席の視点(localYaw)。ref なので再レンダに巻き込まない */
 	localYawRef: RefObject<number>;
+	/** 射撃ボタンを押しているか（useGameInput の fireHeldRef）。観戦者など入力の無い画面では省略 */
+	fireHeldRef?: RefObject<boolean>;
 }
 
 export interface UseEngineRendererResult {
@@ -54,6 +58,7 @@ export function useEngineRenderer({
 	welcome,
 	snapshotBufferRef,
 	localYawRef,
+	fireHeldRef,
 }: UseEngineRendererOptions): UseEngineRendererResult {
 	const [status, setStatus] = useState<RendererStatus>('idle');
 	const [textureProgress, setTextureProgress] = useState<LoadTexturesProgress | null>(null);
@@ -142,6 +147,7 @@ export function useEngineRenderer({
 				mod.HEAPF64.set(flat, flatPtr / 8);
 				const viewId = combatantId ?? 0;
 				mod._web_apply_snapshot(flatPtr, flat.length, viewId);
+				if (fireHeldRef?.current) mod._web_play_shot();
 				mod._web_render_frame();
 				present(mod);
 			} catch (err) {
@@ -204,7 +210,7 @@ export function useEngineRenderer({
 			// GC 任せ（unmount 後の rAF は cancelled で止まっているので副作用なし）
 			mod = null;
 		};
-	}, [mapText, mode, combatantId, targetScore, canvasRef, snapshotBufferRef, localYawRef]);
+	}, [mapText, mode, combatantId, targetScore, canvasRef, snapshotBufferRef, localYawRef, fireHeldRef]);
 
 	return { status, textureProgress, errorMessage, fps };
 }
