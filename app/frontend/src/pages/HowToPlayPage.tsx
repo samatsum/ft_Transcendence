@@ -37,7 +37,7 @@ function KeyTable({ rows }: { rows: ReadonlyArray<readonly [string, string]> }) 
 		<table className="w-full text-body">
 			<tbody>
 				{rows.map(([key, action]) => (
-					<tr key={key} className="border-b border-border last:border-b-0">
+					<tr key={key} className="border-b border-line last:border-b-0">
 						<th scope="row" className="w-32 py-2 pr-4 text-left align-top text-label">
 							{key}
 						</th>
@@ -76,7 +76,7 @@ export default function HowToPlayPage() {
 						alt="FPS モードのプレイ画面。中央にクロスヘア、左下に収集進捗、右下にミニマップが表示されている"
 						loading='lazy'
 						decoding='async'
-						className="w-full rounded-md border border-border"
+						className="w-full rounded-md border border-line"
 					/>
 					<ul className="list-disc space-y-1 pl-5 text-body text-fg-muted">
 						<li>収集アイテムをすべて集めると扉が開き、先にゴールへ到達した側が勝ちます。</li>
@@ -92,7 +92,7 @@ export default function HowToPlayPage() {
 					<img
 						src="/how-to/rsp.png"
 						alt="RSP モードのプレイ画面。戦闘員の頭上にじゃんけんの手のスプライトが表示され、画面上部に赤チームと青チームのスコアが出ている"
-						className="w-full rounded-md border border-border"
+						className="w-full rounded-md border border-line"
 					/>
 					<ul className="list-disc space-y-1 pl-5 text-body text-fg-muted">
 						<li>赤チームと青チームに分かれ、相手チームの戦闘員に触れるとその場でじゃんけんの判定が起きます。</li>
@@ -108,7 +108,7 @@ export default function HowToPlayPage() {
 			<div>
 				<Link
 					to="/lobby"
-					className="inline-flex items-center justify-center gap-2 rounded-md bg-bg-hover px-4 py-2 text-label text-fg transition-colors hover:bg-border"
+					className="inline-flex items-center justify-center gap-2 rounded-md bg-surface-hover px-4 py-2 text-label text-fg transition-colors hover:bg-surface-active"
 				>
 					戻る
 				</Link>

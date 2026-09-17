@@ -7,13 +7,13 @@ import { Link } from 'react-router-dom';
 
 export function Footer() {
 	return (
-		<footer className="border-t border-slate-800 bg-slate-950 py-3 text-caption text-slate-400">
+		<footer className="border-t border-line-subtle bg-page py-3 text-caption text-fg-muted">
 			<nav className="mx-auto flex max-w-6xl items-center justify-center gap-4 px-4">
-				<Link to="/privacy" className="hover:text-slate-200">
+				<Link to="/privacy" className="hover:text-fg-secondary">
 					Privacy Policy
 				</Link>
 				<span aria-hidden>·</span>
-				<Link to="/terms" className="hover:text-slate-200">
+				<Link to="/terms" className="hover:text-fg-secondary">
 					Terms of Service
 				</Link>
 			</nav>
