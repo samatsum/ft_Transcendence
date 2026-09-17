@@ -40,16 +40,24 @@ void
 }
 
 /* ************************************************************************** */
-// 射撃アニメーションのタイマー（状態）を更新する
+// 射撃アニメーションのタイマー（状態）を更新する。経過時間ぶんの段数をまとめて
+// 減らし、描画の fps に周期が引きずられないようにする（1 フレーム 1 段だと、
+// フレーム間隔が SHOOT_INTERVAL に近い 20〜30fps で周期がほぼ倍に延びる。#187 で実測）。
+// 新しい発射（カウンタが前回より増えた）を検知したら、その時刻を起点に数え直す
 static void
 	update_weapon_timer(t_game* game, long long current_time)
 {
 	static long long	last_update = 0;
+	static int			last_seen = 0;
 
-	if (game->input.is_shooting > 0 && (current_time - last_update) >= SHOOT_INTERVAL) {
-		game->input.is_shooting--;
+	if (game->input.is_shooting > last_seen) {
 		last_update = current_time;
 	}
+	while (game->input.is_shooting > 0 && (current_time - last_update) >= SHOOT_INTERVAL) {
+		game->input.is_shooting--;
+		last_update += SHOOT_INTERVAL;
+	}
+	last_seen = game->input.is_shooting;
 }
 
 /* ************************************************************************** */
