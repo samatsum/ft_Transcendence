@@ -19,6 +19,7 @@
 #include "enemy/enemy.h"
 #include "platform/sim.h"
 #include "rsp/rsp_game.h"
+#include "tuning.h"
 
 #define RSP_MAP		"maps/rsp_map/rsp.cub"
 #define RSP_MAP_2	"maps/rsp_map/rsp_pillars.cub"
@@ -979,7 +980,8 @@ static void
 
 // #187: 引き金を引き続けても SEAT_SHOT_COOLDOWN 秒に1発しか出ないこと
 // （入力は 30Hz で押下状態が毎回届くため、毎 tick 撃ってしまわないことの確認）。
-// PH=3 の既定では 3 発目で死亡し、以後は死亡中なので HP は減らない
+// 検査時刻はクールダウンの 2/3 と 1.5 倍に置き、値を変えてもテストが追従するようにする。
+// PH=3 の既定では 3 発目で死亡するので、2 発目の後・3 発目の前で見る
 static void
 	test_187_cooldown_limits_fire_rate(const char* map_text)
 {
@@ -1000,13 +1002,13 @@ static void
 	target = combatant_by_id(game, 1);
 	full = (int)game->config.player_hp;
 	tick = 0;
-	while (tick < 20) {
+	while (tick < (int)(SEAT_SHOT_COOLDOWN / TICK_DT * 2.0 / 3.0)) {
 		sim_set_input(game, 0, 0, 0, 0, 0, 0.0, 1);
 		game_step(game, TICK_DT);
 		tick++;
 	}
 	expect_int("クールダウン中の押しっぱなしでは1発だけ", target->hp, full - 1);
-	while (tick < 45) {
+	while (tick < (int)(SEAT_SHOT_COOLDOWN / TICK_DT * 1.5)) {
 		sim_set_input(game, 0, 0, 0, 0, 0, 0.0, 1);
 		game_step(game, TICK_DT);
 		tick++;

@@ -5,7 +5,9 @@
 #include "tuning.h"
 
 /* ************************************************************************** */
-#define SHOOT_INTERVAL		100
+// 発射後カウンタを1減らす間隔[ms]。SHOOT_COOLDOWN(10) 回で射撃間隔 0.5 秒になり、
+// サーバの SEAT_SHOT_COOLDOWN（tuning.h）と揃えてある（#187）
+#define SHOOT_INTERVAL		50
 #define SHOOT_FRAMES_MAX	7
 #define BOB_PERIOD			2000.0
 #define BOB_POWER			3.0
