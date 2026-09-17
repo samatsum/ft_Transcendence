@@ -11,13 +11,15 @@ static void
 	combatant_apply_input(t_game* game, t_enemy* cur, double time_mult);
 static void
 	combatant_walk(t_game* game, t_enemy* cur, t_pos dir, double speed);
+static void
+	combatant_update_shot(t_game* game, t_enemy* cur, double time_mult);
 
 /* ************************************************************************** */
 // ローカルプレイヤー以外の外部入力席（サーバの人間席）へ、保持中の t_input を
-// 1フレームぶん適用する。ローカルプレイヤーは従来どおりカメラ座標系の
-// apply_input（浮動小数まで統合前と一致させる経路）で動くため対象外。
-// 死亡中（復帰待ち）の席は動かさない。native/web の単体起動ではこの条件に合う
-// 席が存在せず、完全な no-op になる
+// 1フレームぶん適用する（移動の後に射撃）。ローカルプレイヤーは従来どおり
+// カメラ座標系の apply_input（浮動小数まで統合前と一致させる経路）で動くため対象外。
+// 死亡中（復帰待ち）の席は動かさず撃たせもしない。native/web の単体起動では
+// この条件に合う席が存在せず、完全な no-op になる
 void
 	step_external_combatants(t_game* game, double time_mult)
 {
@@ -28,6 +30,7 @@ void
 		if (cur->input_source == INPUT_SRC_EXTERNAL && !cur->is_player
 			&& cur->death_timer <= 0.0) {
 			combatant_apply_input(game, cur, time_mult);
+			combatant_update_shot(game, cur, time_mult);
 		}
 		cur = cur->next;
 	}
@@ -74,4 +77,23 @@ static void
 	combatant_walk_axis(game, cur->sprite, &cur->sprite->pos, mv);
 	set_pos(&mv, 0.0, dir.y * speed);
 	combatant_walk_axis(game, cur->sprite, &cur->sprite->pos, mv);
+}
+
+/* ************************************************************************** */
+// 引き金（input.trigger）を引いている間、SEAT_SHOT_COOLDOWN 秒ごとに1発撃つ。
+// 入力は 30Hz の状態駆動で押下中ずっと 1 が届くため、立ち上がりではなく押下状態で
+// 判定し、連射の間隔はクールダウンだけで決める。native の trigger_shot と同じく
+// モードが射撃を許し（can_shoot）、ピストル装備時に限る
+static void
+	combatant_update_shot(t_game* game, t_enemy* cur, double time_mult)
+{
+	if (cur->shot_cooldown > 0.0) {
+		cur->shot_cooldown -= time_mult / TARGET_FPS;
+	}
+	if (!game->mode_ops.can_shoot || !cur->input.trigger
+		|| cur->input.current_weapon != WEP_PISTOL || cur->shot_cooldown > 0.0) {
+		return ;
+	}
+	cur->shot_cooldown = SEAT_SHOT_COOLDOWN;
+	shoot_from_combatant(game, cur);
 }

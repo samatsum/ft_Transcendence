@@ -9,6 +9,7 @@
 //   G-08  敵ハザード化（接触は死亡ペナルティで試合は続行する）
 //   G-09  オンライン対戦マップの起動検証（席の成立・関門→ゴールの完走可能性）
 //   G-11  FPS の射撃は席を delete_enemy しない（ハザード接触死と同じ一時退場に統一）
+//   #187  席の射撃（命中・クールダウン・壁の遮蔽・RSP では撃てない）
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -620,8 +621,8 @@ static void
 	copy_pos(&moved, &other->sprite->pos);
 	i = 0;
 	while (i < 30) {
-		sim_set_input(game, 0, 1, 0, 0, 0, 0.0);
-		sim_set_input(game, 1, 1, 0, 0, 0, 0.0);
+		sim_set_input(game, 0, 1, 0, 0, 0, 0.0, 0);
+		sim_set_input(game, 1, 1, 0, 0, 0, 0.0, 0);
 		game_step(game, TICK_DT);
 		i++;
 	}
@@ -740,8 +741,8 @@ static void
 	deaths = 0;
 	tick = 0;
 	while (tick < 3000 && !game->cleared) {
-		sim_set_input(game, 0, 1, 0, 0, 0, (double)tick / 53.0);
-		sim_set_input(game, 1, 1, 0, 0, 0, -(double)tick / 71.0);
+		sim_set_input(game, 0, 1, 0, 0, 0, (double)tick / 53.0, 0);
+		sim_set_input(game, 1, 1, 0, 0, 0, -(double)tick / 71.0, 0);
 		game_step(game, TICK_DT);
 		if (combatant_by_id(game, 0)->death_timer > 0.0
 			|| combatant_by_id(game, 1)->death_timer > 0.0) {
@@ -889,6 +890,189 @@ static void
 	}
 }
 
+// #187: 同じ行に床（'0'）が SHOT_LANE_CELLS マス続く区間を下の行から探し、左端の
+// セル中心を返す。撃ち手と標的を東向き（yaw=0）の射線上へ並べるのに使う。
+// ハザードの退避先（find_open_cell は上の行から探す）と行が重なりにくいよう逆順に走査する
+#define SHOT_LANE_CELLS	5
+
+static int
+	find_shot_lane(t_game* game, t_pos* out)
+{
+	int	x;
+	int	y;
+	int	run;
+
+	y = game->config.map.rows - 1;
+	while (y >= 0) {
+		run = 0;
+		x = 0;
+		while (x < game->config.map.columns) {
+			run = (MAP_XY(x, y, game->config) == '0') ? run + 1 : 0;
+			if (run == SHOT_LANE_CELLS) {
+				set_pos(out, x - SHOT_LANE_CELLS + 1 + 0.5, y + 0.5);
+				return (1);
+			}
+			x++;
+		}
+		y--;
+	}
+	return (0);
+}
+
+// #187: 撃ち手（席 shooter_id）を射線の左端、標的（席 target_id）を 3 マス東へ置き、
+// ハザードは別の行へ退避して止める。射撃だけを検査したいので、ハザードの追跡や
+// 接触死・射線への割り込みを排除する。準備できなければ 0
+static int
+	stage_shot(t_game* game, int shooter_id, int target_id, t_pos* lane)
+{
+	t_pos	parking;
+
+	if (!find_shot_lane(game, lane) || !find_open_cell(game, &parking)
+		|| (int)parking.y == (int)lane->y) {
+		return (0);
+	}
+	park_hazards(game, &parking);
+	copy_pos(&combatant_by_id(game, shooter_id)->sprite->pos, lane);
+	set_pos(&combatant_by_id(game, target_id)->sprite->pos, lane->x + 3.0, lane->y);
+	return (1);
+}
+
+// #187: 席が向いている方向の相手を撃つと、相手の HP が 1 減ること。引き金を
+// 離していれば撃たず、背を向けていれば当たらない
+static void
+	test_187_seat_shot_hits_in_sight(const char* map_text)
+{
+	t_game*		game;
+	t_enemy*	target;
+	t_pos		lane;
+	int			full;
+
+	game = create_fps_duel(map_text);
+	if (!game || !stage_shot(game, 0, 1, &lane)) {
+		printf("  FAIL cannot stage FPS shot\n");
+		g_failures++;
+		g_checks++;
+		game_destroy(game);
+		return ;
+	}
+	target = combatant_by_id(game, 1);
+	full = (int)game->config.player_hp;
+	sim_set_input(game, 0, 0, 0, 0, 0, 0.0, 0);
+	game_step(game, TICK_DT);
+	expect_int("引き金を引かなければ撃たない", target->hp, full);
+	sim_set_input(game, 0, 0, 0, 0, 0, M_PI, 1);
+	game_step(game, TICK_DT);
+	expect_int("背を向けて撃っても当たらない", target->hp, full);
+	game_destroy(game);
+	game = create_fps_duel(map_text);
+	if (!game || !stage_shot(game, 0, 1, &lane)) {
+		game_destroy(game);
+		return ;
+	}
+	target = combatant_by_id(game, 1);
+	sim_set_input(game, 0, 0, 0, 0, 0, 0.0, 1);
+	game_step(game, TICK_DT);
+	expect_int("正面の相手に当たりHPが1減る", target->hp, full - 1);
+	expect_int("1発では死なない", target->death_timer <= 0.0, 1);
+	game_destroy(game);
+}
+
+// #187: 引き金を引き続けても SEAT_SHOT_COOLDOWN 秒に1発しか出ないこと
+// （入力は 30Hz で押下状態が毎回届くため、毎 tick 撃ってしまわないことの確認）。
+// PH=3 の既定では 3 発目で死亡し、以後は死亡中なので HP は減らない
+static void
+	test_187_cooldown_limits_fire_rate(const char* map_text)
+{
+	t_game*		game;
+	t_enemy*	target;
+	t_pos		lane;
+	int			full;
+	int			tick;
+
+	game = create_fps_duel(map_text);
+	if (!game || !stage_shot(game, 0, 1, &lane)) {
+		printf("  FAIL cannot stage FPS shot\n");
+		g_failures++;
+		g_checks++;
+		game_destroy(game);
+		return ;
+	}
+	target = combatant_by_id(game, 1);
+	full = (int)game->config.player_hp;
+	tick = 0;
+	while (tick < 20) {
+		sim_set_input(game, 0, 0, 0, 0, 0, 0.0, 1);
+		game_step(game, TICK_DT);
+		tick++;
+	}
+	expect_int("クールダウン中の押しっぱなしでは1発だけ", target->hp, full - 1);
+	while (tick < 45) {
+		sim_set_input(game, 0, 0, 0, 0, 0, 0.0, 1);
+		game_step(game, TICK_DT);
+		tick++;
+	}
+	expect_int("クールダウンが明けると次の1発が出る", target->hp, full - 2);
+	game_destroy(game);
+}
+
+// #187: 壁の向こうの相手には当たらないこと。射線の途中の床を壁へ書き換えて検査する
+static void
+	test_187_wall_blocks_shot(const char* map_text)
+{
+	t_game*		game;
+	t_enemy*	target;
+	t_pos		lane;
+
+	game = create_fps_duel(map_text);
+	if (!game || !stage_shot(game, 0, 1, &lane)) {
+		printf("  FAIL cannot stage FPS shot\n");
+		g_failures++;
+		g_checks++;
+		game_destroy(game);
+		return ;
+	}
+	target = combatant_by_id(game, 1);
+	MAP_XY(lane.x + 2.0, lane.y, game->config) = '1';
+	sim_set_input(game, 0, 0, 0, 0, 0, 0.0, 1);
+	game_step(game, TICK_DT);
+	expect_int("壁越しの相手には当たらない", target->hp, (int)game->config.player_hp);
+	game_destroy(game);
+}
+
+// #187: RSP は射撃を持たない（mode_ops.can_shoot = 0）ので、引き金を引いても
+// 誰の HP も変わらないこと
+static void
+	test_187_rsp_cannot_shoot(const char* map_text)
+{
+	t_game*		game;
+	t_pos		lane;
+	int			i;
+	int			changed;
+
+	game = sim_create(map_text, 1, 0, TEST_SEED);
+	if (!game || game_add_combatant(game, 0, 0) != 0 || game_add_combatant(game, 1, 1) != 1
+		|| game_add_combatant(game, 2, 0) != 2 || game_add_combatant(game, 3, 1) != 3
+		|| !find_shot_lane(game, &lane)) {
+		printf("  FAIL cannot stage RSP shot\n");
+		g_failures++;
+		g_checks++;
+		game_destroy(game);
+		return ;
+	}
+	copy_pos(&combatant_by_id(game, 0)->sprite->pos, &lane);
+	set_pos(&combatant_by_id(game, 2)->sprite->pos, lane.x + 3.0, lane.y);
+	sim_set_input(game, 0, 0, 0, 0, 0, 0.0, 1);
+	game_step(game, TICK_DT);
+	changed = 0;
+	i = 0;
+	while (i < 4) {
+		changed += (combatant_by_id(game, i)->hp != (int)game->config.player_hp);
+		i++;
+	}
+	expect_int("RSP では引き金を引いても誰の HP も変わらない", changed, 0);
+	game_destroy(game);
+}
+
 // G-09: RSP 用オンラインマップの起動検証。4席（赤2青2）が成立して別々のマスに
 // 立ち、短い試合が決着まで完走できること
 static void
@@ -1023,6 +1207,11 @@ int
 	test_g11_hazard_still_deletable_by_shooting(fps_map);
 	test_g11_seat_survives_lethal_shots(fps_map);
 	test_g11_dead_seat_ignores_further_shots(fps_map);
+	printf("#187 席の射撃（act の射撃ビット → sim）\n");
+	test_187_seat_shot_hits_in_sight(fps_map);
+	test_187_cooldown_limits_fire_rate(fps_map);
+	test_187_wall_blocks_shot(fps_map);
+	test_187_rsp_cannot_shoot(rsp_map);
 	printf("G-09 オンライン対戦マップの起動検証\n");
 	test_g09_rsp_map(rsp_map, "rsp");
 	test_g09_rsp_map(rsp_map_2, "rsp_pillars");

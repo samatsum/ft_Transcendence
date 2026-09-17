@@ -40,5 +40,7 @@ void
 	count_items(t_game* game);
 void
 	shoot_target(t_game* game);
+void
+	shoot_from_combatant(t_game* game, t_enemy* shooter);
 
 #endif
