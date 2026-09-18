@@ -15,7 +15,13 @@ export interface RenderModule {
 
 	// マップとテクスチャの初期化
 	/** @returns 0=失敗 / 非0=成功 */
-	_web_init: (mapPtr: number, isRsp: number, resW: number, resH: number) => number;
+	_web_init: (
+		mapPtr: number,
+		isRsp: number,
+		resW: number,
+		resH: number,
+		targetScore: number,
+	) => number;
 	/** @returns 0=失敗 / 非0=成功 */
 	_web_register_texture: (
 		pathPtr: number,

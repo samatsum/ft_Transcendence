@@ -777,7 +777,7 @@ Cross-Origin-Embedder-Policy: require-corp</code></pre>
 			</p>
 			<pre><code>engine_demo.html?res=848x480      ← URL で内部解像度を指定できる</code></pre>
 			<p>
-				<code>web_init(map, is_rsp, width, height)</code>の後半2引数がこれです。
+				<code>web_init(map, is_rsp, width, height, target_score)</code>の3・4番目の引数がこれです。
 				<strong>内部解像度を下げても、Canvas側はCSSで画面いっぱいに引き伸ばす</strong>ので、
 				プレイヤーから見たウィンドウの大きさは変わりません（少し粗くなるだけ）。描画コストは
 				ほぼピクセル数に比例するので、848×480は960×540の約78%の負荷です。

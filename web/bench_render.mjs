@@ -49,7 +49,7 @@ async function bench(width, height) {
 		M._free(pathPtr);
 	}
 	const mapPtr = cstr(mapText);
-	if (!M._web_init(mapPtr, isRsp, width, height)) {
+	if (!M._web_init(mapPtr, isRsp, width, height, 0)) {
 		throw new Error('web_init failed');
 	}
 	M._free(mapPtr);
