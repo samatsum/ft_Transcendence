@@ -286,6 +286,12 @@ async function checkTwoClientsPlay(): Promise<string[]> {
 		if (gameMessageDelivery(finalSnapshot, 1024 * 1024 + 1) !== 'close') {
 			bad.push('hard limit超過で終端snapshot接続を閉じない');
 		}
+		if (
+			!matchEnd ||
+			gameMessageDelivery(matchEnd, 1024 * 1024 + 1, true) !== 'send'
+		) {
+			bad.push('終端snapshot送信後のmatch_endがhard limit超過で配信されない');
+		}
 	}
 
 	const sizes = a.received.filter((m) => m.t === 'snapshot').map((m) => JSON.stringify(m).length);

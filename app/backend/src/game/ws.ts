@@ -52,8 +52,14 @@ const BACKPRESSURE_CLOSE_BYTES = 1024 * 1024;
 export function gameMessageDelivery(
 	message: GameServerMessage,
 	bufferedAmount: number,
+	terminalSnapshotPending = false,
 ): 'send' | 'skip' | 'close' {
-	if (bufferedAmount > BACKPRESSURE_CLOSE_BYTES) return 'close';
+	const isMatchEnd = message.t === 'event' && message.d.kind === 'match_end';
+	// 終端 snapshot の直後は、その送信で hard limit をまたいでも match_end だけは届ける
+	// 結果画面はこの2メッセージを組み合わせて表示するため、途中で切断しない
+	if (bufferedAmount > BACKPRESSURE_CLOSE_BYTES && !(isMatchEnd && terminalSnapshotPending)) {
+		return 'close';
+	}
 	const isTerminalSnapshot =
 		message.t === 'snapshot' && message.d.match.state === 'finished';
 	if (
@@ -86,6 +92,8 @@ interface Connection {
 	/** ② §2-D: input のレート制限（40 msg/s）。超過分は黙って破棄 */
 	inputWindowStart: number;
 	inputCountInWindow: number;
+	/** 送信済みの終端 snapshot に対応する match_end を待っている */
+	terminalSnapshotPending: boolean;
 }
 
 /** roomId → その部屋を見ている接続。ルーム単位でまとめるのが配信の単位 */
@@ -180,6 +188,7 @@ async function handleConnection(
 		consecutiveViolations: 0,
 		inputWindowStart: Date.now(),
 		inputCountInWindow: 0,
+		terminalSnapshotPending: false,
 	};
 	unregisterSession = connectionManager.registerSessionConnection(
 		socket,
@@ -219,7 +228,11 @@ function ensureRoomConnections(roomId: string, room: GameRoom): Set<Connection> 
 			// ② §8 バックプレッシャ: 回線が詰まっている接続を切らずに守る。
 			// **snapshot は落としてよい**（次が全量なので自己回復する）が、
 			// event は落とすと二度と届かないので必ず送る
-			const delivery = gameMessageDelivery(message, c.socket.bufferedAmount);
+			const delivery = gameMessageDelivery(
+				message,
+				c.socket.bufferedAmount,
+				c.terminalSnapshotPending,
+			);
 			if (delivery === 'close') {
 				c.socket.close(WS_CLOSE.rateLimited, 'send buffer overflow');
 				continue;
@@ -227,6 +240,12 @@ function ensureRoomConnections(roomId: string, room: GameRoom): Set<Connection> 
 			if (delivery === 'skip') continue;
 
 			c.socket.send(serialized);
+			if (message.t === 'snapshot' && message.d.match.state === 'finished') {
+				c.terminalSnapshotPending = true;
+			}
+			if (message.t === 'event' && message.d.kind === 'match_end') {
+				c.terminalSnapshotPending = false;
+			}
 		}
 
 		// ② §6-A: finished は結果画面のため 60 秒だけ接続を維持し、満了で close 1000。
