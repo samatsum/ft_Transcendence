@@ -1,8 +1,8 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import type { ReactNode } from 'react';
 
+import { loginDestination } from '../auth/loginDestination.js';
 import { useAuth } from '../contexts/AuthContext.js';
-import { loginDestination } from '../pages/loginForm.js';
 
 // ④ §1「認証済みなら認証画面から出す」。/login と /signup に貼る。
 // loading 中はスケルトンを出さず children（ログインフォーム等）を素通しにして
