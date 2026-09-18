@@ -1,5 +1,3 @@
-import { Link } from 'react-router-dom';
-
 import { Button } from '../../components/Button.js';
 import { Modal } from '../../components/Modal.js';
 import type { MatchEndState } from '../hudState.js';
@@ -118,11 +116,6 @@ export function MatchEndModal({
 				{detailsError && (
 					<p className="text-caption text-slate-500">試合詳細を取得できませんでした。</p>
 				)}
-				<nav className="flex items-center justify-center gap-3 text-caption text-slate-500">
-					<Link to="/privacy" className="hover:text-slate-300">Privacy Policy</Link>
-					<span aria-hidden>·</span>
-					<Link to="/terms" className="hover:text-slate-300">Terms of Service</Link>
-				</nav>
 			</div>
 		</Modal>
 	);
