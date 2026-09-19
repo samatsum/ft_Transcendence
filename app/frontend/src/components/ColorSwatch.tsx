@@ -10,8 +10,8 @@ export interface ColorSwatchProps {
 export function ColorSwatch({ name, className }: ColorSwatchProps) {
 	return (
 		<div className="flex flex-col items-center gap-2">
-			<div className={`h-12 w-12 rounded-md border border-slate-700 ${className}`} aria-hidden />
-			<code className="text-caption text-slate-400">{name}</code>
+			<div className={`h-12 w-12 rounded-md border border-line ${className}`} aria-hidden />
+			<code className="text-caption text-fg-muted">{name}</code>
 		</div>
 	);
 }

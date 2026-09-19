@@ -59,15 +59,15 @@ export function Modal({ open, onClose, title, children, actions }: ModalProps) {
 				aria-modal="true"
 				aria-labelledby={title ? 'modal-title' : undefined}
 				tabIndex={-1}
-				className="w-full max-w-md rounded-lg border border-slate-700 bg-slate-800 p-6 shadow-2xl outline-none"
+				className="w-full max-w-md rounded-lg border border-line bg-surface p-6 shadow-2xl outline-none"
 				onClick={(ev) => ev.stopPropagation()}
 			>
 				{title && (
-					<h2 id="modal-title" className="mb-3 text-heading-sm text-slate-100">
+					<h2 id="modal-title" className="mb-3 text-heading-sm text-fg">
 						{title}
 					</h2>
 				)}
-				<div className="text-body text-slate-200">{children}</div>
+				<div className="text-body text-fg-secondary">{children}</div>
 				{actions && <div className="mt-4 flex justify-end gap-2">{actions}</div>}
 			</div>
 		</div>,

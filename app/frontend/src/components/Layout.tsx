@@ -9,7 +9,7 @@ import { Header } from './Header.js';
 
 export function Layout() {
 	return (
-		<div className="flex min-h-screen flex-col bg-slate-950 text-slate-100">
+		<div className="flex min-h-screen flex-col bg-page text-fg">
 			<Header />
 			<main className="flex-1">
 				<Outlet />

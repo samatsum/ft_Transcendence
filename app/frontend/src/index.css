@@ -4,20 +4,46 @@
 @import 'tailwindcss';
 
 @theme {
-	/* ダーク基調のブランドカラー（palette は Tailwind 既定の slate/sky/emerald/amber/rose を利用しつつ、
-	   セマンティック名でも参照できるように CSS 変数を1本立てる）。
+	/* ダーク基調のセマンティックカラー。画面・部品は slate-700 のような Tailwind の色名を
+	   直書きせず、必ずこのトークン経由で色を指定する（#164）。
+	   値は Tailwind 既定パレットを var() で直接参照し、「〜相当」の近似値にはしない。
+	   以前は oklch の近似値で、共通部品の実際の見た目と一段ずれていた。
 	   D-15「テーマ切替は工数対効果が低い」ため、light 対応は入れない */
-	--color-bg: oklch(0.14 0.02 265);           /* slate-950 相当 */
-	--color-bg-elevated: oklch(0.22 0.02 265);  /* slate-800 相当（カード背景） */
-	--color-bg-hover: oklch(0.28 0.02 265);     /* slate-700 相当 */
-	--color-border: oklch(0.32 0.02 265);       /* slate-600 相当 */
-	--color-fg: oklch(0.96 0.01 265);           /* slate-50 */
-	--color-fg-muted: oklch(0.65 0.03 265);     /* slate-400 */
-	--color-accent: oklch(0.72 0.15 240);       /* sky-400 */
-	--color-accent-hover: oklch(0.62 0.19 240); /* sky-500 */
-	--color-danger: oklch(0.65 0.22 25);        /* rose-500 */
-	--color-success: oklch(0.72 0.19 155);      /* emerald-500 */
-	--color-warning: oklch(0.75 0.15 80);       /* amber-500 */
+
+	/* 名前の付け方: Tailwind は --color-X から bg-X / text-X / border-X を作るので、
+	   トークン名に bg / border を入れると bg-bg や border-border と二重になる。
+	   背景は page / surface、枠線は line と呼ぶ。surface-* は用途ではなく明るさの段で名付ける
+	   （同じ slate-900 を、くぼんで見える入力欄と浮いて見える Toast の両方が使うため） */
+
+	/* 背景（暗い順） */
+	--color-page: var(--color-slate-950);           /* ページ全体・Header/Footer */
+	--color-surface-low: var(--color-slate-900);    /* surface より一段暗い面。入力欄・Toast */
+	--color-surface: var(--color-slate-800);        /* Card・Modal。ghost ボタンの hover */
+	--color-surface-hover: var(--color-slate-700);  /* secondary ボタン。無効時のボタン */
+	--color-surface-active: var(--color-slate-600); /* secondary ボタンの hover */
+
+	/* 枠線 */
+	--color-line-subtle: var(--color-slate-800); /* Header/Footer の区切り線 */
+	--color-line: var(--color-slate-700);        /* Card・Input・Modal の枠 */
+	--color-line-strong: var(--color-slate-600);
+
+	/* 文字（明るい順） */
+	--color-fg-strong: var(--color-white);      /* 色付きボタン上の文字・リンクの hover */
+	--color-fg: var(--color-slate-100);         /* 見出し・本文 */
+	--color-fg-secondary: var(--color-slate-200); /* ラベル・Modal 本文 */
+	--color-fg-muted: var(--color-slate-400);   /* 補足・ヒント */
+	--color-fg-subtle: var(--color-slate-500);  /* placeholder・無効時の文字 */
+	--color-fg-disabled: var(--color-slate-600); /* ghost ボタンの無効時 */
+
+	/* アクセント・状態色。-bright は暗い背景上の文字や focus 用、-strong は塗り用 */
+	--color-accent: var(--color-sky-500);
+	--color-accent-bright: var(--color-sky-400);
+	--color-accent-strong: var(--color-sky-600);
+	--color-danger: var(--color-rose-500);
+	--color-danger-bright: var(--color-rose-400);
+	--color-danger-strong: var(--color-rose-600);
+	--color-success: var(--color-emerald-500);
+	--color-warning: var(--color-amber-500);
 
 	/* タイポグラフィトークン */
 	/* ページ見出し */
@@ -46,12 +72,12 @@
 
 /* body 既定色（layout 未マウントの ErrorBoundary fallback 等でも白背景にならない保険） */
 html, body {
-	background: var(--color-bg);
+	background: var(--color-page);
 	color: var(--color-fg);
 }
 
 /* フォーカスリング統一（④ §5「一貫性: 色・余白・フォーカスリング」） */
 :focus-visible {
-	outline: 2px solid var(--color-accent);
+	outline: 2px solid var(--color-accent-bright);
 	outline-offset: 2px;
 }

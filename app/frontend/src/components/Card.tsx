@@ -8,7 +8,7 @@ export interface CardProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 export function Card({ padded = true, className = '', ...rest }: CardProps) {
-	const base = 'rounded-lg border border-slate-700 bg-slate-800';
+	const base = 'rounded-lg border border-line bg-surface';
 	const pad = padded ? 'p-4' : '';
 	return <div className={`${base} ${pad} ${className}`} {...rest} />;
 }

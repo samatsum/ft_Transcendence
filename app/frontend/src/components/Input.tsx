@@ -21,11 +21,11 @@ export function Input({
 	const injected = ariaInvalidProp === true || ariaInvalidProp === 'true';
 	const isInvalid = invalid || injected;
 	const base =
-		'w-full rounded-md border bg-slate-900 px-3 py-2 text-body text-slate-100 ' +
-		'placeholder:text-slate-500 disabled:cursor-not-allowed disabled:opacity-60';
+		'w-full rounded-md border bg-surface-low px-3 py-2 text-body text-fg ' +
+		'placeholder:text-fg-subtle disabled:cursor-not-allowed disabled:opacity-60';
 	const border = isInvalid
-		? 'border-rose-500 focus:border-rose-400'
-		: 'border-slate-700 focus:border-sky-400';
+		? 'border-danger focus:border-danger-bright'
+		: 'border-line focus:border-accent-bright';
 	return (
 		<input
 			{...rest}
