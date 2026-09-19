@@ -28,7 +28,7 @@ after=$(git rev-parse "origin/$ref")
 # **変更が無ければ何もしない。** このサーバー（Nanode 1GB）では wasm の
 # ビルドに20分近くかかるので、無駄な作り直しを避ける。強制するなら DEPLOY_FORCE=1
 if [ "$before" = "$after" ] && [ "${DEPLOY_FORCE:-}" != 1 ]; then
-	echo "変更なし（$ref = $(git log --oneline -1 --format=%h%s HEAD)）。何もしない"
+	echo "変更なし（$ref = $(git log -1 --format='%h %s' HEAD)）。何もしない"
 	exit 0
 fi
 
