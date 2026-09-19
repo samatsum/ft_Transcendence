@@ -24,17 +24,30 @@ fi
 git fetch -q origin "$ref"
 before=$(git rev-parse HEAD)
 after=$(git rev-parse "origin/$ref")
+branch=$(git rev-parse --abbrev-ref HEAD)
 
-# **変更が無ければ何もしない。** このサーバー（Nanode 1GB）では wasm の
+# **ブランチ名まで $ref に揃える。** `git reset --hard origin/main` だけだと
+# 中身は main でもローカルのブランチ名は前のまま残り、`git status` が
+# 実態と食い違う。-f はローカルの変更を捨てる（.env は git 管理外なので残る）
+switch_to_ref() {
+	git checkout -q -f -B "$ref" "origin/$ref"
+}
+
+# **変更が無ければビルドしない。** このサーバー（Nanode 1GB）では wasm の
 # ビルドに20分近くかかるので、無駄な作り直しを避ける。強制するなら DEPLOY_FORCE=1
 if [ "$before" = "$after" ] && [ "${DEPLOY_FORCE:-}" != 1 ]; then
-	echo "変更なし（$ref = $(git log -1 --format='%h %s' HEAD)）。何もしない"
+	if [ "$branch" != "$ref" ]; then
+		switch_to_ref
+		echo "内容は同じ。ブランチ名だけ $branch -> $ref に揃えた（ビルドはしない）"
+	else
+		echo "変更なし（$ref = $(git log -1 --format='%h %s' HEAD)）。何もしない"
+	fi
 	exit 0
 fi
 
 echo "=== $before -> $after へ更新"
 git log --oneline "$before..$after" 2>/dev/null | head -20 || true
-git reset -q --hard "origin/$ref"
+switch_to_ref
 
 echo "=== ビルドと再起動"
 $compose up -d --build
