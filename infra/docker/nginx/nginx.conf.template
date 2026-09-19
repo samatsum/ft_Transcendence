@@ -36,8 +36,11 @@ http {
 			root /var/www/certbot;
 		}
 
+		# **`$host` ではなく `${SERVER_NAME}`。** 80 番は誰でも叩けて Host
+		# ヘッダも自由に付けられるので、`$host` だと攻撃者の指定した宛先を
+		# Location に載せてしまう（オープンリダイレクト）
 		location / {
-			return 301 https://$host$request_uri;
+			return 301 https://${SERVER_NAME}$request_uri;
 		}
 	}
 

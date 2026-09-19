@@ -41,7 +41,7 @@ SSH は鍵のみにし（`PasswordAuthentication no`）、ファイアウォー�
 apt-get install -y certbot
 # nginx を起動する前に実行する（80 番を certbot が使う）
 certbot certonly --standalone --agree-tos --register-unsafely-without-email \
-  -d 203-0-113-5.nip.io
+  -d <IP をハイフン区切りにしたもの>.nip.io
 ```
 
 **証明書の有効期間は 90 日。** レビュー期間中だけ動かして削除する前提なので、更新の仕組みは用意していない。
@@ -55,8 +55,8 @@ certbot certonly --standalone --agree-tos --register-unsafely-without-email \
 git clone --branch <ブランチ> https://github.com/samatsum/ft_Transcendence.git /opt/ft_transcendence
 cd /opt/ft_transcendence
 cat > .env <<'EOF'
-SERVER_NAME=203-0-113-5.nip.io
-ALLOWED_ORIGIN=https://203-0-113-5.nip.io
+SERVER_NAME=<IP をハイフン区切りにしたもの>.nip.io
+ALLOWED_ORIGIN=https://<IP をハイフン区切りにしたもの>.nip.io
 EOF
 docker compose -f docker-compose.yml -f docker-compose.vps.yml up -d --build
 ```

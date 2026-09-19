@@ -26,12 +26,11 @@ services:
       # live/ の中身は archive/ へのシンボリックリンクなので、
       # **live/<host>/ だけをマウントすると鍵を辿れない。** /etc/letsencrypt ごと渡す
       - /etc/letsencrypt:/etc/letsencrypt:ro
-      # certbot --webroot での更新用（nginx を止めずに済む）
-      - certbot-webroot:/var/www/certbot
+      # certbot --webroot での更新用（nginx を止めずに済む）。
+      # **named volume ではなくホストの bind mount。** certbot はホスト側に
+      # 入れてあり、named volume の中には書けないので、更新が通らなくなる
+      - /var/www/certbot:/var/www/certbot
     restart: unless-stopped
 
   backend:
     restart: unless-stopped
-
-volumes:
-  certbot-webroot:
