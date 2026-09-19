@@ -83,7 +83,7 @@
 					<thead><tr><th>関数</th><th>役割</th></tr></thead>
 					<tbody>
 						<tr><td><code>game_create</code></td><td><code>.cub</code>のテキストからゲームを1つ作る（対戦1試合＝1インスタンス）</td></tr>
-						<tr><td><code>sim_set_input</code></td><td>ある戦闘員の入力（移動・視点）をサーバから渡す</td></tr>
+						<tr><td><code>sim_set_input</code></td><td>ある戦闘員の入力（移動・視点・射撃）をサーバから渡す</td></tr>
 						<tr><td><code>game_step</code></td><td>1tick分だけゲームを進める。native/web/serverの3環境で呼ばれ方が違うだけで中身は共通</td></tr>
 						<tr><td><code>game_snapshot</code></td><td>今の状態をフラットな数値配列として取り出す。JSON化はNode側の仕事（simはしない）</td></tr>
 						<tr><td><code>game_apply_snapshot</code></td><td><strong>クライアント専用</strong>。受け取ったスナップショットを表示用に書き込むだけで、判定はしない</td></tr>

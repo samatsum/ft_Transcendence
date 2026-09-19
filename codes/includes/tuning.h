@@ -40,6 +40,14 @@
 // FPSゴール地点に表示するスプライト画像
 # define GOAL_TEX_PATH			"textures/Goal.xpm"
 
+// サーバ（sim）の席が撃つときの発射間隔[秒]。高速で迫る AI ハザードを迎撃できるよう
+// 0.5 秒にした（#187）。native と自分の画面の武器モーションの周期
+// （input.c の SHOOT_COOLDOWN=10 回 × fps_weapon.c の SHOOT_INTERVAL=50ms）と揃えること。
+// 片方だけ変えると、弾の間隔と銃の動きがずれる
+# define SEAT_SHOT_COOLDOWN		0.5
+// 席の射撃が戦闘員に当たる、射線からの横距離[マス]。スプライトの描画幅 1 マスの半分
+# define SEAT_SHOT_HIT_RADIUS	0.5
+
 /* ************************************************************************** */
 // 敵の移動速度倍率（基準 enemy_speed に対する係数）と巡回の到達判定しきい値。
 // ARRIVE は1フレームの巡回移動量(enemy_speed*PATROL*MAX_TIME_MULT)より大きく取る。

@@ -17,5 +17,7 @@ void
 	select_weapon(t_game* game, int weapon);
 void
 	trigger_shot(t_game* game);
+int
+	begin_shot(t_game* game);
 
 #endif

@@ -33,6 +33,8 @@ void
 	web_set_weapon(int weapon);
 void
 	web_shoot(void);
+void
+	web_play_shot(void);
 int
 	web_framebuffer_ptr(void);
 int
@@ -157,6 +159,16 @@ void
 	web_shoot(void)
 {
 	trigger_shot(&g_game);
+}
+
+/* ************************************************************************** */
+// オンライン対戦（#187）で、撃った本人の画面に武器モーションだけを出す。
+// 命中はサーバの sim が決めるため、web_shoot と違ってローカルの世界には
+// 当たり判定を走らせない（走らせるとハザードが表示側でだけ消える）
+void
+	web_play_shot(void)
+{
+	begin_shot(&g_game);
 }
 
 /* ************************************************************************** */

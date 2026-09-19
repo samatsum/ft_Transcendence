@@ -33,6 +33,8 @@ export interface RenderModule {
 	// snapshot 経路（GV-06 が使う本命）
 	_web_apply_snapshot: (flatPtr: number, len: number, viewId: number) => void;
 	_web_render_frame: () => void;
+	/** 撃った本人の武器モーションだけを始める（命中判定はサーバの sim。#187） */
+	_web_play_shot: () => void;
 
 	// ローカル駆動用（engine_demo.html で使用。GV-06 は使わない）
 	_web_render: (dt: number) => void;

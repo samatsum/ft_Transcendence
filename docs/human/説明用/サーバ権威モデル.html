@@ -128,7 +128,7 @@
 sequenceDiagram
     participant B as ブラウザ（キー/マウス）
     participant S as サーバ
-    B->>S: input を送信（30Hz）<br/>mv（前後左右の押下ビット）と yaw（視点の絶対角）
+    B->>S: input を送信（30Hz）<br/>mv（前後左右の押下ビット）と yaw（視点の絶対角）<br/>と act（射撃ボタンの押下ビット）
     Note over S: game_step で世界の状態を計算（30Hz）<br/>位置・当たり判定・スコア・勝敗を決める<br/>★絵は描かない★
     S->>B: snapshot を送信（15〜20Hz）<br/>全戦闘員の位置・向き・スコア・生死…
     Note over B: snapshot を貯めて now−100ms で補間<br/>render.wasm が「自分の画面」を描く<br/>★描画はブラウザの仕事★
@@ -622,7 +622,7 @@ typedef enum e_input_source
 					<p class="card-label">サーバ権威 / スナップショット / 補間</p>
 					<ol class="path-list">
 						<li><div><strong>本当のゲームはサーバの中だけで進む</strong><span>（サーバ権威）。チートとズレを原理的に消すため</span></div></li>
-						<li><div><strong>データの流れは1往復</strong><span>ブラウザが input（mv/yaw）を送る → サーバが状態を計算 → snapshot を返す → ブラウザが補間して描く。描くのはブラウザでサーバは絵を持たない</span></div></li>
+						<li><div><strong>データの流れは1往復</strong><span>ブラウザが input（mv/yaw/act）を送る → サーバが状態を計算 → snapshot を返す → ブラウザが補間して描く。描くのはブラウザでサーバは絵を持たない</span></div></li>
 						<li><div><strong>クライアントに勝敗判定コードは無い</strong><span>徹底して守られている</span></div></li>
 						<li><div><strong>サーバは写真を定期配信する</strong><span>1KB未満・JSON</span></div></li>
 						<li><div><strong>2枚のあいだを補間して滑らかに描く</strong><span>位置と向きだけ。スコア・生死は補間せず古い写真の値を使う。予測ではなく既知2点のあいだ埋め。物体の対応はidで照合し、数値を混ぜて毎フレーム描き直す</span></div></li>

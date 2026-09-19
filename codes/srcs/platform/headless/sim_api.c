@@ -52,7 +52,7 @@ t_game*
 		unsigned int seed);
 int
 	sim_set_input(t_game* game, int combatant_id, int forward, int backward,
-		int strafe_left, int strafe_right, double yaw);
+		int strafe_left, int strafe_right, double yaw, int fire);
 static int
 	sim_prepare_world(t_sim_game* sim);
 static int
@@ -348,12 +348,13 @@ t_game*
 }
 
 /* ************************************************************************** */
-// JS（Node）向けの入力ラッパ。② §5-A の {mv, yaw} を t_input へ写像する。
+// JS（Node）向けの入力ラッパ。② §5-A の {mv, yaw, act} を t_input へ写像する。
 // yaw は絶対角（クライアント権威の視点回転。② §5-C）として席へ直接反映し、
-// 回転キーは使わない
+// 回転キーは使わない。fire は引き金の押下状態で、発射間隔は席の shot_cooldown が
+// 持つため、毎 tick 入力を丸ごと差し替えても連射間隔は崩れない
 int
 	sim_set_input(t_game* game, int combatant_id, int forward, int backward,
-		int strafe_left, int strafe_right, double yaw)
+		int strafe_left, int strafe_right, double yaw, int fire)
 {
 	t_enemy*	seat;
 	t_input		input;
@@ -369,6 +370,7 @@ int
 	input.current_weapon = WEP_PISTOL;
 	set_pos(&input.move, (forward != 0), (backward != 0));
 	set_pos(&input.x_move, (strafe_left != 0), (strafe_right != 0));
+	input.trigger = (fire != 0);
 	seat->input = input;
 	seat->dir_angle = yaw;
 	return (1);

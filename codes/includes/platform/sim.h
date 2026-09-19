@@ -55,12 +55,14 @@ void
 
 /* ************************************************************************** */
 // JS（Node）から呼ぶ薄いラッパ。② §6-B の「mv/yaw → t_input への写像は
-// platform/headless 層の責務」を担い、yaw は絶対角として席の向きへ直接反映する
+// platform/headless 層の責務」を担い、yaw は絶対角として席の向きへ直接反映する。
+// sim_set_input の fire は act の射撃ビット（#187）。JS からの既存の 7 引数呼び出しが
+// 黙って別の引数へずれないよう末尾に置く（省略時は 0 = 撃たない）
 t_game*
 	sim_create(const char* cub_text, int is_rsp, int target_score,
 		unsigned int seed);
 int
 	sim_set_input(t_game* game, int combatant_id, int forward, int backward,
-		int strafe_left, int strafe_right, double yaw);
+		int strafe_left, int strafe_right, double yaw, int fire);
 
 #endif
