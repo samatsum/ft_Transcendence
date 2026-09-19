@@ -64,7 +64,21 @@ docker compose -f docker-compose.yml -f docker-compose.vps.yml up -d --build
 **`ALLOWED_ORIGIN` は完全一致で1つだけ。** ホスト名を変えたら両方を書き換えて `up -d` をやり直す。
 フロントは `window.location.host` から WS の URL を組み立てるので、ホスト名を埋めたビルドし直しは要らない。
 
-更新は `git pull` → `docker compose -f docker-compose.yml -f docker-compose.vps.yml up -d --build`。
+### 4. マージ後の更新
+
+`infra/scripts/deploy.sh` がサーバー側で完結する。手元からは ssh 一行で叩く。
+
+```bash
+ssh -i ~/.ssh/<鍵> root@<IP> 'cd /opt/ft_transcendence && infra/scripts/deploy.sh'
+```
+
+既定は `origin/main` への追従。**差分が無ければ何もせず終了する**（Nanode 1GB では
+wasm のビルドに20分近くかかるため）。強制するなら `DEPLOY_FORCE=1`、別のブランチを
+試すなら `DEPLOY_REF=<ブランチ>` を頭に付ける。
+
+`/api/health` が 200 になるまで最大60秒待ち、駄目なら終了コード 1 で落ちる。
+最後に `docker image prune` と `docker builder prune` を実行する——**掃除しないと
+ディスク（25GB）がビルド数回で埋まる**。
 
 ## 設計の根拠
 
