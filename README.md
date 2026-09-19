@@ -162,6 +162,7 @@ and all 4 online-match maps. CI runs this on every PR.
 > |---|---|---|
 > | `npm run dev` | `http://localhost:5173` | `ALLOWED_ORIGIN=http://localhost:5173` |
 > | `docker compose` | `https://localhost` (via nginx) | nothing — the Compose default already matches |
+> | `docker compose -f docker-compose.yml -f docker-compose.vps.yml` (a public server) | `https://<your host>` | `SERVER_NAME` and `ALLOWED_ORIGIN`, both in `.env` — see [`infra/README.md`](infra/README.md) |
 >
 > **Comment it out again before going back to `docker compose`.** Compose reads this same `.env`
 > for `${ALLOWED_ORIGIN:-https://localhost}`, so a leftover dev value breaks the Docker path
