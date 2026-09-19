@@ -18,7 +18,7 @@ services:
       # nginx.conf.template の ${SERVER_NAME} に入る。未設定なら起動を止める。
       # **値は引用符で囲む。** エラーメッセージ中の `: ` を YAML が
       # マッピングと解釈してしまう
-      SERVER_NAME: "${SERVER_NAME:?SERVER_NAME must be set in .env, e.g. 172-104-94-21.nip.io}"
+      SERVER_NAME: "${SERVER_NAME:?SERVER_NAME must be set in .env, e.g. 203-0-113-5.nip.io}"
       # certbot が置く実体。entrypoint.sh はこのパスを見たとき自己署名を作らない
       TLS_CERT: /etc/letsencrypt/live/${SERVER_NAME}/fullchain.pem
       TLS_KEY: /etc/letsencrypt/live/${SERVER_NAME}/privkey.pem
