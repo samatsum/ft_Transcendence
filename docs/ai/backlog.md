@@ -168,13 +168,14 @@ Numbered items in the acceptance-criteria column indicate mapping to acceptance 
 >   **Without this, a browser downloads 212 MB.**
 >   **Implemented 2026-09-11 under [#138](https://github.com/samatsum/ft_Transcendence/issues/138).**
 >   `codes/PythonCodes/xpm_to_tex.py` writes a `.tex.gz` next to every `.tex`,
->   `make frontend-engine-assets` gzips the `.wasm`, and `infra/docker/nginx/nginx.conf` serves both with
+>   `make frontend-engine-assets` gzips the `.wasm`, and `infra/docker/nginx/nginx.conf.template` serves both with
 >   `gzip_static` and `Cache-Control: no-cache`. Measured on the compose stack with `curl`: `Goal.tex`
 >   goes out as 313,401 B with `Content-Encoding: gzip`, and the decompressed SHA-256 matches the file.
 >   The 99 textures now total **221.2 MB → 8.6 MB** as `.tex.gz` (the set has grown since the 212 MB
 >   figure above). In Firefox the largest single transfer was 745 KB, and in the nginx log a second
 >   match revalidated all 43 `.tex`/`.wasm` requests as `304`. The `.tex` location must keep `default_type application/octet-stream`
->   — the comment in `nginx.conf` explains why.
+>   — the comment in `nginx.conf.template` explains why. (The file was `nginx.conf` until 2026-09-19;
+>   it became a template so the same config can serve `localhost` locally and a public hostname on a VPS.)
 > - **The same 212 MB currently exists in three places** (636 MB on disk): `web/assets/` (generated) ->
 >   `app/frontend/public/engine/assets/` (copied by `make frontend-engine-assets`) ->
 >   `app/frontend/dist/engine/assets/` (copied by Vite, because `public/` is copied verbatim). I-15 should
