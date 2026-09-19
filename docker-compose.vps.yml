@@ -1,0 +1,35 @@
+# VPS（#138 の遠隔プレイ実測）で docker-compose.yml に重ねる設定。
+#
+#   docker compose -f docker-compose.yml -f docker-compose.vps.yml up -d --build
+#
+# **ローカルの `docker compose up` はこのファイルを読まない。** 手元の挙動を
+# 変えずに、公開サーバーで要る差分（80 番・ホスト名・正式な証明書・再起動）
+# だけをここに閉じ込める。
+#
+# 前提: SERVER_NAME と ALLOWED_ORIGIN を .env に書き、certbot で証明書を
+# 取得済みであること。手順は infra/README.md を参照。
+services:
+  nginx:
+    ports:
+      # Let's Encrypt の応答（/.well-known/acme-challenge/）と、
+      # http で来た人を https へ送るために公開する
+      - "80:80"
+    environment:
+      # nginx.conf.template の ${SERVER_NAME} に入る。未設定なら起動を止める
+      SERVER_NAME: ${SERVER_NAME:?SERVER_NAME を .env に設定すること（例: 172-104-94-21.nip.io）}
+      # certbot が置く実体。entrypoint.sh はこのパスを見たとき自己署名を作らない
+      TLS_CERT: /etc/letsencrypt/live/${SERVER_NAME}/fullchain.pem
+      TLS_KEY: /etc/letsencrypt/live/${SERVER_NAME}/privkey.pem
+    volumes:
+      # live/ の中身は archive/ へのシンボリックリンクなので、
+      # **live/<host>/ だけをマウントすると鍵を辿れない。** /etc/letsencrypt ごと渡す
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      # certbot --webroot での更新用（nginx を止めずに済む）
+      - certbot-webroot:/var/www/certbot
+    restart: unless-stopped
+
+  backend:
+    restart: unless-stopped
+
+volumes:
+  certbot-webroot:

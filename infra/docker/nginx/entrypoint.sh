@@ -4,8 +4,50 @@ set -eu
 cert_dir=${TLS_CERT_DIR:-/etc/nginx/certs}
 ca_cert="$cert_dir/ca.crt"
 ca_key="$cert_dir/ca.key"
-server_cert="$cert_dir/localhost.crt"
-server_key="$cert_dir/localhost.key"
+
+# nginx.conf.template に埋めるホスト名。ローカルの compose は既定の localhost、
+# VPS は docker-compose.vps.yml が nip.io などのホスト名を渡す
+SERVER_NAME=${SERVER_NAME:-localhost}
+
+# 証明書の場所。既定はこのスクリプトが自己署名で作るローカル CA のもの。
+# **既定以外を指している場合（Let's Encrypt 等）は生成も上書きもしない。**
+# 生成側の判定は「証明書が localhost 用か」を見るので、外部の証明書を
+# 既定パスに置くと作り直されてしまう
+server_cert=${TLS_CERT:-$cert_dir/localhost.crt}
+server_key=${TLS_KEY:-$cert_dir/localhost.key}
+
+# 自己署名を管理するのは既定パスを使っているときだけ
+if [ "$server_cert" = "$cert_dir/localhost.crt" ] && [ "$server_key" = "$cert_dir/localhost.key" ]; then
+	manage_self_signed=true
+else
+	manage_self_signed=false
+fi
+
+# テンプレートからホスト名と証明書パスを埋めた nginx.conf を書き出す。
+# **置換する変数名を列挙する。** 省略すると `$uri` や `$http_upgrade` といった
+# nginx 自身の変数まで空文字に潰れる
+render_config() {
+	export SERVER_NAME
+	TLS_CERT=$server_cert
+	TLS_KEY=$server_key
+	export TLS_CERT TLS_KEY
+	envsubst '${SERVER_NAME} ${TLS_CERT} ${TLS_KEY}' \
+		</etc/nginx/nginx.conf.template >/etc/nginx/nginx.conf
+}
+
+# 外部の証明書（Let's Encrypt 等）を渡された場合は、生成も検証もせず
+# 存在だけ確かめて起動する。証明書の更新はこのコンテナの外の責任
+if [ "$manage_self_signed" = false ]; then
+	for f in "$server_cert" "$server_key"; do
+		if [ ! -s "$f" ]; then
+			echo "TLS_CERT / TLS_KEY が指すファイルがない: $f" >&2
+			echo "certbot で取得済みか、マウント先が合っているかを確認すること。" >&2
+			exit 1
+		fi
+	done
+	render_config
+	exec "$@"
+fi
 
 # 通常のディレクトリ権限で作成
 mkdir -p "$cert_dir"
@@ -68,7 +110,7 @@ if [ "$generate_ca" = true ] || [ ! -s "$server_cert" ] || [ ! -s "$server_key" 
 # 証明書のホスト名が localhost に対応していない場合
 # サーバー証明書が現在の CA によって署名されていない場合
 elif ! openssl x509 -checkend 0 -noout -in "$server_cert" >/dev/null 2>&1 \
-	|| ! openssl x509 -in "$server_cert" -noout -checkhost localhost >/dev/null 2>&1 \
+	|| ! openssl x509 -in "$server_cert" -noout -checkhost "$SERVER_NAME" >/dev/null 2>&1 \
 	|| ! openssl verify -CAfile "$ca_cert" "$server_cert" >/dev/null 2>&1 \
 	|| ! keys_match "$server_cert" "$server_key"; then
 	generate_server=true
@@ -82,11 +124,16 @@ if [ "$generate_server" = true ]; then
 	## 電子署名とTLS鍵交換の鍵として使用可能にする
 	## サーバー認証用の証明書とする
 	## localhost と 127.0.0.1 両方に対応可能にする
-	cat >"$tmp_dir/localhost.ext" <<'EOF'
+	## SERVER_NAME が localhost 以外なら（自己署名のまま VPS を試す場合）それも入れる
+	san='DNS:localhost,IP:127.0.0.1'
+	if [ "$SERVER_NAME" != localhost ]; then
+		san="$san,DNS:$SERVER_NAME"
+	fi
+	cat >"$tmp_dir/localhost.ext" <<EOF
 basicConstraints=critical,CA:FALSE
 keyUsage=critical,digitalSignature,keyEncipherment
 extendedKeyUsage=serverAuth
-subjectAltName=DNS:localhost,IP:127.0.0.1
+subjectAltName=$san
 EOF
 	# localhost 用の秘密鍵と CSR(Certificate signing request) の生成
 	run_openssl "$tmp_dir/openssl.log" req -new -newkey rsa:2048 -sha256 -noenc \
@@ -108,4 +155,5 @@ EOF
 	rmdir "$tmp_dir"
 fi
 
+render_config
 exec "$@"
