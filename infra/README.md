@@ -45,9 +45,20 @@ certbot certonly --standalone --agree-tos --register-unsafely-without-email \
 ```
 
 **証明書の有効期間は 90 日。** レビュー期間中だけ動かして削除する前提なので、更新の仕組みは用意していない。
-`--standalone` で取った都合上、certbot が自動登録する更新タスクは **nginx が 80 番を握っている間は失敗する**。
-90 日を超えて運用するなら `--webroot -w`（`docker-compose.vps.yml` が `/var/www/certbot` を
-マウント済み）へ切り替えること。
+
+90 日を超えて運用するなら webroot へ切り替える。`--standalone` で取ると certbot は
+`/etc/letsencrypt/renewal/<ホスト名>.conf` に `authenticator = standalone` を書き込み、
+**certbot が自動登録する更新タスクは nginx が 80 番を握っている間は失敗する**。
+`docker-compose.vps.yml` が `/var/www/certbot` をホストと共有しているので、
+同ファイルを次のように書き換えれば nginx を止めずに更新できる。
+
+```ini
+authenticator = webroot
+webroot_path = /var/www/certbot,
+```
+
+`certbot certonly --webroot -w /var/www/certbot -d <ホスト名> --dry-run` が
+成功することを確認してから任せること。
 
 ### 3. 起動
 
