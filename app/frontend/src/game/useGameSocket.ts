@@ -25,10 +25,34 @@ import {
 	type WelcomeMessage,
 } from '@ft/shared';
 
+import { markGameRoomFinished } from './gameRouteState.js';
+
 /** 受信 snapshot に到着時刻（performance.now ミリ秒）を紐づけて保持する */
 export interface TimedSnapshot {
 	receivedAtMs: number;
 	payload: SnapshotPayload;
+}
+
+export interface QueuedGameEvent {
+	id: number;
+	event: GameEvent['d'];
+}
+
+export type MatchEndEvent = Extract<GameEvent['d'], { kind: 'match_end' }>;
+
+export function enqueueGameEvent(
+	queue: QueuedGameEvent[],
+	id: number,
+	event: GameEvent['d'],
+): QueuedGameEvent[] {
+	return [...queue, { id, event }];
+}
+
+export function acknowledgeGameEvents(
+	queue: QueuedGameEvent[],
+	throughId: number,
+): QueuedGameEvent[] {
+	return queue.filter(({ id }) => id > throughId);
 }
 
 export type GameSocketStatus = 'connecting' | 'open' | 'reconnecting' | 'closed';
@@ -41,8 +65,12 @@ export interface UseGameSocketResult {
 	 * 100ms 遅延の2点補間には2〜3枚あれば足りるが、猶予として持つ
 	 */
 	snapshotBufferRef: { current: TimedSnapshot[] };
-	/** 直近 event。演出用（正本は snapshot） */
-	lastEvent: GameEvent['d'] | null;
+	/** HUD が到着順に処理する未確認 event */
+	pendingEvents: QueuedGameEvent[];
+	/** 決着処理専用（通常の演出 event キューとは別に保持） */
+	matchEndEvent: MatchEndEvent | null;
+	/** 指定した id までの event を処理済みにする */
+	acknowledgeEvents: (throughId: number) => void;
 	/** slot → 席状態（connected/ai/grace） */
 	playerStatus: Map<number, PlayerStatusMessage['d']['state']>;
 	/** close コード（4002=room無, 4004=置換 など。② §2-B） */
@@ -64,6 +92,15 @@ function shouldReconnect(code: number): boolean {
 	return true;
 }
 
+/** ゲーム画面に留まれない正常系の close はロビーへ戻す */
+export function shouldReturnToLobby(code: number | null): boolean {
+	return (
+		code === WS_CLOSE.normal ||
+		code === WS_CLOSE.roomNotFound ||
+		code === WS_CLOSE.notAllowed
+	);
+}
+
 function buildWsUrl(roomId: string): string {
 	const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 	return `${proto}//${window.location.host}/ws/game/${encodeURIComponent(roomId)}`;
@@ -73,13 +110,15 @@ export function useGameSocket(roomId: string): UseGameSocketResult {
 	const [status, setStatus] = useState<GameSocketStatus>('connecting');
 	const [welcome, setWelcome] = useState<WelcomeMessage['d'] | null>(null);
 	const snapshotBufferRef = useRef<TimedSnapshot[]>([]);
-	const [lastEvent, setLastEvent] = useState<GameEvent['d'] | null>(null);
+	const [pendingEvents, setPendingEvents] = useState<QueuedGameEvent[]>([]);
+	const [matchEndEvent, setMatchEndEvent] = useState<MatchEndEvent | null>(null);
 	const [playerStatus, setPlayerStatus] = useState<Map<number, PlayerStatusMessage['d']['state']>>(
 		() => new Map(),
 	);
 	const [closeCode, setCloseCode] = useState<number | null>(null);
 	const wsRef = useRef<WebSocket | null>(null);
 	const attemptRef = useRef(0);
+	const nextEventIdRef = useRef(1);
 
 	useEffect(() => {
 		// StrictMode（開発時）は effect を「実行 → 破棄 → 再実行」する。破棄フラグを
@@ -93,12 +132,14 @@ export function useGameSocket(roomId: string): UseGameSocketResult {
 		// backoff counter をリセット
 		attemptRef.current = 0;
 		// CodeRabbit 指摘（追加）: roomId 変更で前 room のデータが一瞬でも
-		// 描画されないよう welcome / snapshot バッファ / player_status / lastEvent もクリア
+		// 描画されないよう welcome / snapshot バッファ / player_status / event もクリア
 		setWelcome(null);
 		snapshotBufferRef.current.length = 0;
-		setLastEvent(null);
+		setPendingEvents([]);
+		setMatchEndEvent(null);
 		setPlayerStatus(new Map());
 		setCloseCode(null);
+		nextEventIdRef.current = 1;
 		let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
 		function connect() {
@@ -149,7 +190,15 @@ export function useGameSocket(roomId: string): UseGameSocketResult {
 					}
 					case 'event': {
 						const e = gameEventSchema.safeParse(raw);
-						if (e.success) setLastEvent(e.data.d);
+						if (e.success) {
+							const event = e.data.d;
+							const id = nextEventIdRef.current++;
+							setPendingEvents((prev) => enqueueGameEvent(prev, id, event));
+							if (event.kind === 'match_end') {
+								markGameRoomFinished(roomId);
+								setMatchEndEvent(event);
+							}
+						}
 						return;
 					}
 					case 'player_status': {
@@ -206,7 +255,7 @@ export function useGameSocket(roomId: string): UseGameSocketResult {
 	}, [roomId]);
 
 	// CodeRabbit 指摘#5: send を useCallback で安定化。これがないと
-	// useGameSocket の state 更新（lastEvent/playerStatus 等）ごとに
+	// useGameSocket の state 更新（pendingEvents/playerStatus 等）ごとに
 	// send の identity が変わり、useGameInput の setInterval effect が
 	// 再セットされて 30Hz 送信が毎回リセットされる。ws は ref 参照なので
 	// deps 空でも常に最新の接続を使う
@@ -216,11 +265,17 @@ export function useGameSocket(roomId: string): UseGameSocketResult {
 		ws.send(JSON.stringify(msg));
 	}, []);
 
+	const acknowledgeEvents = useCallback((throughId: number) => {
+		setPendingEvents((prev) => acknowledgeGameEvents(prev, throughId));
+	}, []);
+
 	return {
 		status,
 		welcome,
 		snapshotBufferRef,
-		lastEvent,
+		pendingEvents,
+		matchEndEvent,
+		acknowledgeEvents,
 		playerStatus,
 		closeCode,
 		canSend: status === 'open',

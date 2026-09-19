@@ -561,6 +561,8 @@ export class GameRoom {
 	/**
 	 * @param outcome decided = sim決着 / abandon = 全員離脱 / forfeit = FPS離脱負け
 	 * @param alreadyBroadcasted 同じ tick で最終 snapshot を配信済みか
+	 * @param winnerOverride forfeitで使う勝者slot
+	 * @param persistResult 正式な試合結果として永続化するか
 	 *
 	 * ② §6-C の同期部分（1. 最終 snapshot 配信）だけをここで行う。
 	 * 永続化（2.）と `event(match_end)` 発火（3.）は
@@ -573,7 +575,8 @@ export class GameRoom {
 	private finish(
 		outcome: 'decided' | 'abandon' | 'forfeit',
 		alreadyBroadcasted = false,
-		forfeitWinner?: number,
+		winnerOverride?: number,
+		persistResult = true,
 	): void {
 		if (this.finishStarted) return; // 二重起動防止（onTick と leave の両方から来うる）
 		this.finishStarted = true;
@@ -589,12 +592,9 @@ export class GameRoom {
 			}
 			this.previous = last.d;
 		}
-		const winner =
-			outcome === 'abandon'
-				? null
-				: outcome === 'forfeit'
-					? (forfeitWinner ?? null)
-					: last.d.match.winner;
+		const winner = outcome === 'abandon'
+			? null
+			: (winnerOverride ?? last.d.match.winner);
 		// ② §5-D: reason は score|goal|forfeit|abandon。forfeit は B-12（leave / 猶予満了）で使う
 		const reason: MatchEndReason =
 			outcome === 'abandon'
@@ -606,7 +606,12 @@ export class GameRoom {
 						: 'score';
 		// state は 'playing' のまま持ち越し（タイマー停止済み・入力反映も stopTimer で
 		// 次 tick が来ないので実質固まる）。await 完了後に 'finished' へ落とす。
-		void this.persistAndAnnounceEnd(winner, reason, [last.d.match.score[0], last.d.match.score[1]]);
+		void this.persistAndAnnounceEnd(
+			winner,
+			reason,
+			[last.d.match.score[0], last.d.match.score[1]],
+			persistResult,
+		);
 	}
 
 	/**
@@ -623,10 +628,11 @@ export class GameRoom {
 		winner: number | null,
 		reason: MatchEndReason,
 		score: readonly [number, number],
+		persistResult: boolean,
 	): Promise<void> {
 		let matchId: number | null = null;
 		let matchResult: MatchResultPayload | null = null;
-		if (this.opts.persistMatch) {
+		if (persistResult && this.opts.persistMatch) {
 			try {
 				const persisted = await this.opts.persistMatch({
 					roomId: this.roomId,

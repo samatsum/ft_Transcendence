@@ -383,6 +383,19 @@ docker compose up --build
 
 By default, Compose runs the container as root to avoid bind-mount permission errors right after a fresh clone. If you want generated files on Linux/WSL to be owned by yourself, specify the real UID/GID as in `HOST_UID=$(id -u) HOST_GID=$(id -g) docker compose up --build`.
 
+To inspect the FPS goal result without playing to the goal, start the frontend Vite development
+server and open its development-only result preview:
+
+```bash
+npm run dev --workspace @ft/frontend
+```
+
+Open `http://localhost:5173/dev/result-preview` for the configured FPS `goal` fixture, or
+`http://localhost:5173/dev/result-preview/forfeit` for Player 0's FPS `forfeit` fixture. Both render
+the production `MatchEndModal` without starting Canvas, WebSocket, or a game room. The routes and
+fixtures are excluded from production builds, so normal lobby-created matches always follow the
+authoritative simulation result.
+
 ### Coding Standards
 
 The authoritative source for the C coding rules is [CODING_RULES.md](./coding-rules.md). The `CRxxx` identifiers shown in `make check` output correspond to rule IDs in that document.

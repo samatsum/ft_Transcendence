@@ -14,9 +14,21 @@ export interface ModalProps {
 	children: ReactNode;
 	/** 「戻るボタン」等のアクション行を渡す。undefined なら描画しない */
 	actions?: ReactNode;
+	/** 背景色の差し替え用（未指定時は半透明の通常モーダル） */
+	backdropClassName?: string;
+	/** 幅・背景色などパネル固有の見た目の差し替え用 */
+	panelClassName?: string;
 }
 
-export function Modal({ open, onClose, title, children, actions }: ModalProps) {
+export function Modal({
+	open,
+	onClose,
+	title,
+	children,
+	actions,
+	backdropClassName = 'bg-black/70',
+	panelClassName = 'max-w-md border-slate-700 bg-slate-800',
+}: ModalProps) {
 	const dialogRef = useRef<HTMLDivElement | null>(null);
 
 	// CodeRabbit 指摘: 以前は [open, onClose] を1つの effect にまとめており、
@@ -50,7 +62,7 @@ export function Modal({ open, onClose, title, children, actions }: ModalProps) {
 	if (!open) return null;
 	return createPortal(
 		<div
-			className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+			className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${backdropClassName}`}
 			onClick={onClose}
 		>
 			<div
@@ -59,7 +71,7 @@ export function Modal({ open, onClose, title, children, actions }: ModalProps) {
 				aria-modal="true"
 				aria-labelledby={title ? 'modal-title' : undefined}
 				tabIndex={-1}
-				className="w-full max-w-md rounded-lg border border-slate-700 bg-slate-800 p-6 shadow-2xl outline-none"
+				className={`w-full rounded-lg border p-6 shadow-2xl outline-none ${panelClassName}`}
 				onClick={(ev) => ev.stopPropagation()}
 			>
 				{title && (
