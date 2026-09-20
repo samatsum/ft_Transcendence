@@ -62,7 +62,6 @@
 						<tr><td>手の変化</td><td>自陣のスポーンマスに新しく踏み込んだ瞬間、または復帰時にランダムに変わる</td></tr>
 						<tr><td>接触判定</td><td>異チームの戦闘員同士が触れた瞬間、その場でじゃんけん判定。勝った側+1点、負けた側は即リスポーン</td></tr>
 						<tr><td><code>target_score</code></td><td>先取点（勝利に必要な点数）。既定10。<code>match_rules</code>の一部として試合ごとに設定可能（3〜21の範囲チェックはWS層の責務）</td></tr>
-						<tr><td><code>ai_speed</code></td><td>FPSの巡回敵ハザードの速度。<code>slow</code> / <code>normal</code> / <code>fast</code> は既存の敵速度へそれぞれ0.40 / 0.70 / 1.00倍で掛かり、巡回・追跡の両方に効く。RSPの敵と空席AIには効かない</td></tr>
 						<tr><td>NPCのAI</td><td>最寄りの異チーム戦闘員を見て「勝てる手なら追跡・負ける手なら逃走・あいこや不在なら徘徊」</td></tr>
 					</tbody>
 				</table>
@@ -79,6 +78,7 @@
 						<tr><td>収集アイテム</td><td>マップ文字<code>k</code>〜<code>o</code>。全部集めると扉が開く</td></tr>
 						<tr><td>扉（Door, <code>D</code>）</td><td>収集が完了するまでは壁として振る舞い、完了すると床に変わって開放される</td></tr>
 						<tr><td>敵（Enemy, <code>M</code>）</td><td>マップ上のハザード。視界に戦闘員が入ると追跡、見失うと一定時間後に巡回へ戻る。接触＝死亡ペナルティ（ゲームオーバーにはならない）</td></tr>
+						<tr><td><code>ai_speed</code></td><td>FPSの巡回敵ハザードの速度。<code>slow</code> / <code>normal</code> / <code>fast</code> は既存の敵速度へそれぞれ0.40 / 0.70 / 1.00倍で掛かり、巡回・追跡の両方に効く。RSPの敵と空席AIには効かない</td></tr>
 						<tr><td>巡回路（Patrol, <code>P</code>）</td><td>敵が周回する通路。ループ状に置くと安定して巡回する</td></tr>
 						<tr><td>ゴール（Goal, <code>G</code>）</td><td>先に踏んだ戦闘員が勝ち。扉と組み合わせて「収集→開放→ゴール」の関門レースを作る</td></tr>
 						<tr><td>不戦勝</td><td>相手が30秒放置または明示的にleaveした場合の勝利判定（B-12の範囲）</td></tr>

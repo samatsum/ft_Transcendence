@@ -24,6 +24,7 @@ const OUT_FILE = MODE === 'fps' ? 'snapshots_fps.json' : 'snapshots.json';
 const SEAT_COUNT = MODE === 'fps' ? 2 : 4;
 const VIEW_ID = 0;
 const TARGET_SCORE = 3; // FPS では未使用（sim_create の引数を埋めるだけ）
+const FPS_ENEMY_SPEED_MULT = 0.7; // FPS敵ハザードの既定速度（normal）
 // 乱数 seed を固定し、記録を毎回同一（決着まで含めて byte 単位で再現）にする。
 // 0 だと時刻由来になり、決着時刻が走行ごとに変わる（上限打ち切りで
 // finished に届かない記録ができる恐れがある）ため、デモでは必ず固定する
@@ -50,7 +51,9 @@ function writeCString(text) {
 }
 
 const mapPtr = writeCString(mapText);
-const game = M._sim_create(mapPtr, MODE === 'rsp' ? 1 : 0, TARGET_SCORE, SEED);
+const game = M._sim_create(
+	mapPtr, MODE === 'rsp' ? 1 : 0, TARGET_SCORE, SEED, FPS_ENEMY_SPEED_MULT,
+);
 M._free(mapPtr);
 if (!game) throw new Error('sim_create failed');
 // RSP: 席 0 = 外部入力（記録側が疑似入力を供給）、席 1..3 = AI

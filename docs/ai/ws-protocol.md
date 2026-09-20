@@ -258,7 +258,7 @@ After reconnect / replacement, the current context is resent right after `lobby_
 - `ai_speed` was added by #180 and wired to the authoritative simulation by #198. It affects only FPS map hazards, including both patrol and pursuit; it does not change an empty seat's AI or any RSP NPC.
 - Canonical rules are RSP=`{map, target_score}`, FPS=`{map, ai_speed}`. Fields omitted on `room_create` are filled with server defaults; thereafter `room_state` / `room_update_rules` / MatchPlan require every field. The zod object is `strict`, so a removed field is never silently dropped.
 - `map` is validated for shape as a zod string, then semantically validated against existence and mode match via B-14's `findMap`. A mismatch yields `invalid_rules`. Arbitrary paths or a client-supplied `.cub` are never accepted.
-- Quick match always uses the default canonical rules (RSP=`rsp/10`, FPS=`fps_duel`), which eliminates any "rule agreement among queue participants" problem (the intent behind D-1).
+- Quick match always uses the default canonical rules (RSP=`rsp/10`, FPS=`{map: fps_duel, ai_speed: normal}`), which eliminates any "rule agreement among queue participants" problem (the intent behind D-1).
 - Seats: `seats[]` sized to the mode's capacity. Any seat a human doesn't fill is AI-ified at start. **At least one human (the host) is required to start** (an all-AI match cannot be created).
 - Joins / leaves / rule updates while `open` each send the same updated `room_state` to all members once complete. No seat, host, or rules change is allowed while `starting`.
 
