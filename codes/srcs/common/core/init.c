@@ -95,6 +95,7 @@ void
 	game->start_time_ms = 0;
 	game->fps.clear_time_ms = 0;
 	game->fps.winner = -1;
+	game->fps.enemy_speed_mult = FPS_ENEMY_SPEED_NORMAL;
 	game->cleared = 0;
 	game->result_screenshot_saved = 0;
 	game->assets.death_tex.tex = NULL;

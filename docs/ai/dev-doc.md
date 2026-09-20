@@ -246,7 +246,7 @@ Each combatant's team, hand, initial respawn point, alive status, and home-entry
 | `t_render_cache` | `camera_x[MAX_WIDTH]` / `depth[MAX_WIDTH]` / `sf_dist[MAX_HEIGHT]` | `types.h` |
 | `t_enemy` | **combatant** (shared by player, NPC, and hazard). HP, state, patrol state, pursuit path cache, `dir_angle`, `track_timer`, **`rsp`** (RSP state), plus items added by the unification: `input_source` (AI / EXTERNAL), buffered `input`, `is_player`, **`is_hazard`** (map-derived enemy `M`), **`combatant_id`** (seat number for the snapshot/public API; the local seat is 0, unassigned is -1), `radius`, **`death_timer`**, `spawn` (stable respawn point) | `enemy_types.h` |
 | `t_rsp_state` | team / hand / spawn / alive / **`on_home`** (previous frame's home-entry value, used for hand-rehand decisions) | `rsp.h` |
-| `t_match_rules` | match rules. `target_score` (used as-is if 1 or more; default `RSP_SCORE_LIMIT` if 0 or less) and `seed` (0 = time-derived / non-zero reproduces the whole match deterministically) | `platform/sim.h` |
+| `t_match_rules` | match rules. `target_score` (used as-is if 1 or more; default `RSP_SCORE_LIMIT` if 0 or less), `seed` (0 = time-derived / non-zero reproduces the whole match deterministically), and FPS-only `fps_enemy_speed_mult` (0 or less defaults to 0.70; `slow` / `normal` / `fast` map to 0.40 / 0.70 / 1.00) | `platform/sim.h` |
 | `t_sprite` | doubly-linked list for distance sorting (`next` and `sorted`) | `render.h` |
 | `t_ray` | intermediate result of a single ray computation | `raycast.h` |
 

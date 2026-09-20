@@ -30,11 +30,13 @@
 // 検証する責務で、エンジンは機構として短い試合（テスト用の N=2 等）も回す。
 // seed は 0 で時刻由来（本番）。非 0 を渡すとスポーン抽選・AI・手変えの
 // 乱数系列が固定され、同じ入力列に対して試合全体が決定的に再現される
-// （デモの記録・B-10 の結合テスト用）
+// （デモの記録・B-10 の結合テスト用）。fps_enemy_speed_mult はFPSの巡回敵へ
+// 掛け、0以下では既定のFPS_ENEMY_SPEED_NORMALを使う
 typedef struct s_match_rules
 {
 	int				target_score;
 	unsigned int	seed;
+	double			fps_enemy_speed_mult;
 }				t_match_rules;
 
 /* ************************************************************************** */
@@ -58,7 +60,7 @@ void
 // platform/headless 層の責務」を担い、yaw は絶対角として席の向きへ直接反映する
 t_game*
 	sim_create(const char* cub_text, int is_rsp, int target_score,
-		unsigned int seed);
+		unsigned int seed, double fps_enemy_speed_mult);
 int
 	sim_set_input(t_game* game, int combatant_id, int forward, int backward,
 		int strafe_left, int strafe_right, double yaw);

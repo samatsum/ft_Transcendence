@@ -62,6 +62,7 @@
 						<tr><td>手の変化</td><td>自陣のスポーンマスに新しく踏み込んだ瞬間、または復帰時にランダムに変わる</td></tr>
 						<tr><td>接触判定</td><td>異チームの戦闘員同士が触れた瞬間、その場でじゃんけん判定。勝った側+1点、負けた側は即リスポーン</td></tr>
 						<tr><td><code>target_score</code></td><td>先取点（勝利に必要な点数）。既定10。<code>match_rules</code>の一部として試合ごとに設定可能（3〜21の範囲チェックはWS層の責務）</td></tr>
+						<tr><td><code>ai_speed</code></td><td>FPSの巡回敵ハザードの速度。<code>slow</code> / <code>normal</code> / <code>fast</code> は既存の敵速度へそれぞれ0.40 / 0.70 / 1.00倍で掛かり、巡回・追跡の両方に効く。RSPの敵と空席AIには効かない</td></tr>
 						<tr><td>NPCのAI</td><td>最寄りの異チーム戦闘員を見て「勝てる手なら追跡・負ける手なら逃走・あいこや不在なら徘徊」</td></tr>
 					</tbody>
 				</table>

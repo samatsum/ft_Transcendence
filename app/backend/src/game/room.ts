@@ -9,6 +9,7 @@
 import { diffEvents } from './events.js';
 import { SimGame, INPUT_SRC_AI, INPUT_SRC_EXTERNAL, NEUTRAL_INPUT, type SeatInput } from './sim.js';
 import type {
+	FpsAiSpeed,
 	GameEvent,
 	MatchEndReason,
 	MatchResultPayload,
@@ -108,6 +109,8 @@ export interface RoomOptions {
 	mode: SnapshotMode;
 	targetScore: number;
 	seed: number;
+	/** FPS の巡回敵速度。未指定はロビー既定の normal */
+	aiSpeed?: FpsAiSpeed;
 	/**
 	 * 人間が座る予定の席（② §6-A の追補）。マッチメイキング（B-09）が渡す。
 	 *
@@ -319,6 +322,7 @@ export class GameRoom {
 			mode: options.mode,
 			targetScore: options.targetScore,
 			seed: options.seed,
+			aiSpeed: options.aiSpeed,
 		});
 		// ② §6-B: 全席をまず AI で作る。人間が来たら入力源だけ EXTERNAL へ切り替える。
 		// これで接続タイミングに関係なく試合が成立する（B-12 の AI 代替も同じ仕組み）

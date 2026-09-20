@@ -5,6 +5,7 @@
 // ここの createRoom / getRoom / closeRoom だけを使う。
 import { defaultMapId, loadMapText, type GameMode } from './maps.js';
 import { GameRoom, type RoomOptions, type RoomState } from './room.js';
+import type { FpsAiSpeed } from '@ft/shared';
 
 /** created / countdown / finished の時間経過を進める間隔。tick ループとは別 */
 const PUMP_INTERVAL_MS = 250;
@@ -68,7 +69,7 @@ export async function createRoom(options: CreateRoomOptions): Promise<GameRoom> 
 export async function createRoomFromRules(options: {
 	roomId?: string;
 	mode: GameMode;
-	rules?: { map?: string; target_score?: number };
+	rules?: { map?: string; target_score?: number; ai_speed?: FpsAiSpeed };
 	seed?: number;
 	participants?: RoomOptions['participants'];
 	humanSlots?: number[];
@@ -93,6 +94,7 @@ export async function createRoomFromRules(options: {
 		// 範囲 3–21 の検証は B-08 の共有 lobby スキーマ側の責務（G-05 の決定）。
 		// ここは 0 を渡せばエンジンが既定値へ落とす
 		targetScore: options.rules?.target_score ?? 0,
+		aiSpeed: options.mode === 'fps' ? options.rules?.ai_speed ?? 'normal' : undefined,
 		seed: options.seed ?? 0,
 		participants: options.participants,
 		humanSlots: options.humanSlots,
