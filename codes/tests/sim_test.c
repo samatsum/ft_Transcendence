@@ -9,7 +9,7 @@
 //   G-08  敵ハザード化（接触は死亡ペナルティで試合は続行する）
 //   G-09  オンライン対戦マップの起動検証（席の成立・関門→ゴールの完走可能性）
 //   G-11  FPS の射撃は席を delete_enemy しない（ハザード接触死と同じ一時退場に統一）
-//   #198  FPS 敵速度を match_rules 経由で巡回・追跡へ反映する
+//   FPS敵速度を match_rules 経由で巡回・追跡へ反映する
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -995,9 +995,9 @@ static void
 	game_destroy(game);
 }
 
-// #198: match_rules のFPS敵速度倍率はFPSだけへ保存し、0以下はnormalへ戻す
+// match_rules のFPS敵速度倍率はFPSだけへ保存し、0以下はnormalへ戻す
 static void
-test_198_fps_enemy_speed_rules(const char* fps_map, const char* rsp_map)
+test_fps_enemy_speed_rules(const char* fps_map, const char* rsp_map)
 {
 	const double	cases[][2] = {{FPS_ENEMY_SPEED_SLOW, FPS_ENEMY_SPEED_SLOW},
 		{FPS_ENEMY_SPEED_NORMAL, FPS_ENEMY_SPEED_NORMAL},
@@ -1026,9 +1026,10 @@ test_198_fps_enemy_speed_rules(const char* fps_map, const char* rsp_map)
 	}
 }
 
-// #198: 実際のFPSハザード更新で、巡回・追跡とも速度倍率の順に移動量が増える
+// 実際のFPSハザード更新で、巡回・追跡とも速度倍率の順に移動量が増える
 static double
-measure_198_fps_hazard_motion(const char* map_text, double speed_mult, int tracking)
+measure_fps_hazard_motion(const char* map_text, double speed_mult,
+	int tracking, int* used_tracking)
 {
 	t_game*	game;
 	t_enemy*	hazard;
@@ -1050,6 +1051,10 @@ measure_198_fps_hazard_motion(const char* map_text, double speed_mult, int track
 		game_destroy(game);
 		return (-1.0);
 	}
+	if (tracking) {
+		hazard->track_timer = 60.0;
+		hazard->patrol_active = 1;
+	}
 	moved = 0.0;
 	i = 0;
 	while (i < 120) {
@@ -1058,22 +1063,39 @@ measure_198_fps_hazard_motion(const char* map_text, double speed_mult, int track
 		moved += dist_pos(&before, &hazard->sprite->pos);
 		i++;
 	}
+	if (used_tracking) {
+		*used_tracking = tracking && hazard->track_timer > 0.0
+			&& hazard->patrol_active == 0;
+	}
 	game_destroy(game);
 	return (moved);
 }
 
 static void
-test_198_fps_enemy_speed_motion(const char* map_text, int tracking)
+test_fps_enemy_speed_motion(const char* map_text, int tracking)
 {
 	double	slow;
 	double	normal;
 	double	fast;
+	int		slow_tracked;
+	int		normal_tracked;
+	int		fast_tracked;
 
-	slow = measure_198_fps_hazard_motion(map_text, FPS_ENEMY_SPEED_SLOW, tracking);
-	normal = measure_198_fps_hazard_motion(map_text, FPS_ENEMY_SPEED_NORMAL, tracking);
-	fast = measure_198_fps_hazard_motion(map_text, FPS_ENEMY_SPEED_FAST, tracking);
+	slow_tracked = 0;
+	normal_tracked = 0;
+	fast_tracked = 0;
+	slow = measure_fps_hazard_motion(map_text, FPS_ENEMY_SPEED_SLOW,
+		tracking, &slow_tracked);
+	normal = measure_fps_hazard_motion(map_text, FPS_ENEMY_SPEED_NORMAL,
+		tracking, &normal_tracked);
+	fast = measure_fps_hazard_motion(map_text, FPS_ENEMY_SPEED_FAST,
+		tracking, &fast_tracked);
 	expect_int("FPS敵速度の検査用ハザードが生成できる",
 		slow >= 0.0 && normal >= 0.0 && fast >= 0.0, 1);
+	if (tracking) {
+		expect_int("FPS敵速度の追跡検査が追跡分岐を通る",
+			slow_tracked && normal_tracked && fast_tracked, 1);
+	}
 	expect_int("FPS敵速度が slow < normal になる", slow < normal, 1);
 	expect_int("FPS敵速度が normal < fast になる", normal < fast, 1);
 }
@@ -1120,10 +1142,10 @@ int
 	test_g11_hazard_still_deletable_by_shooting(fps_map);
 	test_g11_seat_survives_lethal_shots(fps_map);
 	test_g11_dead_seat_ignores_further_shots(fps_map);
-	printf("#198 FPS AI速度\n");
-	test_198_fps_enemy_speed_rules(fps_map, rsp_map);
-	test_198_fps_enemy_speed_motion(fps_map, 0);
-	test_198_fps_enemy_speed_motion(fps_map, 1);
+	printf("FPS AI速度\n");
+	test_fps_enemy_speed_rules(fps_map, rsp_map);
+	test_fps_enemy_speed_motion(fps_map, 0);
+	test_fps_enemy_speed_motion(fps_map, 1);
 	printf("G-09 オンライン対戦マップの起動検証\n");
 	test_g09_rsp_map(rsp_map, "rsp");
 	test_g09_rsp_map(rsp_map_2, "rsp_pillars");
