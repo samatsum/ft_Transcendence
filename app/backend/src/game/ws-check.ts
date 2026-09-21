@@ -12,6 +12,7 @@ import { WS_CLOSE, type GameServerMessage } from '@ft/shared';
 
 import { buildServer } from '../index.js';
 import { listMaps, loadMapText } from './maps.js';
+import { gameMessageDelivery } from './ws.js';
 import {
 	closeAllRooms,
 	closeRoom,
@@ -249,7 +250,10 @@ async function checkTwoClientsPlay(): Promise<string[]> {
 	}
 	if (!kinds.includes('match_start')) bad.push('match_start が無い');
 	if (!kinds.includes('match_end')) bad.push('match_end が無い');
-	const matchEnd = a.received.find((m) => m.t === 'event' && m.d.kind === 'match_end');
+	const matchEndIndex = a.received.findIndex(
+		(m) => m.t === 'event' && m.d.kind === 'match_end',
+	);
+	const matchEnd = a.received[matchEndIndex];
 	if (
 		!matchEnd ||
 		matchEnd.t !== 'event' ||
@@ -260,6 +264,34 @@ async function checkTwoClientsPlay(): Promise<string[]> {
 	}
 	if (deliveredMatchId !== 123 || resultOrder.join('>') !== 'persist>match_end>match_result') {
 		bad.push(`永続化→match_end→match_result の順序が不正 (${resultOrder.join('>')})`);
+	}
+	const finalSnapshotIndex = a.received.findIndex(
+		(m) => m.t === 'snapshot' && m.d.match.state === 'finished',
+	);
+	const finalSnapshot = a.received[finalSnapshotIndex];
+	if (!finalSnapshot || finalSnapshot.t !== 'snapshot' || finalSnapshotIndex >= matchEndIndex) {
+		bad.push('自然決着の終端snapshotが match_end より先に届いていない');
+	} else {
+		const ordinarySnapshot = {
+			...finalSnapshot,
+			d: { ...finalSnapshot.d, match: { ...finalSnapshot.d.match, state: 'playing' as const } },
+		};
+		const buffered = 64 * 1024 + 1;
+		if (gameMessageDelivery(ordinarySnapshot, buffered) !== 'skip') {
+			bad.push('通常snapshotが混雑時にskipされない');
+		}
+		if (gameMessageDelivery(finalSnapshot, buffered) !== 'send') {
+			bad.push('終端snapshotが混雑時に配信されない');
+		}
+		if (gameMessageDelivery(finalSnapshot, 1024 * 1024 + 1) !== 'close') {
+			bad.push('hard limit超過で終端snapshot接続を閉じない');
+		}
+		if (
+			!matchEnd ||
+			gameMessageDelivery(matchEnd, 1024 * 1024 + 1, true) !== 'send'
+		) {
+			bad.push('終端snapshot送信後のmatch_endがhard limit超過で配信されない');
+		}
 	}
 
 	const sizes = a.received.filter((m) => m.t === 'snapshot').map((m) => JSON.stringify(m).length);

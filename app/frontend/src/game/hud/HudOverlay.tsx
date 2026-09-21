@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
-import type { GameEvent, PlayerStatusMessage, WelcomeMessage } from '@ft/shared';
+import type { PlayerStatusMessage, WelcomeMessage } from '@ft/shared';
 
 import { useToast } from '../../contexts/ToastContext.js';
 import { useHudState } from '../useHudState.js';
-import type { GameSocketStatus, TimedSnapshot } from '../useGameSocket.js';
+import type { GameSocketStatus, QueuedGameEvent, TimedSnapshot } from '../useGameSocket.js';
 import { ConnectionBanner } from './ConnectionBanner.js';
 import { Countdown } from './Countdown.js';
 import { MatchEndModal, type MatchDetailsView } from './MatchEndModal.js';
@@ -12,7 +12,7 @@ import { ScoreBar } from './ScoreBar.js';
 import { ScreenEdgeFlash } from './ScreenEdgeFlash.js';
 
 // GV-07 HUD 統合。GameView から呼ばれ、useGameSocket が公開する
-// welcome / snapshot / lastEvent / playerStatus / closeCode / status を
+// welcome / snapshot / pendingEvents / playerStatus / closeCode / status を
 // 8要素の HUD へ配線する。
 //
 // - スコア/フラッシュ/countdown/match_end は useHudState で派生
@@ -23,7 +23,8 @@ import { ScreenEdgeFlash } from './ScreenEdgeFlash.js';
 interface HudOverlayProps {
 	welcome: WelcomeMessage['d'] | null;
 	snapshotBufferRef: { current: TimedSnapshot[] };
-	lastEvent: GameEvent['d'] | null;
+	pendingEvents: QueuedGameEvent[];
+	acknowledgeEvents: (throughId: number) => void;
 	playerStatus: Map<number, PlayerStatusMessage['d']['state']>;
 	connectionStatus: GameSocketStatus;
 	closeCode: number | null;
@@ -35,7 +36,8 @@ interface HudOverlayProps {
 export function HudOverlay({
 	welcome,
 	snapshotBufferRef,
-	lastEvent,
+	pendingEvents,
+	acknowledgeEvents,
 	playerStatus,
 	connectionStatus,
 	closeCode,
@@ -43,7 +45,7 @@ export function HudOverlay({
 	matchDetailsError,
 	onReturnToLobby,
 }: HudOverlayProps) {
-	const hud = useHudState({ welcome, snapshotBufferRef, lastEvent });
+	const hud = useHudState({ welcome, snapshotBufferRef, pendingEvents, acknowledgeEvents });
 
 	// useGameSocket の playerStatus(Map) は useHudState の seats と別経路で更新される。
 	// event 経路(player_disconnected/reconnected/ai_takeover)は useHudState が拾い、
@@ -104,4 +106,3 @@ export function HudOverlay({
 		</>
 	);
 }
-

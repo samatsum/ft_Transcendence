@@ -1,9 +1,8 @@
 import { Link } from 'react-router-dom';
 
-// ④ §2「Footer: Privacy Policy / Terms of Service へのリンクを全画面で常設」。
+// ④ §2「Footer: Privacy Policy / Terms of Service へのリンクを通常画面で常設」。
 // 拒否条件「フッターから到達可能」の担保箇所。
-// GameView（/game/:roomId）だけは Layout 外に置くため（③.3 の全画面 Canvas 前提）、
-// そこでは match_end モーダル内に縮退表示する
+// GameView（/game/:roomId）とそのリザルトは、試合への没入を優先して規約リンクを表示しない
 
 export function Footer() {
 	return (

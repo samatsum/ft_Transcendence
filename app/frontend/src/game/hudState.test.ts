@@ -93,22 +93,40 @@ describe('applyGameEvent — player_disconnected/reconnected/ai_takeover', () =>
 });
 
 describe('applyGameEvent — match_end', () => {
-	it('match_end で finalScore を snapshot 由来の score で確定', () => {
+	it('match_end で終端 snapshot の score を優先する', () => {
 		const s0 = { ...createInitialHudState(), score: [10, 3] as [number, number] };
 		const s1 = applyGameEvent(
 			s0,
 			{ kind: 'match_end', winner: 0, reason: 'score', match_id: 42 },
 			0,
+			[11, 3],
 		);
 		expect(s1.matchEnd).toEqual({
 			winner: 0,
 			reason: 'score',
 			matchId: 42,
-			finalScore: [10, 3],
+			finalScore: [11, 3],
 		});
 	});
 
-	it('match_id が null(永続化失敗) でも matchEnd は成立', () => {
+	it('同じ描画前に point_scored と match_end が続いても最終スコアを保持する', () => {
+		const s0 = { ...createInitialHudState(), score: [2, 0] as [number, number] };
+		const s1 = applyGameEvent(
+			s0,
+			{ kind: 'point_scored', team: 0, score: [3, 0], by_id: null },
+			100,
+		);
+		const s2 = applyGameEvent(
+			s1,
+			{ kind: 'match_end', winner: 0, reason: 'score', match_id: null },
+			100,
+			[3, 0],
+		);
+		expect(s2.pointFlash?.team).toBe(0);
+		expect(s2.matchEnd?.finalScore).toEqual([3, 0]);
+	});
+
+	it('match_id が null（永続化なし）でも matchEnd は成立', () => {
 		const s0 = createInitialHudState();
 		const s1 = applyGameEvent(
 			s0,

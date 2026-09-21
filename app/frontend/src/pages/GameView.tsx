@@ -4,7 +4,6 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { WS_CLOSE } from '@ft/shared';
 import { z } from 'zod';
 
 import { useApi } from '../api/useApi.js';
@@ -13,7 +12,7 @@ import { HudOverlay } from '../game/hud/HudOverlay.js';
 import type { MatchDetailsView } from '../game/hud/MatchEndModal.js';
 import { useEngineRenderer } from '../game/useEngineRenderer.js';
 import { useGameInput } from '../game/useGameInput.js';
-import { useGameSocket } from '../game/useGameSocket.js';
+import { shouldReturnToLobby, useGameSocket } from '../game/useGameSocket.js';
 
 // GV-07 推奨決定#4: match_end で /api/matches/:id を toast:false で取り試合詳細を表示。
 // shared/api/matches.ts の正式スキーマは B-13 で確定するため、暫定 schema をここに置く
@@ -43,7 +42,9 @@ export default function GameView() {
 		status,
 		welcome,
 		snapshotBufferRef,
-		lastEvent,
+		pendingEvents,
+		matchEndEvent,
+		acknowledgeEvents,
 		playerStatus,
 		closeCode,
 		canSend,
@@ -108,19 +109,24 @@ export default function GameView() {
 	// **match_id が null でも決着は決着**なので、下の詳細取得とは別の effect にする
 	// （あちらは match_id === null で早期 return する）
 	useEffect(() => {
-		if (lastEvent?.kind !== 'match_end') return;
+		if (!matchEndEvent) return;
 		setMatchEnded(true);
 		setExitPromptOpen(false);
-	}, [lastEvent]);
+	}, [matchEndEvent]);
 
-	// match_end の match_id で試合詳細取得(GV-07 推奨決定#4)。
-	// B-13 未実装期間は失敗する前提なので toast:false + error state で握る
+	// match_end の match_id で試合詳細取得(GV-07 推奨決定#4)
+	// B-13 復帰時の互換経路として、取得失敗は toast:false + error state で握る
 	const api = useApi();
 	const [matchDetails, setMatchDetails] = useState<MatchDetailsView | null>(null);
 	const [matchDetailsError, setMatchDetailsError] = useState(false);
 	useEffect(() => {
-		if (!lastEvent || lastEvent.kind !== 'match_end') return;
-		const matchId = lastEvent.match_id;
+		setMatchEnded(false);
+		setMatchDetails(null);
+		setMatchDetailsError(false);
+	}, [roomId]);
+	useEffect(() => {
+		if (!matchEndEvent) return;
+		const matchId = matchEndEvent.match_id;
 		if (matchId === null) return;
 		let cancelled = false;
 		api
@@ -137,13 +143,13 @@ export default function GameView() {
 		return () => {
 			cancelled = true;
 		};
-	}, [lastEvent, api]);
+	}, [matchEndEvent, api]);
 
-	// close 1000/4002 でロビーへ戻す(GV-08 で match_end モーダル → 明示遷移が主。
-	// ここは close 到達時の自動フォールバック)
+	// close 1000/4002/4003 でロビーへ戻す。終了済みルームへの再 join はサーバが
+	// 4003 で拒否するため、リザルト表示中のリロードも黒画面に残さずロビーへ戻る
 	useEffect(() => {
-		if (closeCode === WS_CLOSE.normal || closeCode === WS_CLOSE.roomNotFound) {
-			const id = setTimeout(() => navigate('/'), 800);
+		if (shouldReturnToLobby(closeCode)) {
+			const id = setTimeout(() => navigate('/lobby', { replace: true }), 800);
 			return () => clearTimeout(id);
 		}
 		return undefined;
@@ -206,7 +212,8 @@ export default function GameView() {
 				<HudOverlay
 					welcome={welcome}
 					snapshotBufferRef={snapshotBufferRef}
-					lastEvent={lastEvent}
+					pendingEvents={pendingEvents}
+					acknowledgeEvents={acknowledgeEvents}
 					playerStatus={playerStatus}
 					connectionStatus={status}
 					closeCode={closeCode}

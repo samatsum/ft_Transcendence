@@ -9,7 +9,8 @@ import { Card } from '../components/Card.js';
 import { FormField } from '../components/FormField.js';
 import { Input } from '../components/Input.js';
 import { useAuth } from '../contexts/AuthContext.js';
-import { loginApiError, loginDestination, zodFieldErrors, type FieldErrors } from './loginForm.js';
+import { loginDestination } from '../auth/loginDestination.js';
+import { loginApiError, zodFieldErrors, type FieldErrors } from './loginForm.js';
 
 // F-03(#172/#162)。#182 と #186 の統合版。
 //
