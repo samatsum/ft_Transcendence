@@ -25,6 +25,10 @@ import {
 } from '@ft/shared';
 
 import { handleLobbyServerMessage } from '../ws/lobbyMessageHandler.js';
+import {
+	closeWebSocketOnCleanup,
+	deferWebSocketConnection,
+} from '../ws/webSocketLifecycle.js';
 
 export type LobbyStatus = 'connecting' | 'open' | 'reconnecting' | 'closed';
 
@@ -161,13 +165,15 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
 			};
 		}
 
-		connect();
+		const cancelInitialConnect = deferWebSocketConnection(connect);
 
 		return () => {
 			cancelled = true;
+			cancelInitialConnect();
 			if (reconnectTimer) clearTimeout(reconnectTimer);
-			wsRef.current?.close(WS_CLOSE.normal);
+			const ws = wsRef.current;
 			wsRef.current = null;
+			if (ws) closeWebSocketOnCleanup(ws);
 		};
 	}, []);
 

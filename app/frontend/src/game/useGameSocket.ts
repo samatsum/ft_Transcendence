@@ -21,6 +21,10 @@ import {
 
 import { markGameRoomFinished } from './gameRouteState.js';
 import { handleGameServerMessage } from '../ws/gameMessageHandler.js';
+import {
+	closeWebSocketOnCleanup,
+	deferWebSocketConnection,
+} from '../ws/webSocketLifecycle.js';
 
 /** 受信 snapshot に到着時刻（performance.now ミリ秒）を紐づけて保持する */
 export interface TimedSnapshot {
@@ -207,14 +211,15 @@ export function useGameSocket(roomId: string): UseGameSocketResult {
 			};
 		}
 
-		connect();
+		const cancelInitialConnect = deferWebSocketConnection(connect);
 
 		return () => {
 			cancelled = true;
+			cancelInitialConnect();
 			if (reconnectTimer) clearTimeout(reconnectTimer);
 			const ws = wsRef.current;
 			wsRef.current = null;
-			if (ws && ws.readyState <= WebSocket.OPEN) ws.close(WS_CLOSE.normal);
+			if (ws) closeWebSocketOnCleanup(ws);
 		};
 	}, [roomId]);
 
