@@ -14,10 +14,10 @@ import { WarningTriangleIcon } from './icons/WarningTriangleIcon.js';
 // fetch ラッパ（F-02）から Toast を push する配線は F-02 の担当
 
 const KIND_CLASS: Record<ToastKind, string> = {
-	info: 'border-sky-500/40 bg-slate-900 text-slate-100',
-	success: 'border-emerald-500/40 bg-slate-900 text-slate-100',
-	warning: 'border-amber-500/40 bg-slate-900 text-slate-100',
-	error: 'border-rose-500/40 bg-slate-900 text-slate-100',
+	info: 'border-accent/40 bg-surface-low text-fg',
+	success: 'border-success/40 bg-surface-low text-fg',
+	warning: 'border-warning/40 bg-surface-low text-fg',
+	error: 'border-danger/40 bg-surface-low text-fg',
 };
 
 const KIND_ICON: Record<ToastKind, typeof InfoCircleIcon> = {
@@ -28,7 +28,7 @@ const KIND_ICON: Record<ToastKind, typeof InfoCircleIcon> = {
 };
 
 const KIND_ICON_CLASS: Record<ToastKind, string> = {
-	info: 'text-accent',
+	info: 'text-accent-bright',
 	success: 'text-success',
 	warning: 'text-warning',
 	error: 'text-danger',
@@ -59,7 +59,7 @@ function Toast({ toast, onDismiss }: ToastProps) {
 			<button
 				type="button"
 				onClick={() => onDismiss(toast.id)}
-				className="text-slate-400 hover:text-slate-200"
+				className="text-fg-muted hover:text-fg-secondary"
 				aria-label="通知を閉じる"
 			>
 				<CloseIcon className="h-4 w-4" />
