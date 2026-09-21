@@ -9,9 +9,87 @@
 | パス | 内容 |
 |---|---|
 | `docker/` | Dockerfile 置き場。現状は `docker/engine-build/`（Emscripten ビルド用）。ルート直下から移設（②の整理） |
-| `docker/nginx/nginx.conf` | HTTPS 終端（自己署名）・静的配信（frontend の build）・`/api` と `/ws` のリバースプロキシ |
+| `docker/nginx/nginx.conf.template` | HTTPS 終端・静的配信（frontend の build）・`/api` と `/ws` のリバースプロキシ。`entrypoint.sh` が `${SERVER_NAME}` `${TLS_CERT}` `${TLS_KEY}` を埋めて `/etc/nginx/nginx.conf` を書き出す（既定は `localhost` + 自己署名） |
 | `certs/` | 自己署名証明書（**生成物。git 管理外**）。初回 `docker compose up` で生成する |
 | `scripts/` | 証明書生成・Prisma マイグレーション・`make web sim` 相当のアセット変換を起動時に流す入口 |
+
+## VPS へのデプロイ（#138 の遠隔プレイ実測用）
+
+**ローカルの `docker compose up` は従来どおり。** 公開サーバーで要る差分だけを
+`docker-compose.vps.yml` に閉じ込めてある（80 番の公開・ホスト名・正式な証明書・`restart`）。
+
+この手順は 2026-09-19 に Linode（Nanode 1GB / Tokyo / Ubuntu 24.04）で実行して確認した。
+
+### 1. サーバーの準備
+
+Docker と Compose を入れ、**スワップを足す**（1GB のままだと wasm のビルドでメモリが足りなくなる）。
+
+```bash
+fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
+echo '/swapfile none swap sw 0 0' >> /etc/fstab
+```
+
+SSH は鍵のみにし（`PasswordAuthentication no`）、ファイアウォールは受信 22 / 80 / 443 だけ開ける。
+80 番は次の証明書取得に要る。
+
+### 2. 証明書の取得
+
+ホスト名は [nip.io](https://nip.io) を使えば登録が要らない——`<IP をハイフン区切りにしたもの>.nip.io`
+がその IP に解決する。DNS の設定は不要。
+
+```bash
+apt-get install -y certbot
+# nginx を起動する前に実行する（80 番を certbot が使う）
+certbot certonly --standalone --agree-tos --register-unsafely-without-email \
+  -d <IP をハイフン区切りにしたもの>.nip.io
+```
+
+**証明書の有効期間は 90 日。** レビュー期間中だけ動かして削除する前提なので、更新の仕組みは用意していない。
+
+90 日を超えて運用するなら webroot へ切り替える。`--standalone` で取ると certbot は
+`/etc/letsencrypt/renewal/<ホスト名>.conf` に `authenticator = standalone` を書き込み、
+**certbot が自動登録する更新タスクは nginx が 80 番を握っている間は失敗する**。
+`docker-compose.vps.yml` が `/var/www/certbot` をホストと共有しているので、
+同ファイルを次のように書き換えれば nginx を止めずに更新できる。
+
+```ini
+authenticator = webroot
+webroot_path = /var/www/certbot,
+```
+
+`certbot certonly --webroot -w /var/www/certbot -d <ホスト名> --dry-run` が
+成功することを確認してから任せること。
+
+### 3. 起動
+
+```bash
+git clone --branch <ブランチ> https://github.com/samatsum/ft_Transcendence.git /opt/ft_transcendence
+cd /opt/ft_transcendence
+cat > .env <<'EOF'
+SERVER_NAME=<IP をハイフン区切りにしたもの>.nip.io
+ALLOWED_ORIGIN=https://<IP をハイフン区切りにしたもの>.nip.io
+EOF
+docker compose -f docker-compose.yml -f docker-compose.vps.yml up -d --build
+```
+
+**`ALLOWED_ORIGIN` は完全一致で1つだけ。** ホスト名を変えたら両方を書き換えて `up -d` をやり直す。
+フロントは `window.location.host` から WS の URL を組み立てるので、ホスト名を埋めたビルドし直しは要らない。
+
+### 4. マージ後の更新
+
+`infra/scripts/deploy.sh` がサーバー側で完結する。手元からは ssh 一行で叩く。
+
+```bash
+ssh -i ~/.ssh/<鍵> root@<IP> 'cd /opt/ft_transcendence && infra/scripts/deploy.sh'
+```
+
+既定は `origin/main` への追従。**差分が無ければ何もせず終了する**（Nanode 1GB では
+wasm のビルドに20分近くかかるため）。強制するなら `DEPLOY_FORCE=1`、別のブランチを
+試すなら `DEPLOY_REF=<ブランチ>` を頭に付ける。
+
+`/api/health` が 200 になるまで最大60秒待ち、駄目なら終了コード 1 で落ちる。
+最後に `docker image prune` と `docker builder prune` を実行する——**掃除しないと
+ディスク（25GB）がビルド数回で埋まる**。
 
 ## 設計の根拠
 

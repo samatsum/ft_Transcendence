@@ -18,14 +18,41 @@ http {
 		application/json
 		image/svg+xml;
 
-	server {
-		# localhost:443 で HTTPS を受け付ける
-		listen 443 ssl;
-		server_name localhost;
+	# **このファイルはテンプレートで、entrypoint.sh が envsubst で
+	# `${SERVER_NAME}` `${TLS_CERT}` `${TLS_KEY}` だけを置換して
+	# /etc/nginx/nginx.conf を書き出す。** `$uri` や `$http_upgrade` のような
+	# nginx 自身の変数は envsubst に渡す変数名を限定することで守られている。
+	# 新しい `${...}` を書くときは entrypoint.sh の置換リストにも足すこと。
 
-		# entrypoint.sh が初回起動時に生成する証明書を使う
-		ssl_certificate /etc/nginx/certs/localhost.crt;
-		ssl_certificate_key /etc/nginx/certs/localhost.key;
+	# 平文 HTTP。VPS では Let's Encrypt の応答と https への誘導に使う。
+	# ローカルの compose は 80 番を公開しないので、この server は使われない。
+	server {
+		listen 80;
+		server_name ${SERVER_NAME};
+
+		# certbot --webroot による発行・更新のための応答（VPS 用の
+		# docker-compose.vps.yml が /var/www/certbot をマウントする）
+		location /.well-known/acme-challenge/ {
+			root /var/www/certbot;
+		}
+
+		# **`$host` ではなく `${SERVER_NAME}`。** 80 番は誰でも叩けて Host
+		# ヘッダも自由に付けられるので、`$host` だと攻撃者の指定した宛先を
+		# Location に載せてしまう（オープンリダイレクト）
+		location / {
+			return 301 https://${SERVER_NAME}$request_uri;
+		}
+	}
+
+	server {
+		# 443 で HTTPS を受け付ける
+		listen 443 ssl;
+		server_name ${SERVER_NAME};
+
+		# 既定ではローカル CA の localhost 証明書（entrypoint.sh が初回起動時に生成）。
+		# VPS では Let's Encrypt の証明書を環境変数で指す
+		ssl_certificate ${TLS_CERT};
+		ssl_certificate_key ${TLS_KEY};
 		ssl_protocols TLSv1.2 TLSv1.3;
 
 		# frontend サービスが生成する Vite の dist を公開する（docker-compose.yml 参照）
