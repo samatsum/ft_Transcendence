@@ -12,12 +12,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
 	WS_CLOSE,
-	envelopeSchema,
-	gameEventSchema,
-	gameServerMessageSchema,
-	playerStatusMessageSchema,
-	snapshotMessageSchema,
-	welcomeMessageSchema,
 	type GameClientMessage,
 	type GameEvent,
 	type PlayerStatusMessage,
@@ -25,8 +19,8 @@ import {
 	type WelcomeMessage,
 } from '@ft/shared';
 
-import { devLog } from '../devLog.js';
 import { markGameRoomFinished } from './gameRouteState.js';
+import { handleGameServerMessage } from '../ws/gameMessageHandler.js';
 
 /** 受信 snapshot に到着時刻（performance.now ミリ秒）を紐づけて保持する */
 export interface TimedSnapshot {
@@ -161,103 +155,32 @@ export function useGameSocket(roomId: string): UseGameSocketResult {
 
 			ws.onmessage = (ev: MessageEvent<string>) => {
 				if (cancelled || wsRef.current !== ws) return;
-				let raw: unknown;
-				try {
-					raw = JSON.parse(ev.data);
-				} catch (error) {
-					devLog('ゲーム WS: JSON の解析に失敗したため受信メッセージを破棄しました', {
-						raw: ev.data,
-						error,
-					});
-					return;
-				}
-				const env = envelopeSchema.safeParse(raw);
-				if (!env.success) {
-					devLog('ゲーム WS: envelope 検証に失敗したため受信メッセージを破棄しました', {
-						raw,
-						issues: env.error.issues,
-					});
-					return;
-				}
-				switch (env.data.t) {
-					case 'welcome': {
-						const w = welcomeMessageSchema.safeParse(raw);
-						if (w.success) {
-							setWelcome(w.data.d);
-						} else {
-							devLog('ゲーム WS: welcome 検証に失敗したため受信メッセージを破棄しました', {
-								raw,
-								issues: w.error.issues,
-							});
-						}
-						return;
-					}
-					case 'snapshot': {
-						const s = snapshotMessageSchema.safeParse(raw);
-						if (!s.success) {
-							devLog('ゲーム WS: snapshot 検証に失敗したため受信メッセージを破棄しました', {
-								raw,
-								issues: s.error.issues,
-							});
-							return;
-						}
-						const timed: TimedSnapshot = {
-							receivedAtMs: performance.now(),
-							payload: s.data.d,
-						};
+				handleGameServerMessage(ev.data, {
+					onWelcome: setWelcome,
+					onSnapshot: (payload) => {
+						const timed: TimedSnapshot = { receivedAtMs: performance.now(), payload };
 						const buf = snapshotBufferRef.current;
 						buf.push(timed);
 						if (buf.length > SNAPSHOT_BUFFER_MAX) {
 							buf.splice(0, buf.length - SNAPSHOT_BUFFER_MAX);
 						}
-						return;
-					}
-					case 'event': {
-						const e = gameEventSchema.safeParse(raw);
-						if (e.success) {
-							const event = e.data.d;
-							const id = nextEventIdRef.current++;
-							setPendingEvents((prev) => enqueueGameEvent(prev, id, event));
-							if (event.kind === 'match_end') {
-								markGameRoomFinished(roomId);
-								setMatchEndEvent(event);
-							}
-						} else {
-							devLog('ゲーム WS: event 検証に失敗したため受信メッセージを破棄しました', {
-								raw,
-								issues: e.error.issues,
-							});
+					},
+					onEvent: (event) => {
+						const id = nextEventIdRef.current++;
+						setPendingEvents((prev) => enqueueGameEvent(prev, id, event));
+						if (event.kind === 'match_end') {
+							markGameRoomFinished(roomId);
+							setMatchEndEvent(event);
 						}
-						return;
-					}
-					case 'player_status': {
-						const p = playerStatusMessageSchema.safeParse(raw);
-						if (!p.success) {
-							devLog('ゲーム WS: player_status 検証に失敗したため受信メッセージを破棄しました', {
-								raw,
-								issues: p.error.issues,
-							});
-							return;
-						}
+					},
+					onPlayerStatus: (payload) => {
 						setPlayerStatus((prev) => {
 							const next = new Map(prev);
-							next.set(p.data.d.slot, p.data.d.state);
+							next.set(payload.slot, payload.state);
 							return next;
 						});
-						return;
-					}
-					default: {
-						// discriminated union の網羅チェック（gameServerMessageSchema）は
-						// error などを含めた safeParse で検証する
-						const message = gameServerMessageSchema.safeParse(raw);
-						if (!message.success) {
-							devLog('ゲーム WS: メッセージ検証に失敗したため受信メッセージを破棄しました', {
-								raw,
-								issues: message.error.issues,
-							});
-						}
-					}
-				}
+					},
+				});
 			};
 
 			ws.onclose = (ev: CloseEvent) => {

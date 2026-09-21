@@ -18,14 +18,13 @@ import {
 } from 'react';
 import {
 	WS_CLOSE,
-	lobbyServerMessageSchema,
 	type LobbyClientMessage,
 	type MatchFoundMessage,
 	type MatchResultPayload,
 	type RoomStatePayload,
 } from '@ft/shared';
 
-import { devLog } from '../devLog.js';
+import { handleLobbyServerMessage } from '../ws/lobbyMessageHandler.js';
 
 export type LobbyStatus = 'connecting' | 'open' | 'reconnecting' | 'closed';
 
@@ -107,57 +106,39 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
 
 			ws.onmessage = (ev: MessageEvent<string>) => {
 				if (cancelled) return;
-				let raw: unknown;
-				try {
-					raw = JSON.parse(ev.data);
-				} catch (error) {
-					devLog('ロビー WS: JSON の解析に失敗したため受信メッセージを破棄しました', {
-						raw: ev.data,
-						error,
-					});
-					return;
-				}
-				const parsed = lobbyServerMessageSchema.safeParse(raw);
-				if (!parsed.success) {
-					devLog('ロビー WS: スキーマ検証に失敗したため受信メッセージを破棄しました', {
-						raw,
-						issues: parsed.error.issues,
-					});
-					return;
-				}
-
-				const msg = parsed.data;
-				switch (msg.t) {
-					case 'lobby_hello':
-						setOnlineCount(msg.d.online_count);
-						break;
-					case 'presence_update':
-						// 「誰か1人の状態が変わった」という通知で、人数は入っていない。
-						// 人数が要る画面が出てきたら、ここで自前に数える
-						break;
-					case 'room_state':
-						// 部屋の全員に配られる。参加・退室・設定変更のすべてがこれで届く
-						setRoom(msg.d);
-						setError(null);
-						break;
-					case 'match_found':
-						setMatchFound(msg.d);
-						// サーバは部屋を削除してから match_found を送る（ws-protocol.md §4-E）。
-						// 削除の通知は別に来ないので、ここで消さないと試合後も 'starting' の
-						// 部屋が残り、作成・参加・退出のボタンがすべて無効のままになる（#190）。
-						// 下の match_result は B-13 不採用のため届かない
-						setRoom(null);
-						break;
-					case 'match_result':
-						setMatchResult(msg.d);
-						setRoom(null);
-						break;
-					case 'error':
-						setError({ code: msg.d.code, message: msg.d.msg });
-						break;
-					default:
-						break;
-				}
+				handleLobbyServerMessage(ev.data, (msg) => {
+					switch (msg.t) {
+						case 'lobby_hello':
+							setOnlineCount(msg.d.online_count);
+							break;
+						case 'presence_update':
+							// 「誰か1人の状態が変わった」という通知で、人数は入っていない。
+							// 人数が要る画面が出てきたら、ここで自前に数える
+							break;
+						case 'room_state':
+							// 部屋の全員に配られる。参加・退室・設定変更のすべてがこれで届く
+							setRoom(msg.d);
+							setError(null);
+							break;
+						case 'match_found':
+							setMatchFound(msg.d);
+							// サーバは部屋を削除してから match_found を送る（ws-protocol.md §4-E）。
+							// 削除の通知は別に来ないので、ここで消さないと試合後も 'starting' の
+							// 部屋が残り、作成・参加・退出のボタンがすべて無効のままになる（#190）。
+							// 下の match_result は B-13 不採用のため届かない
+							setRoom(null);
+							break;
+						case 'match_result':
+							setMatchResult(msg.d);
+							setRoom(null);
+							break;
+						case 'error':
+							setError({ code: msg.d.code, message: msg.d.msg });
+							break;
+						default:
+							break;
+					}
+				});
 			};
 
 			ws.onclose = (closeEvent: CloseEvent) => {
