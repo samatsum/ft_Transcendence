@@ -240,7 +240,7 @@ Each combatant's team, hand, initial respawn point, alive status, and home-entry
 | `t_config` | resolution, colors, texture paths, map array, **cell attribute flag layer**, speed/FOV/enemy-track-seconds/enemy-speed/enemy-HP, spawn-point array | `config/config.h` |
 | `t_window` | MiniLibX pointer, drawing back buffer | `render.h` |
 | `t_camera` | position, view direction, camera plane, orthogonal vectors | `raycast.h` |
-| `t_input` | pressed state per axis, currently equipped weapon, firing state | `types.h` |
+| `t_input` | pressed state per axis, currently equipped weapon, firing state (`is_shooting`: the local player's post-shot counter; `trigger`: whether a server seat holds the trigger, #187) | `engine/input/input_state.h` |
 | `t_world` | sprite list, enemy list, light list, collection progress | `types.h` |
 | `t_assets` | texture sets for wall/floor/ceiling, weapon, enemy, **hand (RSP)**, door, and death screen | `types.h` |
 | `t_render_cache` | `camera_x[MAX_WIDTH]` / `depth[MAX_WIDTH]` / `sf_dist[MAX_HEIGHT]` | `types.h` |

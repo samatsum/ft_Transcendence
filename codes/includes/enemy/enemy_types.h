@@ -64,6 +64,7 @@ typedef struct s_enemy
 	double			death_timer;
 	double			dir_angle;
 	double			track_timer;
+	double			shot_cooldown;
 	t_input			input;
 	t_camera		spawn;
 	t_pos			patrol_from;

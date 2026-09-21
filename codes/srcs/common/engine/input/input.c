@@ -38,6 +38,8 @@ void
 	select_weapon(t_game* game, int weapon);
 void
 	trigger_shot(t_game* game);
+int
+	begin_shot(t_game* game);
 static int
 	set_hold_axis(t_game* game, int keycode, double value);
 static void
@@ -144,13 +146,25 @@ void
 void
 	trigger_shot(t_game* game)
 {
-	if (!game->mode_ops.can_shoot || game->input.current_weapon != WEP_PISTOL) {
-		return ;
-	}
-	if (game->input.is_shooting == 0) {
-		game->input.is_shooting = SHOOT_COOLDOWN;
+	if (begin_shot(game)) {
 		shoot_target(game);
 	}
+}
+
+/* ************************************************************************** */
+// 射撃の「見た目側」だけを始める。ピストル装備でクールダウンが明けていれば
+// 発射後カウンタ（is_shooting。武器モーションとクールダウンを兼ねる）を立てて 1 を返す。
+// 命中処理は含まないので、サーバ権威のオンライン対戦（#187）では web_play_shot が
+// これだけを呼び、当たり判定は sim の shoot_from_combatant に任せる
+int
+	begin_shot(t_game* game)
+{
+	if (!game->mode_ops.can_shoot || game->input.current_weapon != WEP_PISTOL
+		|| game->input.is_shooting != 0) {
+		return (0);
+	}
+	game->input.is_shooting = SHOOT_COOLDOWN;
+	return (1);
 }
 
 /* ************************************************************************** */
