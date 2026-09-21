@@ -25,6 +25,7 @@ import {
 	type WelcomeMessage,
 } from '@ft/shared';
 
+import { devLog } from '../devLog.js';
 import { markGameRoomFinished } from './gameRouteState.js';
 
 /** 受信 snapshot に到着時刻（performance.now ミリ秒）を紐づけて保持する */
@@ -163,20 +164,43 @@ export function useGameSocket(roomId: string): UseGameSocketResult {
 				let raw: unknown;
 				try {
 					raw = JSON.parse(ev.data);
-				} catch {
-					return; // 開発ログへ落とすのは今後の TODO（コンソールゼロ運用）
+				} catch (error) {
+					devLog('ゲーム WS: JSON の解析に失敗したため受信メッセージを破棄しました', {
+						raw: ev.data,
+						error,
+					});
+					return;
 				}
 				const env = envelopeSchema.safeParse(raw);
-				if (!env.success) return;
+				if (!env.success) {
+					devLog('ゲーム WS: envelope 検証に失敗したため受信メッセージを破棄しました', {
+						raw,
+						issues: env.error.issues,
+					});
+					return;
+				}
 				switch (env.data.t) {
 					case 'welcome': {
 						const w = welcomeMessageSchema.safeParse(raw);
-						if (w.success) setWelcome(w.data.d);
+						if (w.success) {
+							setWelcome(w.data.d);
+						} else {
+							devLog('ゲーム WS: welcome 検証に失敗したため受信メッセージを破棄しました', {
+								raw,
+								issues: w.error.issues,
+							});
+						}
 						return;
 					}
 					case 'snapshot': {
 						const s = snapshotMessageSchema.safeParse(raw);
-						if (!s.success) return;
+						if (!s.success) {
+							devLog('ゲーム WS: snapshot 検証に失敗したため受信メッセージを破棄しました', {
+								raw,
+								issues: s.error.issues,
+							});
+							return;
+						}
 						const timed: TimedSnapshot = {
 							receivedAtMs: performance.now(),
 							payload: s.data.d,
@@ -198,12 +222,23 @@ export function useGameSocket(roomId: string): UseGameSocketResult {
 								markGameRoomFinished(roomId);
 								setMatchEndEvent(event);
 							}
+						} else {
+							devLog('ゲーム WS: event 検証に失敗したため受信メッセージを破棄しました', {
+								raw,
+								issues: e.error.issues,
+							});
 						}
 						return;
 					}
 					case 'player_status': {
 						const p = playerStatusMessageSchema.safeParse(raw);
-						if (!p.success) return;
+						if (!p.success) {
+							devLog('ゲーム WS: player_status 検証に失敗したため受信メッセージを破棄しました', {
+								raw,
+								issues: p.error.issues,
+							});
+							return;
+						}
 						setPlayerStatus((prev) => {
 							const next = new Map(prev);
 							next.set(p.data.d.slot, p.data.d.state);
@@ -213,8 +248,14 @@ export function useGameSocket(roomId: string): UseGameSocketResult {
 					}
 					default: {
 						// discriminated union の網羅チェック（gameServerMessageSchema）は
-						// error などを含めた safeParse で握るのみ（受入 №6）
-						gameServerMessageSchema.safeParse(raw);
+						// error などを含めた safeParse で検証する
+						const message = gameServerMessageSchema.safeParse(raw);
+						if (!message.success) {
+							devLog('ゲーム WS: メッセージ検証に失敗したため受信メッセージを破棄しました', {
+								raw,
+								issues: message.error.issues,
+							});
+						}
 					}
 				}
 			};

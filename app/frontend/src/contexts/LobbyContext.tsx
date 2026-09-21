@@ -25,6 +25,8 @@ import {
 	type RoomStatePayload,
 } from '@ft/shared';
 
+import { devLog } from '../devLog.js';
+
 export type LobbyStatus = 'connecting' | 'open' | 'reconnecting' | 'closed';
 
 export interface LobbyError {
@@ -108,11 +110,21 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
 				let raw: unknown;
 				try {
 					raw = JSON.parse(ev.data);
-				} catch {
-					return; // 壊れた JSON は捨てる（コンソールには出さない）
+				} catch (error) {
+					devLog('ロビー WS: JSON の解析に失敗したため受信メッセージを破棄しました', {
+						raw: ev.data,
+						error,
+					});
+					return;
 				}
 				const parsed = lobbyServerMessageSchema.safeParse(raw);
-				if (!parsed.success) return;
+				if (!parsed.success) {
+					devLog('ロビー WS: スキーマ検証に失敗したため受信メッセージを破棄しました', {
+						raw,
+						issues: parsed.error.issues,
+					});
+					return;
+				}
 
 				const msg = parsed.data;
 				switch (msg.t) {
