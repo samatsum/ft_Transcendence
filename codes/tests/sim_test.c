@@ -1064,7 +1064,7 @@ static void
 	int			i;
 	int			changed;
 
-	game = sim_create(map_text, 1, 0, TEST_SEED);
+	game = sim_create(map_text, 1, 0, TEST_SEED, 0.0);
 	if (!game || game_add_combatant(game, 0, 0) != 0 || game_add_combatant(game, 1, 1) != 1
 		|| game_add_combatant(game, 2, 0) != 2 || game_add_combatant(game, 3, 1) != 3
 		|| !find_shot_lane(game, &lane)) {
