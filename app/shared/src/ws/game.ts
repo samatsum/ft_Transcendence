@@ -113,13 +113,11 @@ export const snapshotPayloadSchema = z.object({
 		score: z.tuple([z.number(), z.number()]),
 	}),
 	combatants: z.array(combatantViewSchema),
-	/** FPS のワールド進捗。変化時のみ送るが、載る座標は常に同時点の全量 */
+	/** FPS のワールド進捗。毎snapshotで、座標は常に同時点の全量 */
 	world_delta: z
 		.object({
-			/** 初回・再接続では空配列を含む。以後も欠落復旧のため全量 */
+			/** 空配列を含む完全状態。snapshot欠落後は次のsnapshotで復旧する */
 			collected: z.array(z.tuple([z.number(), z.number()])),
-			/** マップ開始時に確定する、サーバー正本の総収集数 */
-			total: z.number().int().nonnegative(),
 			doors_open: z.boolean(),
 		})
 		.optional(),

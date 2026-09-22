@@ -286,11 +286,9 @@ int
 	buf[2] = game->rsp.score[TEAM_RED];
 	buf[3] = game->rsp.score[TEAM_BLUE];
 	buf[4] = count;
-	buf[5] = game->world.to_collect;
-	buf[6] = game->world.collected;
-	buf[7] = (game->world.to_collect > 0
+	buf[5] = (game->world.to_collect > 0
 		&& game->world.collected >= game->world.to_collect);
-	buf[8] = collected;
+	buf[6] = collected;
 	used = SIM_SNAP_HEADER_DOUBLES;
 	cur = game->world.enemies;
 	while (cur) {

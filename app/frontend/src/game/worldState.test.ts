@@ -3,12 +3,12 @@ import type { SnapshotPayload } from '@ft/shared';
 
 import { applyWorldSnapshot, createWorldProgress } from './worldState.js';
 
-function snapshot(collected: [number, number][], total = 3, doorsOpen = false): SnapshotPayload {
+function snapshot(collected: [number, number][], doorsOpen = false): SnapshotPayload {
 	return {
 		tick: 2,
 		match: { state: 'playing', mode: 'fps', winner: null, score: [0, 0] },
 		combatants: [],
-		world_delta: { collected, total, doors_open: doorsOpen },
+		world_delta: { collected, doors_open: doorsOpen },
 	};
 }
 
@@ -21,9 +21,8 @@ describe('applyWorldSnapshot', () => {
 
 	it('後続の全量状態で取りこぼしを回復し、扉開放を反映する', () => {
 		const first = applyWorldSnapshot(createWorldProgress(), snapshot([[1, 2]]));
-		const recovered = applyWorldSnapshot(first, snapshot([[1, 2], [3, 4], [5, 6]], 3, true));
+		const recovered = applyWorldSnapshot(first, snapshot([[1, 2], [3, 4], [5, 6]], true));
 		expect(recovered.collected).toHaveLength(3);
-		expect(recovered.total).toBe(3);
 		expect(recovered.doorsOpen).toBe(true);
 	});
 });

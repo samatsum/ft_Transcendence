@@ -435,9 +435,7 @@ static void
 	game_step(game, TICK_DT);
 	expect_int("収集数が1増える", game->world.collected, 1);
 	len = game_snapshot(game, snap, SNAP_CAP);
-	expect_int("snapshot に総収集数が載る", (int)snap[5], game->world.to_collect);
-	expect_int("snapshot に収集済み数が載る", (int)snap[6], 1);
-	expect_int("snapshot に収集済み座標が載る", (len > 0) ? (int)snap[8] : 0, 1);
+	expect_int("snapshot に収集済み座標が載る", (len > 0) ? (int)snap[6] : 0, 1);
 	if (len > SIM_SNAP_HEADER_DOUBLES) {
 		expect_int("snapshot の収集座標 x", (int)snap[len - 2], (int)item.x);
 		expect_int("snapshot の収集座標 y", (int)snap[len - 1], (int)item.y);
@@ -490,8 +488,8 @@ static void
 	}
 	expect_int("AI席が最後のスターを共有収集", game->world.collected, 5);
 	len = game_snapshot(game, snap, SNAP_CAP);
-	expect_int("snapshot の収集数にAI分を含む", (len > 0) ? (int)snap[6] : -1, 5);
-	expect_int("snapshot の収集済み座標にAI分を含む", (len > 0) ? (int)snap[8] : -1, 5);
+	expect_int("snapshot の収集済み座標にAI分を含む", (len > 0) ? (int)snap[6] : -1, 5);
+	expect_int("snapshot に扉開放が載る", (len > 0) ? (int)snap[5] : -1, 1);
 	game_destroy(game);
 }
 

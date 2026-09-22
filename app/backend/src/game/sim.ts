@@ -18,7 +18,7 @@ const SIM_JS_PATH =
 export const INPUT_SRC_AI = 0;
 export const INPUT_SRC_EXTERNAL = 1;
 
-/** snapshot 用に確保する f64 の個数。header 5 + 9/体 なので RSP 4 席で 41 */
+/** snapshot 用に確保する f64 の個数。header 7 + 9/体とFPSの収集座標を収める */
 const SNAPSHOT_MAX_DOUBLES = 256;
 
 /**

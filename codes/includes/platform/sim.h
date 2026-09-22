@@ -15,11 +15,11 @@
 
 // snapshot フラット配列（f64）のレイアウト:
 //   [0]=state [1]=winner(-1=未決着) [2]=score_red [3]=score_blue [4]=戦闘員数 N
-//   [5]=総収集数 [6]=収集済み数 [7]=扉開放 [8]=収集済み座標数 M
+//   [5]=扉開放 [6]=収集済み座標数 M
 //   以降 N × SIM_SNAP_COMBATANT_DOUBLES:
 //   [id, team, hand, x, y, dir_angle, alive, is_ai, respawn_s]
 //   さらに M × 2: [x, y]（FPS のみ。RSP では M=0）
-# define SIM_SNAP_HEADER_DOUBLES	9
+# define SIM_SNAP_HEADER_DOUBLES	7
 # define SIM_SNAP_COMBATANT_DOUBLES	9
 
 // マップ由来の敵ハザード（FPS の 'M'）へ振る id の起点。席 id（RSP=0..3 /

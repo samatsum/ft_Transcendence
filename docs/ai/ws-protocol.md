@@ -407,7 +407,7 @@ The client passes `map_text` to the render side's `game_create` (for display) (t
   "combatants":[
     { "id":0, "team":0, "hand":0|1|2, "pos":[12.5,4.25], "dir":1.57,
       "alive":true, "is_ai":false, "respawn_ms":0 } ],
-  "world_delta": { "collected":[[3,4],[7,2]], "total":7, "doors_open":true }  // FPS only, only when changed
+  "world_delta": { "collected":[[3,4],[7,2]], "doors_open":true }  // FPS only, every snapshot
 } }
 ```
 
@@ -419,7 +419,7 @@ The client passes `map_text` to the render side's `game_create` (for display) (t
 | `match.winner` | winner | RSP=team number / FPS=combatant_id / undecided=null. **Interpretation is fixed by `match.mode`** |
 | `match.score` | score | RSP=per-team `[A,B]` / FPS=fixed `[0,0]` (win/loss determined only by reaching the goal) |
 | `combatants[]` | id/team/hand/pos(x,y)/dir_angle/alive/is_ai/respawn_timer | FPS's enemy hazards use the same shape (the client draws them without distinguishing). `respawn_ms` is the remaining time in milliseconds |
-| `world_delta` | complete collected-item position set, total count, door-open flag | **Processed only when present**. It is omitted when unchanged; when present, `collected` is the complete current set, so replacing a missed snapshot still recovers. The first post-welcome and reconnect snapshot include it even when `collected` is empty |
+| `world_delta` | complete collected-item position set, door-open flag | Present in **every FPS snapshot**. `collected` is the complete current set, so the client replaces its display state and a skipped frame recovers on the next snapshot. The total is derived from the same `welcome.map_text` on the C display side |
 
 - Size budget: stays under **1KB per message** with 4 players + several enemies (§3-D). Adding a field must be checked against this budget as an acceptance criterion.
 - **Interpolation contract (client responsibility)**: buffer snapshots and linearly interpolate between the two straddling `now - 100ms` (angles via shortest arc). Only your own `yaw` prefers the local value (immediate viewpoint-rotation application). The interpolated result is written into the display-side `t_game` via `game_apply_snapshot` and rendered via `render_frame` (matching §3-B's division of labor — **the client contains no win/loss-determination code**).
@@ -699,7 +699,7 @@ B-08's completion is not "the match runs" — it's the above, plus **exactly one
 These are retained implementation-detail notes carried over from the original Phase 3 report; B-10 itself is complete.
 
 1. **Authoritative call order**: `createCub3DSimModule()` → `sim_create(cub_text_ptr, is_rsp, target_score, seed)` → `game_add_combatant(game, slot, is_ai)` × capacity (RSP=4 / FPS=2, **returns a `combatant_id`, distinct from `slot`**) → (on join) `game_set_input_source(game, combatant_id, EXTERNAL=1)` **using the id returned by `game_add_combatant`, not the raw seat `slot`** → every tick `sim_set_input` → `game_step(game, 1/30)` (return value 1 means transition to finished) → on even ticks `game_snapshot` → JSON-encoded and tick-stamped on the Node side → distributed → `game_destroy` at closed.
-2. **The flat-array layout is authoritatively defined in `codes/includes/platform/sim.h`** (9 header fields + 9 per combatant + FPS collection coordinates, all f64). `record.mjs`'s `takeSnapshot()` is the reference implementation for JSON encoding, as-is.
+2. **The flat-array layout is authoritatively defined in `codes/includes/platform/sim.h`** (7 header fields + 9 per combatant + FPS collection coordinates, all f64). `record.mjs`'s `takeSnapshot()` is the reference implementation for JSON encoding, as-is.
 3. **The seat-to-team mapping is fixed**: RSP slot 0,1 = red / 2,3 = blue. The map must have 2 red spawns (N/W) and 2 blue spawns (S/E); if not, `sim_create` returns NULL (must align with B-14's map-whitelist validation).
 4. **`combatant_id` has no relation to snapshot array order** (the internal list is in reverse creation order). Both client and server must always match by id. Map-derived enemy hazards use id=8 and up.
 5. `target_score` accepts only 3-21 (anything else defaults to 10). B-11's schema validation (#6) must reject outside this same range. `match_rules.seed` is **0 = time-derived (production) / non-zero = fixed RNG sequence**, and the entire match is deterministically reproducible for the same input sequence (usable in B-10's integration tests; the demo's record.mjs is fixed at seed=42, and two runs' snapshots.json have been confirmed byte-identical).

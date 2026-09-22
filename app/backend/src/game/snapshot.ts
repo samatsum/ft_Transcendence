@@ -16,7 +16,7 @@ export type { SnapshotPayload } from '@ft/shared';
 export type SnapshotMode = 'rsp' | 'fps';
 
 /** sim.h の SIM_SNAP_HEADER_DOUBLES */
-const HEADER_DOUBLES = 9;
+const HEADER_DOUBLES = 7;
 /** sim.h の SIM_SNAP_COMBATANT_DOUBLES: [id,team,hand,x,y,dir,alive,is_ai,respawn_s] */
 const COMBATANT_DOUBLES = 9;
 
@@ -58,7 +58,7 @@ export function decodeSnapshot(
 	const scoreRed = flat[2]!;
 	const scoreBlue = flat[3]!;
 	const count = flat[4]!;
-	const collectedCount = flat[8]!;
+	const collectedCount = flat[6]!;
 	const required = HEADER_DOUBLES + count * COMBATANT_DOUBLES + collectedCount * 2;
 	if (!Number.isInteger(count) || count < 0 || flat.length < required) {
 		throw new Error(
@@ -105,8 +105,7 @@ export function decodeSnapshot(
 		}
 		message.d.world_delta = {
 			collected,
-			total: Math.max(0, Math.trunc(flat[5]!)),
-			doors_open: flat[7] !== 0,
+			doors_open: flat[5] !== 0,
 		};
 	}
 	return message;

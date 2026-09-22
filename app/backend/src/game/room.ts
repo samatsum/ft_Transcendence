@@ -221,8 +221,6 @@ export class GameRoom {
 	private lastOverrunLogAt = 0;
 	/** 直前に配信した snapshot。差分から point_scored / hand_changed / goal を起こす */
 	private previous: SnapshotPayload | null = null;
-	/** 直近に配信した FPS world 正本。world_delta の変更検出専用 */
-	private previousWorld: SnapshotPayload['world_delta'] | null = null;
 	/**
 	 * ② §6-C の永続化フェーズに入ったか。onTick と leave の両方から finish() が
 	 * 呼ばれうるので、二重起動を防ぐ。true の間はタイマー停止済み・永続化 async 実行中で
@@ -458,23 +456,6 @@ export class GameRoom {
 		return { message, serialized: JSON.stringify(message) };
 	}
 
-	/** world_delta は変更時だけ配るが、載せる collected は常に全量にして欠落から復旧する */
-	private prepareSnapshot(message: SnapshotMessage): SnapshotMessage {
-		const world = message.d.world_delta;
-		if (!world) return message;
-		const previous = this.previousWorld;
-		const same = previous !== null && previous !== undefined
-			&& previous.total === world.total
-			&& previous.doors_open === world.doors_open
-			&& previous.collected.length === world.collected.length
-			&& previous.collected.every(
-				(pos, i) => pos[0] === world.collected[i]?.[0] && pos[1] === world.collected[i]?.[1],
-			);
-		this.previousWorld = world;
-		if (same) delete message.d.world_delta;
-		return message;
-	}
-
 	/** B-11 が受信した input を席バッファへ。反映は次の tick（② §6-B） */
 	setInput(slot: number, input: SeatInput): void {
 		if (this.state !== 'playing') return;
@@ -544,9 +525,7 @@ export class GameRoom {
 		// ② §6-A: 偶数 tick のみ配信（実効 15Hz）
 		const broadcastedThisTick = this.tick % 2 === 0;
 		if (broadcastedThisTick) {
-			const message = this.prepareSnapshot(
-				decodeSnapshot(sim.readSnapshot(), this.tick, this.mode),
-			);
+			const message = decodeSnapshot(sim.readSnapshot(), this.tick, this.mode);
 			this.broadcast(message);
 			// snapshot を配ってからイベントを出す（値の正本が先に届く。② §5-D）
 			for (const event of diffEvents(this.previous, message.d, this.mode)) {
@@ -605,7 +584,7 @@ export class GameRoom {
 		const sim = this.requireSim();
 		// 決着後の game_step は状態を進めず 1 を返し続ける（申し送り 6）。
 		// 最終 snapshot を1回だけ配信してから永続化フェーズへ入る（② §6-C 1.）
-		const last = this.prepareSnapshot(decodeSnapshot(sim.readSnapshot(), this.tick, this.mode));
+		const last = decodeSnapshot(sim.readSnapshot(), this.tick, this.mode);
 		if (outcome === 'decided' && !alreadyBroadcasted) {
 			this.broadcast(last);
 			for (const event of diffEvents(this.previous, last.d, this.mode)) {
