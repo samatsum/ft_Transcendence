@@ -106,7 +106,7 @@ jobs:
         run: npm run lint
       - name: typecheck (shared / backend / frontend)
         run: npm run typecheck
-      - name: test (vitest)
+      - name: unit test (vitest)
         # --workspaces --if-present なので、テストの無い workspace は飛ばされる
         # （現状 test script があるのは frontend のみ）
         run: npm test
