@@ -61,6 +61,8 @@ void
 	web_set_weapon(int weapon);
 void
 	web_shoot(void);
+void
+	web_play_shot(void);
 int
 	web_framebuffer_ptr(void);
 int

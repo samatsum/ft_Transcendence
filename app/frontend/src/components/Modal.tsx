@@ -27,7 +27,7 @@ export function Modal({
 	children,
 	actions,
 	backdropClassName = 'bg-black/70',
-	panelClassName = 'max-w-md border-slate-700 bg-slate-800',
+	panelClassName = 'max-w-md border-line bg-surface',
 }: ModalProps) {
 	const dialogRef = useRef<HTMLDivElement | null>(null);
 
@@ -75,11 +75,11 @@ export function Modal({
 				onClick={(ev) => ev.stopPropagation()}
 			>
 				{title && (
-					<h2 id="modal-title" className="mb-3 text-heading-sm text-slate-100">
+					<h2 id="modal-title" className="mb-3 text-heading-sm text-fg">
 						{title}
 					</h2>
 				)}
-				<div className="text-body text-slate-200">{children}</div>
+				<div className="text-body text-fg-secondary">{children}</div>
 				{actions && <div className="mt-4 flex justify-end gap-2">{actions}</div>}
 			</div>
 		</div>,

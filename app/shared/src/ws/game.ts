@@ -17,6 +17,9 @@ export const gameJoinSchema = z.object({
 	d: z.object({}).optional(),
 });
 
+/** `input.act` の bit0: 射撃の引き金を引いている（② §5-A。#187） */
+export const ACT_FIRE = 0b0001;
+
 /**
  * `input`: 30Hz 固定送信。**表示フレームから間引いて全量状態を送る**（状態駆動）。
  * 取りこぼしても次のメッセージが全量なので自己回復する（② §5-A 送信規約）。
@@ -35,10 +38,10 @@ export const gameInputSchema = z.object({
 		/** 4bit ビットマスク: bit0=前進 / bit1=後退 / bit2=左strafe / bit3=右strafe */
 		mv: z.number().int().min(0).max(0b1111),
 		/**
-		 * ② §5-A: 「4bit ビットマスク。既存エンジンの武器/射撃状態との互換予約。
-		 * 本プロジェクトの両モードでは 0 固定」。仕様どおり 4-bit 空間で受理し、
-		 * 実際の解釈（現状はすべて 0）はサーバ内で判断する（`z.literal(0)` にすると
-		 * 将来の 4-bit 拡張時にスキーマ改訂が要る）
+		 * ② §5-A: 4bit ビットマスク。bit0=射撃（{@link ACT_FIRE}。#187）/ bit1-3=予約。
+		 * mv と同じく押下状態を毎回送る（押しっぱなしなら毎回 1）。連射間隔はサーバの
+		 * sim が持つので、クライアントは間引かなくてよい。RSP では bit0 を立てても撃てない。
+		 * 予約ビットは受理して無視する（`max(0b0001)` にすると将来の拡張時にスキーマ改訂が要る）
 		 */
 		act: z.number().int().min(0).max(0b1111).optional(),
 	}),

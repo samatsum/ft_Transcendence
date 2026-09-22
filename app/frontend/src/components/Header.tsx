@@ -18,7 +18,7 @@ export function Header() {
 	}
 
 	return (
-		<header className="border-b border-slate-800 bg-slate-950">
+		<header className="border-b border-line-subtle bg-page">
 			{/*
 			 * ヘッダー全体を横並びにする flex コンテナ。
 			 * flex-wrap: どうしても幅が足りないときは2行に折り返してはみ出しを防ぐ。
@@ -33,7 +33,7 @@ export function Header() {
 				 */}
 				<Link
 					to={user ? '/lobby' : '/'}
-					className="min-w-0 truncate text-heading-sm text-slate-100 hover:text-white"
+					className="min-w-0 truncate text-heading-sm text-fg hover:text-fg-strong"
 				>
 					ft_transcendence
 				</Link>
@@ -52,10 +52,10 @@ export function Header() {
 						<Link
 							to={`/profile/${user.id}`}
 							aria-label={`${user.displayName}のプロフィール`}
-							className="flex min-w-0 items-center gap-2 rounded-md px-2 py-1 text-body text-slate-200 hover:bg-slate-800"
+							className="flex min-w-0 items-center gap-2 rounded-md px-2 py-1 text-body text-fg-secondary hover:bg-surface"
 						>
 							<span
-								className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sky-600 text-xs font-bold text-white"
+								className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent-strong text-xs font-bold text-fg-strong"
 								aria-hidden
 							>
 								{user.displayName.charAt(0).toUpperCase()}

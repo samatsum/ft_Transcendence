@@ -168,7 +168,7 @@ Breakdown of the inspected `main_loop` and its migration target:
 | Difference | Implementation | Reason |
 |---|---|---|
 | **One additional API** | `game_set_input_source(game, id, source)` was added | Needed so a disconnected slot's input source can be switched to AI mid-match (the reconnect spec from ②), i.e. a slot's input source must be changeable during a match |
-| **A thin JS wrapper was added** | `sim_create(...)` / `sim_set_input(..., yaw)` | So JS doesn't need to assemble struct pointers itself. The `mv`/`yaw` → `t_input` mapping is the responsibility of platform/headless (② §6-B) |
+| **A thin JS wrapper was added** | `sim_create(...)` / `sim_set_input(..., yaw, fire)` (`fire` added by [Issue #187](https://github.com/samatsum/ft_Transcendence/issues/187)) | So JS doesn't need to assemble struct pointers itself. The `mv`/`yaw`/`act` → `t_input` mapping is the responsibility of platform/headless (② §6-B) |
 | **`game_snapshot` returns a flat f64 array instead of a struct** | 5 header fields + 9 fields per combatant | Avoids sharing struct layout across the WASM boundary; the JS side can read it straight from `HEAPF64`. **JSON encoding and tick numbering are Node's responsibility** (② §5-B) |
 | **`game_apply_snapshot` lives on the client side, not in the sim layer** | `codes/srcs/platform/web/web_snapshot.c` | The server does not use this function (it is not linked into `sim.wasm`). Interpolation is handled by `web/snapshot_interp.js` |
 | **`seed` was added to `match_rules`** | A non-zero value fixes the RNG sequence | So a match is deterministically reproducible given the same input sequence (required for demo recording and B-10 integration tests) |

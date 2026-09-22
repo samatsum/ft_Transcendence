@@ -13,13 +13,13 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const VARIANT_CLASS: Record<ButtonVariant, string> = {
 	primary:
-		'bg-sky-500 text-white hover:bg-sky-400 disabled:bg-slate-700 disabled:text-slate-500',
+		'bg-accent text-fg-strong hover:bg-accent-bright disabled:bg-surface-hover disabled:text-fg-subtle',
 	secondary:
-		'bg-slate-700 text-slate-100 hover:bg-slate-600 disabled:bg-slate-800 disabled:text-slate-500',
+		'bg-surface-hover text-fg hover:bg-surface-active disabled:bg-surface disabled:text-fg-subtle',
 	danger:
-		'bg-rose-600 text-white hover:bg-rose-500 disabled:bg-slate-700 disabled:text-slate-500',
+		'bg-danger-strong text-fg-strong hover:bg-danger disabled:bg-surface-hover disabled:text-fg-subtle',
 	ghost:
-		'bg-transparent text-slate-200 hover:bg-slate-800 disabled:text-slate-600',
+		'bg-transparent text-fg-secondary hover:bg-surface disabled:text-fg-disabled',
 };
 
 export function Button({

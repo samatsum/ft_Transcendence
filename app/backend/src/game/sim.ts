@@ -22,20 +22,24 @@ export const INPUT_SRC_EXTERNAL = 1;
 /** snapshot 用に確保する f64 の個数。header 5 + 9/体 なので RSP 4 席で 41 */
 const SNAPSHOT_MAX_DOUBLES = 256;
 
-/** Issue #198: fast は従来速度、normal / slow はFPS敵ハザードのみを減速する */
+/** fast は従来速度、normal / slow はFPS敵ハザードのみを減速する */
 export const FPS_ENEMY_SPEED_MULTIPLIERS: Readonly<Record<FpsAiSpeed, number>> = {
 	slow: 0.4,
 	normal: 0.7,
 	fast: 1.0,
 };
 
-/** 席の入力。yaw は絶対角で、クライアント権威としてそのまま席の向きになる（申し送り 7） */
+/**
+ * 席の入力。yaw は絶対角で、クライアント権威としてそのまま席の向きになる（申し送り 7）。
+ * fire は引き金の押下状態で、発射間隔（クールダウン）は sim 側の席が持つ（#187）
+ */
 export interface SeatInput {
 	forward: boolean;
 	backward: boolean;
 	strafeLeft: boolean;
 	strafeRight: boolean;
 	yaw: number;
+	fire: boolean;
 }
 
 export const NEUTRAL_INPUT: SeatInput = {
@@ -44,6 +48,7 @@ export const NEUTRAL_INPUT: SeatInput = {
 	strafeLeft: false,
 	strafeRight: false,
 	yaw: 0,
+	fire: false,
 };
 
 /** emcc の MODULARIZE 出力。EXPORTED_FUNCTIONS で公開した分だけを型として書く */
@@ -63,6 +68,7 @@ interface SimModule {
 		strafeLeft: number,
 		strafeRight: number,
 		yaw: number,
+		fire: number,
 	): number;
 	_game_add_combatant(game: number, slot: number, isAi: number): number;
 	_game_set_input_source(game: number, combatantId: number, source: number): number;
@@ -176,6 +182,7 @@ export class SimGame {
 			input.strafeLeft ? 1 : 0,
 			input.strafeRight ? 1 : 0,
 			input.yaw,
+			input.fire ? 1 : 0,
 		);
 	}
 

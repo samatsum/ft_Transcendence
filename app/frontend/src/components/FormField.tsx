@@ -27,15 +27,15 @@ export function FormField({ label, error, hint, required, children }: FormFieldP
 	};
 	return (
 		<div className="flex flex-col gap-1">
-			<label htmlFor={fieldId} className="text-label text-slate-200">
+			<label htmlFor={fieldId} className="text-label text-fg-secondary">
 				{label}
-				{required && <span className="ml-1 text-rose-400" aria-hidden>*</span>}
+				{required && <span className="ml-1 text-danger-bright" aria-hidden>*</span>}
 			</label>
 			{child}
 			{(error || hint) && (
 				<p
 					id={descId}
-					className={`text-caption ${error ? 'text-rose-400' : 'text-slate-400'}`}
+					className={`text-caption ${error ? 'text-danger-bright' : 'text-fg-muted'}`}
 					role={error ? 'alert' : undefined}
 				>
 					{error || hint}

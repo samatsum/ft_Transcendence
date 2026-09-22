@@ -12,12 +12,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
 	WS_CLOSE,
-	envelopeSchema,
-	gameEventSchema,
-	gameServerMessageSchema,
-	playerStatusMessageSchema,
-	snapshotMessageSchema,
-	welcomeMessageSchema,
 	type GameClientMessage,
 	type GameEvent,
 	type PlayerStatusMessage,
@@ -26,6 +20,11 @@ import {
 } from '@ft/shared';
 
 import { markGameRoomFinished } from './gameRouteState.js';
+import { handleGameServerMessage } from '../ws/gameMessageHandler.js';
+import {
+	closeWebSocketOnCleanup,
+	deferWebSocketConnection,
+} from '../ws/webSocketLifecycle.js';
 
 /** 受信 snapshot に到着時刻（performance.now ミリ秒）を紐づけて保持する */
 export interface TimedSnapshot {
@@ -160,63 +159,32 @@ export function useGameSocket(roomId: string): UseGameSocketResult {
 
 			ws.onmessage = (ev: MessageEvent<string>) => {
 				if (cancelled || wsRef.current !== ws) return;
-				let raw: unknown;
-				try {
-					raw = JSON.parse(ev.data);
-				} catch {
-					return; // 開発ログへ落とすのは今後の TODO（コンソールゼロ運用）
-				}
-				const env = envelopeSchema.safeParse(raw);
-				if (!env.success) return;
-				switch (env.data.t) {
-					case 'welcome': {
-						const w = welcomeMessageSchema.safeParse(raw);
-						if (w.success) setWelcome(w.data.d);
-						return;
-					}
-					case 'snapshot': {
-						const s = snapshotMessageSchema.safeParse(raw);
-						if (!s.success) return;
-						const timed: TimedSnapshot = {
-							receivedAtMs: performance.now(),
-							payload: s.data.d,
-						};
+				handleGameServerMessage(ev.data, {
+					onWelcome: setWelcome,
+					onSnapshot: (payload) => {
+						const timed: TimedSnapshot = { receivedAtMs: performance.now(), payload };
 						const buf = snapshotBufferRef.current;
 						buf.push(timed);
 						if (buf.length > SNAPSHOT_BUFFER_MAX) {
 							buf.splice(0, buf.length - SNAPSHOT_BUFFER_MAX);
 						}
-						return;
-					}
-					case 'event': {
-						const e = gameEventSchema.safeParse(raw);
-						if (e.success) {
-							const event = e.data.d;
-							const id = nextEventIdRef.current++;
-							setPendingEvents((prev) => enqueueGameEvent(prev, id, event));
-							if (event.kind === 'match_end') {
-								markGameRoomFinished(roomId);
-								setMatchEndEvent(event);
-							}
+					},
+					onEvent: (event) => {
+						const id = nextEventIdRef.current++;
+						setPendingEvents((prev) => enqueueGameEvent(prev, id, event));
+						if (event.kind === 'match_end') {
+							markGameRoomFinished(roomId);
+							setMatchEndEvent(event);
 						}
-						return;
-					}
-					case 'player_status': {
-						const p = playerStatusMessageSchema.safeParse(raw);
-						if (!p.success) return;
+					},
+					onPlayerStatus: (payload) => {
 						setPlayerStatus((prev) => {
 							const next = new Map(prev);
-							next.set(p.data.d.slot, p.data.d.state);
+							next.set(payload.slot, payload.state);
 							return next;
 						});
-						return;
-					}
-					default: {
-						// discriminated union の網羅チェック（gameServerMessageSchema）は
-						// error などを含めた safeParse で握るのみ（受入 №6）
-						gameServerMessageSchema.safeParse(raw);
-					}
-				}
+					},
+				});
 			};
 
 			ws.onclose = (ev: CloseEvent) => {
@@ -243,14 +211,15 @@ export function useGameSocket(roomId: string): UseGameSocketResult {
 			};
 		}
 
-		connect();
+		const cancelInitialConnect = deferWebSocketConnection(connect);
 
 		return () => {
 			cancelled = true;
+			cancelInitialConnect();
 			if (reconnectTimer) clearTimeout(reconnectTimer);
 			const ws = wsRef.current;
 			wsRef.current = null;
-			if (ws && ws.readyState <= WebSocket.OPEN) ws.close(WS_CLOSE.normal);
+			if (ws) closeWebSocketOnCleanup(ws);
 		};
 	}, [roomId]);
 

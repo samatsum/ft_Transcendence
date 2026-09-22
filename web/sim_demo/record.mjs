@@ -104,7 +104,7 @@ function takeSnapshot(tick) {
 let yaw = 0;
 function driveExternalSeat(tick) {
 	yaw += 0.9 / TICK_HZ + 0.35 * Math.sin(tick / 47) / TICK_HZ;
-	M._sim_set_input(game, VIEW_ID, 1, 0, 0, 0, yaw);
+	M._sim_set_input(game, VIEW_ID, 1, 0, 0, 0, yaw, 0);
 }
 
 const snapshots = [];

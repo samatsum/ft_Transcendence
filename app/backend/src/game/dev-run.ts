@@ -37,7 +37,7 @@ const EXPECT = { snapshots: 809, finishedAtTick: 1558, winner: 1, score: [0, 3] 
 function pseudoInput(tick: number, yaw: number): { input: SeatInput; yaw: number } {
 	const next = yaw + 0.9 / TICK_HZ + (0.35 * Math.sin(tick / 47)) / TICK_HZ;
 	return {
-		input: { forward: true, backward: false, strafeLeft: false, strafeRight: false, yaw: next },
+		input: { forward: true, backward: false, strafeLeft: false, strafeRight: false, yaw: next, fire: false },
 		yaw: next,
 	};
 }

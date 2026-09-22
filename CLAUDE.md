@@ -109,6 +109,7 @@ fix(133): 再接続時に seat が解放されない問題を直す
 
 ```bash
 npm run typecheck     # shared / backend / frontend
+npm test              # vitest（現状 frontend のみ）
 npm run build
 npm run check:lobby   # ロビーWSの受入検査
 make check            # C の lint

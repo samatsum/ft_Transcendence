@@ -96,9 +96,9 @@ Layer structure (bottom to top):
 
 **Input capture** (the contract that connects to the E-08 JS side):
 
-- Clicking the Canvas starts capture; `Esc` releases it (movement input is not sent while released).
+- Clicking the Canvas (or `Enter` while the Canvas has focus) starts capture; `Esc` releases it (movement and fire input are not sent while released). `Space` is **not** a capture key — it is fire ([Issue #187](https://github.com/samatsum/ft_Transcendence/issues/187)).
 - While capturing, default browser behavior for arrow keys etc. (scrolling) is prevented via `preventDefault`.
-- keydown/keyup → logical axes → sends `input { seq, yaw, mv }` at 30Hz (② §5-A. `hand` is never sent = D-14, `act` is fixed at 0).
+- keydown/keyup → logical axes → sends `input { seq, yaw, mv, act }` at 30Hz (② §5-A. `hand` is never sent = D-14). `act` bit0 is set while `Space` is held; hits are decided by the server. While it is held the renderer also calls `_web_play_shot` so your own pistol animates locally (animation only — no local hit test).
 - Rotation (←→) is integrated into yaw locally and reflected immediately (the only prediction in ②). All keys are released on tab hidden (`visibilitychange`) (prevents stuck-key accidents).
 
 ### 3.4 Profile (`/profile/:id`)
