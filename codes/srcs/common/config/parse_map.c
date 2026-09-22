@@ -92,11 +92,11 @@ static int
 	}
 	i = 0;
 	while (i < total) {
-		if (config->map.data[i] == 'P') {
-			flags[i] = CELL_PATROL;
-		} else {
-			flags[i] = 0;
-		}
+		flags[i] = 0;
+		if (config->map.data[i] == 'P')
+			flags[i] = flags[i] | CELL_PATROL;
+		if (config->map.data[i] >= 'k' && config->map.data[i] < 'p')
+			flags[i] = flags[i] | CELL_COLLECTIBLE;
 		i++;
 	}
 	config->map.flags = flags;

@@ -296,8 +296,11 @@ async function checkTwoClientsPlay(): Promise<string[]> {
 
 	const sizes = a.received.filter((m) => m.t === 'snapshot').map((m) => JSON.stringify(m).length);
 	const avg = Math.round(sizes.reduce((x, y) => x + y, 0) / Math.max(1, sizes.length));
-	console.log(`  受入 №5: snapshot avg=${avg}B max=${Math.max(...sizes)}B (< 1KB)`);
-	if (avg >= 1024) bad.push(`受入 №5 違反: snapshot が 1KB 超 (avg=${avg})`);
+	const max = Math.max(...sizes);
+	console.log(`  受入 №5: snapshot avg=${avg}B max=${max}B (< 1KB)`);
+	if (avg >= 1024 || max >= 1024) {
+		bad.push(`受入 №5 違反: snapshot が 1KB 以上 (avg=${avg}, max=${max})`);
+	}
 
 	a.close();
 	b.close();

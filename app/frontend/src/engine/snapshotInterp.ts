@@ -12,10 +12,11 @@
 import type { SnapshotPayload } from '@ft/shared';
 
 // フラット f64 配列のレイアウト（C 側 codes/includes/platform/sim.h の #define と一致）:
-//   HEADER: [state, winner(-1=未決着), score_red, score_blue, 戦闘員数N]
+//   HEADER: [state, winner(-1=未決着), score_red, score_blue, 戦闘員数N,
+//            総収集数, 収集済み数, 扉開放, 収集済み座標数]
 //   PER   : [id, team, hand, x, y, dir, alive, is_ai, respawn_s]
 // i 番目の戦闘員は out[HEADER + i*PER + フィールド番号]
-export const SNAP_HEADER_DOUBLES = 5;
+export const SNAP_HEADER_DOUBLES = 9;
 export const SNAP_COMBATANT_DOUBLES = 9;
 
 // match.state 文字列 → sim.h の数値

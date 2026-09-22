@@ -83,5 +83,7 @@ int
 	game_apply_snapshot(struct s_game* game, const double* snap, int len, int view_id);
 int
 	web_apply_snapshot(const double* snap, int len, int view_id);
+int
+	web_apply_world_delta(const double* collected, int len, int doors_open);
 
 #endif

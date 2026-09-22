@@ -42,6 +42,7 @@ export default function GameView() {
 		status,
 		welcome,
 		snapshotBufferRef,
+		worldProgressRef,
 		pendingEvents,
 		matchEndEvent,
 		acknowledgeEvents,
@@ -102,6 +103,7 @@ export default function GameView() {
 		canvasRef,
 		welcome,
 		snapshotBufferRef,
+		worldProgressRef,
 		localYawRef,
 		fireHeldRef,
 	});

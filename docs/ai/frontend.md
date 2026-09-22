@@ -85,7 +85,7 @@ Layer structure (bottom to top):
 
 | HUD element | Content | Data source |
 |---|---|---|
-| Score bar (top center) | RSP: `[Red 7 - 4 Blue]` with team colors. FPS: score hidden (it's a race, so only progress is shown = collected count `x/y`) | `snapshot.match.score` / `world_delta` |
+| Score bar / progress | RSP: top-center `[Red 7 - 4 Blue]` with team colors. FPS: top-center `FPS — ゴールへ到達せよ`; the C Canvas HUD at lower left shows `Collected: x / y`, switching to `ALL COLLECTED!` when the shared world is complete | `snapshot.match.score` / `world_delta` |
 | Opponent status row (top corner) | Per seat: name + status badge `connected / disconnected(n sec left) / AI` | `player_status` + `event(player_disconnected).grace_ms` (per the requirement in ② §7-B) |
 | Own hand | **Not shown in the HUD** (drawn at the bottom of the screen by the C renderer's `render_rsp_hand`). On `hand_changed` (own) only a flash at the Canvas edge occurs | `event(hand_changed)` |
 | Scoring effect | On `point_scored`, flash the screen edge in the scoring team's color + emphasize the score bar | `event(point_scored)` (the authoritative value comes from the snapshot side — this event is used for the effect only. ② §5-D) |

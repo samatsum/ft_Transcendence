@@ -16,6 +16,8 @@ int
 	game_apply_snapshot(t_game* game, const double* snap, int len, int view_id);
 int
 	web_apply_snapshot(const double* snap, int len, int view_id);
+int
+	web_apply_world_delta(const double* collected, int len, int doors_open);
 static const double*
 	find_view_entry(const double* snap, int count, int view_id);
 static void
@@ -32,6 +34,10 @@ static t_enemy*
 	claim_display_node(t_game* game, const double* snap, int count);
 static void
 	park_stale_nodes(t_game* game, const double* snap, int count);
+static void
+	remove_collected_sprite(t_game* game, int x, int y);
+static int
+	is_display_combatant_sprite(t_game* game, t_sprite* sprite);
 
 /* ************************************************************************** */
 // 受信スナップショット（補間済みのフラット f64 配列。レイアウトは
@@ -79,6 +85,78 @@ int
 	web_apply_snapshot(const double* snap, int len, int view_id)
 {
 	return (game_apply_snapshot(web_game(), snap, len, view_id));
+}
+
+/* ************************************************************************** */
+// サーバー正本の収集済み座標（全量）と扉状態を表示専用 world に反映する
+// 座標は初期収集物フラグで検証し、壊れた WS データで任意セルを書き換えない
+int
+	web_apply_world_delta(const double* collected, int len, int doors_open)
+{
+	t_game*	game;
+	int		i;
+	int		x;
+	int		y;
+	int		total;
+
+	game = web_game();
+	if (!game || len < 0 || len % 2 != 0) return (0);
+	// Canvas 内 HUD の収集数もサーバーから受けた完全状態を正本にする
+	game->world.collected = len / 2;
+	total = game->config.map.rows * game->config.map.columns;
+	i = 0;
+	while (collected && i < len) {
+		x = (int)collected[i++];
+		y = (int)collected[i++];
+		if (x >= 0 && y >= 0 && x < game->config.map.columns
+			&& y < game->config.map.rows
+			&& (game->config.map.flags[y * game->config.map.columns + x]
+				& CELL_COLLECTIBLE)) {
+			game->config.map.data[y * game->config.map.columns + x] = 'A';
+			remove_collected_sprite(game, x, y);
+		}
+	}
+	if (doors_open) {
+		i = 0;
+		while (i < total) {
+			if (game->config.map.data[i] == DOOR_CHAR) game->config.map.data[i] = '0';
+			i++;
+		}
+	}
+	return (1);
+}
+
+/* ************************************************************************** */
+// 収集セル上に重なった戦闘員を消さず、マップ由来アイテムだけを消す
+static void
+	remove_collected_sprite(t_game* game, int x, int y)
+{
+	t_sprite*	cur;
+
+	cur = game->world.sprites;
+	while (cur) {
+		if ((int)cur->pos.x == x && (int)cur->pos.y == y
+			&& !is_display_combatant_sprite(game, cur)) {
+			delete_sprite_node(&game->world.sprites, cur);
+			return ;
+		}
+		cur = cur->next;
+	}
+}
+
+/* ************************************************************************** */
+// sprite が席またはハザードとして敵リストに所有されているかを返す
+static int
+	is_display_combatant_sprite(t_game* game, t_sprite* sprite)
+{
+	t_enemy*	cur;
+
+	cur = game->world.enemies;
+	while (cur) {
+		if (cur->sprite == sprite) return (1);
+		cur = cur->next;
+	}
+	return (0);
 }
 
 /* ************************************************************************** */
