@@ -114,7 +114,7 @@
 				<ul style="margin: 10px 0 0 20px; padding: 0;">
 					<li><code>native</code> — Cエンジンを<code>make</code>でLinux実行ファイルとしてビルドし、<code>make check</code>（lint）・<code>make test</code>（sim受入テスト85件）・5枚のマップでの起動スモークまで通す</li>
 					<li><code>wasm</code> — <code>make web sim</code>で<code>render.wasm</code>と<code>sim.wasm</code>をビルドし、Node上で<code>record.mjs</code>によるsim通し実行まで確認する</li>
-					<li><code>web-app</code> — <code>app/</code>のTSモノレポ（shared/backend/frontend）を<code>npm ci</code>・型検査・ビルドし、backendを実際に起動して<code>/api/health</code>が返るか確認する</li>
+					<li><code>web-app</code> — <code>app/</code>のTSモノレポ（shared/backend/frontend）を<code>npm ci</code>・lint・型検査・ユニットテスト（Vitest）・ビルドし、backendを実際に起動して<code>/api/health</code>が返るか確認する</li>
 				</ul>
 				<span style="display: block; margin-top: 8px;">
 					3つとも独立したジョブなので、どれか1つが赤くても他は影響を受けない（例: <code>web-app</code>だけ落ちていても<code>native</code>と<code>wasm</code>は個別に緑になる）。
