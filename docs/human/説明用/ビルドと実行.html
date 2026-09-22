@@ -439,7 +439,7 @@ const createSim = require(here('../build/sim.js'));
 const M = await createSim();
 
 // あとは C の関数を M._関数名(...) で呼べる
-const game = M._sim_create(mapPtr, 1, TARGET_SCORE, SEED);   // C の sim_create
+const game = M._sim_create(mapPtr, 1, TARGET_SCORE, SEED, FPS_ENEMY_SPEED_MULT);   // C の sim_create
 M._game_step(game, 1 / 30);                                  // C の game_step
 M._game_snapshot(game, snapPtr, 256);                        // C の game_snapshot</code></pre>
 			<p class="section-intro">

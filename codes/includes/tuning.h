@@ -56,6 +56,10 @@
 # define ENEMY_TRACK_BOOST			1.5
 # define ENEMY_PATROL_SPEED_MULT	1.0
 # define ENEMY_TRACK_SPEED_MULT		(ENEMY_PATROL_SPEED_MULT * ENEMY_TRACK_BOOST)
+// FPSの部屋設定 ai_speed が巡回・追跡の両方へ掛ける速度倍率
+# define FPS_ENEMY_SPEED_SLOW		0.4
+# define FPS_ENEMY_SPEED_NORMAL		0.7
+# define FPS_ENEMY_SPEED_FAST		1.0
 // RSPのNPC共通の速度係数（追跡・逃走・徘徊すべてに掛かる）。基準 enemy_speed が
 // プレイヤーの move_speed より速いため、RSPでは全体を遅くしてプレイヤーが追える/
 // 逃げられるようにする。0.3 で既定の追跡速度がプレイヤーの歩行をわずかに下回る

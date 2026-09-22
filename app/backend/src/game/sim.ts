@@ -3,6 +3,7 @@
 // 呼び出し順の正本は 3-エンジンPhase3レポート「B-10 への申し送り」1。
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import type { FpsAiSpeed } from '@ft/shared';
 
 // emcc が生成する sim.js は CommonJS。ルート package.json の "type": "module" が
 // これを ESM と誤認して `createSim is not a function` になる回帰が過去に CI を
@@ -20,6 +21,13 @@ export const INPUT_SRC_EXTERNAL = 1;
 
 /** snapshot 用に確保する f64 の個数。header 5 + 9/体 なので RSP 4 席で 41 */
 const SNAPSHOT_MAX_DOUBLES = 256;
+
+/** fast は従来速度、normal / slow はFPS敵ハザードのみを減速する */
+export const FPS_ENEMY_SPEED_MULTIPLIERS: Readonly<Record<FpsAiSpeed, number>> = {
+	slow: 0.4,
+	normal: 0.7,
+	fast: 1.0,
+};
 
 /**
  * 席の入力。yaw は絶対角で、クライアント権威としてそのまま席の向きになる（申し送り 7）。
@@ -45,7 +53,13 @@ export const NEUTRAL_INPUT: SeatInput = {
 
 /** emcc の MODULARIZE 出力。EXPORTED_FUNCTIONS で公開した分だけを型として書く */
 interface SimModule {
-	_sim_create(cubTextPtr: number, isRsp: number, targetScore: number, seed: number): number;
+	_sim_create(
+		cubTextPtr: number,
+		isRsp: number,
+		targetScore: number,
+		seed: number,
+		fpsEnemySpeedMultiplier: number,
+	): number;
 	_sim_set_input(
 		game: number,
 		combatantId: number,
@@ -95,6 +109,8 @@ export interface SimGameOptions {
 	targetScore: number;
 	/** 0 = 時刻由来（本番） / 非 0 = 乱数系列固定（テスト・再現用。申し送り 5） */
 	seed: number;
+	/** FPS の巡回敵速度。省略時はロビー既定と同じ normal */
+	aiSpeed?: FpsAiSpeed;
 }
 
 /**
@@ -123,6 +139,7 @@ export class SimGame {
 				options.mode === 'rsp' ? 1 : 0,
 				options.targetScore,
 				options.seed,
+				FPS_ENEMY_SPEED_MULTIPLIERS[options.aiSpeed ?? 'normal'],
 			);
 		} finally {
 			module._free(textPtr);

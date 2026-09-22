@@ -60,7 +60,7 @@ static void
 		track_target(cur, game, target, delta_time);
 		return ;
 	}
-	patrol_enemy(cur, game, delta_time, 1.0);
+	patrol_enemy(cur, game, delta_time, game->fps.enemy_speed_mult);
 }
 
 /* ************************************************************************** */
@@ -86,7 +86,8 @@ static void
 		}
 	}
 	cur->dir_angle = atan2(aim_y - cur->sprite->pos.y, aim_x - cur->sprite->pos.x);
-	step_enemy(cur, game, delta_time, ENEMY_TRACK_SPEED_MULT);
+	step_enemy(cur, game, delta_time,
+		ENEMY_TRACK_SPEED_MULT * game->fps.enemy_speed_mult);
 }
 
 /* ************************************************************************** */
