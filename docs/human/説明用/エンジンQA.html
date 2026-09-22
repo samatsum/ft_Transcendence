@@ -254,12 +254,12 @@
 				<article class="card">
 					<h3>Q. スナップショットの形は？ tickは誰が付ける？</h3>
 					<p>
-						A. フラットなf64配列（ヘッダ5 + 戦闘員1人9）。<strong>tickはsimが持たずNodeが採番</strong>、
+						A. フラットなf64配列（ヘッダ7 + 戦闘員1人9、FPSでは収集済み座標を追加）。<strong>tickはsimが持たずNodeが採番</strong>、
 						JSON化もNodeの責務。レイアウトは<code>sim.h</code>の<code>#define</code>が正本。
 					</p>
 					<p style="margin-top: 10px; font-size: 0.86rem;">
 						確認: <a href="../../../codes/includes/platform/sim.h"><code>includes/platform/sim.h</code></a>（<code>SIM_SNAP_*</code>）/
-						<a href="../../../codes/srcs/platform/headless/sim_api.c"><code>platform/headless/sim_api.c:261</code></a>（<code>game_snapshot</code>）<br>
+						<a href="../../../codes/srcs/platform/headless/sim_api.c"><code>platform/headless/sim_api.c:264</code></a>（<code>game_snapshot</code>）<br>
 						なぜ: <a href="../説明用/サーバ権威モデル.html">サーバ権威モデル.html</a>「スナップショット」
 					</p>
 				</article>
