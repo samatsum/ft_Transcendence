@@ -16,7 +16,8 @@ export function Countdown({ seconds }: CountdownProps) {
 			aria-live="assertive"
 			className="pointer-events-none absolute inset-0 flex items-center justify-center"
 		>
-			<div className="rounded-full bg-black/70 px-12 py-8 font-mono text-8xl font-bold text-white shadow-2xl">
+			{/* bg-black/70 は 3D の上のスクリム。理由は ScoreBar と同じ（#167） */}
+			<div className="rounded-full bg-black/70 px-12 py-8 font-mono text-8xl font-bold text-fg-strong shadow-2xl">
 				{display}
 			</div>
 		</div>

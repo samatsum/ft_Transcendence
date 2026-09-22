@@ -169,7 +169,8 @@ export default function GameView() {
 	const onCancelExit = useCallback(() => setExitPromptOpen(false), []);
 
 	return (
-		<main className="flex min-h-screen flex-col items-center justify-center gap-2 bg-slate-950 p-2 text-slate-100">
+		<main className="flex min-h-screen flex-col items-center justify-center gap-2 bg-page p-2 text-fg">
+			{/* bg-black は Canvas の余白（レターボックス）。面の色ではないのでトークンに寄せない（#167） */}
 			<div className="relative w-full max-w-[1280px] aspect-video bg-black">
 				<canvas
 					ref={canvasRef}
@@ -179,7 +180,11 @@ export default function GameView() {
 					aria-label="game view"
 				/>
 
-				{/* 読み込み中と描画エラーは HUD 前に出す(HUD は welcome 後にしか描かない) */}
+				{/* 読み込み中と描画エラーは HUD 前に出す(HUD は welcome 後にしか描かない)。
+				    **ここの bg-black/60 と bg-rose-900/80 はトークンに寄せない（#167）。**
+				    3D の上に敷く半透明のスクリムで、可読性のための機能であって面の色ではない。
+				    パレットの surface 系は不透明、danger は rose-500 で、どちらも
+				    この用途には明るすぎる（下の映像が透けなくなる／文字が沈む） */}
 				<div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 text-center">
 					{rendererStatus === 'loading-glue' && (
 						<p className="rounded bg-black/60 px-4 py-2 text-body">
@@ -236,11 +241,11 @@ export default function GameView() {
 			    課題書 III.3 の「2つの画面サイズで崩れない」はモジュール点ではなく必須要件。
 			    matchMedia ではなく CSS の md ブレークポイントで出し分ける
 			    （リサイズ・画面回転で状態がずれず、初回描画で一瞬ちらつくこともない） */}
-			<p className="w-full max-w-[1280px] rounded bg-amber-500/90 px-3 py-2 text-center text-caption text-slate-950 md:hidden">
+			<p className="w-full max-w-[1280px] rounded bg-warning/90 px-3 py-2 text-center text-caption text-page md:hidden">
 				操作にはキーボードが必要です。この画面幅では観戦のみになります。
 			</p>
 
-			<footer className="flex w-full max-w-[1280px] flex-wrap items-center justify-between gap-x-3 text-caption text-slate-400">
+			<footer className="flex w-full max-w-[1280px] flex-wrap items-center justify-between gap-x-3 text-caption text-fg-muted">
 				<span>
 					room={roomId} · view={welcome?.combatant_id ?? '-'} · slot={welcome?.slot ?? '-'}
 				</span>

@@ -14,6 +14,9 @@ interface ConnectionBannerProps {
 export function ConnectionBanner({ status, closeCode }: ConnectionBannerProps) {
 	if (status === 'open') return null;
 	let label = '';
+	// **tone はトークンに寄せない（#167）。** 3D の上に敷く半透明のスクリムで、
+	// 可読性のための機能であって面の色ではない。パレットの warning / danger は
+	// 500 の明度しか無く、ここに使うと下の映像が見えなくなる
 	let tone = 'bg-amber-900/90';
 	if (status === 'connecting') label = '接続中…';
 	else if (status === 'reconnecting') label = '再接続中…';
@@ -25,7 +28,7 @@ export function ConnectionBanner({ status, closeCode }: ConnectionBannerProps) {
 		<div className="pointer-events-none absolute inset-x-0 bottom-4 flex justify-center">
 			<div
 				role="status"
-				className={`rounded-md px-4 py-2 text-label text-white shadow ${tone}`}
+				className={`rounded-md px-4 py-2 text-label text-fg-strong shadow ${tone}`}
 			>
 				{label}
 			</div>

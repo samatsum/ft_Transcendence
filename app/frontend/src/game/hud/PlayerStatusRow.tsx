@@ -18,6 +18,9 @@ const STATE_LABEL: Record<SeatInfo['state'], string> = {
 	ai: 'AI',
 };
 
+// **状態ピルの色はトークンに寄せない（#167）。** 3つで1組の対比表で、
+// パレットには「背景 700 / 文字 100」の段が無い（success / warning は 500 のみ）。
+// 1つだけトークン化すると3色の明度が揃わなくなるため、組ごと据え置く
 const STATE_CLASS: Record<SeatInfo['state'], string> = {
 	connected: 'bg-emerald-700 text-emerald-100',
 	grace: 'bg-amber-700 text-amber-100',
@@ -32,10 +35,10 @@ function SeatBadge({ seat, isSelf, nowMs }: { seat: SeatInfo; isSelf: boolean; n
 	return (
 		<div
 			className={`flex items-center gap-2 rounded px-2 py-1 text-caption ${
-				isSelf ? 'ring-1 ring-sky-400' : ''
+				isSelf ? 'ring-1 ring-accent-bright' : ''
 			} bg-black/60`}
 		>
-			<span className="text-slate-100">{seat.name}</span>
+			<span className="text-fg">{seat.name}</span>
 			<span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${STATE_CLASS[seat.state]}`}>
 				{STATE_LABEL[seat.state]}
 				{remaining !== null && ` (残${remaining}秒)`}
