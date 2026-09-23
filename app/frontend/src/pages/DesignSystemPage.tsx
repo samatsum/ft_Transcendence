@@ -8,7 +8,8 @@ import { useToast } from '../contexts/ToastContext.js';
 // 新しいタイポグラフィトークンやアイコンを追加すると自動的にここへ並ぶ。
 // 本番ビルドには含めない（App.tsx 側で import.meta.env.DEV 限定のルートにする）
 
-const { Button, Card, ColorSwatch, FormField, Input, Modal } = DesignSystem.UI;
+const { Alert, Button, Card, ColorSwatch, FormField, Input, LinkButton, Modal, Select } =
+	DesignSystem.UI;
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
 	return (
@@ -72,6 +73,22 @@ export default function DesignSystemPage() {
 				</div>
 			</Section>
 
+			<Section title="UI — LinkButton">
+				<p className="text-body text-fg-muted">
+					画面遷移するリンクをボタンの見た目で出す。variant は Button と共通。
+				</p>
+				<div className="flex flex-wrap gap-3">
+					{(['primary', 'secondary', 'danger', 'ghost'] as const).map((variant) => (
+						<div key={variant} className="flex flex-col items-center gap-2">
+							<LinkButton to="/dev/design-system" variant={variant}>
+								{variant}
+							</LinkButton>
+							<code className="text-caption text-fg-subtle">variant=&quot;{variant}&quot;</code>
+						</div>
+					))}
+				</div>
+			</Section>
+
 			<Section title="UI — Card">
 				<Card>
 					<p className="text-body text-slate-200">Card の中身は children 任せ</p>
@@ -83,6 +100,33 @@ export default function DesignSystemPage() {
 					<FormField label="メールアドレス" hint="例: you@example.com">
 						<Input type="email" placeholder="you@example.com" />
 					</FormField>
+				</div>
+			</Section>
+
+			<Section title="UI — FormField + Select">
+				<div className="flex max-w-sm flex-col gap-4">
+					<FormField label="AI速度" hint="Input と同じ見た目">
+						<Select defaultValue="normal">
+							<option value="slow">遅い</option>
+							<option value="normal">標準</option>
+							<option value="fast">速い</option>
+						</Select>
+					</FormField>
+					<FormField label="マップ" error="マップを選んでください">
+						<Select defaultValue="">
+							<option value="">未選択</option>
+						</Select>
+					</FormField>
+				</div>
+			</Section>
+
+			<Section title="UI — Alert">
+				<div className="flex max-w-md flex-col gap-3">
+					{(['info', 'success', 'warning', 'error'] as const).map((kind) => (
+						<Alert key={kind} kind={kind}>
+							{kind} のメッセージ枠です（ページ内に残る表示）
+						</Alert>
+					))}
 				</div>
 			</Section>
 

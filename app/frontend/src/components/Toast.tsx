@@ -1,10 +1,7 @@
 import { useEffect } from 'react';
 import type { ToastItem, ToastKind } from '../contexts/ToastContext.js';
-import { CheckCircleIcon } from './icons/CheckCircleIcon.js';
 import { CloseIcon } from './icons/CloseIcon.js';
-import { ExclamationCircleIcon } from './icons/ExclamationCircleIcon.js';
-import { InfoCircleIcon } from './icons/InfoCircleIcon.js';
-import { WarningTriangleIcon } from './icons/WarningTriangleIcon.js';
+import { STATUS_ICON, STATUS_ICON_CLASS } from './statusKind.js';
 
 // ④ §2「Toast: エラー・通知の共通表示枠（③§1-A のエラーエンベロープ `msg` を表示、
 // `code` は開発者コンソールに出さない — コンソールゼロ運用）」
@@ -18,20 +15,6 @@ const KIND_CLASS: Record<ToastKind, string> = {
 	success: 'border-success/40 bg-surface-low text-fg',
 	warning: 'border-warning/40 bg-surface-low text-fg',
 	error: 'border-danger/40 bg-surface-low text-fg',
-};
-
-const KIND_ICON: Record<ToastKind, typeof InfoCircleIcon> = {
-	info: InfoCircleIcon,
-	success: CheckCircleIcon,
-	warning: WarningTriangleIcon,
-	error: ExclamationCircleIcon,
-};
-
-const KIND_ICON_CLASS: Record<ToastKind, string> = {
-	info: 'text-accent-bright',
-	success: 'text-success',
-	warning: 'text-warning',
-	error: 'text-danger',
 };
 
 interface ToastProps {
@@ -48,13 +31,13 @@ function Toast({ toast, onDismiss }: ToastProps) {
 		const id = setTimeout(() => onDismiss(toast.id), t);
 		return () => clearTimeout(id);
 	}, [toast, onDismiss]);
-	const KindIcon = KIND_ICON[toast.kind];
+	const KindIcon = STATUS_ICON[toast.kind];
 	return (
 		<div
 			role={toast.kind === 'error' ? 'alert' : 'status'}
 			className={`flex items-start gap-3 rounded-md border px-4 py-3 shadow-lg ${KIND_CLASS[toast.kind]}`}
 		>
-			<KindIcon className={`h-5 w-5 flex-shrink-0 ${KIND_ICON_CLASS[toast.kind]}`} />
+			<KindIcon className={`h-5 w-5 flex-shrink-0 ${STATUS_ICON_CLASS[toast.kind]}`} />
 			<p className="flex-1 text-body">{toast.message}</p>
 			<button
 				type="button"
