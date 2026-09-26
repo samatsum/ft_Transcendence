@@ -26,7 +26,7 @@ export default function DesignSystemPage() {
 		<div className="mx-auto flex max-w-4xl flex-col gap-10 px-4 py-12">
 			<div>
 				<h1 className={DesignSystem.Typography.headingLg}>Design System</h1>
-				<p className="text-body text-slate-400">
+				<p className="text-body text-fg-muted">
 					開発専用の部品一覧。本番ビルドには含まれません。
 				</p>
 			</div>
@@ -35,7 +35,7 @@ export default function DesignSystemPage() {
 				<div className="flex flex-col gap-3">
 					{Object.entries(DesignSystem.Typography).map(([name, className]) => (
 						<div key={name} className="flex items-baseline gap-4">
-							<code className="w-32 shrink-0 text-caption text-slate-500">{name}</code>
+							<code className="w-32 shrink-0 text-caption text-fg-subtle">{name}</code>
 							<span className={className}>The quick brown fox — サンプル文字列</span>
 						</div>
 					))}
@@ -54,8 +54,8 @@ export default function DesignSystemPage() {
 				<div className="flex flex-wrap gap-6">
 					{Object.entries(DesignSystem.Icon).map(([name, IconComponent]) => (
 						<div key={name} className="flex flex-col items-center gap-2">
-							<IconComponent className="h-6 w-6 text-slate-100" />
-							<code className="text-caption text-slate-500">{name}</code>
+							<IconComponent className="h-6 w-6 text-fg" />
+							<code className="text-caption text-fg-subtle">{name}</code>
 						</div>
 					))}
 				</div>
@@ -66,7 +66,7 @@ export default function DesignSystemPage() {
 					{(['primary', 'secondary', 'danger', 'ghost'] as const).map((variant) => (
 						<div key={variant} className="flex flex-col items-center gap-2">
 							<Button variant={variant}>{variant}</Button>
-							<code className="text-caption text-slate-500">variant=&quot;{variant}&quot;</code>
+							<code className="text-caption text-fg-subtle">variant=&quot;{variant}&quot;</code>
 						</div>
 					))}
 				</div>
@@ -74,7 +74,7 @@ export default function DesignSystemPage() {
 
 			<Section title="UI — Card">
 				<Card>
-					<p className="text-body text-slate-200">Card の中身は children 任せ</p>
+					<p className="text-body text-fg-secondary">Card の中身は children 任せ</p>
 				</Card>
 			</Section>
 
@@ -91,7 +91,7 @@ export default function DesignSystemPage() {
 					Modal を開く
 				</Button>
 				<Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Modal サンプル">
-					<p className="text-body text-slate-200">これは Modal の中身です。</p>
+					<p className="text-body text-fg-secondary">これは Modal の中身です。</p>
 				</Modal>
 			</Section>
 
@@ -110,7 +110,7 @@ export default function DesignSystemPage() {
 			</Section>
 
 			<Section title="UI — Header / Footer / Layout">
-				<p className="text-body text-slate-400">
+				<p className="text-body text-fg-muted">
 					この3つは構造用の部品です。単体では並べず、このページ自体の上下(Header/Footer)と
 					全体の骨格(Layout)がそのまま実例になっています。
 				</p>
