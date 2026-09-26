@@ -63,16 +63,22 @@ export function MatchEndModal({
 			open
 			onClose={onReturnToLobby}
 			title={describeWinner(end, mode)}
-			backdropClassName="bg-slate-950"
-			panelClassName="max-w-xl border-slate-700 bg-slate-900 text-center [&_h2]:text-heading-lg"
+			backdropClassName="bg-page"
+			panelClassName="max-w-xl border-line bg-surface-low text-center [&_h2]:text-heading-lg"
 			actions={
 				<Button variant="primary" fullWidth onClick={onReturnToLobby}>
 					ロビーへ戻る
 				</Button>
 			}
 		>
+			{/* **RED / BLUE のチーム色はトークンに寄せない（#167）。**
+			    色そのものがルール上の識別子で、danger / accent とは意味が違う。
+			    rose-400 を danger-bright に読み替えると「赤チーム」と「エラー」が
+			    同じトークンになり、片方を変えたときにもう片方が巻き添えになる。
+			    デザインシステムは bonus #10 として完成宣言済み（architecture.md §4.2）なので、
+			    チーム色をパレットへ足す判断も避けている */}
 			<div className="flex flex-col gap-5">
-				<p className="text-label uppercase tracking-[0.2em] text-sky-400">Match Result</p>
+				<p className="text-label uppercase tracking-[0.2em] text-accent-bright">Match Result</p>
 				{mode === 'rsp' && (
 					<div
 						className="flex items-center justify-center gap-5 font-mono"
@@ -82,18 +88,18 @@ export function MatchEndModal({
 							<span className="text-caption font-sans">RED</span>
 							<span className="text-5xl font-semibold">{end.finalScore[0]}</span>
 						</div>
-						<span className="text-heading-md text-slate-500" aria-hidden>—</span>
+						<span className="text-heading-md text-fg-subtle" aria-hidden>—</span>
 						<div className="flex min-w-20 flex-col gap-1 text-sky-400">
 							<span className="text-caption font-sans">BLUE</span>
 							<span className="text-5xl font-semibold">{end.finalScore[1]}</span>
 						</div>
 					</div>
 				)}
-				{resultMessage && <p className="text-body text-slate-300">{resultMessage}</p>}
+				{resultMessage && <p className="text-body text-fg-secondary">{resultMessage}</p>}
 				{matchDetails && matchDetails.players.length > 0 && (
 					<table className="w-full text-left text-caption">
 						<thead>
-							<tr className="border-b border-slate-700 text-left text-slate-400">
+							<tr className="border-b border-line text-left text-fg-muted">
 								<th className="py-1">Slot</th>
 								<th className="py-1">名前</th>
 								<th className="py-1">結果</th>
@@ -101,7 +107,7 @@ export function MatchEndModal({
 						</thead>
 						<tbody>
 							{matchDetails.players.map((p) => (
-								<tr key={p.slot} className="border-b border-slate-800">
+								<tr key={p.slot} className="border-b border-line-subtle">
 									<td className="py-1">{p.slot}</td>
 									<td className="py-1">{p.display_name}{p.is_ai && ' (AI)'}</td>
 									<td className="py-1">{p.result}</td>
@@ -111,10 +117,10 @@ export function MatchEndModal({
 					</table>
 				)}
 				{end.matchId !== null && !matchDetails && !detailsError && (
-					<p className="text-caption text-slate-500">試合詳細を取得しています…</p>
+					<p className="text-caption text-fg-subtle">試合詳細を取得しています…</p>
 				)}
 				{detailsError && (
-					<p className="text-caption text-slate-500">試合詳細を取得できませんでした。</p>
+					<p className="text-caption text-fg-subtle">試合詳細を取得できませんでした。</p>
 				)}
 			</div>
 		</Modal>
