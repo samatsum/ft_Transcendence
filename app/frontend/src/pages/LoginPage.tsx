@@ -4,6 +4,7 @@ import { authApi, loginRequestSchema } from '@ft/shared';
 
 import { ApiError } from '../api/apiError.js';
 import { useApi } from '../api/useApi.js';
+import { Alert } from '../components/Alert.js';
 import { Button } from '../components/Button.js';
 import { Card } from '../components/Card.js';
 import { FormField } from '../components/FormField.js';
@@ -76,12 +77,7 @@ export default function LoginPage() {
 				{/* noValidate: 付けないとブラウザ標準の検証が先に出て、自前の文言が表示されない */}
 				<form className="flex flex-col gap-4" noValidate onSubmit={handleSubmit}>
 					{errors.form && (
-						<p
-							className="rounded-md border border-rose-500 bg-rose-950/40 px-3 py-2 text-body text-rose-200"
-							role="alert"
-						>
-							{errors.form}
-						</p>
+						<Alert kind="error">{errors.form}</Alert>
 					)}
 
 					<FormField label="メールアドレス" error={errors.email} required>
