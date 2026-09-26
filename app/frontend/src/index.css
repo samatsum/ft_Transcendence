@@ -44,6 +44,7 @@
 	--color-danger-strong: var(--color-rose-600);
 	--color-success: var(--color-emerald-500);
 	--color-warning: var(--color-amber-500);
+	--color-warning-bright: var(--color-amber-400);
 
 	/* タイポグラフィトークン */
 	/* ページ見出し */

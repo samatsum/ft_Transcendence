@@ -71,5 +71,6 @@ export const DesignSystem = {
 		dangerStrong: 'bg-danger-strong',
 		success: 'bg-success',
 		warning: 'bg-warning',
+		warningBright: 'bg-warning-bright',
 	},
 } as const;

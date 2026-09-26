@@ -11,9 +11,9 @@ import { useRoomRulesDraft } from '../lobby/useRoomRulesDraft.js';
 
 const STATUS_LABEL: Record<string, { text: string; cls: string }> = {
 	connecting: { text: '接続中…', cls: 'text-fg-muted' },
-	open: { text: '接続済み', cls: 'text-sky-300' },
-	reconnecting: { text: '再接続中…', cls: 'text-amber-300' },
-	closed: { text: '切断', cls: 'text-rose-400' },
+	open: { text: '接続済み', cls: 'text-accent-bright' },
+	reconnecting: { text: '再接続中…', cls: 'text-warning-bright' },
+	closed: { text: '切断', cls: 'text-danger-bright' },
 };
 
 export default function LobbyPage() {
@@ -104,18 +104,18 @@ export default function LobbyPage() {
 					</div>
 					<div>
 						<p className="text-caption text-fg-muted">部屋コード（友達に伝えてください）</p>
-						{/* <p className="text-heading-lg tracking-[0.3em] text-sky-300">{room.code}</p> */}
+						{/* <p className="text-heading-lg tracking-[0.3em] text-accent-bright">{room.code}</p> */}
 						{/*
 						* 部屋コード表示。
 						* break-all: どうしても幅が足りないときは文字の途中でも折り返す（はみ出し防止）。
 						* tracking: 375px では字間を詰め、sm 以上で広げる（読みやすさと幅の両立）。
 						* text-base sm:text-heading-lg: 狭い画面では文字サイズを一段小さくする。
 						*/}
-						<p className="break-all text-base tracking-normal text-sky-300 sm:text-heading-lg sm:tracking-[0.3em]">
+						<p className="break-all text-base tracking-normal text-accent-bright sm:text-heading-lg sm:tracking-[0.3em]">
 							{room.code}
 						</p>
 					</div>
-					<div className="rounded-md border border-slate-700 bg-slate-900/40 p-4">
+					<div className="rounded-md border border-line bg-surface-low/40 p-4">
 						<GameCustomizationFields
 							mode={room.mode}
 							maps={rules.maps}
@@ -144,7 +144,7 @@ export default function LobbyPage() {
 							</div>
 						)}
 						{rules.settingsError && !rules.settingsError.startsWith('先取点') && (
-							<p className="text-body mt-2 text-rose-400" role="alert">
+							<p className="text-body mt-2 text-danger-bright" role="alert">
 								{rules.settingsError}
 							</p>
 						)}
@@ -177,7 +177,7 @@ export default function LobbyPage() {
 			)}
 
 			{error && (
-				<p className="text-body text-rose-400" role="alert">
+				<p className="text-body text-danger-bright" role="alert">
 					{error.message}（{error.code}）
 				</p>
 			)}

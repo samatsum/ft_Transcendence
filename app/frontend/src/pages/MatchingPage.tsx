@@ -58,14 +58,14 @@ export default function MatchingPage() {
 
 			<Card className="flex flex-col gap-2">
 				<p className="text-caption text-fg-muted">部屋コード（友達に伝えてください）</p>
-				{/* <p className="text-heading-lg tracking-[0.3em] text-sky-300">{room.code}</p> */}
+				{/* <p className="text-heading-lg tracking-[0.3em] text-accent-bright">{room.code}</p> */}
 				{/*
 				* 部屋コード表示。
 				* break-all: どうしても幅が足りないときは文字の途中でも折り返す（はみ出し防止）。
 				* tracking: 375px では字間を詰め、sm 以上で広げる（読みやすさと幅の両立）。
 				* text-base sm:text-heading-lg: 狭い画面では文字サイズを一段小さくする。
 				*/}
-				<p className="break-all text-base tracking-normal text-sky-300 sm:text-heading-lg sm:tracking-[0.3em]">
+				<p className="break-all text-base tracking-normal text-accent-bright sm:text-heading-lg sm:tracking-[0.3em]">
 					{room.code}
 				</p>
 				<p className="text-caption text-fg-muted">
@@ -86,7 +86,7 @@ export default function MatchingPage() {
 							)}
 							{seat.is_ai && <span className="text-caption text-fg-muted">AI</span>}
 							{room.host_id === seat.user_id && (
-								<span className="text-caption text-sky-300">ホスト</span>
+								<span className="text-caption text-accent-bright">ホスト</span>
 							)}
 						</li>
 					))}
@@ -126,14 +126,14 @@ export default function MatchingPage() {
 					</div>
 				)}
 				{rules.settingsError && !rules.settingsError.startsWith('先取点') && (
-					<p className="text-body text-rose-400" role="alert">
+					<p className="text-body text-danger-bright" role="alert">
 						{rules.settingsError}
 					</p>
 				)}
 			</Card>
 
 			{error && (
-				<p className="text-body text-rose-400" role="alert">
+				<p className="text-body text-danger-bright" role="alert">
 					{error.message}（{error.code}）
 				</p>
 			)}
