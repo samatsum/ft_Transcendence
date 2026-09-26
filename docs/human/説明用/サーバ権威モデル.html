@@ -693,7 +693,7 @@ typedef enum e_input_source
 					<div>
 						<h3>スナップショットの形は？ tickは誰が付ける？</h3>
 						<p>
-							<strong>A.</strong> フラットなf64配列（ヘッダ5＋戦闘員1人9）。
+							<strong>A.</strong> フラットなf64配列（ヘッダ7＋戦闘員1人9、FPSでは収集済み座標を追加）。
 							<strong>tickはsimが持たずNodeが採番</strong>、JSON化もNodeの責務。
 							レイアウトはsim.hの<code>#define</code>が正本。
 						</p>

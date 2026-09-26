@@ -113,11 +113,12 @@ export const snapshotPayloadSchema = z.object({
 		score: z.tuple([z.number(), z.number()]),
 	}),
 	combatants: z.array(combatantViewSchema),
-	/** 収集済みアイテム座標・扉開放フラグ。**変化時のみ・FPS のみ**（差分） */
+	/** FPS のワールド進捗。毎snapshotで、座標は常に同時点の全量 */
 	world_delta: z
 		.object({
-			collected: z.array(z.tuple([z.number(), z.number()])).optional(),
-			doors_open: z.boolean().optional(),
+			/** 空配列を含む完全状態。snapshot欠落後は次のsnapshotで復旧する */
+			collected: z.array(z.tuple([z.number(), z.number()])),
+			doors_open: z.boolean(),
 		})
 		.optional(),
 });

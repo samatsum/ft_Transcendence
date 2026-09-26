@@ -20,6 +20,7 @@ import {
 } from '@ft/shared';
 
 import { markGameRoomFinished } from './gameRouteState.js';
+import { applyWorldSnapshot, createWorldProgress, type WorldProgress } from './worldState.js';
 import { handleGameServerMessage } from '../ws/gameMessageHandler.js';
 import {
 	closeWebSocketOnCleanup,
@@ -64,6 +65,8 @@ export interface UseGameSocketResult {
 	 * 100ms 遅延の2点補間には2〜3枚あれば足りるが、猶予として持つ
 	 */
 	snapshotBufferRef: { current: TimedSnapshot[] };
+	/** snapshot 到着順で累積する FPS world 正本。描画と HUD が共用する */
+	worldProgressRef: { current: WorldProgress };
 	/** HUD が到着順に処理する未確認 event */
 	pendingEvents: QueuedGameEvent[];
 	/** 決着処理専用（通常の演出 event キューとは別に保持） */
@@ -109,6 +112,7 @@ export function useGameSocket(roomId: string): UseGameSocketResult {
 	const [status, setStatus] = useState<GameSocketStatus>('connecting');
 	const [welcome, setWelcome] = useState<WelcomeMessage['d'] | null>(null);
 	const snapshotBufferRef = useRef<TimedSnapshot[]>([]);
+	const worldProgressRef = useRef<WorldProgress>(createWorldProgress());
 	const [pendingEvents, setPendingEvents] = useState<QueuedGameEvent[]>([]);
 	const [matchEndEvent, setMatchEndEvent] = useState<MatchEndEvent | null>(null);
 	const [playerStatus, setPlayerStatus] = useState<Map<number, PlayerStatusMessage['d']['state']>>(
@@ -134,6 +138,7 @@ export function useGameSocket(roomId: string): UseGameSocketResult {
 		// 描画されないよう welcome / snapshot バッファ / player_status / event もクリア
 		setWelcome(null);
 		snapshotBufferRef.current.length = 0;
+		worldProgressRef.current = createWorldProgress();
 		setPendingEvents([]);
 		setMatchEndEvent(null);
 		setPlayerStatus(new Map());
@@ -168,6 +173,7 @@ export function useGameSocket(roomId: string): UseGameSocketResult {
 						if (buf.length > SNAPSHOT_BUFFER_MAX) {
 							buf.splice(0, buf.length - SNAPSHOT_BUFFER_MAX);
 						}
+						worldProgressRef.current = applyWorldSnapshot(worldProgressRef.current, timed.payload);
 					},
 					onEvent: (event) => {
 						const id = nextEventIdRef.current++;
@@ -242,6 +248,7 @@ export function useGameSocket(roomId: string): UseGameSocketResult {
 		status,
 		welcome,
 		snapshotBufferRef,
+		worldProgressRef,
 		pendingEvents,
 		matchEndEvent,
 		acknowledgeEvents,

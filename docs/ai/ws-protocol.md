@@ -408,7 +408,7 @@ The client passes `map_text` to the render side's `game_create` (for display) (t
   "combatants":[
     { "id":0, "team":0, "hand":0|1|2, "pos":[12.5,4.25], "dir":1.57,
       "alive":true, "is_ai":false, "respawn_ms":0 } ],
-  "world_delta": { "collected":[[3,4],[7,2]], "doors_open":true }  // only when changed, FPS only
+  "world_delta": { "collected":[[3,4],[7,2]], "doors_open":true }  // FPS only, every snapshot
 } }
 ```
 
@@ -420,7 +420,7 @@ The client passes `map_text` to the render side's `game_create` (for display) (t
 | `match.winner` | winner | RSP=team number / FPS=combatant_id / undecided=null. **Interpretation is fixed by `match.mode`** |
 | `match.score` | score | RSP=per-team `[A,B]` / FPS=fixed `[0,0]` (win/loss determined only by reaching the goal) |
 | `combatants[]` | id/team/hand/pos(x,y)/dir_angle/alive/is_ai/respawn_timer | FPS's enemy hazards use the same shape (the client draws them without distinguishing). `respawn_ms` is the remaining time in milliseconds |
-| `world_delta` | collected item positions, door-open flags | **Processed only when present** (a delta; on first join/reconnect the very first snapshot right after welcome always includes the full state) |
+| `world_delta` | complete collected-item position set, door-open flag | Present in **every FPS snapshot**. `collected` is the complete current set, so the client replaces its display state and a skipped frame recovers on the next snapshot. The total is derived from the same `welcome.map_text` on the C display side |
 
 - Size budget: stays under **1KB per message** with 4 players + several enemies (§3-D). Adding a field must be checked against this budget as an acceptance criterion.
 - **Interpolation contract (client responsibility)**: buffer snapshots and linearly interpolate between the two straddling `now - 100ms` (angles via shortest arc). Only your own `yaw` prefers the local value (immediate viewpoint-rotation application). The interpolated result is written into the display-side `t_game` via `game_apply_snapshot` and rendered via `render_frame` (matching §3-B's division of labor — **the client contains no win/loss-determination code**).

@@ -23,6 +23,7 @@ import { createRenderModule, writeCString } from '../engine/renderModule.js';
 import type { RenderModule } from '../engine/render.d.ts';
 import { selectFrame } from './interpClock.js';
 import type { TimedSnapshot } from './useGameSocket.js';
+import type { WorldProgress } from './worldState.js';
 
 const INTERP_DELAY_MS = 100;
 
@@ -39,6 +40,7 @@ export interface UseEngineRendererOptions {
 	welcome: WelcomeMessage['d'] | null;
 	/** useGameSocket の snapshotBuffer をそのまま参照する（15Hz 再レンダを避けるため ref） */
 	snapshotBufferRef: { current: TimedSnapshot[] };
+	worldProgressRef: { current: WorldProgress };
 	/** 自席の視点(localYaw)。ref なので再レンダに巻き込まない */
 	localYawRef: RefObject<number>;
 	/** 射撃ボタンを押しているか（useGameInput の fireHeldRef）。観戦者など入力の無い画面では省略 */
@@ -57,6 +59,7 @@ export function useEngineRenderer({
 	canvasRef,
 	welcome,
 	snapshotBufferRef,
+	worldProgressRef,
 	localYawRef,
 	fireHeldRef,
 }: UseEngineRendererOptions): UseEngineRendererResult {
@@ -82,6 +85,9 @@ export function useEngineRenderer({
 		let mod: RenderModule | null = null;
 		let flatPtr = 0;
 		let flatCap = 0;
+		let worldPtr = 0;
+		let worldCap = 0;
+		let appliedWorldRevision = -1;
 		let rafHandle = 0;
 		let imageData: ImageData | null = null;
 		let ctx: CanvasRenderingContext2D | null = null;
@@ -131,6 +137,19 @@ export function useEngineRenderer({
 				: undefined;
 			const flat = interpolate(cur.payload, next?.payload ?? null, alpha, overrideDir);
 			try {
+				const world = worldProgressRef.current;
+				if (world.revision !== appliedWorldRevision) {
+					const positions = new Float64Array(world.collected.flat());
+					if (positions.byteLength > worldCap) {
+						if (worldPtr !== 0) mod._free(worldPtr);
+						worldCap = positions.byteLength;
+						worldPtr = worldCap === 0 ? 0 : mod._malloc(worldCap);
+						if (worldCap > 0 && worldPtr === 0) throw new Error('_malloc failed');
+					}
+					if (worldPtr !== 0) mod.HEAPF64.set(positions, worldPtr / 8);
+					mod._web_apply_world_delta(worldPtr, positions.length, world.doorsOpen ? 1 : 0);
+					appliedWorldRevision = world.revision;
+				}
 				// wasm ヒープの再確保が要るか
 				const bytes = flat.byteLength;
 				if (bytes > flatCap) {
@@ -206,11 +225,12 @@ export function useEngineRenderer({
 			cancelled = true;
 			if (rafHandle) cancelAnimationFrame(rafHandle);
 			if (mod && flatPtr !== 0) mod._free(flatPtr);
+			if (mod && worldPtr !== 0) mod._free(worldPtr);
 			// Emscripten Module の完全 destroy 手段は公開されていないので、
 			// GC 任せ（unmount 後の rAF は cancelled で止まっているので副作用なし）
 			mod = null;
 		};
-	}, [mapText, mode, combatantId, targetScore, canvasRef, snapshotBufferRef, localYawRef, fireHeldRef]);
+	}, [mapText, mode, combatantId, targetScore, canvasRef, snapshotBufferRef, worldProgressRef, localYawRef, fireHeldRef]);
 
 	return { status, textureProgress, errorMessage, fps };
 }
