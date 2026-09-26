@@ -120,11 +120,13 @@ export async function buildServer(options: BuildServerOptions = {}) {
 		},
 	};
 	await app.register(async (scoped) => {
-		registerGameWs(scoped, connectionManager);
-		registerLobbyWs(scoped, {
+		const lobbyRuntime = registerLobbyWs(scoped, {
 			connectionManager,
 			profileResolver,
 		});
+		registerGameWs(scoped, connectionManager, (userId, roomId) =>
+			lobbyRuntime.registry.releaseMatch(userId, roomId),
+		);
 	});
 	app.addHook('onClose', async () => {
 		closeAllRooms();

@@ -593,6 +593,7 @@ B-09 hands GameRoom a persistence closure that captures the MatchPlan. Since the
 - **Identity is confirmed via session Cookie only** (no dedicated reconnect token is issued; ARCHITECTURE §2.3's "session token" is interpreted as referring to the login session, avoiding a duplicate token scheme). If the session has expired, the user goes to the login screen — restoration is still possible after re-login, as long as it's within the grace period.
 - FPS 1v1: the match continues during grace (AI plays in the user's place). **Grace expiry is a forfeit** (`match_end(reason=forfeit)`). If both players disconnect, whichever grace expires first is the abandoning side.
 - `leave` (explicit exit) triggers `ai_takeover` immediately, with no grace (FPS forfeits immediately).
+- An accepted RSP `leave` makes only that participant seat permanently AI-controlled, then releases that user's lobby `in_match` context only when its `roomId` still matches the game room. The server sends `leave_ack` after this release attempt; the client returns to the lobby only after the acknowledgement. If the acknowledgement is lost, reconnecting and sending `join` to an explicitly-left seat returns `leave_ack` without restoring control. Grace-expired seats do not use this recovery path. FPS keeps its immediate forfeit/exit flow.
 - RSP, when all human seats reach grace/ai: **AI-only play continues for the duration of the 30-second grace window** (waiting for anyone to return). Once every seat's grace has expired, it's cut short as abandon (§6-C).
 
 ### 7-B. Evaluation demo script hook
@@ -661,7 +662,7 @@ B-08's completion is not "the match runs" — it's the above, plus **exactly one
 1. With 2 browsers + 2 AI seats, an RSP quick match forms, reaches the target score → `match_end` → DB row → receiving `match_result` in the lobby, all working end to end.
 2. A match forms via both the "Fill with AI and start now" button and the 60-second auto-start path.
 3. Custom room: join via code invite → host sets `target_score=3` → start → decided at 3 points.
-4. Closing a tab mid-match and re-entering within 30 seconds restores the human (other screens show the grace/ai/connected transition). In FPS, 30 seconds idle records a forfeit.
+4. Closing a tab mid-match and re-entering within 30 seconds restores the human (other screens show the grace/ai/connected transition). In FPS, 30 seconds idle records a forfeit. An RSP explicit exit receives `leave_ack`, leaves the departed seat as AI while the match continues, rejects control restoration, and allows immediate lobby room creation/join; a stale old-room completion cannot clear a newer lobby context.
 5. Load testing measures snapshots at under 1KB/message. **No console errors in the two demos below.**
 
    > **Revision (2026-07-27): dropped "8 browsers simultaneously" in favor of two 4-window demos.**

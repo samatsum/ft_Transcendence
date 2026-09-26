@@ -548,6 +548,9 @@ typedef enum e_input_source
        │ 再接続
 人間が戻る               →  input_source = EXTERNAL</code></pre>
 			<p class="section-intro">
+				プレイヤーが通常切断した場合は30秒の復帰猶予を保ちます。RSPで「退出」を選んだ場合は、退出席だけをAIに固定し、退出者のロビー所属を解放してからサーバーが確認を返します。残った席の試合は続き、古い試合の終了処理が後から走っても、新しい部屋への所属は消えません。
+			</p>
+			<p class="section-intro">
 				<strong>席の種類を変換する必要がありません。</strong> <code>input_source</code> という値を
 				<code>EXTERNAL ⇄ AI</code> で切り替えるだけ。だからB-12（切断・AI代替）は、
 				専用のAPI1つ（<code>game_set_input_source</code>）で済みます。

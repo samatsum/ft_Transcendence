@@ -35,6 +35,13 @@ const MODES: { value: LobbyMode; title: string; players: string; summary: string
 	},
 ];
 
+export const ROOM_CREATE_ERROR_TEXT: Record<string, string> = {
+	queue_already_joined: 'マッチング待機中です。先に待機を終了してください。',
+	already_in_room: 'すでに別の部屋に参加しています。',
+	already_in_game: '試合の開始中または参加中は部屋を作成できません。',
+	rate_limited: '部屋の作成回数が上限に達しました。しばらく待ってからお試しください。',
+};
+
 export default function RoomCreatePage() {
 	const navigate = useNavigate();
 	const { status, room, error, send, clearError } = useLobby();
@@ -172,7 +179,7 @@ export default function RoomCreatePage() {
 
 			{error && (
 				<p className="text-body text-rose-400" role="alert">
-					部屋を作れませんでした（{error.code}）
+					{ROOM_CREATE_ERROR_TEXT[error.code] ?? `部屋を作れませんでした（${error.message}）`}
 				</p>
 			)}
 			{settingsError && !settingsError.startsWith('先取点') && (

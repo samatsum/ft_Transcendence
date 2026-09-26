@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
 	acknowledgeGameEvents,
 	enqueueGameEvent,
+	shouldNavigateAfterLeave,
 	shouldReturnToLobby,
 } from './useGameSocket.js';
 
@@ -41,5 +42,20 @@ describe('game close navigation', () => {
 		expect(shouldReturnToLobby(null)).toBe(false);
 		expect(shouldReturnToLobby(1006)).toBe(false);
 		expect(shouldReturnToLobby(4004)).toBe(false);
+	});
+
+	it('RSP退出確認の待機中・失敗時はclose codeで自動遷移しない', () => {
+		expect(shouldReturnToLobby(4003, 'waiting')).toBe(false);
+		expect(shouldReturnToLobby(4003, 'failed')).toBe(false);
+		expect(shouldReturnToLobby(4003, 'acknowledged')).toBe(true);
+	});
+
+	it('RSPはleave_ack後にだけ遷移する', () => {
+		expect(shouldNavigateAfterLeave('rsp', 'waiting')).toBe(false);
+		expect(shouldNavigateAfterLeave('rsp', 'acknowledged')).toBe(true);
+	});
+
+	it('FPSの明示退出は既存どおりleave送信後に遷移する', () => {
+		expect(shouldNavigateAfterLeave('fps', 'waiting')).toBe(true);
 	});
 });

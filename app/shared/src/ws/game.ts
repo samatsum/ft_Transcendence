@@ -206,6 +206,12 @@ export const playerStatusMessageSchema = z.object({
 	}),
 });
 
+/** 明示退出をGameRoomが受理し、ロビー所属解放処理まで終えた確認 */
+export const gameLeaveAckSchema = z.object({
+	t: z.literal('leave_ack'),
+	d: z.object({}),
+});
+
 export type PlayerStatusMessage = z.infer<typeof playerStatusMessageSchema>;
 
 /**
@@ -219,6 +225,7 @@ export const gameServerMessageSchema = z.discriminatedUnion('t', [
 	snapshotMessageSchema,
 	gameEventSchema,
 	playerStatusMessageSchema,
+	gameLeaveAckSchema,
 ]);
 
 export type GameServerMessage = z.infer<typeof gameServerMessageSchema>;
