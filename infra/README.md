@@ -87,6 +87,9 @@ ssh -i ~/.ssh/<鍵> root@<IP> 'cd /opt/ft_transcendence && infra/scripts/deploy.
 wasm のビルドに20分近くかかるため）。強制するなら `DEPLOY_FORCE=1`、別のブランチを
 試すなら `DEPLOY_REF=<ブランチ>` を頭に付ける。
 
+ビルド後は **nginx を必ず再起動する**。nginx は起動時に backend の IP を解決して
+掴み続けるため、backend だけ作り直されると古い IP へ送り続けて 502 になる。
+
 `/api/health` が 200 になるまで最大60秒待ち、駄目なら終了コード 1 で落ちる。
 最後に `docker image prune` と `docker builder prune` を実行する——**掃除しないと
 ディスク（25GB）がビルド数回で埋まる**。
