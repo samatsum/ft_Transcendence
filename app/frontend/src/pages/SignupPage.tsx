@@ -11,43 +11,29 @@ import { FormField } from '../components/FormField.js';
 import { Input } from '../components/Input.js';
 import { useAuth } from '../contexts/AuthContext.js';
 import { useToast } from '../contexts/ToastContext.js';
+import {
+	credentialMessage,
+	detailsFieldErrors,
+	FALLBACK_VALIDATION_MESSAGE,
+	issueFieldErrors,
+	type FormErrors,
+} from './formErrors.js';
 
 type FieldName = keyof SignupRequest;
-type FieldErrors = Partial<Record<FieldName | 'form', string>>;
+type FieldErrors = FormErrors<FieldName>;
 
 function isFieldName(value: unknown): value is FieldName {
 	return value === 'email' || value === 'display_name' || value === 'password';
 }
 
+/** display_name だけがこの画面固有。email / password の文言は LoginPage と共通 */
 function validationMessage(issue: ZodIssue): string {
-	const field = issue.path[0];
-
-	if (field === 'email') {
-		return 'メールアドレスの形式で入力してください';
-	}
-	if (field === 'display_name') {
+	if (issue.path[0] === 'display_name') {
 		if (issue.code === 'too_small') return '表示名は3文字以上で入力してください';
 		if (issue.code === 'too_big') return '表示名は20文字以内で入力してください';
 		return '表示名は英数字・_・- のみ使えます';
 	}
-	if (field === 'password') {
-		if (issue.code === 'too_small') return 'パスワードは8文字以上で入力してください';
-		if (issue.code === 'too_big') return 'パスワードは128文字以内で入力してください';
-	}
-	return '入力内容を確認してください';
-}
-
-function zodFieldErrors(issues: ZodIssue[]): FieldErrors {
-	const errors: FieldErrors = {};
-
-	for (const issue of issues) {
-		const field = issue.path[0];
-		if (isFieldName(field) && !errors[field]) {
-			errors[field] = validationMessage(issue);
-		}
-	}
-
-	return errors;
+	return credentialMessage(issue) ?? FALLBACK_VALIDATION_MESSAGE;
 }
 
 function apiFieldErrors(err: ApiError): FieldErrors {
@@ -58,10 +44,7 @@ function apiFieldErrors(err: ApiError): FieldErrors {
 		return { display_name: 'この表示名は既に使われています' };
 	}
 	if (err.code === 'validation_failed' && err.details) {
-		const errors: FieldErrors = {};
-		for (const [field, message] of Object.entries(err.details)) {
-			if (isFieldName(field)) errors[field] = message;
-		}
+		const errors = detailsFieldErrors(err.details, isFieldName);
 		return Object.keys(errors).length > 0
 			? errors
 			: { form: '入力内容にエラーがあります' };
@@ -94,7 +77,7 @@ export default function SignupPage() {
 		});
 
 		if (!parsed.success) {
-			setErrors(zodFieldErrors(parsed.error.issues));
+			setErrors(issueFieldErrors(parsed.error.issues, isFieldName, validationMessage));
 			return;
 		}
 
