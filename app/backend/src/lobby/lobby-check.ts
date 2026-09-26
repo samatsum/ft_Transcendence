@@ -13,6 +13,7 @@ import {
 	WS_CLOSE,
 	lobbyClientMessageSchema,
 	lobbyServerMessageSchema,
+	type FpsAiSpeed,
 	type LobbyServerMessage,
 } from '@ft/shared';
 
@@ -26,6 +27,7 @@ import {
 	roomCount,
 	roomReservationCount,
 } from '../game/rooms.js';
+import { FPS_ENEMY_SPEED_MULTIPLIERS } from '../game/sim.js';
 import {
 	ConnectionManager,
 	type ManagedSocket,
@@ -824,6 +826,46 @@ async function checkW09Integration(): Promise<void> {
 	assert.equal(roomReservationCount(), 0);
 }
 
+/** FPS速度設定がルーム生成境界まで保持されることを検査する */
+async function checkFpsAiSpeedRoomPropagation(): Promise<void> {
+	const speeds: readonly FpsAiSpeed[] = ['slow', 'normal', 'fast'];
+	for (const aiSpeed of speeds) {
+		const room = await createRoomFromRules({
+			roomId: `fps-ai-speed-${aiSpeed}`,
+			mode: 'fps',
+			rules: { map: 'fps_duel', ai_speed: aiSpeed },
+			log: { info: () => {}, warn: () => {} },
+		});
+		const options = room as unknown as { opts: { aiSpeed?: FpsAiSpeed } };
+		assert.equal(options.opts.aiSpeed, aiSpeed);
+		assert.equal(FPS_ENEMY_SPEED_MULTIPLIERS[aiSpeed], {
+			slow: 0.4,
+			normal: 0.7,
+			fast: 1.0,
+		}[aiSpeed]);
+		closeRoom(room.roomId);
+	}
+	const defaultRoom = await createRoomFromRules({
+		roomId: 'fps-ai-speed-default',
+		mode: 'fps',
+		rules: { map: 'fps_duel' },
+		log: { info: () => {}, warn: () => {} },
+	});
+	const defaultOptions = defaultRoom as unknown as { opts: { aiSpeed?: FpsAiSpeed } };
+	assert.equal(defaultOptions.opts.aiSpeed, 'normal');
+	closeRoom(defaultRoom.roomId);
+	const rspRoom = await createRoomFromRules({
+		roomId: 'fps-ai-speed-rsp',
+		mode: 'rsp',
+		rules: { map: 'rsp', target_score: 3, ai_speed: 'fast' },
+		log: { info: () => {}, warn: () => {} },
+	});
+	const rspOptions = rspRoom as unknown as { opts: { aiSpeed?: FpsAiSpeed } };
+	assert.equal(rspOptions.opts.aiSpeed, undefined);
+	closeRoom(rspRoom.roomId);
+	assert.equal(roomCount(), 0);
+}
+
 class WsClient {
 	readonly messages: LobbyServerMessage[] = [];
 	readonly invalidMessages: unknown[] = [];
@@ -1308,6 +1350,10 @@ async function main(): Promise<void> {
 	console.log('B-09 検査: MatchPlan→実GameRoom / lifecycle / rollback');
 	await checkW09Integration();
 	console.log('  OK: 満員・手動・60秒、10秒待機、AI補完、失敗・timeout cleanup');
+
+	console.log('FPS AI速度のルーム生成への伝播');
+	await checkFpsAiSpeedRoomPropagation();
+	console.log('  OK: slow/normal/fast・省略時normal・RSP非適用');
 
 	console.log('B-08 検査6: 実WebSocket');
 	await checkRealWebSocket();

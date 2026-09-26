@@ -20,12 +20,15 @@ export function ScoreBar({ mode, score, targetScore, highlightTeam }: ScoreBarPr
 		// 収集アイテムで表現するが、そのカウントは world_delta 集計が要る(TODO)
 		return (
 			<div className="pointer-events-none absolute inset-x-0 top-4 flex justify-center">
-				<div className="rounded-md bg-black/60 px-4 py-1 text-body text-slate-200">
+				<div className="rounded-md bg-black/60 px-4 py-1 text-body text-fg-secondary">
 					FPS — ゴールへ到達せよ
 				</div>
 			</div>
 		);
 	}
+	// **bg-black/60・bg-black/70 と RED / BLUE の色はトークンに寄せない（#167）。**
+	// 前者は 3D の上に敷く半透明のスクリムで、可読性のための機能であって面の色ではない。
+	// 後者は色そのものがルール上の識別子で、danger / accent とは意味が違う
 	const redActive = highlightTeam === 0;
 	const blueActive = highlightTeam === 1;
 	return (
@@ -33,16 +36,16 @@ export function ScoreBar({ mode, score, targetScore, highlightTeam }: ScoreBarPr
 			<div className="flex items-center gap-3 rounded-md bg-black/70 px-4 py-2 font-mono text-lg font-bold">
 				<span
 					className={`rounded px-2 py-0.5 transition-colors ${
-						redActive ? 'bg-rose-600 text-white' : 'text-rose-400'
+						redActive ? 'bg-rose-600 text-fg-strong' : 'text-rose-400'
 					}`}
 					aria-label="赤チームのスコア"
 				>
 					{score[0]}
 				</span>
-				<span className="text-slate-500">/ {targetScore}</span>
+				<span className="text-fg-subtle">/ {targetScore}</span>
 				<span
 					className={`rounded px-2 py-0.5 transition-colors ${
-						blueActive ? 'bg-sky-600 text-white' : 'text-sky-400'
+						blueActive ? 'bg-sky-600 text-fg-strong' : 'text-sky-400'
 					}`}
 					aria-label="青チームのスコア"
 				>

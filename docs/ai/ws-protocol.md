@@ -253,11 +253,12 @@ After reconnect / replacement, the current context is resent right after `lobby_
 |---|---|---|---|
 | `map` | ID from the server's map list (`GET /api/maps`, defined in ③) | mode's default map | both |
 | `target_score` | int 3-21 | 10 | RSP only (G-05's `match_rules.target_score`) |
+| `ai_speed` | `slow` / `normal` / `fast` | `normal` | FPS only; multiplies the patrolling hazard speed by 0.40 / 0.70 / 1.00 |
 
-- **Trimmed after implementation review (2026-07-30)**: the earlier table's `move_speed_mult / enemy_speed_mult / ai_level` have no application point anywhere in the current `t_match_rules`, `GameRoom.create`, or `createRoomFromRules`. Accepting and merely storing them would mean "changed in the UI but has no effect on the match," so they are removed from the B-08 wire. If added in future, extend in the order engine API → GameRoom → shared schema → this table.
-- Canonical rules are RSP=`{map, target_score}`, FPS=`{map}`. Fields omitted on `room_create` are filled with server defaults; thereafter `room_state` / `room_update_rules` / MatchPlan require every field. The zod object is `strict`, so a removed field is never silently dropped.
+- `ai_speed` was added by #180 and wired to the authoritative simulation by #198. It affects only FPS map hazards, including both patrol and pursuit; it does not change an empty seat's AI or any RSP NPC.
+- Canonical rules are RSP=`{map, target_score}`, FPS=`{map, ai_speed}`. Fields omitted on `room_create` are filled with server defaults; thereafter `room_state` / `room_update_rules` / MatchPlan require every field. The zod object is `strict`, so a removed field is never silently dropped.
 - `map` is validated for shape as a zod string, then semantically validated against existence and mode match via B-14's `findMap`. A mismatch yields `invalid_rules`. Arbitrary paths or a client-supplied `.cub` are never accepted.
-- Quick match always uses the default canonical rules (RSP=`rsp/10`, FPS=`fps_duel`), which eliminates any "rule agreement among queue participants" problem (the intent behind D-1).
+- Quick match always uses the default canonical rules (RSP=`rsp/10`, FPS=`{map: fps_duel, ai_speed: normal}`), which eliminates any "rule agreement among queue participants" problem (the intent behind D-1).
 - Seats: `seats[]` sized to the mode's capacity. Any seat a human doesn't fill is AI-ified at start. **At least one human (the host) is required to start** (an all-AI match cannot be created).
 - Joins / leaves / rule updates while `open` each send the same updated `room_state` to all members once complete. No seat, host, or rules change is allowed while `starting`.
 
@@ -529,7 +530,7 @@ created ──all humans join, or 10s──► countdown(3s) ──► playing �
 
 | room event | sim API called | notes |
 |---|---|---|
-| room creation | `game_create(cub_text, mode, match_rules)` | §4-B's `map` is resolved to cub_text by B-14; only RSP's `target_score` goes into the current `match_rules`. `humanSlots` is GameRoom-side application metadata, not added to the sim API |
+| room creation | `game_create(cub_text, mode, match_rules)` | §4-B's `map` is resolved to cub_text by B-14; RSP's `target_score` and FPS's `ai_speed` go into `match_rules`. `humanSlots` is GameRoom-side application metadata, not added to the sim API |
 | seat finalization | `game_add_combatant(game, slot, is_ai)` × capacity | Unconnected human seats are **also generated as AI first**, and switched to input source EXTERNAL on join (addendum below) |
 | `input` received | held in the seat's buffer → applied via `game_set_input(game, combatant_id, t_input)` every tick | Mapping `mv`/`yaw`/`act` → `t_input` is the responsibility of the platform/headless layer (`hand` was already removed from `input` per D-17 — hand is decided server-side by the engine). The implemented wrapper is `sim_set_input(game, id, forward, backward, strafe_left, strafe_right, yaw)` |
 | tick | `game_step(game, dt=1/30)` | the return value (in-progress/decided) determines the `finished` transition |
@@ -698,8 +699,8 @@ B-08's completion is not "the match runs" — it's the above, plus **exactly one
 
 These are retained implementation-detail notes carried over from the original Phase 3 report; B-10 itself is complete.
 
-1. **Authoritative call order**: `createCub3DSimModule()` → `sim_create(cub_text_ptr, is_rsp, target_score, seed)` → `game_add_combatant(game, slot, is_ai)` × capacity (RSP=4 / FPS=2, **returns a `combatant_id`, distinct from `slot`**) → (on join) `game_set_input_source(game, combatant_id, EXTERNAL=1)` **using the id returned by `game_add_combatant`, not the raw seat `slot`** → every tick `sim_set_input` → `game_step(game, 1/30)` (return value 1 means transition to finished) → on even ticks `game_snapshot` → JSON-encoded and tick-stamped on the Node side → distributed → `game_destroy` at closed.
-2. **The flat-array layout is authoritatively defined in `codes/includes/platform/sim.h`** (7 header fields + 9 per combatant + FPS collection coordinates, all f64). `record.mjs`'s `takeSnapshot()` is the reference implementation for JSON encoding, as-is.
+1. **Authoritative call order**: `createCub3DSimModule()` → `sim_create(cub_text_ptr, is_rsp, target_score, seed, fps_enemy_speed_mult)` → `game_add_combatant(game, slot, is_ai)` × capacity (RSP=4 / FPS=2, **returns a `combatant_id`, distinct from `slot`**) → (on join) `game_set_input_source(game, combatant_id, EXTERNAL=1)` **using the id returned by `game_add_combatant`, not the raw seat `slot`** → every tick `sim_set_input` → `game_step(game, 1/30)` (return value 1 means transition to finished) → on even ticks `game_snapshot` → JSON-encoded and tick-stamped on the Node side → distributed → `game_destroy` at closed.
+2. **The flat-array layout is authoritatively defined in `codes/includes/platform/sim.h`** (5 header fields + 9 per combatant, all f64). `record.mjs`'s `takeSnapshot()` is the reference implementation for JSON encoding, as-is.
 3. **The seat-to-team mapping is fixed**: RSP slot 0,1 = red / 2,3 = blue. The map must have 2 red spawns (N/W) and 2 blue spawns (S/E); if not, `sim_create` returns NULL (must align with B-14's map-whitelist validation).
 4. **`combatant_id` has no relation to snapshot array order** (the internal list is in reverse creation order). Both client and server must always match by id. Map-derived enemy hazards use id=8 and up.
 5. `target_score` accepts only 3-21 (anything else defaults to 10). B-11's schema validation (#6) must reject outside this same range. `match_rules.seed` is **0 = time-derived (production) / non-zero = fixed RNG sequence**, and the entire match is deterministically reproducible for the same input sequence (usable in B-10's integration tests; the demo's record.mjs is fixed at seed=42, and two runs' snapshots.json have been confirmed byte-identical).

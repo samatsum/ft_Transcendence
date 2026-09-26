@@ -57,7 +57,7 @@ export function ExitPromptModal({ open, onConfirm, onCancel }: ExitPromptModalPr
 		>
 			<div className="flex flex-col gap-2">
 				<p>退出すると、この試合は放棄した扱いになります。</p>
-				<p className="text-caption text-slate-400">
+				<p className="text-caption text-fg-muted">
 					このポップアップを開いている間も試合は進行しています。自分のキャラクターは
 					その場に立ったままになるため、攻撃を受けたり失点したりすることがあります。
 				</p>

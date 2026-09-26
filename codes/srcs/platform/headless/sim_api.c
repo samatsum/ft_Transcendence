@@ -49,7 +49,7 @@ void
 	game_destroy(t_game* game);
 t_game*
 	sim_create(const char* cub_text, int is_rsp, int target_score,
-		unsigned int seed);
+		unsigned int seed, double fps_enemy_speed_mult);
 int
 	sim_set_input(t_game* game, int combatant_id, int forward, int backward,
 		int strafe_left, int strafe_right, double yaw, int fire);
@@ -102,6 +102,9 @@ t_game*
 	}
 	if (rules && rules->target_score >= SIM_TARGET_SCORE_MIN) {
 		game->rsp.target_score = rules->target_score;
+	}
+	if (mode == MODE_FPS && rules && rules->fps_enemy_speed_mult > 0.0) {
+		game->fps.enemy_speed_mult = rules->fps_enemy_speed_mult;
 	}
 	if (!sim_prepare_world(sim)) {
 		game_destroy(game);
@@ -371,16 +374,18 @@ void
 
 /* ************************************************************************** */
 // JS（Node）向けの生成ラッパ。モードはマップ配置ディレクトリ由来の is_rsp で
-// 受け、match_rules は target_score と seed をスカラで受ける（seed=0 で
-// 時刻由来、非 0 で試合全体が決定的に再現される）
+// 受け、match_rules は target_score・seed・FPS敵速度倍率をスカラで受ける。
+// seed=0 で時刻由来、非0で試合全体が決定的に再現され、FPS速度倍率は0以下なら
+// game_create側でnormalへフォールバックする
 t_game*
 	sim_create(const char* cub_text, int is_rsp, int target_score,
-		unsigned int seed)
+	unsigned int seed, double fps_enemy_speed_mult)
 {
 	t_match_rules	rules;
 
 	rules.target_score = target_score;
 	rules.seed = seed;
+	rules.fps_enemy_speed_mult = fps_enemy_speed_mult;
 	return (game_create(cub_text, (is_rsp) ? MODE_RSP : MODE_FPS, &rules));
 }
 

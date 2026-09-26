@@ -10,6 +10,7 @@
 //   G-09  オンライン対戦マップの起動検証（席の成立・関門→ゴールの完走可能性）
 //   G-11  FPS の射撃は席を delete_enemy しない（ハザード接触死と同じ一時退場に統一）
 //   #187  席の射撃（命中・クールダウン・壁の遮蔽・RSP では撃てない）
+//   FPS敵速度を match_rules 経由で巡回・追跡へ反映する
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,6 +18,7 @@
 #include "core/core.h"
 #include "core/respawn.h"
 #include "enemy/enemy.h"
+#include "enemy/enemy_utils.h"
 #include "platform/sim.h"
 #include "rsp/rsp_game.h"
 #include "tuning.h"
@@ -42,6 +44,17 @@ static void
 	if (got != want) {
 		g_failures++;
 		printf("  FAIL %s: got %d, want %d\n", label, got, want);
+	}
+}
+
+// 浮動小数の設定値を小さな許容差で照合する
+static void
+expect_double(const char* label, double got, double want)
+{
+	g_checks++;
+	if (fabs(got - want) > 0.000001) {
+		g_failures++;
+		printf("  FAIL %s: got %.6f, want %.6f\n", label, got, want);
 	}
 }
 
@@ -141,7 +154,7 @@ static t_game*
 {
 	t_game*	game;
 
-	game = sim_create(map_text, 1, target_score, TEST_SEED);
+	game = sim_create(map_text, 1, target_score, TEST_SEED, 0.0);
 	if (!game) {
 		return (NULL);
 	}
@@ -337,7 +350,7 @@ static t_game*
 {
 	t_game*	game;
 
-	game = sim_create(map_text, 0, 0, TEST_SEED);
+	game = sim_create(map_text, 0, 0, TEST_SEED, 0.0);
 	if (!game) {
 		return (NULL);
 	}
@@ -568,7 +581,7 @@ static void
 {
 	t_game*	game;
 
-	game = sim_create(map_text, 0, 0, TEST_SEED);
+	game = sim_create(map_text, 0, 0, TEST_SEED, 0.0);
 	expect_int("スポーン1つの FPS マップは生成失敗", game == NULL, 1);
 	game_destroy(game);
 }
@@ -1105,7 +1118,7 @@ static void
 	int			i;
 	int			changed;
 
-	game = sim_create(map_text, 1, 0, TEST_SEED);
+	game = sim_create(map_text, 1, 0, TEST_SEED, 0.0);
 	if (!game || game_add_combatant(game, 0, 0) != 0 || game_add_combatant(game, 1, 1) != 1
 		|| game_add_combatant(game, 2, 0) != 2 || game_add_combatant(game, 3, 1) != 3
 		|| !find_shot_lane(game, &lane)) {
@@ -1142,7 +1155,7 @@ static void
 	int			distinct;
 
 	printf("  [%s]\n", label);
-	game = sim_create(map_text, 1, 2, TEST_SEED);
+	game = sim_create(map_text, 1, 2, TEST_SEED, 0.0);
 	snprintf(buf, sizeof(buf), "%s: 赤2+青2 の席が成立する", label);
 	expect_int(buf, game != NULL
 		&& game_add_combatant(game, 0, 0) == 0 && game_add_combatant(game, 1, 1) == 1
@@ -1221,6 +1234,111 @@ static void
 	game_destroy(game);
 }
 
+// match_rules のFPS敵速度倍率はFPSだけへ保存し、0以下はnormalへ戻す
+static void
+test_fps_enemy_speed_rules(const char* fps_map, const char* rsp_map)
+{
+	const double	cases[][2] = {{FPS_ENEMY_SPEED_SLOW, FPS_ENEMY_SPEED_SLOW},
+		{FPS_ENEMY_SPEED_NORMAL, FPS_ENEMY_SPEED_NORMAL},
+		{FPS_ENEMY_SPEED_FAST, FPS_ENEMY_SPEED_FAST}, {0.0, FPS_ENEMY_SPEED_NORMAL},
+		{-1.0, FPS_ENEMY_SPEED_NORMAL}};
+	t_game*		game;
+	int			i;
+
+	i = 0;
+	while (i < (int)(sizeof(cases) / sizeof(cases[0]))) {
+		game = sim_create(fps_map, 0, 0, TEST_SEED, cases[i][0]);
+		expect_int("FPS enemy speed の生成成功", game != NULL, 1);
+		if (game) {
+			expect_double("FPS enemy speed が指定値またはnormalになる",
+				game->fps.enemy_speed_mult, cases[i][1]);
+			game_destroy(game);
+		}
+		i++;
+	}
+	game = sim_create(rsp_map, 1, 2, TEST_SEED, FPS_ENEMY_SPEED_FAST);
+	expect_int("RSP生成はFPS enemy speedを渡しても成功する", game != NULL, 1);
+	if (game) {
+		expect_double("RSPはFPS enemy speedを適用しない",
+			game->fps.enemy_speed_mult, FPS_ENEMY_SPEED_NORMAL);
+		game_destroy(game);
+	}
+}
+
+// 実際のFPSハザード更新で、巡回・追跡とも速度倍率の順に移動量が増える
+static double
+measure_fps_hazard_motion(const char* map_text, double speed_mult,
+	int tracking, int* used_tracking)
+{
+	t_game*	game;
+	t_enemy*	hazard;
+	t_pos		before;
+	double		moved;
+	int			i;
+
+	game = sim_create(map_text, 0, 0, TEST_SEED, speed_mult);
+	if (!game) {
+		return (-1.0);
+	}
+	if (tracking && (game_add_combatant(game, 0, 0) != 0
+			|| game_add_combatant(game, 1, 0) != 1)) {
+		game_destroy(game);
+		return (-1.0);
+	}
+	hazard = first_hazard(game);
+	if (!hazard) {
+		game_destroy(game);
+		return (-1.0);
+	}
+	if (tracking) {
+		hazard->track_timer = 60.0;
+		hazard->patrol_active = 1;
+	}
+	moved = 0.0;
+	i = 0;
+	while (i < 120) {
+		copy_pos(&before, &hazard->sprite->pos);
+		update_fps_enemy(hazard, game, TICK_DT);
+		moved += dist_pos(&before, &hazard->sprite->pos);
+		i++;
+	}
+	if (used_tracking) {
+		*used_tracking = tracking && hazard->track_timer > 0.0
+			&& hazard->patrol_active == 0;
+	}
+	game_destroy(game);
+	return (moved);
+}
+
+static void
+test_fps_enemy_speed_motion(const char* map_text, int tracking)
+{
+	double	slow;
+	double	normal;
+	double	fast;
+	int		slow_tracked;
+	int		normal_tracked;
+	int		fast_tracked;
+
+	slow_tracked = 0;
+	normal_tracked = 0;
+	fast_tracked = 0;
+	slow = measure_fps_hazard_motion(map_text, FPS_ENEMY_SPEED_SLOW,
+		tracking, &slow_tracked);
+	normal = measure_fps_hazard_motion(map_text, FPS_ENEMY_SPEED_NORMAL,
+		tracking, &normal_tracked);
+	fast = measure_fps_hazard_motion(map_text, FPS_ENEMY_SPEED_FAST,
+		tracking, &fast_tracked);
+	expect_int("FPS敵速度の検査用ハザードが生成できる",
+		slow >= 0.0 && normal >= 0.0 && fast >= 0.0, 1);
+	if (tracking) {
+		expect_int("FPS敵速度の追跡検査が追跡分岐を通る",
+			slow_tracked && normal_tracked && fast_tracked, 1);
+	}
+	expect_int("FPS敵速度が slow < normal になる", slow < normal, 1);
+	expect_int("FPS敵速度が normal < fast になる", normal < fast, 1);
+}
+
 int
 	main(void)
 {
@@ -1269,6 +1387,10 @@ int
 	test_187_cooldown_limits_fire_rate(fps_map);
 	test_187_wall_blocks_shot(fps_map);
 	test_187_rsp_cannot_shoot(rsp_map);
+	printf("FPS AI速度\n");
+	test_fps_enemy_speed_rules(fps_map, rsp_map);
+	test_fps_enemy_speed_motion(fps_map, 0);
+	test_fps_enemy_speed_motion(fps_map, 1);
 	printf("G-09 オンライン対戦マップの起動検証\n");
 	test_g09_rsp_map(rsp_map, "rsp");
 	test_g09_rsp_map(rsp_map_2, "rsp_pillars");
