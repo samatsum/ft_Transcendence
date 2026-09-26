@@ -221,6 +221,10 @@ static void
 	set_pos(&node->sprite->pos, entry[3], entry[4]);
 	node->dir_angle = entry[5];
 	node->rsp.alive = (int)entry[6];
+	// entry[8] は snapshot の respawn_ms を秒にしたもの（snapshotInterp.ts）。
+	// 表示専用モードでは game_step が走らず update_death も動かないので、
+	// ここで入れた値は次の snapshot まで減らされない（#217）
+	node->death_timer = entry[8];
 	node->input_source = ((int)entry[7]) ? INPUT_SRC_AI : INPUT_SRC_EXTERNAL;
 	if (game->mode == MODE_RSP) {
 		node->sprite->tex
@@ -248,6 +252,10 @@ static void
 		set_pos(&game->player->sprite->pos, entry[3], entry[4]);
 		game->player->dir_angle = entry[5];
 		game->player->rsp.alive = (int)entry[6];
+		// **これが無いと死亡画面が出ない（#217）。** 死亡画面は is_player_dead() が
+		// death_timer を見て出す（screen.c）。以前は rsp.alive しか書いていなかったため、
+		// サーバが死亡を判定していても画面は生きているときと同じだった
+		game->player->death_timer = entry[8];
 	}
 	cam = &game->camera;
 	set_pos(&cam->pos, entry[3], entry[4]);
