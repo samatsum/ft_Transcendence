@@ -56,6 +56,7 @@ export function acknowledgeGameEvents(
 }
 
 export type GameSocketStatus = 'connecting' | 'open' | 'reconnecting' | 'closed';
+export type GameLeaveStatus = 'idle' | 'waiting' | 'failed' | 'acknowledged';
 
 export interface UseGameSocketResult {
 	status: GameSocketStatus;
@@ -77,9 +78,18 @@ export interface UseGameSocketResult {
 	playerStatus: Map<number, PlayerStatusMessage['d']['state']>;
 	/** close コード（4002=room無, 4004=置換 など。② §2-B） */
 	closeCode: number | null;
+	leaveStatus: GameLeaveStatus;
 	/** true になっていれば送信可 */
 	canSend: boolean;
 	send: (msg: GameClientMessage) => void;
+}
+
+/** RSPはACK後、FPSは従来どおり送信後に画面を離れる */
+export function shouldNavigateAfterLeave(
+	mode: WelcomeMessage['d']['mode'] | null,
+	leaveStatus: GameLeaveStatus,
+): boolean {
+	return leaveStatus === 'acknowledged' || (mode === 'fps' && leaveStatus === 'waiting');
 }
 
 const SNAPSHOT_BUFFER_MAX = 8;
@@ -94,8 +104,15 @@ function shouldReconnect(code: number): boolean {
 	return true;
 }
 
-/** ゲーム画面に留まれない正常系の close はロビーへ戻す */
-export function shouldReturnToLobby(code: number | null): boolean {
+/** 退出確認待ち中は遷移せず、失敗時は正常終了・ルーム消滅のみロビーへ戻す */
+export function shouldReturnToLobby(
+	code: number | null,
+	leaveStatus: GameLeaveStatus = 'idle',
+): boolean {
+	if (leaveStatus === 'waiting') return false;
+	if (leaveStatus === 'failed') {
+		return code === WS_CLOSE.normal || code === WS_CLOSE.roomNotFound;
+	}
 	return (
 		code === WS_CLOSE.normal ||
 		code === WS_CLOSE.roomNotFound ||
@@ -119,6 +136,9 @@ export function useGameSocket(roomId: string): UseGameSocketResult {
 		() => new Map(),
 	);
 	const [closeCode, setCloseCode] = useState<number | null>(null);
+	const [leaveStatus, setLeaveStatus] = useState<GameLeaveStatus>('idle');
+	const leavePendingRef = useRef(false);
+	const statusRef = useRef<GameSocketStatus>('connecting');
 	const wsRef = useRef<WebSocket | null>(null);
 	const attemptRef = useRef(0);
 	const nextEventIdRef = useRef(1);
@@ -143,6 +163,9 @@ export function useGameSocket(roomId: string): UseGameSocketResult {
 		setMatchEndEvent(null);
 		setPlayerStatus(new Map());
 		setCloseCode(null);
+		setLeaveStatus('idle');
+		leavePendingRef.current = false;
+		statusRef.current = 'connecting';
 		nextEventIdRef.current = 1;
 		let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -150,13 +173,16 @@ export function useGameSocket(roomId: string): UseGameSocketResult {
 			if (cancelled) return;
 			// 再接続時にも「切断されました」バナーが残らないよう、接続開始で closeCode を戻す
 			setCloseCode(null);
-			setStatus(attemptRef.current === 0 ? 'connecting' : 'reconnecting');
+			const nextStatus = attemptRef.current === 0 ? 'connecting' : 'reconnecting';
+			statusRef.current = nextStatus;
+			setStatus(nextStatus);
 			const ws = new WebSocket(buildWsUrl(roomId));
 			wsRef.current = ws;
 
 			ws.onopen = () => {
 				if (cancelled || wsRef.current !== ws) return;
 				attemptRef.current = 0;
+				statusRef.current = 'open';
 				setStatus('open');
 				// ② §5-A: join のペイロードは Cookie 認証と participant 登録で本人確定するので空
 				ws.send(JSON.stringify({ t: 'join', d: {} }));
@@ -165,7 +191,13 @@ export function useGameSocket(roomId: string): UseGameSocketResult {
 			ws.onmessage = (ev: MessageEvent<string>) => {
 				if (cancelled || wsRef.current !== ws) return;
 				handleGameServerMessage(ev.data, {
-					onWelcome: setWelcome,
+				onWelcome: (payload) => {
+					setWelcome(payload);
+					// leave を受け取る前に切断されていた場合は、grace中の復帰確認後に再送する
+					if (leavePendingRef.current) {
+						ws.send(JSON.stringify({ t: 'leave', d: {} }));
+					}
+				},
 					onSnapshot: (payload) => {
 						const timed: TimedSnapshot = { receivedAtMs: performance.now(), payload };
 						const buf = snapshotBufferRef.current;
@@ -183,14 +215,18 @@ export function useGameSocket(roomId: string): UseGameSocketResult {
 							setMatchEndEvent(event);
 						}
 					},
-					onPlayerStatus: (payload) => {
+				onPlayerStatus: (payload) => {
 						setPlayerStatus((prev) => {
 							const next = new Map(prev);
 							next.set(payload.slot, payload.state);
 							return next;
 						});
-					},
-				});
+				},
+				onLeaveAck: () => {
+					leavePendingRef.current = false;
+					setLeaveStatus('acknowledged');
+				},
+			});
 			};
 
 			ws.onclose = (ev: CloseEvent) => {
@@ -201,9 +237,12 @@ export function useGameSocket(roomId: string): UseGameSocketResult {
 				setCloseCode(ev.code);
 				wsRef.current = null;
 				if (!shouldReconnect(ev.code)) {
+					statusRef.current = 'closed';
+					if (leavePendingRef.current) setLeaveStatus('failed');
 					setStatus('closed');
 					return;
 				}
+				statusRef.current = 'reconnecting';
 				setStatus('reconnecting');
 				// ④ §4: 1s → 2s → 5s（上限）の指数バックオフ
 				const delays = [1000, 2000, 5000];
@@ -235,6 +274,14 @@ export function useGameSocket(roomId: string): UseGameSocketResult {
 	// 再セットされて 30Hz 送信が毎回リセットされる。ws は ref 参照なので
 	// deps 空でも常に最新の接続を使う
 	const send = useCallback((msg: GameClientMessage) => {
+		if (msg.t === 'leave') {
+			if (statusRef.current === 'closed') {
+				setLeaveStatus('failed');
+				return;
+			}
+			leavePendingRef.current = true;
+			setLeaveStatus('waiting');
+		}
 		const ws = wsRef.current;
 		if (!ws || ws.readyState !== WebSocket.OPEN) return;
 		ws.send(JSON.stringify(msg));
@@ -254,6 +301,7 @@ export function useGameSocket(roomId: string): UseGameSocketResult {
 		acknowledgeEvents,
 		playerStatus,
 		closeCode,
+		leaveStatus,
 		canSend: status === 'open',
 		send,
 	};

@@ -106,9 +106,10 @@ const unsubscribeByRoom = new Map<string, () => void>();
 export function registerGameWs(
 	app: FastifyInstance,
 	connectionManager: ConnectionManager = defaultConnectionManager,
+	releaseMatch: (userId: number, roomId: string) => boolean = () => false,
 ): void {
 	app.get('/ws/game/:roomId', { websocket: true }, (socket: Socket, req: FastifyRequest) => {
-		void handleConnection(socket, req, app, connectionManager);
+		void handleConnection(socket, req, app, connectionManager, releaseMatch);
 	});
 }
 
@@ -118,6 +119,7 @@ async function handleConnection(
 	req: FastifyRequest,
 	app: FastifyInstance,
 	connectionManager: ConnectionManager,
+	releaseMatch: (userId: number, roomId: string) => boolean,
 ): Promise<void> {
 	// ② §1: Origin 検査（CSRF-over-WS 対策）。アップグレード時に見る。
 	// ※ ② はこの拒否に close コードを割り当てていないため 4003 を使う（判断）
@@ -138,7 +140,7 @@ async function handleConnection(
 	socket.on('message', (raw: unknown) => {
 		if (socket.readyState !== OPEN) return;
 		if (ready) {
-			handleMessage(ready.conn, ready.room, raw, app);
+			handleMessage(ready.conn, ready.room, ready.roomId, raw, app, releaseMatch);
 			return;
 		}
 
@@ -212,7 +214,7 @@ async function handleConnection(
 
 	for (const raw of pendingMessages.drain()) {
 		if (socket.readyState !== OPEN) break;
-		handleMessage(conn, room, raw, app);
+		handleMessage(conn, room, roomId, raw, app, releaseMatch);
 	}
 }
 
@@ -282,8 +284,10 @@ function releaseRoomConnections(roomId: string): void {
 function handleMessage(
 	conn: Connection,
 	room: GameRoom,
+	roomId: string,
 	raw: unknown,
 	app: FastifyInstance,
+	releaseMatch: (userId: number, roomId: string) => boolean,
 ): void {
 	// ② §2-A: 1メッセージ 4KB 上限。超過は close 4001
 	const text = typeof raw === 'string' ? raw : String(raw);
@@ -324,7 +328,18 @@ function handleMessage(
 			handleInput(conn, room, message.data.d);
 			return;
 		case 'leave':
-			if (conn.slot !== null) room.leave(conn.slot);
+			{
+				// 初回join前のleaveでparticipant席を失効させない 再接続時のACK回復は
+				// handleJoinがexplicitlyLeftを照会して処理する
+				const slot = conn.slot;
+				if (!conn.joined || slot === null || !room.leave(slot)) return;
+				// RSPは退出者だけを対象roomId一致時にidleへ戻す
+				// FPSのleave/forfeit経路ではロビー所属を変更しない
+				if (room.mode === 'rsp') {
+					releaseMatch(conn.userId, roomId);
+					conn.socket.send(JSON.stringify({ t: 'leave_ack', d: {} }));
+				}
+			}
 			conn.joined = false;
 			conn.slot = null;
 			conn.lastSeq = -1;
@@ -343,6 +358,11 @@ function handleJoin(conn: Connection, room: GameRoom, app: FastifyInstance): voi
 	const slot = room.getSlotForUser(conn.userId);
 	if (slot === undefined) {
 		conn.socket.close(WS_CLOSE.notAllowed, 'not a participant of this room');
+		return;
+	}
+	// 明示退出後にACKを失ったクライアントの再接続は席を復帰させず、確認だけ再送する
+	if (room.mode === 'rsp' && room.wasExplicitlyLeft(slot)) {
+		conn.socket.send(JSON.stringify({ t: 'leave_ack', d: {} }));
 		return;
 	}
 

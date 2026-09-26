@@ -181,6 +181,8 @@ interface PlayerSeat {
 	graceUntil: number | null;
 	/** grace満了または明示leave後はplayerとして復帰できない */
 	abandoned: boolean;
+	/** 明示leave由来のabandonか 確認応答を失った再接続だけ冪等に確認する */
+	explicitlyLeft: boolean;
 }
 
 export interface RoomLogger {
@@ -277,6 +279,7 @@ export class GameRoom {
 				state: 'ai',
 				graceUntil: null,
 				abandoned: false,
+				explicitlyLeft: false,
 			});
 		}
 		if (options.onBroadcast) this.listeners.add(options.onBroadcast);
@@ -348,6 +351,11 @@ export class GameRoom {
 	/** HUDと検査向けにparticipant席の現在状態を返す */
 	getPlayerSeatState(slot: number): PlayerSeatState | undefined {
 		return this.playerSeats.get(slot)?.state;
+	}
+
+	/** ACKを失った明示退出だけを再確認するための状態照会 */
+	wasExplicitlyLeft(slot: number): boolean {
+		return this.playerSeats.get(slot)?.explicitlyLeft ?? false;
 	}
 
 	/** 新規・再接続clientへ現在の全participant席状態を渡す */
@@ -448,9 +456,16 @@ export class GameRoom {
 		});
 	}
 
-	/** 明示leave。猶予なしで復帰不能のAI席へ移し、FPSなら即forfeitにする */
-	leave(slot: number): void {
-		this.abandonSeat(slot);
+	/** 明示leaveを受理したか返す ACK消失後の再送だけ冪等に受理する */
+	leave(slot: number): boolean {
+		const seat = this.playerSeats.get(slot);
+		if (!seat) return false;
+		if (seat.explicitlyLeft) return true;
+		if (seat.abandoned || this.finishStarted || this.state === 'finished' || this.state === 'closed') {
+			return false;
+		}
+		this.abandonSeat(slot, true);
+		return seat.explicitlyLeft;
 	}
 
 	/** 再接続welcome直後へ送る、その時点の全量snapshotを1回だけserializeする */
@@ -726,7 +741,7 @@ export class GameRoom {
 	}
 
 	/** participant席を復帰不能なAIへ確定し、forfeit/全員abandonを必要なら開始する */
-	private abandonSeat(slot: number): void {
+	private abandonSeat(slot: number, explicit = false): void {
 		const seat = this.playerSeats.get(slot);
 		if (
 			!seat ||
@@ -741,6 +756,7 @@ export class GameRoom {
 		seat.state = 'ai';
 		seat.graceUntil = null;
 		seat.abandoned = true;
+		seat.explicitlyLeft = explicit;
 		this.broadcastPlayerStatus(slot, 'ai');
 		this.broadcast({ t: 'event', d: { kind: 'ai_takeover', slot } });
 		if (this.state !== 'playing' && this.state !== 'countdown') return;
