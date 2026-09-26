@@ -51,6 +51,10 @@ switch_to_ref
 
 echo "=== ビルドと再起動"
 $compose up -d --build
+# **nginx は必ず再起動する。** nginx は起動時に upstream（backend）を名前解決して
+# IP を掴み続ける。backend だけ作り直されると新しいコンテナは別の IP になり、
+# nginx は古い IP へ送り続けて 502 になる（2026-09-26 に実際に起きた）
+$compose restart nginx
 
 echo "=== 疎通確認"
 # SERVER_NAME は .env にある。読み出しに sourcing を使わないのは、
