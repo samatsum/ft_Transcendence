@@ -430,7 +430,9 @@ static void
 	t_game*		game;
 	t_enemy*	seat;
 	t_pos		item;
+	double		snap[SNAP_CAP];
 	int			before;
+	int			len;
 
 	game = create_fps_duel(map_text);
 	if (!game || !find_collectible_cell(game, &item)) {
@@ -445,10 +447,62 @@ static void
 	before = count_sprites(game);
 	game_step(game, TICK_DT);
 	expect_int("収集数が1増える", game->world.collected, 1);
+	len = game_snapshot(game, snap, SNAP_CAP);
+	expect_int("snapshot に収集済み座標が載る", (len > 0) ? (int)snap[6] : 0, 1);
+	if (len > SIM_SNAP_HEADER_DOUBLES) {
+		expect_int("snapshot の収集座標 x", (int)snap[len - 2], (int)item.x);
+		expect_int("snapshot の収集座標 y", (int)snap[len - 1], (int)item.y);
+	}
 	expect_int("収集セルが 'A' になる", MAP(item, game->config), 'A');
 	expect_int("収集した席の身体が残る", sprite_in_list(game, seat->sprite), 1);
 	expect_int("戦闘員の身体を巻き添えにしない", combatant_sprites_intact(game), 1);
 	expect_int("消えたスプライトは最大1つ", before - count_sprites(game) <= 1, 1);
+	game_destroy(game);
+}
+
+// 空席 AI が取ったスターも人間席と同じ共有進捗になる。fps_duel の5個を
+// 4個まで人間席、最後の1個を AI 席で取らせ、snapshot の全量座標にも残ることを
+// 固定する。AI の経路選択に依存しないよう、最後のセルへ置いた後は移動速度を止める
+static void
+	test_ai_collect_updates_shared_progress(const char* map_text)
+{
+	t_game*	game;
+	t_enemy*	human;
+	t_enemy*	ai;
+	t_pos		item;
+	double		snap[SNAP_CAP];
+	int			len;
+	int			guard;
+
+	game = create_fps_duel(map_text);
+	if (!game) {
+		printf("  FAIL cannot stage FPS duel for AI collection\n");
+		g_failures++;
+		g_checks++;
+		return ;
+	}
+	human = combatant_by_id(game, 0);
+	ai = combatant_by_id(game, 1);
+	expect_int("fps_duel はスター5個", game->world.to_collect, 5);
+	expect_int("人間席とAI席がある", human != NULL && ai != NULL, 1);
+	guard = 0;
+	while (human && game->world.collected < game->world.to_collect - 1
+		&& find_collectible_cell(game, &item) && guard < 4) {
+		copy_pos(&human->sprite->pos, &item);
+		game_step(game, TICK_DT);
+		guard++;
+	}
+	expect_int("人間席が4個収集済み", game->world.collected, 4);
+	if (ai && find_collectible_cell(game, &item)) {
+		game_set_input_source(game, ai->combatant_id, INPUT_SRC_AI);
+		game->config.enemy_speed = 0.;
+		copy_pos(&ai->sprite->pos, &item);
+		game_step(game, TICK_DT);
+	}
+	expect_int("AI席が最後のスターを共有収集", game->world.collected, 5);
+	len = game_snapshot(game, snap, SNAP_CAP);
+	expect_int("snapshot の収集済み座標にAI分を含む", (len > 0) ? (int)snap[6] : -1, 5);
+	expect_int("snapshot に扉開放が載る", (len > 0) ? (int)snap[5] : -1, 1);
 	game_destroy(game);
 }
 
@@ -1312,6 +1366,7 @@ int
 	test_g06_goal_winner(fps_map, 1);
 	test_g06_hazard_cannot_win(fps_map);
 	test_g06_collect_keeps_combatant_sprite(fps_map);
+	test_ai_collect_updates_shared_progress(fps_map_2);
 	printf("G-07 FPS 複数スポーン（1vs1 同時開始）\n");
 	test_g07_distinct_spawns(fps_map);
 	test_g07_respawn_to_own_spawn(fps_map);

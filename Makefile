@@ -116,7 +116,7 @@ WEB_CFLAGS      = -O2 -Wall -Wextra -Werror -DWEB_BUILD -I $(INC_DIR)
 WEB_LDFLAGS     = -O2 -sALLOW_MEMORY_GROWTH=1 -sTEXTDECODER=1 \
                   -sMODULARIZE=1 -sEXPORT_NAME=createCub3DModule -sENVIRONMENT=web,node \
                   -sEXPORTED_RUNTIME_METHODS='["ccall","cwrap","HEAPU8","HEAPF64"]' \
-                  -sEXPORTED_FUNCTIONS='["_web_init","_web_render","_web_render_frame","_web_apply_snapshot","_web_set_input","_web_toggle_option","_web_set_weapon","_web_shoot","_web_play_shot","_web_framebuffer_ptr","_web_framebuffer_width","_web_framebuffer_height","_web_framebuffer_stride","_web_register_texture","_malloc","_free"]'
+                  -sEXPORTED_FUNCTIONS='["_web_init","_web_render","_web_render_frame","_web_apply_snapshot","_web_apply_world_delta","_web_set_input","_web_toggle_option","_web_set_weapon","_web_shoot","_web_play_shot","_web_framebuffer_ptr","_web_framebuffer_width","_web_framebuffer_height","_web_framebuffer_stride","_web_register_texture","_malloc","_free"]'
 SIM_CFLAGS      = -O2 -Wall -Wextra -Werror -DSIM_BUILD -I $(INC_DIR)
 SIM_LDFLAGS     = -O2 -sALLOW_MEMORY_GROWTH=1 -sTEXTDECODER=1 \
                   -sMODULARIZE=1 -sEXPORT_NAME=createCub3DSimModule -sENVIRONMENT=node \

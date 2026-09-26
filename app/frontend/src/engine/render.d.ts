@@ -32,6 +32,8 @@ export interface RenderModule {
 
 	// snapshot 経路（GV-06 が使う本命）
 	_web_apply_snapshot: (flatPtr: number, len: number, viewId: number) => void;
+	/** 収集済み座標の全量（x,y の連続 f64）と扉状態を表示 world へ反映 */
+	_web_apply_world_delta: (positionsPtr: number, len: number, doorsOpen: number) => number;
 	_web_render_frame: () => void;
 	/** 撃った本人の武器モーションだけを始める（命中判定はサーバの sim。#187） */
 	_web_play_shot: () => void;

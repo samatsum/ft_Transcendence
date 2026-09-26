@@ -62,7 +62,7 @@ static void
 	if (game->world.to_collect > 0 && game->world.to_collect == game->world.collected) {
 		ft_write_str_n(buf, size, "ALL COLLECTED!", 0);
 	} else if (game->world.to_collect > 0) {
-		i = ft_write_str_n(buf, size, "Collect: ", 0);
+		i = ft_write_str_n(buf, size, "Collected: ", 0);
 		i = ft_write_str_n(buf, size, " / ", ft_write_int_n(buf, size, game->world.collected, i));
 		ft_write_int_n(buf, size, game->world.to_collect, i);
 	} else {

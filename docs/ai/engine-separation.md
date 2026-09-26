@@ -169,7 +169,7 @@ Breakdown of the inspected `main_loop` and its migration target:
 |---|---|---|
 | **One additional API** | `game_set_input_source(game, id, source)` was added | Needed so a disconnected slot's input source can be switched to AI mid-match (the reconnect spec from ②), i.e. a slot's input source must be changeable during a match |
 | **A thin JS wrapper was added** | `sim_create(...)` / `sim_set_input(..., yaw, fire)` (`fire` added by [Issue #187](https://github.com/samatsum/ft_Transcendence/issues/187)) | So JS doesn't need to assemble struct pointers itself. The `mv`/`yaw`/`act` → `t_input` mapping is the responsibility of platform/headless (② §6-B) |
-| **`game_snapshot` returns a flat f64 array instead of a struct** | 5 header fields + 9 fields per combatant | Avoids sharing struct layout across the WASM boundary; the JS side can read it straight from `HEAPF64`. **JSON encoding and tick numbering are Node's responsibility** (② §5-B) |
+| **`game_snapshot` returns a flat f64 array instead of a struct** | 7 header fields + 9 fields per combatant + FPS collection coordinates | Avoids sharing struct layout across the WASM boundary; the JS side can read it straight from `HEAPF64`. **JSON encoding and tick numbering are Node's responsibility** (② §5-B) |
 | **`game_apply_snapshot` lives on the client side, not in the sim layer** | `codes/srcs/platform/web/web_snapshot.c` | The server does not use this function (it is not linked into `sim.wasm`). Interpolation is handled by `web/snapshot_interp.js` |
 | **`seed` was added to `match_rules`** | A non-zero value fixes the RNG sequence | So a match is deterministically reproducible given the same input sequence (required for demo recording and B-10 integration tests) |
 
@@ -204,7 +204,7 @@ plan; in practice, samatsum carried out both ([6-チーム分担計画](../human
 | `tick` | Server-side tick number | Every tick |
 | `match` | State (waiting/playing/finished), winner, score (per team or per individual) | Every tick |
 | `combatants[N]` | id / team / hand / pos(x,y) / dir_angle / alive / is_ai / respawn_timer | Every tick |
-| `world_delta` | List of collected item coordinates, door-open flags (FPS mode only) | Only on change |
+| `world_delta` | Complete collected-item coordinate set and door-open flag (FPS only) | Every FPS snapshot |
 
 - Stays **under 1KB per message** with 4 combatants plus small fixed-size data (JSON is sufficient).
 - Enemy AI (FPS obstruction hazards) is distributed in the same `combatants` format (the client does not distinguish and renders them the same way).
@@ -214,12 +214,10 @@ plan; in practice, samatsum carried out both ([6-チーム分担計画](../human
 `tick` / `match` / `combatants[N]` are implemented. However, the wiring differs from the design in some respects.
 
 - The sim does not hold `tick`. **Tick numbering is owned by Node (the server)**
-  (② §5-C). What sim returns is just a flat f64 array of 5 header fields + 9 fields per combatant.
-- **Only `world_delta` is unimplemented** (the sole intentional deferral).
-  It was skipped because it is not needed for the Gate 2 RSP 2v2 milestone. It will be added when FPS goes online (B-14), via
-  "accumulating the list of collected coordinates + sending the full set on the initial message"
-  (handover item #2 in [3-エンジンPhase3レポート](../../archive/03_実装レポート/3-エンジンPhase3レポート.md)).
-- "Under 1KB per message" and "no win/loss judgment code on the client" have both been achieved.
+  (② §5-C). What sim returns is a flat f64 array with a 7-field header, combatants, and FPS collection coordinates.
+- `world_delta` is implemented for FPS. The engine preserves initial collectible-cell flags to distinguish collected cells from
+  ordinary visited markers; the server sends the complete current set in every FPS snapshot so a skipped frame recovers on the next one.
+- "Under 1KB per message" and "no win/loss judgment code on the client" remain required checks.
 
 ---
 

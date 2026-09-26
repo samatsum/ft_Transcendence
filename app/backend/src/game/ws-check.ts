@@ -31,6 +31,7 @@ const W12_ROOM_IDS = {
 	fpsReconnect: 'ws-reconnect-fps',
 	fpsLeave: 'ws-leave-fps',
 	rspLeave: 'ws-leave-rsp',
+	fpsWorld: 'ws-world-fps',
 	rspLateInitial: 'ws-late-initial-rsp',
 } as const;
 
@@ -297,15 +298,132 @@ async function checkTwoClientsPlay(): Promise<string[]> {
 
 	const sizes = a.received.filter((m) => m.t === 'snapshot').map((m) => JSON.stringify(m).length);
 	const avg = Math.round(sizes.reduce((x, y) => x + y, 0) / Math.max(1, sizes.length));
-	console.log(`  受入 №5: snapshot avg=${avg}B max=${Math.max(...sizes)}B (< 1KB)`);
-	if (avg >= 1024) bad.push(`受入 №5 違反: snapshot が 1KB 超 (avg=${avg})`);
+	const max = Math.max(...sizes);
+	console.log(`  受入 №5: snapshot avg=${avg}B max=${max}B (< 1KB)`);
+	if (avg >= 1024 || max >= 1024) {
+		bad.push(`受入 №5 違反: snapshot が 1KB 以上 (avg=${avg}, max=${max})`);
+	}
 
 	a.close();
 	b.close();
 	return bad;
 }
 
-/* ── 検査2: 受入条件 №6（不正メッセージ） ───────────────────────── */
+/* ── 検査2: FPS world_delta の全量配信・復帰・サイズ ──────────────── */
+
+async function checkFpsWorldDelta(): Promise<string[]> {
+	const bad: string[] = [];
+	const room = await createRoomFromRules({
+		roomId: W12_ROOM_IDS.fpsWorld,
+		mode: 'fps',
+		rules: { map: 'fps_duel' },
+		seed: 42,
+		participants: [
+			{ userId: 701, slot: 0 },
+			{ userId: 702, slot: 1 },
+		],
+		log: { info: () => {}, warn: () => {} },
+	});
+	const a = new TestClient(room.roomId, 701);
+	const b = new TestClient(room.roomId, 702);
+	let resumed: TestClient | undefined;
+	try {
+		await Promise.all([a.open(), b.open()]);
+		a.send({ t: 'join' });
+		b.send({ t: 'join' });
+		const joined = await Promise.all([
+			a.waitFor(() => Boolean(a.find('welcome')), 'FPS A welcome', bad),
+			b.waitFor(() => Boolean(b.find('welcome')), 'FPS B welcome', bad),
+		]);
+		if (joined.every(Boolean)) {
+			// 実時間ルームは3秒countdown後にplayingとなり、そこで初めてsnapshotを配信する。
+			await sleep(3_200);
+			await a.waitFor(() => a.countOf('snapshot') >= 3, 'FPS snapshots', bad);
+		}
+
+		const snapshots = a.received.filter(
+			(message): message is Extract<GameServerMessage, { t: 'snapshot' }> => message.t === 'snapshot',
+		);
+		for (const [index, snapshot] of snapshots.entries()) {
+			const delta = snapshot.d.world_delta;
+			if (!delta) {
+				bad.push(`FPS snapshot #${index} に world_delta がない`);
+				continue;
+			}
+			if ('total' in delta) bad.push(`FPS snapshot #${index} が廃止した total を含む`);
+			const keys = delta.collected.map(([x, y]) => `${x},${y}`);
+			if (new Set(keys).size !== keys.length) {
+				bad.push(`FPS snapshot #${index} の collected に重複座標がある`);
+			}
+		}
+		const first = snapshots[0]?.d.world_delta;
+		if (!first || first.collected.length !== 0 || first.doors_open) {
+			bad.push('FPS 初回snapshotが空のcollectedかつdoors_open=falseでない');
+		}
+
+		// 通常snapshotは混雑時に1枚dropされ得る。次のFPS snapshotにも全量を必ず
+		// 載せることを確認し、drop後に変化が無くてもクライアントが復旧できる契約を固定する。
+		if (snapshots.length >= 2) {
+			if (gameMessageDelivery(snapshots[0]!, 64 * 1024 + 1) !== 'skip') {
+				bad.push('FPS通常snapshotが混雑時にskipされない');
+			}
+			if (!snapshots[1]!.d.world_delta) {
+				bad.push('drop直後の次FPS snapshotにworld_deltaがない');
+			}
+		}
+
+		const liveSizes = snapshots.map((message) => new TextEncoder().encode(JSON.stringify(message)).byteLength);
+		const latest = snapshots.at(-1);
+		if (latest?.d.world_delta) {
+			// fps_duel は星5個、座標は最大2桁。全収集・扉開放の最大形も1KB予算に入れる。
+			const fullState = {
+				...latest,
+				d: {
+					...latest.d,
+					world_delta: {
+						collected: [[10, 10], [11, 10], [12, 10], [13, 10], [14, 10]] as [number, number][],
+						doors_open: true,
+					},
+				},
+			};
+			const fullSize = new TextEncoder().encode(JSON.stringify(fullState)).byteLength;
+			const avg = Math.round(liveSizes.reduce((sum, size) => sum + size, 0) / Math.max(1, liveSizes.length));
+			const max = Math.max(0, ...liveSizes);
+			console.log(`  FPS world_delta: snapshot avg=${avg}B max=${max}B / full-state=${fullSize}B (< 1KB)`);
+			if (avg >= 1024 || max >= 1024 || fullSize >= 1024) {
+				bad.push(`FPS snapshot が1KB以上 (avg=${avg}, max=${max}, full=${fullSize})`);
+			}
+		}
+
+		a.close();
+		const disconnected = await b.waitFor(
+			() => b.received.some((message) => message.t === 'player_status' && message.d.slot === 0 && message.d.state === 'grace'),
+			'FPS A disconnect',
+			bad,
+		);
+		if (disconnected) {
+			resumed = new TestClient(room.roomId, 701);
+			await resumed.open();
+			resumed.send({ t: 'join' });
+			await resumed.waitFor(() => Boolean(resumed?.find('welcome')), 'FPS resume welcome', bad);
+			await resumed.waitFor(() => resumed?.received.some((message) => message.t === 'snapshot') ?? false, 'FPS resume snapshot', bad);
+			const welcome = resumed.find('welcome');
+			const resumedSnapshot = resumed.received.find(
+				(message): message is Extract<GameServerMessage, { t: 'snapshot' }> => message.t === 'snapshot',
+			);
+			if (welcome?.d.resume !== true) bad.push('FPS再接続のwelcome.resumeがtrueでない');
+			if (!resumedSnapshot?.d.world_delta) bad.push('FPS再接続snapshotにworld_deltaがない');
+		}
+	} finally {
+		a.close();
+		b.close();
+		resumed?.close();
+		closeRoom(room.roomId);
+	}
+	return bad;
+}
+
+/* ── 検査3: 受入条件 №6（不正メッセージ） ───────────────────────── */
 
 async function checkInvalidMessages(): Promise<string[]> {
 	const bad: string[] = [];
@@ -990,22 +1108,26 @@ async function main(): Promise<void> {
 	const bad1 = await checkTwoClientsPlay();
 	console.log(bad1.length ? `  NG:\n    ${bad1.join('\n    ')}` : '  OK');
 
-	console.log('\n検査2: 受入条件 №6（不正メッセージ）');
-	const bad2 = await checkInvalidMessages();
-	console.log(bad2.length ? `  NG:\n    ${bad2.join('\n    ')}` : '  OK: 9項目すべて仕様どおり');
+	console.log('\n検査2: FPS world_delta の全量配信・復帰・サイズ');
+	const bad2 = await checkFpsWorldDelta();
+	console.log(bad2.length ? `  NG:\n    ${bad2.join('\n    ')}` : '  OK');
 
-	console.log('\n検査3: B-12 切断・再接続・AI代替');
-	const bad3 = await checkReconnectAndForfeit();
-	console.log(bad3.length ? `  NG:\n    ${bad3.join('\n    ')}` : '  OK: grace復帰・AI代替・abandon・forfeit');
+	console.log('\n検査3: 受入条件 №6（不正メッセージ）');
+	const bad3 = await checkInvalidMessages();
+	console.log(bad3.length ? `  NG:\n    ${bad3.join('\n    ')}` : '  OK: 9項目すべて仕様どおり');
 
-	console.log('\n検査4: B-14 マップ API とテキスト配布の一致');
-	const bad4 = await checkMaps(`http://127.0.0.1:${PORT}`);
-	console.log(bad4.length ? `  NG:\n    ${bad4.join('\n    ')}` : '  OK');
+	console.log('\n検査4: B-12 切断・再接続・AI代替');
+	const bad4 = await checkReconnectAndForfeit();
+	console.log(bad4.length ? `  NG:\n    ${bad4.join('\n    ')}` : '  OK: grace復帰・AI代替・abandon・forfeit');
+
+	console.log('\n検査5: B-14 マップ API とテキスト配布の一致');
+	const bad5 = await checkMaps(`http://127.0.0.1:${PORT}`);
+	console.log(bad5.length ? `  NG:\n    ${bad5.join('\n    ')}` : '  OK');
 
 	closeAllRooms();
 	await app.close();
 
-	if (bad1.length || bad2.length || bad3.length || bad4.length) {
+	if (bad1.length || bad2.length || bad3.length || bad4.length || bad5.length) {
 		console.error('\nW-11 / B-12 / B-14: 失敗');
 		process.exit(1);
 	}

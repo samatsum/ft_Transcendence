@@ -63,6 +63,8 @@ static void
 	set_seat_source(t_enemy* seat, int source);
 static int
 	snapshot_combatant(t_game* game, t_enemy* cur, double* buf);
+static int
+	snapshot_collected(t_game* game, double* buf, int max_doubles);
 
 /* ************************************************************************** */
 // sim 公開 API の入口。メモリ上の .cub テキストから、描画・ウィンドウ・ファイル
@@ -265,6 +267,7 @@ int
 {
 	t_enemy*	cur;
 	int			count;
+	int			collected;
 	int			used;
 
 	if (!game || !buf) {
@@ -276,7 +279,9 @@ int
 		count++;
 		cur = cur->next;
 	}
-	if (max_doubles < SIM_SNAP_HEADER_DOUBLES + count * SIM_SNAP_COMBATANT_DOUBLES) {
+	collected = snapshot_collected(game, NULL, 0);
+	if (max_doubles < SIM_SNAP_HEADER_DOUBLES + count * SIM_SNAP_COMBATANT_DOUBLES
+		+ collected * 2) {
 		return (0);
 	}
 	buf[0] = (game->cleared) ? SIM_STATE_FINISHED : SIM_STATE_PLAYING;
@@ -284,13 +289,45 @@ int
 	buf[2] = game->rsp.score[TEAM_RED];
 	buf[3] = game->rsp.score[TEAM_BLUE];
 	buf[4] = count;
+	buf[5] = (game->world.to_collect > 0
+		&& game->world.collected >= game->world.to_collect);
+	buf[6] = collected;
 	used = SIM_SNAP_HEADER_DOUBLES;
 	cur = game->world.enemies;
 	while (cur) {
 		used += snapshot_combatant(game, cur, buf + used);
 		cur = cur->next;
 	}
+	used += snapshot_collected(game, buf + used, max_doubles - used) * 2;
 	return (used);
+}
+
+/* ************************************************************************** */
+// 起動時の収集物フラグと現在の data を照合し、収集済みセルだけを返す。
+// 'A' は通常の訪問でも使われるので、data 単独で判定してはならない
+static int
+	snapshot_collected(t_game* game, double* buf, int max_doubles)
+{
+	int	i;
+	int	count;
+	int	total;
+
+	if (!game || game->mode != MODE_FPS) return (0);
+	total = game->config.map.rows * game->config.map.columns;
+	count = 0;
+	i = 0;
+	while (i < total) {
+		if ((game->config.map.flags[i] & CELL_COLLECTIBLE)
+			&& !IS_COLLECTIBLE(game->config.map.data[i])) {
+			if (buf && count * 2 + 1 < max_doubles) {
+				buf[count * 2] = i % game->config.map.columns;
+				buf[count * 2 + 1] = i / game->config.map.columns;
+			}
+			count++;
+		}
+		i++;
+	}
+	return (count);
 }
 
 /* ************************************************************************** */

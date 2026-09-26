@@ -16,7 +16,7 @@ export type { SnapshotPayload } from '@ft/shared';
 export type SnapshotMode = 'rsp' | 'fps';
 
 /** sim.h の SIM_SNAP_HEADER_DOUBLES */
-const HEADER_DOUBLES = 5;
+const HEADER_DOUBLES = 7;
 /** sim.h の SIM_SNAP_COMBATANT_DOUBLES: [id,team,hand,x,y,dir,alive,is_ai,respawn_s] */
 const COMBATANT_DOUBLES = 9;
 
@@ -58,11 +58,15 @@ export function decodeSnapshot(
 	const scoreRed = flat[2]!;
 	const scoreBlue = flat[3]!;
 	const count = flat[4]!;
-	const required = HEADER_DOUBLES + count * COMBATANT_DOUBLES;
+	const collectedCount = flat[6]!;
+	const required = HEADER_DOUBLES + count * COMBATANT_DOUBLES + collectedCount * 2;
 	if (!Number.isInteger(count) || count < 0 || flat.length < required) {
 		throw new Error(
 			`snapshot combatant 数が不正 (count=${count}, length=${flat.length}, need=${required})`,
 		);
+	}
+	if (!Number.isInteger(collectedCount) || collectedCount < 0) {
+		throw new Error(`snapshot collected 数が不正 (${collectedCount})`);
 	}
 
 	const combatants: CombatantView[] = [];
@@ -80,7 +84,7 @@ export function decodeSnapshot(
 		});
 	}
 
-	return {
+	const message: SnapshotMessage = {
 		t: 'snapshot',
 		d: {
 			tick,
@@ -93,4 +97,16 @@ export function decodeSnapshot(
 			combatants,
 		},
 	};
+	if (mode === 'fps') {
+		const start = HEADER_DOUBLES + count * COMBATANT_DOUBLES;
+		const collected: [number, number][] = [];
+		for (let i = 0; i < collectedCount; i++) {
+			collected.push([flat[start + i * 2]!, flat[start + i * 2 + 1]!]);
+		}
+		message.d.world_delta = {
+			collected,
+			doors_open: flat[5] !== 0,
+		};
+	}
+	return message;
 }

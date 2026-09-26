@@ -118,8 +118,8 @@ export default function RoomCreatePage() {
 								key={m.value}
 								className={`cursor-pointer rounded-lg border p-4 transition-colors ${
 									selected
-										? 'border-sky-500 bg-sky-500/10'
-										: 'border-slate-700 bg-slate-800 hover:border-slate-600'
+										? 'border-accent bg-accent/10'
+										: 'border-line bg-surface hover:border-line-strong'
 								}`}
 							>
 								<input
@@ -178,12 +178,12 @@ export default function RoomCreatePage() {
 			</div>
 
 			{error && (
-				<p className="text-body text-rose-400" role="alert">
+				<p className="text-body text-danger-bright" role="alert">
 					{ROOM_CREATE_ERROR_TEXT[error.code] ?? `部屋を作れませんでした（${error.message}）`}
 				</p>
 			)}
 			{settingsError && !settingsError.startsWith('先取点') && (
-				<p className="text-body text-rose-400" role="alert">
+				<p className="text-body text-danger-bright" role="alert">
 					{settingsError}
 				</p>
 			)}
