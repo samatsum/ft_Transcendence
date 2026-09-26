@@ -101,12 +101,15 @@ function shouldReconnect(code: number): boolean {
 	return true;
 }
 
-/** 明示退出の確認待ち・失敗中を除き、ゲーム画面に留まれないcloseはロビーへ戻す */
+/** 退出確認待ち中は遷移せず、失敗時は正常終了・ルーム消滅のみロビーへ戻す */
 export function shouldReturnToLobby(
 	code: number | null,
 	leaveStatus: GameLeaveStatus = 'idle',
 ): boolean {
-	if (leaveStatus !== 'idle' && leaveStatus !== 'acknowledged') return false;
+	if (leaveStatus === 'waiting') return false;
+	if (leaveStatus === 'failed') {
+		return code === WS_CLOSE.normal || code === WS_CLOSE.roomNotFound;
+	}
 	return (
 		code === WS_CLOSE.normal ||
 		code === WS_CLOSE.roomNotFound ||

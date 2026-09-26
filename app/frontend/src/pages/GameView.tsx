@@ -250,7 +250,7 @@ export default function GameView() {
 				/>
 				{leaveStatus === 'waiting' && welcome?.mode !== 'fps' && (
 					<p role="status" className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded bg-black/80 px-4 py-2 text-caption">
-						退出を確認しています。接続を復旧しています…
+						退出を確認しています…
 					</p>
 				)}
 				{leaveStatus === 'failed' && welcome?.mode !== 'fps' && (

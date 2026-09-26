@@ -386,6 +386,7 @@ The formalization of the 5 message families `join / input / snapshot / event / s
 | `event` | §5-D | On occurrence |
 | `player_status` | `slot`, `state: connected\|ai\|grace` (grace = in disconnect grace period) | On a seat's human/AI switch |
 | `error` | §2-C | — |
+| `leave_ack` | `{}` | After an RSP `leave` is accepted and its lobby-context release is attempted; also sent when `join` targets a seat that was explicitly left, without restoring control |
 
 > **On the `resume` determination (added 2026-07-27)**: `resume=true` can only be set when the seat is known to be **in the §7 grace state** — and per-seat grace state is owned by **B-12**. So **in B-11 alone, `resume` is structurally always `false`**. This is documented explicitly so a reader of the implementation doesn't mistake it for a bug. It's correctly populated only once B-12 adds the per-seat status table.
 
