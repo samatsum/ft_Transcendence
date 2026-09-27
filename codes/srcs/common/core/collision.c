@@ -15,7 +15,9 @@ static double
 /* ************************************************************************** */
 // 移動先 next が他の戦闘員の当たり円に阻まれるか判定する（ignore は自分自身の
 // 除外用）。半径は一律の定数ではなく各戦闘員の radius を使う: プレイヤーは
-// PLAYER_RADIUS、NPC は ENEMY_RADIUS で、統合前の非対称な判定と一致させる
+// PLAYER_RADIUS、NPC は ENEMY_RADIUS で、統合前の非対称な判定と一致させる。
+// 死亡中（復帰待ち）の席は阻まない。死体は描かれない（#244）ので、残すと
+// 見えない壁になる（① §4-C「死亡中は世界へ干渉しない」）
 int
 	is_blocked_by_enemies(t_pos* cur, t_pos* next, t_world* world, t_sprite* ignore)
 {
@@ -23,7 +25,8 @@ int
 
 	e = world->enemies;
 	while (e) {
-		if (e->sprite != ignore && is_entity_blocking(cur, next, &e->sprite->pos, e->radius)) {
+		if (e->sprite != ignore && e->death_timer <= 0.0
+			&& is_entity_blocking(cur, next, &e->sprite->pos, e->radius)) {
 			return (1);
 		}
 		e = e->next;
