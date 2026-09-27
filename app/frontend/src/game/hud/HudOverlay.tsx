@@ -62,6 +62,7 @@ export function HudOverlay({
 				name: `Player ${slot}`,
 				state,
 				graceDeadlineMs: null,
+				respawnSeconds: null,
 			});
 		}
 	});

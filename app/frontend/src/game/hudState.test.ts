@@ -4,6 +4,7 @@ import type { SnapshotPayload } from '@ft/shared';
 import {
 	applyGameEvent,
 	applyPlayerStatus,
+	applySnapshotDeaths,
 	createInitialHudState,
 	expireFlashes,
 	seatsFromSnapshot,
@@ -21,6 +22,49 @@ describe('seatsFromSnapshot', () => {
 		expect(seats.get(1)?.state).toBe('ai');
 		expect(seats.get(1)?.name).toBe('AI');
 		expect(seats.get(2)?.state).toBe('connected');
+	});
+});
+
+describe('applySnapshotDeaths', () => {
+	function dead(id: number, respawn_ms: number): SnapshotPayload['combatants'][0] {
+		return { ...combatant(id, true), alive: false, respawn_ms };
+	}
+
+	it('respawn_ms>0 の席に復帰までの残り秒(切り上げ)を入れる', () => {
+		const seats = seatsFromSnapshot([combatant(0, false), combatant(1, true)]);
+		const next = applySnapshotDeaths(seats, [combatant(0, false), dead(1, 4200)]);
+		expect(next.get(0)?.respawnSeconds).toBeNull();
+		expect(next.get(1)?.respawnSeconds).toBe(5);
+	});
+
+	it('復帰(respawn_ms=0)したら null に戻る', () => {
+		const seats = seatsFromSnapshot([combatant(1, true)]);
+		const died = applySnapshotDeaths(seats, [dead(1, 4200)]);
+		const back = applySnapshotDeaths(died, [combatant(1, true)]);
+		expect(back.get(1)?.respawnSeconds).toBeNull();
+	});
+
+	it('表示上の秒が変わらなければ同じ Map を返す(再描画させない)', () => {
+		const seats = seatsFromSnapshot([combatant(1, true)]);
+		const died = applySnapshotDeaths(seats, [dead(1, 4200)]);
+		expect(applySnapshotDeaths(died, [dead(1, 4050)])).toBe(died);
+		expect(applySnapshotDeaths(seats, [combatant(1, true)])).toBe(seats);
+	});
+
+	it('seats に無い id(ハザード等)は追加しない', () => {
+		const seats = seatsFromSnapshot([combatant(0, false)]);
+		const next = applySnapshotDeaths(seats, [combatant(0, false), dead(8, 3000)]);
+		expect(next).toBe(seats);
+		expect(next.has(8)).toBe(false);
+	});
+
+	it('接続状態(grace など)は変えない', () => {
+		const state = { ...createInitialHudState(), seats: seatsFromSnapshot([combatant(0, false)]) };
+		const graced = applyPlayerStatus(state, { slot: 0, state: 'grace' }, 1000, 30000);
+		const next = applySnapshotDeaths(graced.seats, [{ ...combatant(0, false), alive: false, respawn_ms: 2000 }]);
+		expect(next.get(0)?.state).toBe('grace');
+		expect(next.get(0)?.graceDeadlineMs).toBe(31000);
+		expect(next.get(0)?.respawnSeconds).toBe(2);
 	});
 });
 

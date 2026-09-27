@@ -11,6 +11,8 @@ export interface SeatInfo {
 	state: SeatState;
 	/** grace のときの猶予満了時刻(ms, performance.now 基準)。それ以外は null */
 	graceDeadlineMs: number | null;
+	/** FPS で死亡中なら復帰までの残り秒(切り上げ)。生存中・RSP は null(#245) */
+	respawnSeconds: number | null;
 }
 
 export interface MatchEndState {
@@ -80,9 +82,32 @@ export function seatsFromSnapshot(combatants: SnapshotPayload['combatants']): Ma
 			name: c.is_ai ? 'AI' : `Player ${c.id}`,
 			state: c.is_ai ? 'ai' : 'connected',
 			graceDeadlineMs: null,
+			respawnSeconds: null,
 		});
 	});
 	return seats;
+}
+
+/**
+ * snapshot の死亡状態(respawn_ms)を seats へ反映する(#245)。
+ * sim は FPS の死亡中に respawn_ms>0 を出し、RSP では常に 0 なので、
+ * respawn_ms>0 だけで死亡中とみなせる。表示は秒単位なので、秒が変わらない限り
+ * 同じ Map を返して再描画を起こさない。seats に無い id(ハザード等)は無視する
+ */
+export function applySnapshotDeaths(
+	seats: Map<number, SeatInfo>,
+	combatants: SnapshotPayload['combatants'],
+): Map<number, SeatInfo> {
+	let next: Map<number, SeatInfo> | null = null;
+	for (const c of combatants) {
+		const seat = seats.get(c.id);
+		if (!seat) continue;
+		const respawnSeconds = c.respawn_ms > 0 ? Math.ceil(c.respawn_ms / 1000) : null;
+		if (seat.respawnSeconds === respawnSeconds) continue;
+		next ??= new Map(seats);
+		next.set(c.id, { ...seat, respawnSeconds });
+	}
+	return next ?? seats;
 }
 
 /**
@@ -103,6 +128,7 @@ export function applyPlayerStatus(
 		name: `Player ${msg.slot}`,
 		state: 'connected' as SeatState,
 		graceDeadlineMs: null,
+		respawnSeconds: null,
 	};
 	seats.set(msg.slot, {
 		...prev,

@@ -4,6 +4,8 @@ import type { SeatInfo } from '../hudState.js';
 // ④ §3.3 HUD 表 対戦者ステータス行:
 //   各席: 名前 + 状態バッジ `connected / 切断中(残n秒) / AI`
 // - grace は残秒表示(1秒間隔で描画更新)
+// - FPS で死亡中の席には `死亡中(残n秒)` を並べる(#245)。接続状態とは独立なので
+//   状態バッジを置き換えず別のピルにする。残秒は useHudState が snapshot から更新する
 // - 「名前」は placeholder(GV-07 では slot 番号 + AI 判定)。実名は shared 拡張の別 PR
 
 interface PlayerStatusRowProps {
@@ -43,6 +45,11 @@ function SeatBadge({ seat, isSelf, nowMs }: { seat: SeatInfo; isSelf: boolean; n
 				{STATE_LABEL[seat.state]}
 				{remaining !== null && ` (残${remaining}秒)`}
 			</span>
+			{seat.respawnSeconds !== null && (
+				<span className="rounded bg-danger-strong px-1.5 py-0.5 text-[10px] font-semibold text-fg-strong">
+					死亡中 (残{seat.respawnSeconds}秒)
+				</span>
+			)}
 		</div>
 	);
 }

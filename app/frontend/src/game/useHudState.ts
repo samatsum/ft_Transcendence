@@ -4,6 +4,7 @@ import type { WelcomeMessage } from '@ft/shared';
 import type { QueuedGameEvent, TimedSnapshot } from './useGameSocket.js';
 import {
 	applyGameEvent,
+	applySnapshotDeaths,
 	createInitialHudState,
 	expireFlashes,
 	seatsFromSnapshot,
@@ -12,7 +13,7 @@ import {
 
 // GV-07: HudOverlay が消費する派生 state を1本の hook に集約。
 // - pendingEvents を到着順に applyGameEvent してから確認済みにする
-// - 200ms 間隔で snapshotBufferRef.current の tail を読んでスコア/seats を更新
+// - 200ms 間隔で snapshotBufferRef.current の tail を読んでスコア/seats/死亡中の残り秒を更新
 //   (snapshot ref は再レンダを走らせないので明示的にサンプリングする)
 // - countdown は event(countdown, seconds:3) を受けて 3→2→1 と1秒ずつデクリメント
 // - point/hand flash の期限切れは 200ms 間隔で expire
@@ -68,6 +69,11 @@ export function useHudState({
 				if (!seatsInitializedRef.current) {
 					next = { ...next, seats: seatsFromSnapshot(tail.payload.combatants) };
 					seatsInitializedRef.current = true;
+				}
+				// 死亡中の残り秒も snapshot が正本(#245)
+				const seats = applySnapshotDeaths(next.seats, tail.payload.combatants);
+				if (seats !== next.seats) {
+					next = { ...next, seats };
 				}
 				// スコアは snapshot が正本(② §5-D: 「イベントは演出、正本は snapshot」)
 				const [a, b] = tail.payload.match.score;
