@@ -1,3 +1,4 @@
+import { Alert } from './Alert.js';
 import { Button } from './Button.js';
 import { Card } from './Card.js';
 import { ColorSwatch } from './ColorSwatch.js';
@@ -6,7 +7,9 @@ import { FormField } from './FormField.js';
 import { Header } from './Header.js';
 import { Input } from './Input.js';
 import { Layout } from './Layout.js';
+import { LinkButton } from './LinkButton.js';
 import { Modal } from './Modal.js';
+import { Select } from './Select.js';
 import { ToastViewport } from './Toast.js';
 import { CheckCircleIcon } from './icons/CheckCircleIcon.js';
 import { CloseIcon } from './icons/CloseIcon.js';
@@ -22,11 +25,14 @@ import { WarningTriangleIcon } from './icons/WarningTriangleIcon.js';
 
 export const DesignSystem = {
 	UI: {
+		Alert,
 		Button,
+		LinkButton,
 		Card,
 		ColorSwatch,
 		FormField,
 		Input,
+		Select,
 		Modal,
 		ToastViewport,
 		Header,

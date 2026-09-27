@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { Button } from './Button.js';
 
 // ④ §2「ErrorBoundary: 描画例外時に再読込導線を出す（白画面と未処理例外を防ぐ）」。
 // F-01 の推奨決定#2: App 全体を包む class ErrorBoundary 一箇所。
@@ -46,32 +47,22 @@ export class ErrorBoundary extends Component<Props, State> {
 		return (
 			<main
 				role="alert"
-				className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-950 p-8 text-slate-100"
+				className="flex min-h-screen flex-col items-center justify-center gap-4 bg-page p-8 text-fg"
 			>
 				<h1 className="text-heading-md">画面の描画で問題が起きました</h1>
-				<p className="max-w-md text-center text-body text-slate-400">
+				<p className="max-w-md text-center text-body text-fg-muted">
 					もう一度読み込むか、ホームへ戻ってください。
 				</p>
 				{import.meta.env.DEV && (
-					<pre className="max-w-xl overflow-x-auto rounded border border-slate-700 bg-slate-900 p-3 text-caption text-rose-300">
+					<pre className="max-w-xl overflow-x-auto rounded border border-line bg-surface-low p-3 text-caption text-danger-bright">
 						{this.state.error.message}
 					</pre>
 				)}
 				<div className="flex gap-3">
-					<button
-						type="button"
-						onClick={this.handleReload}
-						className="rounded-md bg-sky-500 px-4 py-2 text-label text-white hover:bg-sky-400"
-					>
-						もう一度読み込む
-					</button>
-					<button
-						type="button"
-						onClick={this.handleHome}
-						className="rounded-md border border-slate-600 px-4 py-2 text-label text-slate-200 hover:bg-slate-800"
-					>
+					<Button onClick={this.handleReload}>もう一度読み込む</Button>
+					<Button variant="secondary" onClick={this.handleHome}>
 						ホームへ
-					</button>
+					</Button>
 				</div>
 			</main>
 		);

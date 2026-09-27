@@ -2,6 +2,7 @@ import type { FpsAiSpeed, LobbyMode } from '@ft/shared';
 
 import { FormField } from '../components/FormField.js';
 import { Input } from '../components/Input.js';
+import { Select } from '../components/Select.js';
 import {
 	DEFAULT_MAP_CHOICE,
 	RANDOM_MAP_CHOICE,
@@ -84,10 +85,9 @@ export function GameCustomizationFields({
 		<fieldset className="flex flex-col gap-4" disabled={disabled}>
 			<legend className="text-label mb-2">ゲーム設定</legend>
 			<FormField label="マップ" hint={mapHint} required={!allowDefault}>
-				<select
+				<Select
 					value={mapChoice}
 					onChange={(event) => onMapChange(event.target.value)}
-					className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-body text-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
 				>
 					{allowDefault && <option value={DEFAULT_MAP_CHOICE}>サーバー既定</option>}
 					<option value={RANDOM_MAP_CHOICE}>ランダム</option>
@@ -96,7 +96,7 @@ export function GameCustomizationFields({
 							{map.name}
 						</option>
 					))}
-				</select>
+				</Select>
 			</FormField>
 
 			{selectedMap && <p className="text-caption text-fg-muted">{selectedMap.description}</p>}
@@ -122,15 +122,14 @@ export function GameCustomizationFields({
 
 			{mode === 'fps' && (
 				<FormField label="AI速度" required hint="AIの行動速度を3段階から選択します。">
-					<select
+					<Select
 						value={aiSpeed}
 						onChange={(event) => onAiSpeedChange(event.target.value as FpsAiSpeed)}
-						className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-body text-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
 					>
 						<option value="slow">遅い</option>
 						<option value="normal">標準</option>
 						<option value="fast">速い</option>
-					</select>
+					</Select>
 				</FormField>
 			)}
 		</fieldset>

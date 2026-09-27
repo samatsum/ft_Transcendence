@@ -1,6 +1,5 @@
-import { Link } from 'react-router-dom';
-
 import { Card } from '../components/Card.js';
+import { LinkButton } from '../components/LinkButton.js';
 
 // Issue #108 操作マニュアル。FPS と RSP を左右に並べた1枚もの。モード切替は持たない
 // （この画面に入る時点では部屋のモードが決まっていないため、どちらも同時に見せる）。
@@ -106,12 +105,9 @@ export default function HowToPlayPage() {
 			</div>
 
 			<div>
-				<Link
-					to="/lobby"
-					className="inline-flex items-center justify-center gap-2 rounded-md bg-surface-hover px-4 py-2 text-label text-fg transition-colors hover:bg-surface-active"
-				>
+				<LinkButton to="/lobby" variant="secondary">
 					戻る
-				</Link>
+				</LinkButton>
 			</div>
 		</div>
 	);

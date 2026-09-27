@@ -4,7 +4,7 @@ import type { ButtonHTMLAttributes } from 'react';
 // 優先する（見た目より使い分けの明快さ）。primary=主要動作、secondary=補助、
 // danger=破壊的操作（退室/削除）、ghost=非強調
 
-type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
+export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 	variant?: ButtonVariant;
@@ -22,6 +22,20 @@ const VARIANT_CLASS: Record<ButtonVariant, string> = {
 		'bg-transparent text-fg-secondary hover:bg-surface disabled:text-fg-disabled',
 };
 
+// LinkButton（<Link> をボタンの見た目で出す）と共有するため、クラスの組み立てを切り出す。
+// <Link> の中に <button> を入れると不正な HTML になるので、部品ではなくクラスを共有する
+export function buttonClassName(
+	variant: ButtonVariant = 'primary',
+	fullWidth = false,
+	className = '',
+): string {
+	const base =
+		'inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-label ' +
+		'transition-colors disabled:cursor-not-allowed';
+	const width = fullWidth ? 'w-full' : '';
+	return `${base} ${VARIANT_CLASS[variant]} ${width} ${className}`;
+}
+
 export function Button({
 	variant = 'primary',
 	fullWidth = false,
@@ -29,15 +43,7 @@ export function Button({
 	type = 'button',
 	...rest
 }: ButtonProps) {
-	const base =
-		'inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-label ' +
-		'transition-colors disabled:cursor-not-allowed';
-	const width = fullWidth ? 'w-full' : '';
 	return (
-		<button
-			type={type}
-			className={`${base} ${VARIANT_CLASS[variant]} ${width} ${className}`}
-			{...rest}
-		/>
+		<button type={type} className={buttonClassName(variant, fullWidth, className)} {...rest} />
 	);
 }

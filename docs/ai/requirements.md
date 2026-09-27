@@ -53,7 +53,7 @@
 > | Module | pt | Status |
 > |---|---|---|
 > | Advanced 3D graphics | 2 | **Implementation complete** (raycaster, 112fps @960×540). Needs only a README justification. Carries interpretive risk — see architecture.md §4.2 |
-> | Custom-made design system | 1 | **Complete** — 15 reusable components (9 UI + 5 icons + ColorSwatch), plus palette/typography/icon tokens; catalog at `/dev/design-system` |
+> | Custom-made design system | 1 | **Complete** — 18 reusable components (12 UI + 5 icons + ColorSwatch; Select/LinkButton/Alert added in #220), plus palette/typography/icon tokens; catalog at `/dev/design-system` |
 > | Spectator mode | 1 | GV-06 handles the spectator display path. `spectate` WS action + GV-12 remain |
 > | Health check / status page | 1 | `GET /api/health` exists. Status page + backup/recovery remain |
 >
@@ -258,7 +258,7 @@ Also, in case some modules are not validated during evaluation, **it is a good i
 - [ ] **Minor (1pt)**: server-side rendering (SSR) for performance and SEO improvement.
 - [ ] **Minor (1pt)**: a progressive web app (PWA) with offline support and installability.
 - [◎] **Minor (1pt)**: a custom-made design system (at least 10 reusable components, proper color/typography/icons).
-  *(bonus. 9 of 10 components already exist)*
+  *(bonus #10 — complete; 18 components, see architecture.md §4.2)*
 - [ ] **Minor (1pt)**: advanced search functionality (filters, sorting, pagination).
 - [ ] **Minor (1pt)**: a file upload and management system (multiple types, validation, secure storage, preview, progress, deletion).
 
