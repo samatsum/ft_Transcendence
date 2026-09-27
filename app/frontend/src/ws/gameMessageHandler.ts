@@ -1,6 +1,7 @@
 import {
 	envelopeSchema,
 	gameEventSchema,
+	gameLeaveAckSchema,
 	gameServerMessageSchema,
 	playerStatusMessageSchema,
 	snapshotMessageSchema,
@@ -18,6 +19,7 @@ export interface GameMessageHandlers {
 	onSnapshot: (payload: SnapshotPayload) => void;
 	onEvent: (event: GameEvent['d']) => void;
 	onPlayerStatus: (payload: PlayerStatusMessage['d']) => void;
+	onLeaveAck: () => void;
 }
 
 /** ゲーム受信フレームを検証し、種別ごとの正常なペイロードだけを呼び出し元へ渡す */
@@ -41,6 +43,17 @@ export function handleGameServerMessage(data: string, handlers: GameMessageHandl
 		return;
 	}
 	switch (env.data.t) {
+		case 'leave_ack': {
+			const message = gameLeaveAckSchema.safeParse(raw);
+			if (message.success) handlers.onLeaveAck();
+			else {
+				devLog('ゲーム WS: leave_ack 検証に失敗したため受信メッセージを破棄しました', {
+					raw,
+					issues: message.error.issues,
+				});
+			}
+			return;
+		}
 		case 'welcome': {
 			const message = welcomeMessageSchema.safeParse(raw);
 			if (message.success) {

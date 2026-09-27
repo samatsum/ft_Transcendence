@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
 	acknowledgeGameEvents,
 	enqueueGameEvent,
+	shouldNavigateAfterLeave,
 	shouldReturnToLobby,
 } from './useGameSocket.js';
 
@@ -28,7 +29,7 @@ describe('game event queue', () => {
 });
 
 describe('game close navigation', () => {
-	it('終了済みルームへの再 join が 4003 で拒否されたらロビーへ戻す', () => {
+	it('idleでは終了済みルームへの再 join が 4003 で拒否されたらロビーへ戻す', () => {
 		expect(shouldReturnToLobby(4003)).toBe(true);
 	});
 
@@ -41,5 +42,32 @@ describe('game close navigation', () => {
 		expect(shouldReturnToLobby(null)).toBe(false);
 		expect(shouldReturnToLobby(1006)).toBe(false);
 		expect(shouldReturnToLobby(4004)).toBe(false);
+	});
+
+	it('RSP退出確認の待機中は対象close codeすべてで自動遷移しない', () => {
+		expect(shouldReturnToLobby(1000, 'waiting')).toBe(false);
+		expect(shouldReturnToLobby(4002, 'waiting')).toBe(false);
+		expect(shouldReturnToLobby(4003, 'waiting')).toBe(false);
+	});
+
+	it('退出確認に失敗しても正常終了と消滅済みルームならロビーへ戻す', () => {
+		expect(shouldReturnToLobby(1000, 'failed')).toBe(true);
+		expect(shouldReturnToLobby(4002, 'failed')).toBe(true);
+		expect(shouldReturnToLobby(4003, 'failed')).toBe(false);
+	});
+
+	it('退出確認済みでは従来どおり対象close codeでロビーへ戻す', () => {
+		expect(shouldReturnToLobby(4003, 'acknowledged')).toBe(true);
+		expect(shouldReturnToLobby(1000, 'acknowledged')).toBe(true);
+		expect(shouldReturnToLobby(4002, 'acknowledged')).toBe(true);
+	});
+
+	it('RSPはleave_ack後にだけ遷移する', () => {
+		expect(shouldNavigateAfterLeave('rsp', 'waiting')).toBe(false);
+		expect(shouldNavigateAfterLeave('rsp', 'acknowledged')).toBe(true);
+	});
+
+	it('FPSの明示退出は既存どおりleave送信後に遷移する', () => {
+		expect(shouldNavigateAfterLeave('fps', 'waiting')).toBe(true);
 	});
 });

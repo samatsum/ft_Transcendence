@@ -2,7 +2,7 @@
 // 実行: npm run check:lobby --workspace @ft/backend
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 import WebSocket from 'ws';
 import {
 	WS_CLOSE,
+	type GameServerMessage,
 	lobbyClientMessageSchema,
 	lobbyServerMessageSchema,
 	type FpsAiSpeed,
@@ -473,6 +474,25 @@ async function checkPresence(): Promise<void> {
 		).length,
 		0,
 	);
+
+	// 旧matchの終了hookは同じuserの新match contextを消せない
+	const casRegistry = new UserContextRegistry();
+	casRegistry.enterQueue(91, { mode: 'rsp', displayName: 'cas', joinedAt: 0, sequence: 1 });
+	const oldToken = casRegistry.claimQuick([91], 'manual');
+	assert.ok(oldToken);
+	assert.equal(casRegistry.commitMatch(oldToken, 'old-match', 'rsp', [{ userId: 91, slot: 0 }]), true);
+	assert.equal(casRegistry.releaseMatch(91, 'old-match'), true);
+	casRegistry.enterQueue(91, { mode: 'fps', displayName: 'cas', joinedAt: 1, sequence: 2 });
+	const newToken = casRegistry.claimQuick([91], 'manual');
+	assert.ok(newToken);
+	assert.equal(casRegistry.commitMatch(newToken, 'new-match', 'fps', [{ userId: 91, slot: 0 }]), true);
+	assert.equal(casRegistry.releaseMatch(91, 'old-match'), false);
+	assert.deepEqual(casRegistry.getContext(91), {
+		kind: 'in_match',
+		roomId: 'new-match',
+		mode: 'fps',
+		slot: 0,
+	});
 
 	// resolver完了順が逆でも古いversionは後着しない
 	const deferred: ((ids: readonly number[]) => void)[] = [];
@@ -942,6 +962,53 @@ class WsClient {
 	}
 }
 
+/** 実Game WSへ参加し、leave_ackなどの応答を待つ検査client */
+class GameWsProbe {
+	readonly messages: GameServerMessage[] = [];
+	private readonly socket: WebSocket;
+
+	constructor(url: string, userId: number, origin: string) {
+		this.socket = new WebSocket(url, {
+			headers: { 'x-dev-user': String(userId) },
+			origin,
+		});
+		this.socket.on('message', (raw) => {
+			this.messages.push(JSON.parse(String(raw)) as GameServerMessage);
+		});
+	}
+
+	async open(): Promise<void> {
+		await new Promise<void>((resolve, reject) => {
+			const timer = setTimeout(() => reject(new Error('game WebSocket open timeout')), 3_000);
+			this.socket.once('open', () => {
+				clearTimeout(timer);
+				resolve();
+			});
+			this.socket.once('error', (error) => {
+				clearTimeout(timer);
+				reject(error);
+			});
+		});
+	}
+
+	send(message: unknown): void {
+		this.socket.send(JSON.stringify(message));
+	}
+
+	async waitFor(predicate: () => boolean, label: string): Promise<void> {
+		const started = Date.now();
+		while (Date.now() - started < 7_000) {
+			if (predicate()) return;
+			await new Promise((resolve) => setTimeout(resolve, 10));
+		}
+		throw new Error(`timeout waiting for ${label}`);
+	}
+
+	close(): void {
+		this.socket.close();
+	}
+}
+
 /**
  * `x-dev-user` が名乗る各IDぶん、実DBへ最小限のUser行を用意する。
  *
@@ -977,7 +1044,11 @@ async function checkRealWebSocket(): Promise<void> {
 
 	const backendRoot = fileURLToPath(new URL('../..', import.meta.url));
 	const dir = mkdtempSync(join(tmpdir(), 'ft-lobby-check-'));
-	const dbUrl = `file:${join(dir, 'check.db')}`;
+	const databaseFile = join(dir, 'check.db');
+	// sandbox runnerによってschema-engineが新規SQLite fileを作成できない環境があるため、
+	// Node側で空fileを用意してからmigrationを適用する
+	writeFileSync(databaseFile, new Uint8Array());
+	const dbUrl = `file:${databaseFile}`;
 	const savedDatabaseUrl = process.env.DATABASE_URL;
 	execFileSync('npx', ['prisma', 'migrate', 'deploy'], {
 		cwd: backendRoot,
@@ -986,7 +1057,7 @@ async function checkRealWebSocket(): Promise<void> {
 	});
 	// このテストが`x-dev-user`で名乗る全ID（badOrigin用の2はOrigin検査で
 	// 認証前に切断されるため不要）
-	await seedDevAuthUsers(dbUrl, [1, 3, 4, 5, 6, 88]);
+	await seedDevAuthUsers(dbUrl, [1, 3, 4, 5, 6, 7, 8, 9, 88]);
 	process.env.DATABASE_URL = dbUrl;
 
 	const connectionManager = new ConnectionManager();
@@ -997,6 +1068,7 @@ async function checkRealWebSocket(): Promise<void> {
 	const url = `ws://127.0.0.1:${port}/ws/lobby`;
 	const origin = `http://127.0.0.1:${port}`;
 	const clients: WsClient[] = [];
+	const gameClients: GameWsProbe[] = [];
 	try {
 		const normal = new WsClient(url, 1, origin);
 		clients.push(normal);
@@ -1080,6 +1152,92 @@ async function checkRealWebSocket(): Promise<void> {
 			false,
 		);
 
+		// Issue #234: 実lobby runtimeとgame gatewayを通したRSP明示退出・所属解放
+		const leaver = new WsClient(url, 7, origin);
+		const opponent = new WsClient(url, 8, origin);
+		const newRoomJoiner = new WsClient(url, 9, origin);
+		clients.push(leaver, opponent, newRoomJoiner);
+		await Promise.all([leaver.open(), opponent.open(), newRoomJoiner.open()]);
+		leaver.send({ t: 'room_create', d: { mode: 'rsp', rules: { target_score: 21 } } });
+		await leaver.waitFor(() => leaver.messages.some((m) => m.t === 'room_state'), 'initial RSP room');
+		const originalRoomState = [...leaver.messages].reverse().find((m) => m.t === 'room_state');
+		assert.ok(originalRoomState && originalRoomState.t === 'room_state');
+		const originalCode = originalRoomState.d.code;
+		opponent.send({ t: 'room_join', d: { code: originalCode } });
+		await opponent.waitFor(
+			() => opponent.messages.some((m) => m.t === 'room_state' && m.d.code === originalCode),
+			'RSP room join',
+		);
+		leaver.send({ t: 'room_start', d: {} });
+		await Promise.all([
+			leaver.waitFor(() => leaver.messages.some((m) => m.t === 'match_found'), 'RSP match found'),
+			opponent.waitFor(() => opponent.messages.some((m) => m.t === 'match_found'), 'opponent match found'),
+		]);
+		const found = leaver.messages.find((m) => m.t === 'match_found');
+		assert.ok(found && found.t === 'match_found');
+		const oldMatchId = found.d.room_id;
+		const leaverGame = new GameWsProbe(`ws://127.0.0.1:${port}/ws/game/${oldMatchId}`, 7, origin);
+		const opponentGame = new GameWsProbe(`ws://127.0.0.1:${port}/ws/game/${oldMatchId}`, 8, origin);
+		gameClients.push(leaverGame, opponentGame);
+		await Promise.all([leaverGame.open(), opponentGame.open()]);
+		leaverGame.send({ t: 'join', d: {} });
+		opponentGame.send({ t: 'join', d: {} });
+		await Promise.all([
+			leaverGame.waitFor(() => leaverGame.messages.some((m) => m.t === 'welcome'), 'leaver game welcome'),
+			opponentGame.waitFor(() => opponentGame.messages.some((m) => m.t === 'welcome'), 'opponent game welcome'),
+		]);
+		leaverGame.send({ t: 'leave', d: {} });
+		await leaverGame.waitFor(() => leaverGame.messages.some((m) => m.t === 'leave_ack'), 'RSP leave acknowledgement');
+		await opponentGame.waitFor(() => opponentGame.messages.some((m) => m.t === 'snapshot'), 'remaining match snapshot');
+
+		// ACK後、再読み込みせず同じlobby socketで新しい部屋を作り、別ユーザーが参加できる
+		leaver.send({ t: 'room_create', d: { mode: 'rsp' } });
+		await leaver.waitFor(
+			() => leaver.messages.some((m) => m.t === 'room_state' && m.d.code !== originalCode),
+			'leaver creates a new room',
+		);
+		const nextRoomState = [...leaver.messages].reverse().find((m) => m.t === 'room_state' && m.d.code !== originalCode);
+		assert.ok(nextRoomState && nextRoomState.t === 'room_state');
+		const nextCode = nextRoomState.d.code;
+		newRoomJoiner.send({ t: 'room_join', d: { code: nextCode } });
+		await newRoomJoiner.waitFor(
+			() => newRoomJoiner.messages.some((m) => m.t === 'room_state' && m.d.code === nextCode),
+			'new participant joins leaver room',
+		);
+		leaver.send({ t: 'room_leave', d: {} });
+		await newRoomJoiner.waitFor(
+			() => newRoomJoiner.messages.some((m) => m.t === 'room_state' && m.d.code === nextCode && !m.d.seats.some((seat) => seat.user_id === 7)),
+			'leaver leaves newly created room',
+		);
+		newRoomJoiner.send({ t: 'room_leave', d: {} });
+		newRoomJoiner.send({ t: 'room_create', d: { mode: 'rsp' } });
+		await newRoomJoiner.waitFor(
+			() => newRoomJoiner.messages.some((m) => m.t === 'room_state' && m.d.code !== nextCode && m.d.code !== originalCode),
+			'new participant creates another room',
+		);
+		const joinableRoomState = [...newRoomJoiner.messages].reverse().find(
+			(m) => m.t === 'room_state' && m.d.code !== nextCode && m.d.code !== originalCode,
+		);
+		assert.ok(joinableRoomState && joinableRoomState.t === 'room_state');
+		leaver.send({ t: 'room_join', d: { code: joinableRoomState.d.code } });
+		await leaver.waitFor(
+			() => leaver.messages.some((m) => m.t === 'room_state' && m.d.code === joinableRoomState.d.code),
+			'exited player joins another room',
+		);
+
+		// 旧試合の終了hookが遅れて走っても、roomId CASで新しいin_room所属を残す
+		closeRoom(oldMatchId);
+		leaver.send({ t: 'room_create', d: { mode: 'rsp' } });
+		await leaver.waitFor(
+			() => leaver.messages.some((m) => m.t === 'error' && m.d.code === 'already_in_room'),
+			'new lobby membership survives old match close',
+		);
+		leaver.send({ t: 'room_leave', d: {} });
+		await newRoomJoiner.waitFor(
+			() => newRoomJoiner.messages.some((m) => m.t === 'room_state' && m.d.code === joinableRoomState.d.code && !m.d.seats.some((seat) => seat.user_id === 7)),
+			'room leave is accepted after old match close',
+		);
+
 		// logout hook は同じsessionの lobby/game 双方を4000にする
 		await createRoomFromRules({
 			roomId: 'session-check',
@@ -1126,6 +1284,7 @@ async function checkRealWebSocket(): Promise<void> {
 			assert.deepEqual(client.connectionErrors, []);
 		}
 	} finally {
+		for (const client of gameClients) client.close();
 		for (const client of clients) client.close();
 		closeAllRooms();
 		await app.close();
@@ -1151,7 +1310,9 @@ async function checkRealWebSocket(): Promise<void> {
 async function checkRealProfileResolverWiring(): Promise<void> {
 	const backendRoot = fileURLToPath(new URL('../..', import.meta.url));
 	const dir = mkdtempSync(join(tmpdir(), 'ft-lobby-check-'));
-	const dbUrl = `file:${join(dir, 'check.db')}`;
+	const databaseFile = join(dir, 'check.db');
+	writeFileSync(databaseFile, new Uint8Array());
+	const dbUrl = `file:${databaseFile}`;
 	const savedEnv = {
 		DATABASE_URL: process.env.DATABASE_URL,
 		NODE_ENV: process.env.NODE_ENV,

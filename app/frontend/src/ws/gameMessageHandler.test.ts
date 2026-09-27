@@ -15,6 +15,7 @@ function createHandlers(): GameMessageHandlers {
 		onSnapshot: vi.fn(),
 		onEvent: vi.fn(),
 		onPlayerStatus: vi.fn(),
+		onLeaveAck: vi.fn(),
 	};
 }
 
@@ -52,6 +53,14 @@ describe('ゲーム受信フレームの診断', () => {
 		handleGameServerMessage(JSON.stringify({ t: 'player_status', d: payload }), handlers);
 
 		expect(handlers.onPlayerStatus).toHaveBeenCalledWith(payload);
+		expect(devLog).not.toHaveBeenCalled();
+	});
+
+	it('正しい leave_ack を退出確認handlerへ渡す', () => {
+		const handlers = createHandlers();
+		handleGameServerMessage(JSON.stringify({ t: 'leave_ack', d: {} }), handlers);
+
+		expect(handlers.onLeaveAck).toHaveBeenCalledOnce();
 		expect(devLog).not.toHaveBeenCalled();
 	});
 });

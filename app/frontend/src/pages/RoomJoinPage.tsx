@@ -17,6 +17,10 @@ export const JOIN_ERROR_TEXT: Record<string, string> = {
 	room_not_found: 'その部屋コードは見つかりませんでした。入力を確認してください。',
 	room_full: 'その部屋は満員です。',
 	room_starting: 'その部屋はすでに試合が始まっています。',
+	queue_already_joined: 'マッチング待機中です。先に待機を終了してください。',
+	already_in_room: 'すでに別の部屋に参加しています。',
+	already_in_game: '試合の開始中または参加中は部屋に参加できません。',
+	rate_limited: '部屋コードの入力回数が上限に達しました。しばらく待ってからお試しください。',
 };
 
 export default function RoomJoinPage() {

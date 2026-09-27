@@ -12,7 +12,11 @@ import { HudOverlay } from '../game/hud/HudOverlay.js';
 import type { MatchDetailsView } from '../game/hud/MatchEndModal.js';
 import { useEngineRenderer } from '../game/useEngineRenderer.js';
 import { useGameInput } from '../game/useGameInput.js';
-import { shouldReturnToLobby, useGameSocket } from '../game/useGameSocket.js';
+import {
+	shouldNavigateAfterLeave,
+	shouldReturnToLobby,
+	useGameSocket,
+} from '../game/useGameSocket.js';
 
 // GV-07 推奨決定#4: match_end で /api/matches/:id を toast:false で取り試合詳細を表示。
 // shared/api/matches.ts の正式スキーマは B-13 で確定するため、暫定 schema をここに置く
@@ -48,6 +52,7 @@ export default function GameView() {
 		acknowledgeEvents,
 		playerStatus,
 		closeCode,
+		leaveStatus,
 		canSend,
 		send,
 	} = useGameSocket(roomId);
@@ -151,23 +156,31 @@ export default function GameView() {
 	// close 1000/4002/4003 でロビーへ戻す。終了済みルームへの再 join はサーバが
 	// 4003 で拒否するため、リザルト表示中のリロードも黒画面に残さずロビーへ戻る
 	useEffect(() => {
-		if (shouldReturnToLobby(closeCode)) {
+		if (shouldReturnToLobby(closeCode, leaveStatus)) {
 			const id = setTimeout(() => navigate('/lobby', { replace: true }), 800);
 			return () => clearTimeout(id);
 		}
 		return undefined;
-	}, [closeCode, navigate]);
+	}, [closeCode, leaveStatus, navigate]);
 
-	const onReturnToLobby = useCallback(() => navigate('/lobby'), [navigate]);
+	useEffect(() => {
+		if (shouldNavigateAfterLeave(welcome?.mode ?? null, leaveStatus)) {
+			navigate('/lobby', { replace: true });
+		}
+	}, [leaveStatus, welcome?.mode, navigate]);
 
-	// #113 退出確定。② §5-A の leave を送ってからロビーへ。サーバは席を復帰不能な
-	// AI 席へ移し、FPS なら forfeit にする（room.ts の「明示leave」）。socket は
-	// サーバ側で閉じないので、遷移に伴う unmount で 1000 close される
+	const onReturnToLobby = useCallback(() => {
+		if (!matchEnded && (leaveStatus === 'waiting' || leaveStatus === 'failed')) return;
+		navigate('/lobby');
+	}, [leaveStatus, matchEnded, navigate]);
+
+	// RSPはサーバのleave_ackを受け取ってからロビーへ戻る 確認前の切断では画面に留まり、
+	// 再接続後にleaveを再送する FPSは従来どおりforfeit送信後すぐ結果/ロビーへ進む
 	const onConfirmExit = useCallback(() => {
 		send({ t: 'leave', d: {} });
 		setExitPromptOpen(false);
-		navigate('/lobby');
-	}, [send, navigate]);
+		if (welcome?.mode === 'fps') navigate('/lobby');
+	}, [send, navigate, welcome?.mode]);
 	const onCancelExit = useCallback(() => setExitPromptOpen(false), []);
 
 	return (
@@ -237,6 +250,16 @@ export default function GameView() {
 					onConfirm={onConfirmExit}
 					onCancel={onCancelExit}
 				/>
+				{leaveStatus === 'waiting' && welcome?.mode !== 'fps' && (
+					<p role="status" className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded bg-black/80 px-4 py-2 text-caption">
+						退出を確認しています…
+					</p>
+				)}
+				{leaveStatus === 'failed' && welcome?.mode !== 'fps' && (
+					<p role="alert" className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded bg-rose-900/90 px-4 py-2 text-caption">
+						退出を確認できませんでした。ロビーには移動していません。サーバーとの接続が終了したため、この画面からは退出を完了できません。
+					</p>
+				)}
 			</div>
 
 			{/* ④ D-13: モバイル幅は「キーボード必須」を告知して閲覧のみとする。

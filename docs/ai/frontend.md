@@ -129,7 +129,7 @@ Translates the connection rules in ② into implementation contracts on the UI s
   In development this goes through Vite's `/ws` WebSocket proxy; in production it goes through nginx.
   Since the server retains the LobbyRoom for 10 seconds and resends `room_state` after reconnect, the client does not automatically resend `room_join`. Being queued is cleared on disconnect, so the client does not automatically rejoin the queue.
 - **`useGameSocket`**: Connects and sends `join` on mount of `/game/:roomId`; closes with code 1000 on unmount.
-  On disconnect, if still in-game, auto-reconnects + sends `join` (fits within the 30-second grace period from ② §7).
+  On disconnect, if still in-game, auto-reconnects + sends `join` (fits within the 30-second grace period from ② §7). For RSP explicit exit, retains the request during reconnect, resends after a successful resume, and waits for `leave_ack` before navigating. A failed or unavailable acknowledgement keeps the user on the game screen with an error.
   On close code `4002` (room gone) → shows a toast + navigates to `/lobby`.
 - Incoming messages are validated with zod; **validation failures do not emit a console error** and instead go to a dev-log function (a no-op in production) (zero-console operation).
 - Interpolation follows the contract in ② §5-C (100ms delay, linear interpolation between 2 snapshots, own yaw takes local priority).

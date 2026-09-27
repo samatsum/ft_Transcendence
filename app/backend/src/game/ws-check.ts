@@ -30,6 +30,7 @@ const W12_ROOM_IDS = {
 	rspReconnect: 'ws-reconnect-rsp',
 	fpsReconnect: 'ws-reconnect-fps',
 	fpsLeave: 'ws-leave-fps',
+	rspLeave: 'ws-leave-rsp',
 	fpsWorld: 'ws-world-fps',
 	rspLateInitial: 'ws-late-initial-rsp',
 } as const;
@@ -769,6 +770,64 @@ async function runReconnectAndForfeitChecks(
 		bad.push(`RSP abandonedSlotsが不正 (${rspCapture.persisted?.abandonedSlots.join(',')})`);
 	}
 	closeRoom(rspRoom.roomId);
+
+	// RSP明示leaveは退出席だけAI化してACKし、同じ試合の残席を続行させる
+	let rspLeaveNow = 0;
+	const rspLeaveRoom = await createRoomFromRules({
+		roomId: W12_ROOM_IDS.rspLeave,
+		mode: 'rsp',
+		rules: { map: 'rsp', target_score: 21 },
+		seed: 42,
+		participants: [
+			{ userId: 551, slot: 0 },
+			{ userId: 552, slot: 1 },
+		],
+		humanSlots: [0, 1],
+		now: () => rspLeaveNow,
+		log: { info: () => {}, warn: () => {} },
+	});
+	const rspLeaveA = makeClient(rspLeaveRoom.roomId, 551);
+	const rspLeaveB = makeClient(rspLeaveRoom.roomId, 552);
+	await Promise.all([rspLeaveA.open(), rspLeaveB.open()]);
+	// join前のleaveは席を失効させない
+	rspLeaveA.send({ t: 'leave' });
+	await sleep(50);
+	if (rspLeaveA.countOf('leave_ack') !== 0) bad.push('join前のRSP leaveが誤って受理された');
+	rspLeaveA.send({ t: 'join' });
+	rspLeaveB.send({ t: 'join' });
+	const [rspLeaveAWelcome, rspLeaveBWelcome] = await Promise.all([
+		rspLeaveA.waitFor(() => Boolean(rspLeaveA.find('welcome')), 'RSP leave A welcome', bad),
+		rspLeaveB.waitFor(() => Boolean(rspLeaveB.find('welcome')), 'RSP leave B welcome', bad),
+	]);
+	rspLeaveNow += 3_000;
+	rspLeaveRoom.pump();
+	rspLeaveA.send({ t: 'leave' });
+	const rspLeaveAcked = rspLeaveAWelcome && rspLeaveBWelcome && await rspLeaveA.waitFor(
+		() => rspLeaveA.countOf('leave_ack') > 0,
+		'RSP explicit leave acknowledgement',
+		bad,
+	);
+	if (
+		rspLeaveAcked &&
+		(rspLeaveRoom.getPlayerSeatState(0) !== 'ai' ||
+			rspLeaveRoom.getPlayerSeatState(1) !== 'connected' ||
+			rspLeaveRoom.getState() !== 'playing')
+	) {
+		bad.push('RSP explicit leaveが退出席だけをAI化して試合を継続しない');
+	}
+	const rspLeaveResume = makeClient(rspLeaveRoom.roomId, 551);
+	await rspLeaveResume.open();
+	rspLeaveResume.send({ t: 'join' });
+	const repeatedLeaveAck = await rspLeaveResume.waitFor(
+		() => rspLeaveResume.countOf('leave_ack') > 0,
+		'RSP idempotent leave acknowledgement',
+		bad,
+	);
+	if (repeatedLeaveAck && rspLeaveResume.find('welcome')) {
+		bad.push('明示退出済みの参加者が元席へ再参加できた');
+	}
+	rspLeaveResume.close();
+	closeRoom(rspLeaveRoom.roomId);
 
 	// FPSはgrace中も続行し、30秒満了した側がlose・反対slotがforfeit勝者。
 	let fpsNow = 0;
