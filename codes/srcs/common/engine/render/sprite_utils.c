@@ -82,6 +82,7 @@ t_sprite*
 	new->distance = distance;
 	new->next = *sprites;
 	new->tex = tex;
+	new->hidden = 0;
 	*sprites = new;
 	return (new);
 }

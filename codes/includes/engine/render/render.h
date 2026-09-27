@@ -36,12 +36,15 @@ typedef struct s_sprite_draw
 	int		draw_y_org;
 }	t_sprite_draw;
 
-// マップ上に配置されたスプライト（アイテムや敵など）を管理するリスト構造体
+// マップ上に配置されたスプライト（アイテムや敵など）を管理するリスト構造体。
+// hidden は死亡中（復帰待ち）の戦闘員を描かないためのフラグで、描画直前に
+// sync_sprite_visibility が戦闘員の状態から書き込む（#244）
 typedef struct s_sprite
 {
 	t_pos				pos;
 	double				distance;
 	t_tex*				tex;
+	int					hidden;
 	struct s_sprite*	next;
 	struct s_sprite*	sorted;
 }	t_sprite;

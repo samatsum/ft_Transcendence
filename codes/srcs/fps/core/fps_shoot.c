@@ -49,6 +49,11 @@ static void
 	int		size;
 	int		mid_x;
 
+	// 隠れている（死亡中の）スプライトは射線を遮らない。sim 側の
+	// line_hit_distance が死亡中の席を除外するのと揃える（#244）
+	if (cur->hidden) {
+		return ;
+	}
 	inv = 1.0 / (game->camera.plane.x * game->camera.dir.y - game->camera.plane.y * game->camera.dir.x);
 	sprite_transform(&game->camera, inv, cur->pos, &tf);
 	if (tf.y <= 0.0) {
