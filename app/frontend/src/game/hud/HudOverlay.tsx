@@ -24,6 +24,7 @@ interface HudOverlayProps {
 	welcome: WelcomeMessage['d'] | null;
 	snapshotBufferRef: { current: TimedSnapshot[] };
 	pendingEvents: QueuedGameEvent[];
+	showMatchEnd: boolean;
 	acknowledgeEvents: (throughId: number) => void;
 	playerStatus: Map<number, PlayerStatusMessage['d']['state']>;
 	connectionStatus: GameSocketStatus;
@@ -37,6 +38,7 @@ export function HudOverlay({
 	welcome,
 	snapshotBufferRef,
 	pendingEvents,
+	showMatchEnd,
 	acknowledgeEvents,
 	playerStatus,
 	connectionStatus,
@@ -94,7 +96,7 @@ export function HudOverlay({
 			/>
 			<Countdown seconds={hud.countdownSeconds} />
 			<ConnectionBanner status={connectionStatus} closeCode={closeCode} />
-			{hud.matchEnd && (
+			{showMatchEnd && hud.matchEnd && (
 				<MatchEndModal
 					end={hud.matchEnd}
 					mode={welcome.mode}
