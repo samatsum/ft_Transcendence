@@ -5,6 +5,7 @@ import {
 	enqueueGameEvent,
 	shouldNavigateAfterLeave,
 	shouldReturnToLobby,
+	shouldShowMatchEnd,
 } from './useGameSocket.js';
 
 describe('game event queue', () => {
@@ -56,6 +57,11 @@ describe('game close navigation', () => {
 		expect(shouldReturnToLobby(4003, 'failed')).toBe(false);
 	});
 
+	it('退出確認に失敗しても受信済み結果があれば結果画面に留まる', () => {
+		expect(shouldReturnToLobby(1000, 'failed', true)).toBe(false);
+		expect(shouldReturnToLobby(4002, 'failed', true)).toBe(false);
+	});
+
 	it('退出確認済みでは従来どおり対象close codeでロビーへ戻す', () => {
 		expect(shouldReturnToLobby(4003, 'acknowledged')).toBe(true);
 		expect(shouldReturnToLobby(1000, 'acknowledged')).toBe(true);
@@ -68,6 +74,31 @@ describe('game close navigation', () => {
 	});
 
 	it('FPSの明示退出は既存どおりleave送信後に遷移する', () => {
+		expect(shouldNavigateAfterLeave('fps', 'waiting')).toBe(true);
+	});
+
+	it('観戦者を含む通常接続と退出確認失敗時は結果を表示し、退出中は隠す', () => {
+		expect(shouldShowMatchEnd('idle')).toBe(true);
+		expect(shouldShowMatchEnd('failed')).toBe(true);
+		expect(shouldShowMatchEnd('waiting')).toBe(false);
+		expect(shouldShowMatchEnd('acknowledged')).toBe(false);
+	});
+
+	it('match_endが先でもleave_ack後は結果を経由せずロビーへ直接戻る', () => {
+		// leave送信 → match_end → leave_ack
+		expect(shouldShowMatchEnd('waiting')).toBe(false);
+		expect(shouldShowMatchEnd('acknowledged')).toBe(false);
+		expect(shouldNavigateAfterLeave('rsp', 'acknowledged')).toBe(true);
+	});
+
+	it('leave_ackが先でも後着match_endを描画せずロビーへ直接戻る', () => {
+		// leave送信 → leave_ack → match_end
+		expect(shouldShowMatchEnd('acknowledged')).toBe(false);
+		expect(shouldNavigateAfterLeave('rsp', 'acknowledged')).toBe(true);
+	});
+
+	it('FPS退出は結果を描画せずロビーへ直接戻る', () => {
+		expect(shouldShowMatchEnd('waiting')).toBe(false);
 		expect(shouldNavigateAfterLeave('fps', 'waiting')).toBe(true);
 	});
 });

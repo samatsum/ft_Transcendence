@@ -40,6 +40,8 @@ export interface SeatInput {
 	strafeRight: boolean;
 	yaw: number;
 	fire: boolean;
+	/** 装備中の武器（#239）。0=ピストル / 1=フラッシュライト / 2=素手 */
+	weapon: number;
 }
 
 export const NEUTRAL_INPUT: SeatInput = {
@@ -49,6 +51,7 @@ export const NEUTRAL_INPUT: SeatInput = {
 	strafeRight: false,
 	yaw: 0,
 	fire: false,
+	weapon: 0,
 };
 
 /** emcc の MODULARIZE 出力。EXPORTED_FUNCTIONS で公開した分だけを型として書く */
@@ -69,6 +72,7 @@ interface SimModule {
 		strafeRight: number,
 		yaw: number,
 		fire: number,
+		weapon: number,
 	): number;
 	_game_add_combatant(game: number, slot: number, isAi: number): number;
 	_game_set_input_source(game: number, combatantId: number, source: number): number;
@@ -183,6 +187,7 @@ export class SimGame {
 			input.strafeRight ? 1 : 0,
 			input.yaw,
 			input.fire ? 1 : 0,
+			input.weapon,
 		);
 	}
 

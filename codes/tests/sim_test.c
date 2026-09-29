@@ -691,8 +691,8 @@ static void
 	copy_pos(&moved, &other->sprite->pos);
 	i = 0;
 	while (i < 30) {
-		sim_set_input(game, 0, 1, 0, 0, 0, 0.0, 0);
-		sim_set_input(game, 1, 1, 0, 0, 0, 0.0, 0);
+		sim_set_input(game, 0, 1, 0, 0, 0, 0.0, 0, 0);
+		sim_set_input(game, 1, 1, 0, 0, 0, 0.0, 0, 0);
 		game_step(game, TICK_DT);
 		i++;
 	}
@@ -811,8 +811,8 @@ static void
 	deaths = 0;
 	tick = 0;
 	while (tick < 3000 && !game->cleared) {
-		sim_set_input(game, 0, 1, 0, 0, 0, (double)tick / 53.0, 0);
-		sim_set_input(game, 1, 1, 0, 0, 0, -(double)tick / 71.0, 0);
+		sim_set_input(game, 0, 1, 0, 0, 0, (double)tick / 53.0, 0, 0);
+		sim_set_input(game, 1, 1, 0, 0, 0, -(double)tick / 71.0, 0, 0);
 		game_step(game, TICK_DT);
 		if (combatant_by_id(game, 0)->death_timer > 0.0
 			|| combatant_by_id(game, 1)->death_timer > 0.0) {
@@ -1070,10 +1070,10 @@ static void
 	}
 	target = combatant_by_id(game, 1);
 	full = (int)game->config.player_hp;
-	sim_set_input(game, 0, 0, 0, 0, 0, 0.0, 0);
+	sim_set_input(game, 0, 0, 0, 0, 0, 0.0, 0, 0);
 	game_step(game, TICK_DT);
 	expect_int("引き金を引かなければ撃たない", target->hp, full);
-	sim_set_input(game, 0, 0, 0, 0, 0, M_PI, 1);
+	sim_set_input(game, 0, 0, 0, 0, 0, M_PI, 1, 0);
 	game_step(game, TICK_DT);
 	expect_int("背を向けて撃っても当たらない", target->hp, full);
 	game_destroy(game);
@@ -1083,7 +1083,7 @@ static void
 		return ;
 	}
 	target = combatant_by_id(game, 1);
-	sim_set_input(game, 0, 0, 0, 0, 0, 0.0, 1);
+	sim_set_input(game, 0, 0, 0, 0, 0, 0.0, 1, 0);
 	game_step(game, TICK_DT);
 	expect_int("正面の相手に当たりHPが1減る", target->hp, full - 1);
 	expect_int("1発では死なない", target->death_timer <= 0.0, 1);
@@ -1115,13 +1115,13 @@ static void
 	full = (int)game->config.player_hp;
 	tick = 0;
 	while (tick < (int)(SEAT_SHOT_COOLDOWN / TICK_DT * 2.0 / 3.0)) {
-		sim_set_input(game, 0, 0, 0, 0, 0, 0.0, 1);
+		sim_set_input(game, 0, 0, 0, 0, 0, 0.0, 1, 0);
 		game_step(game, TICK_DT);
 		tick++;
 	}
 	expect_int("クールダウン中の押しっぱなしでは1発だけ", target->hp, full - 1);
 	while (tick < (int)(SEAT_SHOT_COOLDOWN / TICK_DT * 1.5)) {
-		sim_set_input(game, 0, 0, 0, 0, 0, 0.0, 1);
+		sim_set_input(game, 0, 0, 0, 0, 0, 0.0, 1, 0);
 		game_step(game, TICK_DT);
 		tick++;
 	}
@@ -1147,7 +1147,7 @@ static void
 	}
 	target = combatant_by_id(game, 1);
 	MAP_XY(lane.x + 2.0, lane.y, game->config) = '1';
-	sim_set_input(game, 0, 0, 0, 0, 0, 0.0, 1);
+	sim_set_input(game, 0, 0, 0, 0, 0, 0.0, 1, 0);
 	game_step(game, TICK_DT);
 	expect_int("壁越しの相手には当たらない", target->hp, (int)game->config.player_hp);
 	game_destroy(game);
@@ -1175,7 +1175,7 @@ static void
 	}
 	copy_pos(&combatant_by_id(game, 0)->sprite->pos, &lane);
 	set_pos(&combatant_by_id(game, 2)->sprite->pos, lane.x + 3.0, lane.y);
-	sim_set_input(game, 0, 0, 0, 0, 0, 0.0, 1);
+	sim_set_input(game, 0, 0, 0, 0, 0, 0.0, 1, 0);
 	game_step(game, TICK_DT);
 	changed = 0;
 	i = 0;

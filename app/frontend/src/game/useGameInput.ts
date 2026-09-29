@@ -9,6 +9,9 @@
 // - Space はキャプチャ中の射撃（#187）。押している間 act の bit0 を立て続け、
 //   連射間隔はサーバの sim が決める。自分の武器モーションは fireHeldRef を見た
 //   描画側（useEngineRenderer）が出す。キャプチャ開始には使わない（Enter とクリックのみ）。
+// - 1/2/3 は武器の持ち替え（#239）。current_weapon は C 側の表示状態で、当たり判定は
+//   サーバの sim が持つため input には載せない。fireHeldRef と同じく ref で描画側へ渡し、
+//   useEngineRenderer が `_web_set_weapon` を呼ぶ。
 // - setInterval 30Hz で最新 held + localYaw を全量送信（② §5-A: 状態駆動）。
 // - ArrowLeft/Right は setInterval 側で localYaw に積分して即時反映
 //   （② §5-C の「自分の yaw のみローカル優先」＝唯一の予測）。
@@ -18,7 +21,7 @@
 //   spectator と違い Esc は生かす＝どの画面幅でも退出できる。
 
 import { useCallback, useEffect, useRef, type RefObject } from 'react';
-import { ACT_FIRE, type GameClientMessage } from '@ft/shared';
+import { ACT_FIRE, ACT_WEAPON_SHIFT, type GameClientMessage } from '@ft/shared';
 
 // ② §5-A: mv 4bit ビットマスク
 const MV_FORWARD = 0b0001;
@@ -33,6 +36,13 @@ const HOLD_KEYS: Record<string, number> = {
 	KeyA: MV_STRAFE_LEFT,
 	KeyD: MV_STRAFE_RIGHT,
 };
+// KeyboardEvent.code → 武器番号（types.h の WEP_PISTOL / WEP_FLASHLIGHT / WEP_HANDS）
+const WEAPON_KEYS: Record<string, number> = {
+	Digit1: 0,
+	Digit2: 1,
+	Digit3: 2,
+};
+
 // 回転（クライアント予測）は yaw 積分に一本化。C 側 rotate_speed=0.05/frame @ 60fps ≒ 3.0 rad/s
 const ROTATE_RAD_PER_SEC = 3.0;
 const INPUT_HZ = 30;
@@ -68,6 +78,11 @@ export interface UseGameInputResult {
 	localYawRef: RefObject<number>;
 	/** キャプチャ中に Space（射撃）を押しているか（描画側が武器モーションを出すため ref で公開） */
 	fireHeldRef: RefObject<boolean>;
+	/**
+	 * 1/2/3 で要求された武器番号。描画側が `_web_set_weapon` へ渡したら null に戻す（#239）。
+	 * 押した瞬間だけの要求なので、held と違って「押している間 true」ではない
+	 */
+	weaponRequestRef: RefObject<number | null>;
 	/** キャプチャ中か */
 	capturedRef: RefObject<boolean>;
 	/** キャプチャ状態を外から見たいときの状態通知フック */
@@ -84,6 +99,10 @@ export function useGameInput({
 }: UseGameInputOptions): UseGameInputResult {
 	const heldMvRef = useRef<number>(0);
 	const fireHeldRef = useRef<boolean>(false);
+	const weaponRequestRef = useRef<number | null>(null);
+	// 送信用に「いま装備している武器」を持つ。weaponRequestRef は描画側が
+	// 適用後に null へ戻すので、そちらを送信に使うと1フレームしか載らない
+	const weaponRef = useRef<number>(0);
 	const rotateRef = useRef<RotateHeld>({ left: false, right: false });
 	const localYawRef = useRef<number>(0);
 	const seqRef = useRef<number>(0);
@@ -114,7 +133,11 @@ export function useGameInput({
 				while (localYawRef.current < -Math.PI) localYawRef.current += 2 * Math.PI;
 			}
 			const mv = capturedRef.current ? heldMvRef.current : 0;
-			const act = capturedRef.current && fireHeldRef.current ? ACT_FIRE : 0;
+			// bit0=射撃 / bit1-2=装備中の武器（#239）。武器はキャプチャの有無に関わらず送る
+			// ——解除中に持ち替えることは無いが、掴み直したときに取りこぼさない
+			const act =
+				(capturedRef.current && fireHeldRef.current ? ACT_FIRE : 0)
+				| (weaponRef.current << ACT_WEAPON_SHIFT);
 			seqRef.current = (seqRef.current + 1) >>> 0; // uint32
 			send({
 				t: 'input',
@@ -174,6 +197,11 @@ export function useGameInput({
 				// preventDefault しないとページがスクロールする
 				ev.preventDefault();
 				fireHeldRef.current = true;
+			} else if (WEAPON_KEYS[ev.code] !== undefined) {
+				ev.preventDefault();
+				const weapon = WEAPON_KEYS[ev.code] ?? 0;
+				weaponRef.current = weapon;
+				weaponRequestRef.current = weapon;
 			} else if (ev.code === 'ArrowLeft') {
 				ev.preventDefault();
 				rotateRef.current.left = true;
@@ -241,6 +269,7 @@ export function useGameInput({
 	return {
 		localYawRef,
 		fireHeldRef,
+		weaponRequestRef,
 		capturedRef,
 		setOnCaptureChange,
 	};

@@ -15,6 +15,7 @@ import { useGameInput } from '../game/useGameInput.js';
 import {
 	shouldNavigateAfterLeave,
 	shouldReturnToLobby,
+	shouldShowMatchEnd,
 	useGameSocket,
 } from '../game/useGameSocket.js';
 
@@ -59,6 +60,8 @@ export default function GameView() {
 
 	const isSpectator = welcome?.role === 'spectator';
 	const rendererEnabled = welcome !== null;
+	const showMatchEnd = shouldShowMatchEnd(leaveStatus);
+	const visibleMatchEndEvent = showMatchEnd ? matchEndEvent : null;
 
 	// ④ D-13: モバイル幅は「閲覧のみ」。**通知の表示は CSS 側に任せたまま、
 	// ここでは入力の可否だけを見る。** 入力の遮断は CSS ではできないので、
@@ -88,7 +91,7 @@ export default function GameView() {
 		setExitPromptOpen(true);
 	}, [matchEnded]);
 
-	const { localYawRef, fireHeldRef, setOnCaptureChange } = useGameInput({
+	const { localYawRef, fireHeldRef, weaponRequestRef, setOnCaptureChange } = useGameInput({
 		canvasRef,
 		send,
 		spectator: !!isSpectator,
@@ -111,16 +114,17 @@ export default function GameView() {
 		worldProgressRef,
 		localYawRef,
 		fireHeldRef,
+		weaponRequestRef,
 	});
 
 	// 決着したら退出ポップアップを閉じ、以後 Esc では開かないようにする。
 	// **match_id が null でも決着は決着**なので、下の詳細取得とは別の effect にする
 	// （あちらは match_id === null で早期 return する）
 	useEffect(() => {
-		if (!matchEndEvent) return;
+		if (!visibleMatchEndEvent) return;
 		setMatchEnded(true);
 		setExitPromptOpen(false);
-	}, [matchEndEvent]);
+	}, [visibleMatchEndEvent]);
 
 	// match_end の match_id で試合詳細取得(GV-07 推奨決定#4)
 	// B-13 復帰時の互換経路として、取得失敗は toast:false + error state で握る
@@ -133,8 +137,8 @@ export default function GameView() {
 		setMatchDetailsError(false);
 	}, [roomId]);
 	useEffect(() => {
-		if (!matchEndEvent) return;
-		const matchId = matchEndEvent.match_id;
+		if (!visibleMatchEndEvent) return;
+		const matchId = visibleMatchEndEvent.match_id;
 		if (matchId === null) return;
 		let cancelled = false;
 		api
@@ -151,19 +155,20 @@ export default function GameView() {
 		return () => {
 			cancelled = true;
 		};
-	}, [matchEndEvent, api]);
+	}, [visibleMatchEndEvent, api]);
 
 	// close 1000/4002/4003 でロビーへ戻す。終了済みルームへの再 join はサーバが
 	// 4003 で拒否するため、リザルト表示中のリロードも黒画面に残さずロビーへ戻る
 	useEffect(() => {
-		if (shouldReturnToLobby(closeCode, leaveStatus)) {
+		if (shouldReturnToLobby(closeCode, leaveStatus, matchEndEvent !== null)) {
 			const id = setTimeout(() => navigate('/lobby', { replace: true }), 800);
 			return () => clearTimeout(id);
 		}
 		return undefined;
-	}, [closeCode, leaveStatus, navigate]);
+	}, [closeCode, leaveStatus, matchEndEvent, navigate]);
 
 	useEffect(() => {
+		// 明示退出は MatchEndModal を経由せず、確認できた時点でロビーへ直接戻す
 		if (shouldNavigateAfterLeave(welcome?.mode ?? null, leaveStatus)) {
 			navigate('/lobby', { replace: true });
 		}
@@ -234,6 +239,7 @@ export default function GameView() {
 					welcome={welcome}
 					snapshotBufferRef={snapshotBufferRef}
 					pendingEvents={pendingEvents}
+					showMatchEnd={showMatchEnd}
 					acknowledgeEvents={acknowledgeEvents}
 					playerStatus={playerStatus}
 					connectionStatus={status}

@@ -84,12 +84,17 @@ export interface UseGameSocketResult {
 	send: (msg: GameClientMessage) => void;
 }
 
-/** RSPはACK後、FPSは従来どおり送信後に画面を離れる */
+/** RSPはACK後、FPSは送信後にリザルトを経由せずロビーへ直接戻る */
 export function shouldNavigateAfterLeave(
 	mode: WelcomeMessage['d']['mode'] | null,
 	leaveStatus: GameLeaveStatus,
 ): boolean {
 	return leaveStatus === 'acknowledged' || (mode === 'fps' && leaveStatus === 'waiting');
+}
+
+/** 明示退出の確認待ち・確認後は match_end の結果画面を表示しない */
+export function shouldShowMatchEnd(leaveStatus: GameLeaveStatus): boolean {
+	return leaveStatus !== 'waiting' && leaveStatus !== 'acknowledged';
 }
 
 const SNAPSHOT_BUFFER_MAX = 8;
@@ -108,9 +113,11 @@ function shouldReconnect(code: number): boolean {
 export function shouldReturnToLobby(
 	code: number | null,
 	leaveStatus: GameLeaveStatus = 'idle',
+	hasMatchEndEvent = false,
 ): boolean {
 	if (leaveStatus === 'waiting') return false;
 	if (leaveStatus === 'failed') {
+		if (hasMatchEndEvent) return false;
 		return code === WS_CLOSE.normal || code === WS_CLOSE.roomNotFound;
 	}
 	return (
