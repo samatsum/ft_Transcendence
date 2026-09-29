@@ -20,11 +20,14 @@ const colorUtilities =
 // 例: bg-<色名>-<段> / hover:text-<色名>-<段> / bg-black/<不透明度>（前後が英数字やハイフンなら別の語なので除く）
 // ここに実在のクラス名をそのまま書かないこと。Tailwind はこのファイルも走査するので、使われない CSS が生成される
 const rawPaletteClass = `(?<![\\w-])(${colorUtilities})-(${paletteColors})(-\\d+)?(?![\\w-])`;
-// 例: bg-[#<16進>] / text-[rgb(…)] / border-[var(--color-<色名>-<段>)]
-const rawArbitraryColor = `(?<![\\w-])(${colorUtilities})-\\[(#|rgba?\\(|hsla?\\(|oklch\\(|var\\(--color-(${paletteColors})\\b)`;
+// 例: bg-[#<16進>] / text-[rgb(…)] / border-[var(--color-<色名>-<段>)]。型ヒント付きの bg-[color:…] も同じ
+const rawArbitraryColor = `(?<![\\w-])(${colorUtilities})-\\[(color:)?(#|rgba?\\(|hsla?\\(|oklch\\(|var\\(--color-(${paletteColors})\\b)`;
+// 例: bg-(--color-<色名>-<段>) / bg-(color:--color-<色名>-<段>)。上の var() を省略した書き方。
+// パレットを指す変数だけを止める。--color-surface などのトークンや、文字サイズの --text-* は通す
+const rawPaletteVariable = `(?<![\\w-])(${colorUtilities})-\\((color:)?--color-(${paletteColors})\\b`;
 const rawColorMessage =
 	'色を直書きしないこと。index.css のトークン（bg-surface / text-fg-muted など）を使う。トークンに寄せない例外は src/components/rawColors.ts に理由と一緒に書く（#223）';
-const noRawColors = [rawPaletteClass, rawArbitraryColor].flatMap((pattern) => [
+const noRawColors = [rawPaletteClass, rawArbitraryColor, rawPaletteVariable].flatMap((pattern) => [
 	{ selector: `Literal[value=/${pattern}/]`, message: rawColorMessage },
 	{ selector: `TemplateElement[value.raw=/${pattern}/]`, message: rawColorMessage },
 ]);
