@@ -15,7 +15,7 @@ static void
 /* ************************************************************************** */
 // 全スプライトを奥から手前へ描く。カメラ行列の逆行列式 inv_det を一度だけ求めて各スプライトの
 // 座標変換に使い回し、sort_sprites で距離降順に並べてから描画する。距離が極端に近い(<=0.1)
-// ものは座標変換が発散するため描かずにスキップする
+// ものは座標変換が発散するため描かずにスキップする。hidden(死亡中の戦闘員)も描かない
 void
 	draw_sprites(t_render* rnd, t_sprite* sprites)
 {
@@ -26,7 +26,7 @@ void
 	inv_det = 1. / ((rnd->camera->plane.x * rnd->camera->dir.y) - (rnd->camera->plane.y * rnd->camera->dir.x));
 	sorted = sort_sprites(rnd->camera, sprites);
 	while (sorted) {
-		if (sorted->distance > .1) {
+		if (sorted->distance > .1 && !sorted->hidden) {
 			init_draw_sprite(rnd, sorted, inv_det, &spr);
 			draw_sprite(rnd, sorted, &spr, sorted->tex);
 		}

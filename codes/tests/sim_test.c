@@ -9,12 +9,14 @@
 //   G-08  敵ハザード化（接触は死亡ペナルティで試合は続行する）
 //   G-09  オンライン対戦マップの起動検証（席の成立・関門→ゴールの完走可能性）
 //   G-11  FPS の射撃は席を delete_enemy しない（ハザード接触死と同じ一時退場に統一）
+//   #244  死亡中の席は移動を阻まない（描かれない死体が見えない壁にならない）
 //   #187  席の射撃（命中・クールダウン・壁の遮蔽・RSP では撃てない）
 //   FPS敵速度を match_rules 経由で巡回・追跡へ反映する
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "core/collision.h"
 #include "core/core.h"
 #include "core/respawn.h"
 #include "enemy/enemy.h"
@@ -1005,6 +1007,49 @@ static int
 	return (1);
 }
 
+// #244: 死亡中の席は移動を阻まないこと。生きている席の当たり円へ踏み込む移動は
+// 阻まれ、同じ位置関係で相手が死亡中なら通り抜けられる。死体は描かれないので、
+// 阻むと見えない壁になる
+static void
+	test_244_dead_seat_does_not_block(const char* map_text)
+{
+	t_game*		game;
+	t_enemy*	walker;
+	t_enemy*	corpse;
+	t_pos		lane;
+	t_pos		pos;
+	t_pos		mv;
+	int			hp;
+
+	game = create_fps_duel(map_text);
+	if (!game || !stage_shot(game, 0, 1, &lane)) {
+		printf("  FAIL cannot stage FPS duel\n");
+		g_failures++;
+		g_checks++;
+		if (game) {
+			game_destroy(game);
+		}
+		return ;
+	}
+	walker = combatant_by_id(game, 0);
+	corpse = combatant_by_id(game, 1);
+	copy_pos(&walker->sprite->pos, &lane);
+	set_pos(&corpse->sprite->pos, lane.x + corpse->radius * 0.9, lane.y);
+	set_pos(&mv, 0.05, 0.0);
+	copy_pos(&pos, &lane);
+	combatant_walk_axis(game, walker->sprite, &pos, mv);
+	expect_int("生きている席の当たり円へは踏み込めない", pos.x == lane.x, 1);
+	hp = (int)game->config.player_hp;
+	while (hp-- > 0) {
+		damage_enemy(game, corpse->sprite);
+	}
+	expect_int("相手は死亡中になる", corpse->death_timer > 0.0, 1);
+	copy_pos(&pos, &lane);
+	combatant_walk_axis(game, walker->sprite, &pos, mv);
+	expect_int("死亡中の席は移動を阻まない", pos.x > lane.x, 1);
+	game_destroy(game);
+}
+
 // #187: 席が向いている方向の相手を撃つと、相手の HP が 1 減ること。引き金を
 // 離していれば撃たず、背を向けていれば当たらない
 static void
@@ -1382,6 +1427,8 @@ int
 	test_g11_hazard_still_deletable_by_shooting(fps_map);
 	test_g11_seat_survives_lethal_shots(fps_map);
 	test_g11_dead_seat_ignores_further_shots(fps_map);
+	printf("#244 死亡中の席は移動を阻まない\n");
+	test_244_dead_seat_does_not_block(fps_map);
 	printf("#187 席の射撃（act の射撃ビット → sim）\n");
 	test_187_seat_shot_hits_in_sight(fps_map);
 	test_187_cooldown_limits_fire_rate(fps_map);

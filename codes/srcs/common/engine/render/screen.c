@@ -13,6 +13,8 @@ void
 static void
 	update_screen(t_game* game);
 static void
+	sync_sprite_visibility(t_game* game);
+static void
 	update_window(t_game* game);
 static void
 	draw_death_screen(t_game* game);
@@ -75,6 +77,7 @@ static void
 		rnd.options = rnd.options | FLAG_FLASHLIGHT;
 	}
 	cast_columns(&rnd, game->cache.camera_x);
+	sync_sprite_visibility(game);
 	if (game->world.sprites) {
 		draw_sprites(&rnd, game->world.sprites);
 	}
@@ -84,6 +87,24 @@ static void
 	}
 	if (game->options & FLAG_UI) {
 		update_ui(&rnd);
+	}
+}
+
+/* ************************************************************************** */
+// 死亡中（復帰待ち）の戦闘員のスプライトを隠し、復帰したら再び描く（#244）。
+// 以前は死体が DEATH_DURATION の間その場に立ち続け、しかも射線はすり抜けるため
+// 倒したかが分からなかった。death_timer を見るので native（update_death が減らす）
+// でもオンライン（web_snapshot が snapshot の respawn_s を書く）でも同じに見える。
+// 全ての席に同じ規則を適用する——AI だけ消すと見た目で AI と分かってしまう（G-12）
+static void
+	sync_sprite_visibility(t_game* game)
+{
+	t_enemy*	cur;
+
+	cur = game->world.enemies;
+	while (cur) {
+		cur->sprite->hidden = (cur->death_timer > 0.0);
+		cur = cur->next;
 	}
 }
 
