@@ -52,7 +52,7 @@ t_game*
 		unsigned int seed, double fps_enemy_speed_mult);
 int
 	sim_set_input(t_game* game, int combatant_id, int forward, int backward,
-		int strafe_left, int strafe_right, double yaw, int fire);
+		int strafe_left, int strafe_right, double yaw, int fire, int weapon);
 static int
 	sim_prepare_world(t_sim_game* sim);
 static int
@@ -396,7 +396,7 @@ t_game*
 // 持つため、毎 tick 入力を丸ごと差し替えても連射間隔は崩れない
 int
 	sim_set_input(t_game* game, int combatant_id, int forward, int backward,
-		int strafe_left, int strafe_right, double yaw, int fire)
+		int strafe_left, int strafe_right, double yaw, int fire, int weapon)
 {
 	t_enemy*	seat;
 	t_input		input;
@@ -409,7 +409,14 @@ int
 		return (0);
 	}
 	input = (t_input){0};
-	input.current_weapon = WEP_PISTOL;
+	// #239: 以前はピストル固定だった。素手は移動が 1.5 倍速く（combatant.c）、
+	// 射撃はピストルのみ通る（combatant.c）ので、クライアントの装備を反映しないと
+	// 表示と実挙動がずれる。未知の値はピストルに落とす
+	if (weapon == WEP_FLASHLIGHT || weapon == WEP_HANDS) {
+		input.current_weapon = weapon;
+	} else {
+		input.current_weapon = WEP_PISTOL;
+	}
 	set_pos(&input.move, (forward != 0), (backward != 0));
 	set_pos(&input.x_move, (strafe_left != 0), (strafe_right != 0));
 	input.trigger = (fire != 0);

@@ -88,7 +88,7 @@ export default function GameView() {
 		setExitPromptOpen(true);
 	}, [matchEnded]);
 
-	const { localYawRef, fireHeldRef, setOnCaptureChange } = useGameInput({
+	const { localYawRef, fireHeldRef, weaponRequestRef, setOnCaptureChange } = useGameInput({
 		canvasRef,
 		send,
 		spectator: !!isSpectator,
@@ -111,6 +111,7 @@ export default function GameView() {
 		worldProgressRef,
 		localYawRef,
 		fireHeldRef,
+		weaponRequestRef,
 	});
 
 	// 決着したら退出ポップアップを閉じ、以後 Esc では開かないようにする。
