@@ -19,7 +19,6 @@ import RoomJoinPage from './pages/RoomJoinPage.js';
 import LoginPage from './pages/LoginPage.js';
 import NotFoundPage from './pages/NotFoundPage.js';
 import PrivacyPage from './pages/PrivacyPage.js';
-import ProfilePage from './pages/ProfilePage.js';
 import SignupPage from './pages/SignupPage.js';
 import TermsPage from './pages/TermsPage.js';
 
@@ -108,14 +107,6 @@ export default function App() {
 						<RedirectIfAuth>
 							<SignupPage />
 						</RedirectIfAuth>
-					}
-				/>
-				<Route
-					path="/profile/:id"
-					element={
-						<RequireAuth>
-							<ProfilePage />
-						</RequireAuth>
 					}
 				/>
 				{/* Privacy / Terms は未認証でも読める（④ §1 route 表） */}
