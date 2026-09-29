@@ -10,7 +10,7 @@ export default function ProfilePage() {
 		<div className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-8">
 			<h1 className="text-heading-md">プロフィール #{id}</h1>
 			<Card>
-				<p className="text-body text-fg-muted">
+				<p className="text-body text-slate-400">
 					このページは F-09 で実装します（統計・履歴・本人編集・アバター）。
 				</p>
 			</Card>
