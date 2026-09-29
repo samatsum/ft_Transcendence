@@ -43,6 +43,7 @@
 						<tr><td>React</td><td>画面を「部品（コンポーネント）の組み合わせ」として作るためのライブラリ。このプロジェクトの画面はすべてReactで書かれている（<a href="https://ja.react.dev/">公式: React公式ドキュメント（日本語）</a>）</td></tr>
 						<tr><td>Vite</td><td>TypeScript/ReactのコードをJavaScriptへ変換し、開発中はブラウザへ即座に反映してくれるビルドツール（<a href="https://ja.vite.dev/guide/">公式: Vite公式ドキュメント（日本語）</a>）</td></tr>
 						<tr><td>Tailwind CSS</td><td>あらかじめ用意されたクラス名（<code>text-sm</code>や<code>flex</code>など）をHTMLに直接並べて見た目を作る手法。別ファイルにCSSを書く量を減らせる（<a href="https://gihyo.jp/article/2023/07/tailwindcss-practice-02">解説: gihyo.jp「Tailwind CSS実践入門」</a>、公式ドキュメントは英語のみ）</td></tr>
+						<tr><td>デザイントークン</td><td>色などの見た目の値に、用途を表す名前を付けたもの。このプロジェクトでは<a href="../../../app/frontend/src/index.css"><code>index.css</code></a>の<code>@theme</code>で定義し、<code>bg-surface</code>や<code>text-fg-muted</code>のように書く。<strong>画面では<code>slate-700</code>のようなTailwindの色名や、<code>bg-[#…]</code>のような色の値を直書きしない</strong>。ESLintが検査しており、直書きすると<code>npm run lint</code>とCIが落ちる。暗幕やチーム色のようにトークンに寄せない色は、<a href="../../../app/frontend/src/components/rawColors.ts"><code>components/rawColors.ts</code></a>に理由と一緒に書いて、そこから使う（このファイルだけが検査の対象外）。文字サイズ（<code>text-sm</code>など）は検査しない（#164, #223）</td></tr>
 						<tr><td>SPA（Single Page Application）</td><td>ページ遷移のたびにサーバーから新しいHTMLを取得するのではなく、1枚のHTMLの中でJavaScriptが画面を書き換え続ける方式。<code>/lobby</code>や<code>/game/:id</code>のようなURLの切り替えもJS側（ルーター）が担う（<a href="https://developer.mozilla.org/ja/docs/Glossary/SPA">公式: MDN用語集「SPA」</a>）</td></tr>
 					</tbody>
 				</table>

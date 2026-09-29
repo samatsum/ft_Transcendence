@@ -1,3 +1,4 @@
+import { SCRIM_DANGER_90, SCRIM_WARNING } from '../../components/rawColors.js';
 import type { GameSocketStatus } from '../useGameSocket.js';
 
 // ④ §3.3 HUD 表 自分の接続バナー:
@@ -14,15 +15,13 @@ interface ConnectionBannerProps {
 export function ConnectionBanner({ status, closeCode }: ConnectionBannerProps) {
 	if (status === 'open') return null;
 	let label = '';
-	// **tone はトークンに寄せない（#167）。** 3D の上に敷く半透明のスクリムで、
-	// 可読性のための機能であって面の色ではない。パレットの warning / danger は
-	// 500 の明度しか無く、ここに使うと下の映像が見えなくなる
-	let tone = 'bg-amber-900/90';
+	// tone はトークンに寄せない。理由は rawColors.ts（#167, #223）
+	let tone = SCRIM_WARNING;
 	if (status === 'connecting') label = '接続中…';
 	else if (status === 'reconnecting') label = '再接続中…';
 	else if (status === 'closed') {
 		label = closeCode !== null ? `切断されました (code=${closeCode})` : '切断されました';
-		tone = 'bg-rose-900/90';
+		tone = SCRIM_DANGER_90;
 	}
 	return (
 		<div className="pointer-events-none absolute inset-x-0 bottom-4 flex justify-center">

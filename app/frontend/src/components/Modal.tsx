@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { SCRIM_70 } from './rawColors.js';
 
 // ④ §5 共通コンポーネント。match_end モーダルやカスタムルーム作成ダイアログの受け皿。
 // Portal で body 直下に描いて、レイアウトの overflow/transform に巻き込まれないようにする。
@@ -26,7 +27,7 @@ export function Modal({
 	title,
 	children,
 	actions,
-	backdropClassName = 'bg-black/70',
+	backdropClassName = SCRIM_70,
 	panelClassName = 'max-w-md border-line bg-surface',
 }: ModalProps) {
 	const dialogRef = useRef<HTMLDivElement | null>(null);
