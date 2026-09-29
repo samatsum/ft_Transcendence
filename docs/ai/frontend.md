@@ -29,7 +29,7 @@ An SPA built with React Router. Unauthenticated access to a protected route redi
 | `/login` / `/signup` | Auth | Redirects to `/lobby` if already authenticated |
 | `/lobby` | Lobby (§3.2) | Auth required |
 | `/game/:roomId` | Game (§3.3) | Auth required |
-| `/profile/:id` | Profile (§3.4) — **not routed** (F-09 not declared; the stub page and route were removed in #240, so the path falls through to 404) | Auth required |
+| `/profile/:id` | Profile (§3.4) — **not routed** (F-09 not declared; the stub page and route were removed in #240, so the path falls through to the public `*` 404 without passing through `RequireAuth`) | — |
 | `/privacy` / `/terms` | Privacy Policy / ToS (§3.5) | **Not required** (readable while logged out) |
 | `*` | 404 | — |
 
