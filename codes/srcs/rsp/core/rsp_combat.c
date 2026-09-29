@@ -81,9 +81,9 @@ static void
 
 	cur = game->world.enemies;
 	while (cur) {
-		if (cur->input_source == INPUT_SRC_EXTERNAL) {
-			rehand_on_home_entry(game, cur);
-		}
+		// #226: 以前は INPUT_SRC_EXTERNAL（人間の席）だけだった。AI も自陣へ
+		// 戻るようにしたので、同じ判定を通して手が変わる条件を人間と揃える
+		rehand_on_home_entry(game, cur);
 		cur = cur->next;
 	}
 }
