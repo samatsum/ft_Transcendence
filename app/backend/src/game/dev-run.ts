@@ -31,7 +31,10 @@ const SEED = 42; // 非 0 で乱数系列固定。record.mjs と揃える（申�
 const MAX_SECONDS = 90;
 const TAIL_SECONDS = 2;
 // record.mjs の実測値。移植がずれたらここで気づける
-const EXPECT = { snapshots: 809, finishedAtTick: 1558, winner: 1, score: [0, 3] as const };
+// #226 で RSP の AI があいこのとき自陣（手を変えるゾーン）へ向かうようになり、
+// 試合の進み方が変わったため基準値を取り直した（旧: 809 / 1558 / [0,3]）。
+// seed 固定の再現性そのものは保たれていて、record.mjs と同じ値になる
+const EXPECT = { snapshots: 1030, finishedAtTick: 1999, winner: 1, score: [1, 3] as const };
 
 /** record.mjs の driveExternalSeat と同一。ゆっくり旋回しながら前進し続ける */
 function pseudoInput(tick: number, yaw: number): { input: SeatInput; yaw: number } {
