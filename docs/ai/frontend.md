@@ -141,6 +141,8 @@ Translates the connection rules in ② into implementation contracts on the UI s
 `Button / Input / FormField / Card / Modal / Toast / Badge (presence, team colors) / Avatar / Table / Tabs / StatCard / SeatCard / CopyField (room code)`.
 The custom design-system module **is** declared, as bonus #10 (architecture.md §4.2), and is now **complete**: component count, palette, typography and icon set are all done, catalogued in `components/design-system.ts` and the dev-only `/dev/design-system` gallery page — see §4.2 for detail.
 
+**Colors go through design tokens only (#223).** Tokens are defined in `@theme` in `app/frontend/src/index.css` (`bg-surface`, `text-fg-muted`, `border-line`, …). Screens and components must not write Tailwind palette names (`slate-700`, `bg-black/70`) or arbitrary color values (`bg-[#…]`) directly. This is enforced by an ESLint `no-restricted-syntax` rule in `app/frontend/eslint.config.js`, so a violation fails `npm run lint` and CI. Colors that deliberately stay off the tokens — scrims over the 3D view, the letterbox, team red/blue, the seat-state pills (decided in #167) — live in `app/frontend/src/components/rawColors.ts` with the reason next to each, and screens import them from there; that file is the only one exempt from the rule. Font sizes (`text-sm`, etc.) are not checked (#164).
+
 ## 6. Acceptance criteria
 
 1. Walking through all screen transitions plus one full match with DevTools console open the whole time produces **zero errors / warnings** (with React StrictMode enabled).

@@ -1,3 +1,5 @@
+import { SCRIM_70 } from '../../components/rawColors.js';
+
 // ④ §3.3 HUD 表 カウントダウン:
 //   3・2・1 の全画面オーバーレイ → match_start で消える
 // state は useHudState が管理(seconds を1秒ずつ刻む)
@@ -16,8 +18,8 @@ export function Countdown({ seconds }: CountdownProps) {
 			aria-live="assertive"
 			className="pointer-events-none absolute inset-0 flex items-center justify-center"
 		>
-			{/* bg-black/70 は 3D の上のスクリム。理由は ScoreBar と同じ（#167） */}
-			<div className="rounded-full bg-black/70 px-12 py-8 font-mono text-8xl font-bold text-fg-strong shadow-2xl">
+			{/* 3D の上のスクリム。トークンに寄せない理由は rawColors.ts（#167, #223） */}
+			<div className={`rounded-full ${SCRIM_70} px-12 py-8 font-mono text-8xl font-bold text-fg-strong shadow-2xl`}>
 				{display}
 			</div>
 		</div>

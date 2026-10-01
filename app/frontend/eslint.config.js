@@ -10,6 +10,28 @@ const typescriptRules = [
 	tseslint.configs.recommended,
 ];
 
+// 色の直書き禁止（#223）。色は index.css のデザイントークン経由で指定する。
+// 文字列リテラルとテンプレート文字列の中の Tailwind クラスを正規表現で見る。
+// 検査するのは色だけで、文字サイズ（text-sm など）は対象外（#164 の TL 決定）
+const paletteColors =
+	'slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|black|white';
+const colorUtilities =
+	'bg|text|border|ring|outline|fill|stroke|from|via|to|divide|placeholder|shadow|caret|decoration';
+// 例: bg-<色名>-<段> / hover:text-<色名>-<段> / bg-black/<不透明度>（前後が英数字やハイフンなら別の語なので除く）
+// ここに実在のクラス名をそのまま書かないこと。Tailwind はこのファイルも走査するので、使われない CSS が生成される
+const rawPaletteClass = `(?<![\\w-])(${colorUtilities})-(${paletteColors})(-\\d+)?(?![\\w-])`;
+// 例: bg-[#<16進>] / text-[rgb(…)] / border-[var(--color-<色名>-<段>)]。型ヒント付きの bg-[color:…] も同じ
+const rawArbitraryColor = `(?<![\\w-])(${colorUtilities})-\\[(color:)?(#|rgba?\\(|hsla?\\(|oklch\\(|var\\(--color-(${paletteColors})\\b)`;
+// 例: bg-(--color-<色名>-<段>) / bg-(color:--color-<色名>-<段>)。上の var() を省略した書き方。
+// パレットを指す変数だけを止める。--color-surface などのトークンや、文字サイズの --text-* は通す
+const rawPaletteVariable = `(?<![\\w-])(${colorUtilities})-\\((color:)?--color-(${paletteColors})\\b`;
+const rawColorMessage =
+	'色を直書きしないこと。index.css のトークン（bg-surface / text-fg-muted など）を使う。トークンに寄せない例外は src/components/rawColors.ts に理由と一緒に書く（#223）';
+const noRawColors = [rawPaletteClass, rawArbitraryColor, rawPaletteVariable].flatMap((pattern) => [
+	{ selector: `Literal[value=/${pattern}/]`, message: rawColorMessage },
+	{ selector: `TemplateElement[value.raw=/${pattern}/]`, message: rawColorMessage },
+]);
+
 export default defineConfig([
 	// Viteが生成する成果物を除外
 	globalIgnores(['dist']),
@@ -35,6 +57,17 @@ export default defineConfig([
 
 			// console の使用をエラー
 			'no-console': 'error',
+
+			// 色の直書きをエラー（#223）
+			'no-restricted-syntax': ['error', ...noRawColors],
+		},
+	},
+
+	{
+		// トークンに寄せない色の置き場。例外はこのファイルだけ（#223）
+		files: ['src/components/rawColors.ts'],
+		rules: {
+			'no-restricted-syntax': 'off',
 		},
 	},
 

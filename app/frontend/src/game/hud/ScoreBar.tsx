@@ -6,6 +6,8 @@
 // snapshot.world_delta の全量把握が要り複雑なので、後続 PR で拡張。
 // 「値の正本は snapshot、event は演出」原則(② §5-D)
 
+import { SCRIM_60, SCRIM_70, TEAM_BLUE, TEAM_RED } from '../../components/rawColors.js';
+
 interface ScoreBarProps {
 	mode: 'rsp' | 'fps';
 	score: [number, number];
@@ -20,23 +22,21 @@ export function ScoreBar({ mode, score, targetScore, highlightTeam }: ScoreBarPr
 		// 収集アイテムで表現するが、そのカウントは world_delta 集計が要る(TODO)
 		return (
 			<div className="pointer-events-none absolute inset-x-0 top-4 flex justify-center">
-				<div className="rounded-md bg-black/60 px-4 py-1 text-body text-fg-secondary">
+				<div className={`rounded-md ${SCRIM_60} px-4 py-1 text-body text-fg-secondary`}>
 					FPS — ゴールへ到達せよ
 				</div>
 			</div>
 		);
 	}
-	// **bg-black/60・bg-black/70 と RED / BLUE の色はトークンに寄せない（#167）。**
-	// 前者は 3D の上に敷く半透明のスクリムで、可読性のための機能であって面の色ではない。
-	// 後者は色そのものがルール上の識別子で、danger / accent とは意味が違う
+	// スクリムとチーム色はトークンに寄せない。理由は rawColors.ts（#167, #223）
 	const redActive = highlightTeam === 0;
 	const blueActive = highlightTeam === 1;
 	return (
 		<div className="pointer-events-none absolute inset-x-0 top-4 flex justify-center">
-			<div className="flex items-center gap-3 rounded-md bg-black/70 px-4 py-2 font-mono text-lg font-bold">
+			<div className={`flex items-center gap-3 rounded-md ${SCRIM_70} px-4 py-2 font-mono text-lg font-bold`}>
 				<span
 					className={`rounded px-2 py-0.5 transition-colors ${
-						redActive ? 'bg-rose-600 text-fg-strong' : 'text-rose-400'
+						redActive ? `${TEAM_RED.fill} text-fg-strong` : TEAM_RED.text
 					}`}
 					aria-label="赤チームのスコア"
 				>
@@ -45,7 +45,7 @@ export function ScoreBar({ mode, score, targetScore, highlightTeam }: ScoreBarPr
 				<span className="text-fg-subtle">/ {targetScore}</span>
 				<span
 					className={`rounded px-2 py-0.5 transition-colors ${
-						blueActive ? 'bg-sky-600 text-fg-strong' : 'text-sky-400'
+						blueActive ? `${TEAM_BLUE.fill} text-fg-strong` : TEAM_BLUE.text
 					}`}
 					aria-label="青チームのスコア"
 				>

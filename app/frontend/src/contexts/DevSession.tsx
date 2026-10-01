@@ -85,7 +85,7 @@ export function DevSession({ children }: { children: ReactNode }) {
 	if (state.kind === 'failed') {
 		return (
 			<div className="flex flex-col gap-2 px-4 py-10">
-				<p className="text-heading-sm text-rose-400">開発用セッションを作れませんでした</p>
+				<p className="text-heading-sm text-danger-bright">開発用セッションを作れませんでした</p>
 				<p className="text-body text-fg-muted">
 					原因: {state.reason}
 					<br />

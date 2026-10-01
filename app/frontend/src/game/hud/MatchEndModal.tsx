@@ -1,5 +1,6 @@
 import { Button } from '../../components/Button.js';
 import { Modal } from '../../components/Modal.js';
+import { TEAM_BLUE, TEAM_RED } from '../../components/rawColors.js';
 import type { MatchEndState } from '../hudState.js';
 
 // ④ §3.3 の match_end リザルト画面
@@ -71,12 +72,7 @@ export function MatchEndModal({
 				</Button>
 			}
 		>
-			{/* **RED / BLUE のチーム色はトークンに寄せない（#167）。**
-			    色そのものがルール上の識別子で、danger / accent とは意味が違う。
-			    rose-400 を danger-bright に読み替えると「赤チーム」と「エラー」が
-			    同じトークンになり、片方を変えたときにもう片方が巻き添えになる。
-			    デザインシステムは bonus #10 として完成宣言済み（architecture.md §4.2）なので、
-			    チーム色をパレットへ足す判断も避けている */}
+			{/* RED / BLUE のチーム色はトークンに寄せない。理由は rawColors.ts（#167, #223） */}
 			<div className="flex flex-col gap-5">
 				<p className="text-label uppercase tracking-[0.2em] text-accent-bright">Match Result</p>
 				{mode === 'rsp' && (
@@ -84,12 +80,12 @@ export function MatchEndModal({
 						className="flex items-center justify-center gap-5 font-mono"
 						aria-label={`最終スコア ${end.finalScore[0]} 対 ${end.finalScore[1]}`}
 					>
-						<div className="flex min-w-20 flex-col gap-1 text-rose-400">
+						<div className={`flex min-w-20 flex-col gap-1 ${TEAM_RED.text}`}>
 							<span className="text-caption font-sans">RED</span>
 							<span className="text-5xl font-semibold">{end.finalScore[0]}</span>
 						</div>
 						<span className="text-heading-md text-fg-subtle" aria-hidden>—</span>
-						<div className="flex min-w-20 flex-col gap-1 text-sky-400">
+						<div className={`flex min-w-20 flex-col gap-1 ${TEAM_BLUE.text}`}>
 							<span className="text-caption font-sans">BLUE</span>
 							<span className="text-5xl font-semibold">{end.finalScore[1]}</span>
 						</div>
