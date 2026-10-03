@@ -67,7 +67,7 @@ export function useHudState({
 				let next = expireFlashes(prev, performance.now());
 				// 初回だけ seats を snapshot から導出
 				if (!seatsInitializedRef.current) {
-					next = { ...next, seats: seatsFromSnapshot(tail.payload.combatants) };
+					next = { ...next, seats: seatsFromSnapshot(tail.payload.combatants, tail.payload.match.mode) };
 					seatsInitializedRef.current = true;
 				}
 				// 死亡中の残り秒も snapshot が正本(#245)
