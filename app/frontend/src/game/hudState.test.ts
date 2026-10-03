@@ -16,12 +16,38 @@ function combatant(id: number, is_ai: boolean): SnapshotPayload['combatants'][0]
 
 describe('seatsFromSnapshot', () => {
 	it('is_ai=true は AI、false は Player {slot} で seat を初期化', () => {
-		const seats = seatsFromSnapshot([combatant(0, false), combatant(1, true), combatant(2, false)]);
+		const seats = seatsFromSnapshot([combatant(0, false), combatant(1, true), combatant(2, false)], 'rsp');
 		expect(seats.get(0)?.state).toBe('connected');
 		expect(seats.get(0)?.name).toBe('Player 0');
 		expect(seats.get(1)?.state).toBe('ai');
 		expect(seats.get(1)?.name).toBe('AI');
 		expect(seats.get(2)?.state).toBe('connected');
+	});
+
+	it('FPS は id 順が入れ替わっても 2 席だけ作り、ハザードと余分な id を除外', () => {
+		const seats = seatsFromSnapshot(
+			[combatant(9, true), combatant(1, true), combatant(8, true), combatant(0, false), combatant(3, true), combatant(2, true)],
+			'fps',
+		);
+		expect([...seats.keys()]).toEqual([1, 0]);
+		expect(seats.get(1)?.state).toBe('ai');
+		expect(seats.size).toBe(2);
+		expect(seats.has(8)).toBe(false);
+		expect(seats.has(9)).toBe(false);
+	});
+
+	it('RSP は 4 席を維持し、ハザードを除外', () => {
+		const seats = seatsFromSnapshot(
+			[combatant(8, true), combatant(3, false), combatant(1, true), combatant(0, false), combatant(2, false)],
+			'rsp',
+		);
+		expect([...seats.keys()]).toEqual([3, 1, 0, 2]);
+		expect(seats.size).toBe(4);
+		expect(seats.has(8)).toBe(false);
+	});
+
+	it('FPS でハザードだけの snapshot は席を作らない', () => {
+		expect(seatsFromSnapshot([combatant(8, true), combatant(9, true)], 'fps').size).toBe(0);
 	});
 });
 
@@ -31,35 +57,35 @@ describe('applySnapshotDeaths', () => {
 	}
 
 	it('respawn_ms>0 の席に復帰までの残り秒(切り上げ)を入れる', () => {
-		const seats = seatsFromSnapshot([combatant(0, false), combatant(1, true)]);
+		const seats = seatsFromSnapshot([combatant(0, false), combatant(1, true)], 'fps');
 		const next = applySnapshotDeaths(seats, [combatant(0, false), dead(1, 4200)]);
 		expect(next.get(0)?.respawnSeconds).toBeNull();
 		expect(next.get(1)?.respawnSeconds).toBe(5);
 	});
 
 	it('復帰(respawn_ms=0)したら null に戻る', () => {
-		const seats = seatsFromSnapshot([combatant(1, true)]);
+		const seats = seatsFromSnapshot([combatant(1, true)], 'fps');
 		const died = applySnapshotDeaths(seats, [dead(1, 4200)]);
 		const back = applySnapshotDeaths(died, [combatant(1, true)]);
 		expect(back.get(1)?.respawnSeconds).toBeNull();
 	});
 
 	it('表示上の秒が変わらなければ同じ Map を返す(再描画させない)', () => {
-		const seats = seatsFromSnapshot([combatant(1, true)]);
+		const seats = seatsFromSnapshot([combatant(1, true)], 'fps');
 		const died = applySnapshotDeaths(seats, [dead(1, 4200)]);
 		expect(applySnapshotDeaths(died, [dead(1, 4050)])).toBe(died);
 		expect(applySnapshotDeaths(seats, [combatant(1, true)])).toBe(seats);
 	});
 
 	it('seats に無い id(ハザード等)は追加しない', () => {
-		const seats = seatsFromSnapshot([combatant(0, false)]);
+		const seats = seatsFromSnapshot([combatant(0, false)], 'fps');
 		const next = applySnapshotDeaths(seats, [combatant(0, false), dead(8, 3000)]);
 		expect(next).toBe(seats);
 		expect(next.has(8)).toBe(false);
 	});
 
 	it('接続状態(grace など)は変えない', () => {
-		const state = { ...createInitialHudState(), seats: seatsFromSnapshot([combatant(0, false)]) };
+		const state = { ...createInitialHudState(), seats: seatsFromSnapshot([combatant(0, false)], 'fps') };
 		const graced = applyPlayerStatus(state, { slot: 0, state: 'grace' }, 1000, 30000);
 		const next = applySnapshotDeaths(graced.seats, [{ ...combatant(0, false), alive: false, respawn_ms: 2000 }]);
 		expect(next.get(0)?.state).toBe('grace');
@@ -70,14 +96,14 @@ describe('applySnapshotDeaths', () => {
 
 describe('applyPlayerStatus', () => {
 	it('grace のとき graceDeadlineMs = now + graceMs を刻む', () => {
-		const state = { ...createInitialHudState(), seats: seatsFromSnapshot([combatant(0, false)]) };
+		const state = { ...createInitialHudState(), seats: seatsFromSnapshot([combatant(0, false)], 'fps') };
 		const next = applyPlayerStatus(state, { slot: 0, state: 'grace' }, 1000, 30000);
 		expect(next.seats.get(0)?.state).toBe('grace');
 		expect(next.seats.get(0)?.graceDeadlineMs).toBe(31000);
 	});
 
 	it('connected へ戻したら graceDeadlineMs は null に戻る', () => {
-		const state = { ...createInitialHudState(), seats: seatsFromSnapshot([combatant(0, false)]) };
+		const state = { ...createInitialHudState(), seats: seatsFromSnapshot([combatant(0, false)], 'fps') };
 		const graced = applyPlayerStatus(state, { slot: 0, state: 'grace' }, 1000);
 		const back = applyPlayerStatus(graced, { slot: 0, state: 'connected' }, 2000);
 		expect(back.seats.get(0)?.state).toBe('connected');
@@ -115,7 +141,7 @@ describe('applyGameEvent — point_scored / hand_changed', () => {
 
 describe('applyGameEvent — player_disconnected/reconnected/ai_takeover', () => {
 	it('player_disconnected は grace へ、grace_ms で deadline を刻む', () => {
-		const s0 = { ...createInitialHudState(), seats: seatsFromSnapshot([combatant(1, false)]) };
+		const s0 = { ...createInitialHudState(), seats: seatsFromSnapshot([combatant(1, false)], 'fps') };
 		const s1 = applyGameEvent(
 			s0,
 			{ kind: 'player_disconnected', slot: 1, grace_ms: 30000 },
