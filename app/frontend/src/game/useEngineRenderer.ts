@@ -45,6 +45,11 @@ export interface UseEngineRendererOptions {
 	localYawRef: RefObject<number>;
 	/** 射撃ボタンを押しているか（useGameInput の fireHeldRef）。観戦者など入力の無い画面では省略 */
 	fireHeldRef?: RefObject<boolean>;
+	/**
+	 * 1/2/3 で要求された武器番号（#239）。適用したら null に戻す。
+	 * current_weapon は C 側の表示状態で当たり判定には効かないため、input には載せずここで直接渡す
+	 */
+	weaponRequestRef?: RefObject<number | null>;
 }
 
 export interface UseEngineRendererResult {
@@ -62,6 +67,7 @@ export function useEngineRenderer({
 	worldProgressRef,
 	localYawRef,
 	fireHeldRef,
+	weaponRequestRef,
 }: UseEngineRendererOptions): UseEngineRendererResult {
 	const [status, setStatus] = useState<RendererStatus>('idle');
 	const [textureProgress, setTextureProgress] = useState<LoadTexturesProgress | null>(null);
@@ -166,6 +172,12 @@ export function useEngineRenderer({
 				mod.HEAPF64.set(flat, flatPtr / 8);
 				const viewId = combatantId ?? 0;
 				mod._web_apply_snapshot(flatPtr, flat.length, viewId);
+				// 押した瞬間だけの要求なので、適用したら消す（毎フレーム呼ばない）
+				const weapon = weaponRequestRef?.current;
+				if (weapon !== null && weapon !== undefined && weaponRequestRef) {
+					mod._web_set_weapon(weapon);
+					weaponRequestRef.current = null;
+				}
 				if (fireHeldRef?.current) mod._web_play_shot();
 				mod._web_render_frame();
 				present(mod);
@@ -230,7 +242,7 @@ export function useEngineRenderer({
 			// GC 任せ（unmount 後の rAF は cancelled で止まっているので副作用なし）
 			mod = null;
 		};
-	}, [mapText, mode, combatantId, targetScore, canvasRef, snapshotBufferRef, worldProgressRef, localYawRef, fireHeldRef]);
+	}, [mapText, mode, combatantId, targetScore, canvasRef, snapshotBufferRef, worldProgressRef, localYawRef, fireHeldRef, weaponRequestRef]);
 
 	return { status, textureProgress, errorMessage, fps };
 }

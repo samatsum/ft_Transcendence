@@ -9,6 +9,7 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import {
 	ACT_FIRE,
+	weaponFromAct,
 	MAX_CLIENT_MESSAGE_BYTES,
 	MAX_CONSECUTIVE_SCHEMA_VIOLATIONS,
 	WS_CLOSE,
@@ -444,6 +445,7 @@ function handleInput(
 		// act の bit0=射撃（#187）。押下状態をそのまま渡し、連射間隔は sim の席が持つ。
 		// act は省略可能なので、未指定は「撃っていない」
 		fire: ((input.act ?? 0) & ACT_FIRE) !== 0,
+		weapon: weaponFromAct(input.act),
 	});
 }
 

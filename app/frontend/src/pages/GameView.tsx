@@ -7,6 +7,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { z } from 'zod';
 
 import { useApi } from '../api/useApi.js';
+import { LETTERBOX, SCRIM_60, SCRIM_80, SCRIM_DANGER_80, SCRIM_DANGER_90 } from '../components/rawColors.js';
 import { ExitPromptModal } from '../game/hud/ExitPromptModal.js';
 import { HudOverlay } from '../game/hud/HudOverlay.js';
 import type { MatchDetailsView } from '../game/hud/MatchEndModal.js';
@@ -15,6 +16,7 @@ import { useGameInput } from '../game/useGameInput.js';
 import {
 	shouldNavigateAfterLeave,
 	shouldReturnToLobby,
+	shouldShowMatchEnd,
 	useGameSocket,
 } from '../game/useGameSocket.js';
 
@@ -59,6 +61,8 @@ export default function GameView() {
 
 	const isSpectator = welcome?.role === 'spectator';
 	const rendererEnabled = welcome !== null;
+	const showMatchEnd = shouldShowMatchEnd(leaveStatus);
+	const visibleMatchEndEvent = showMatchEnd ? matchEndEvent : null;
 
 	// ④ D-13: モバイル幅は「閲覧のみ」。**通知の表示は CSS 側に任せたまま、
 	// ここでは入力の可否だけを見る。** 入力の遮断は CSS ではできないので、
@@ -88,7 +92,7 @@ export default function GameView() {
 		setExitPromptOpen(true);
 	}, [matchEnded]);
 
-	const { localYawRef, fireHeldRef, setOnCaptureChange } = useGameInput({
+	const { localYawRef, fireHeldRef, weaponRequestRef, setOnCaptureChange } = useGameInput({
 		canvasRef,
 		send,
 		spectator: !!isSpectator,
@@ -111,16 +115,17 @@ export default function GameView() {
 		worldProgressRef,
 		localYawRef,
 		fireHeldRef,
+		weaponRequestRef,
 	});
 
 	// 決着したら退出ポップアップを閉じ、以後 Esc では開かないようにする。
 	// **match_id が null でも決着は決着**なので、下の詳細取得とは別の effect にする
 	// （あちらは match_id === null で早期 return する）
 	useEffect(() => {
-		if (!matchEndEvent) return;
+		if (!visibleMatchEndEvent) return;
 		setMatchEnded(true);
 		setExitPromptOpen(false);
-	}, [matchEndEvent]);
+	}, [visibleMatchEndEvent]);
 
 	// match_end の match_id で試合詳細取得(GV-07 推奨決定#4)
 	// B-13 復帰時の互換経路として、取得失敗は toast:false + error state で握る
@@ -133,8 +138,8 @@ export default function GameView() {
 		setMatchDetailsError(false);
 	}, [roomId]);
 	useEffect(() => {
-		if (!matchEndEvent) return;
-		const matchId = matchEndEvent.match_id;
+		if (!visibleMatchEndEvent) return;
+		const matchId = visibleMatchEndEvent.match_id;
 		if (matchId === null) return;
 		let cancelled = false;
 		api
@@ -151,19 +156,20 @@ export default function GameView() {
 		return () => {
 			cancelled = true;
 		};
-	}, [matchEndEvent, api]);
+	}, [visibleMatchEndEvent, api]);
 
 	// close 1000/4002/4003 でロビーへ戻す。終了済みルームへの再 join はサーバが
 	// 4003 で拒否するため、リザルト表示中のリロードも黒画面に残さずロビーへ戻る
 	useEffect(() => {
-		if (shouldReturnToLobby(closeCode, leaveStatus)) {
+		if (shouldReturnToLobby(closeCode, leaveStatus, matchEndEvent !== null)) {
 			const id = setTimeout(() => navigate('/lobby', { replace: true }), 800);
 			return () => clearTimeout(id);
 		}
 		return undefined;
-	}, [closeCode, leaveStatus, navigate]);
+	}, [closeCode, leaveStatus, matchEndEvent, navigate]);
 
 	useEffect(() => {
+		// 明示退出は MatchEndModal を経由せず、確認できた時点でロビーへ直接戻す
 		if (shouldNavigateAfterLeave(welcome?.mode ?? null, leaveStatus)) {
 			navigate('/lobby', { replace: true });
 		}
@@ -185,8 +191,8 @@ export default function GameView() {
 
 	return (
 		<main className="flex min-h-screen flex-col items-center justify-center gap-2 bg-page p-2 text-fg">
-			{/* bg-black は Canvas の余白（レターボックス）。面の色ではないのでトークンに寄せない（#167） */}
-			<div className="relative w-full max-w-[1280px] aspect-video bg-black">
+			{/* Canvas の余白（レターボックス）。面の色ではないのでトークンに寄せない（#167, #223） */}
+			<div className={`relative w-full max-w-[1280px] aspect-video ${LETTERBOX}`}>
 				<canvas
 					ref={canvasRef}
 					tabIndex={0}
@@ -196,34 +202,31 @@ export default function GameView() {
 				/>
 
 				{/* 読み込み中と描画エラーは HUD 前に出す(HUD は welcome 後にしか描かない)。
-				    **ここの bg-black/60 と bg-rose-900/80 はトークンに寄せない（#167）。**
-				    3D の上に敷く半透明のスクリムで、可読性のための機能であって面の色ではない。
-				    パレットの surface 系は不透明、danger は rose-500 で、どちらも
-				    この用途には明るすぎる（下の映像が透けなくなる／文字が沈む） */}
+				    ここのスクリムはトークンに寄せない。理由は rawColors.ts（#167, #223） */}
 				<div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 text-center">
 					{rendererStatus === 'loading-glue' && (
-						<p className="rounded bg-black/60 px-4 py-2 text-body">
+						<p className={`rounded ${SCRIM_60} px-4 py-2 text-body`}>
 							エンジンを読み込んでいます…
 						</p>
 					)}
 					{rendererStatus === 'loading-textures' && textureProgress && (
-						<p className="rounded bg-black/60 px-4 py-2 text-body">
+						<p className={`rounded ${SCRIM_60} px-4 py-2 text-body`}>
 							テクスチャ {textureProgress.loaded}/{textureProgress.total}
 						</p>
 					)}
 					{rendererStatus === 'error' && (
-						<p className="rounded bg-rose-900/80 px-4 py-2 text-body">
+						<p className={`rounded ${SCRIM_DANGER_80} px-4 py-2 text-body`}>
 							描画エラー: {errorMessage}
 						</p>
 					)}
 					{/* モバイル幅ではキャプチャできないので操作ヒント自体を出さない（④ D-13） */}
 					{rendererStatus === 'ready' && !captured && !isSpectator && (
-						<p className="hidden rounded bg-black/60 px-4 py-2 text-body md:block">
+						<p className={`hidden rounded ${SCRIM_60} px-4 py-2 text-body md:block`}>
 							クリック / Enter でキャプチャ開始、Esc で退出メニュー
 						</p>
 					)}
 					{rendererStatus === 'ready' && isSpectator && (
-						<p className="rounded bg-black/60 px-4 py-2 text-body">
+						<p className={`rounded ${SCRIM_60} px-4 py-2 text-body`}>
 							観戦中(視点切替は GV-12)
 						</p>
 					)}
@@ -234,6 +237,7 @@ export default function GameView() {
 					welcome={welcome}
 					snapshotBufferRef={snapshotBufferRef}
 					pendingEvents={pendingEvents}
+					showMatchEnd={showMatchEnd}
 					acknowledgeEvents={acknowledgeEvents}
 					playerStatus={playerStatus}
 					connectionStatus={status}
@@ -251,12 +255,12 @@ export default function GameView() {
 					onCancel={onCancelExit}
 				/>
 				{leaveStatus === 'waiting' && welcome?.mode !== 'fps' && (
-					<p role="status" className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded bg-black/80 px-4 py-2 text-caption">
+					<p role="status" className={`absolute bottom-3 left-1/2 -translate-x-1/2 rounded ${SCRIM_80} px-4 py-2 text-caption`}>
 						退出を確認しています…
 					</p>
 				)}
 				{leaveStatus === 'failed' && welcome?.mode !== 'fps' && (
-					<p role="alert" className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded bg-rose-900/90 px-4 py-2 text-caption">
+					<p role="alert" className={`absolute bottom-3 left-1/2 -translate-x-1/2 rounded ${SCRIM_DANGER_90} px-4 py-2 text-caption`}>
 						退出を確認できませんでした。ロビーには移動していません。サーバーとの接続が終了したため、この画面からは退出を完了できません。
 					</p>
 				)}

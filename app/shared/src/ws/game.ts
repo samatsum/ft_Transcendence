@@ -19,6 +19,25 @@ export const gameJoinSchema = z.object({
 
 /** `input.act` の bit0: 射撃の引き金を引いている（② §5-A。#187） */
 export const ACT_FIRE = 0b0001;
+/**
+ * act の bit1-2 に入る武器番号（#239）。0=ピストル / 1=フラッシュライト / 2=素手で、
+ * C 側の `WEP_PISTOL` / `WEP_FLASHLIGHT` / `WEP_HANDS`（types.h）と同じ並び。
+ *
+ * **武器は見た目だけではない。** 素手は移動が 1.5 倍速く（`combatant.c` の
+ * `PLAYER_RUN_SPEED_MULT`）、射撃はピストル装備時のみ通る。どちらもサーバの sim が
+ * 判定するので、クライアント側だけで切り替えると表示と実挙動がずれる。
+ */
+export const ACT_WEAPON_SHIFT = 1;
+export const ACT_WEAPON_MASK = 0b0110;
+export const WEAPON_PISTOL = 0;
+export const WEAPON_FLASHLIGHT = 1;
+export const WEAPON_HANDS = 2;
+
+/** act から武器番号を取り出す。未知の値はピストルに落とす */
+export function weaponFromAct(act: number | undefined): number {
+	const w = ((act ?? 0) & ACT_WEAPON_MASK) >> ACT_WEAPON_SHIFT;
+	return w === WEAPON_FLASHLIGHT || w === WEAPON_HANDS ? w : WEAPON_PISTOL;
+}
 
 /**
  * `input`: 30Hz 固定送信。**表示フレームから間引いて全量状態を送る**（状態駆動）。
@@ -38,7 +57,8 @@ export const gameInputSchema = z.object({
 		/** 4bit ビットマスク: bit0=前進 / bit1=後退 / bit2=左strafe / bit3=右strafe */
 		mv: z.number().int().min(0).max(0b1111),
 		/**
-		 * ② §5-A: 4bit ビットマスク。bit0=射撃（{@link ACT_FIRE}。#187）/ bit1-3=予約。
+		 * ② §5-A: 4bit ビットマスク。bit0=射撃（{@link ACT_FIRE}。#187）/
+		 * bit1-2=装備中の武器（{@link weaponFromAct}。#239）/ bit3=予約。
 		 * mv と同じく押下状態を毎回送る（押しっぱなしなら毎回 1）。連射間隔はサーバの
 		 * sim が持つので、クライアントは間引かなくてよい。RSP では bit0 を立てても撃てない。
 		 * 予約ビットは受理して無視する（`max(0b0001)` にすると将来の拡張時にスキーマ改訂が要る）

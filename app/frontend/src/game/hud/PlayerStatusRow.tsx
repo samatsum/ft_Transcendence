@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { SCRIM_60, SEAT_STATE_PILL } from '../../components/rawColors.js';
 import type { SeatInfo } from '../hudState.js';
 
 // ④ §3.3 HUD 表 対戦者ステータス行:
@@ -20,14 +21,8 @@ const STATE_LABEL: Record<SeatInfo['state'], string> = {
 	ai: 'AI',
 };
 
-// **状態ピルの色はトークンに寄せない（#167）。** 3つで1組の対比表で、
-// パレットには「背景 700 / 文字 100」の段が無い（success / warning は 500 のみ）。
-// 1つだけトークン化すると3色の明度が揃わなくなるため、組ごと据え置く
-const STATE_CLASS: Record<SeatInfo['state'], string> = {
-	connected: 'bg-emerald-700 text-emerald-100',
-	grace: 'bg-amber-700 text-amber-100',
-	ai: 'bg-slate-600 text-slate-200',
-};
+// 状態ピルの色はトークンに寄せない。理由は rawColors.ts（#167, #223）
+const STATE_CLASS: Record<SeatInfo['state'], string> = SEAT_STATE_PILL;
 
 function SeatBadge({ seat, isSelf, nowMs }: { seat: SeatInfo; isSelf: boolean; nowMs: number }) {
 	const remaining =
@@ -38,7 +33,7 @@ function SeatBadge({ seat, isSelf, nowMs }: { seat: SeatInfo; isSelf: boolean; n
 		<div
 			className={`flex items-center gap-2 rounded px-2 py-1 text-caption ${
 				isSelf ? 'ring-1 ring-accent-bright' : ''
-			} bg-black/60`}
+			} ${SCRIM_60}`}
 		>
 			<span className="text-fg">{seat.name}</span>
 			<span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${STATE_CLASS[seat.state]}`}>
