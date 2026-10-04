@@ -72,11 +72,15 @@ const HAND_FLASH_MS = 300;
  * `is_ai=true` → 'ai'、false → 'connected' が原則(② §5-B の初期挙動)。
  * `name` は placeholder(実名対応は shared/ws/game.ts の welcome 拡張の別 PR)
  */
-export function seatsFromSnapshot(combatants: SnapshotPayload['combatants']): Map<number, SeatInfo> {
+export function seatsFromSnapshot(
+	combatants: SnapshotPayload['combatants'],
+	mode: SnapshotPayload['match']['mode'],
+): Map<number, SeatInfo> {
 	const seats = new Map<number, SeatInfo>();
-	// snapshot の combatants は slot と id が別概念だが、B-10 実装では
-	// combatant_id = slot(0..3)。sim の内部リスト順は関係なく id で照合する(GV-06 参照)
+	const seatCount = mode === 'fps' ? 2 : 4;
+	// combatant id は席番号と一致する。FPS のマップ由来ハザード(id>=8)や範囲外 id は席にしない
 	combatants.forEach((c) => {
+		if (!Number.isInteger(c.id) || c.id < 0 || c.id >= seatCount) return;
 		seats.set(c.id, {
 			slot: c.id,
 			name: c.is_ai ? 'AI' : `Player ${c.id}`,
