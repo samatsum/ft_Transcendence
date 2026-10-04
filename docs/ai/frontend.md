@@ -29,13 +29,13 @@ An SPA built with React Router. Unauthenticated access to a protected route redi
 | `/login` / `/signup` | Auth | Redirects to `/lobby` if already authenticated |
 | `/lobby` | Lobby (§3.2) | Auth required |
 | `/game/:roomId` | Game (§3.3) | Auth required |
-| `/profile/:id` | Profile (§3.4) | Auth required |
+| `/profile/:id` | Profile (§3.4) — **not routed** (F-09 not declared; the stub page and route were removed in #240, so the path falls through to the public `*` 404 without passing through `RequireAuth`) | — |
 | `/privacy` / `/terms` | Privacy Policy / ToS (§3.5) | **Not required** (readable while logged out) |
 | `*` | 404 | — |
 
 ## 2. Common layout
 
-- **Header**: Logo (→ `/lobby`), the user's own avatar + name (→ `/profile/:me`), logout.
+- **Header**: Logo (→ `/lobby`), the user's own avatar + name (display only, not a link — it would point to `/profile/:me` if F-09 were restored; #240), logout.
 - **Footer**: Links to Privacy Policy / Terms of Service are present on every non-game screen (satisfies the rejection criterion "reachable from the footer"). GameView and its opaque result layer omit them to keep the match flow focused; returning to the lobby restores the footer.
 - **Toast**: Common display area for errors/notifications (shows the `msg` field from the error envelope in ③ §1-A; the `code` field is never emitted to the developer console — zero-console operation).
 - **ErrorBoundary**: Shows a reload path on render exceptions (prevents blank screens and unhandled console exceptions).

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from './Button.js';
 import { useAuth } from '../contexts/AuthContext.js';
 
-// ④ §2「Header: ロゴ（→ /lobby）、自分のアバター+名前（→ /profile/:me）、ログアウト」。
+// ④ §2「Header: ロゴ（→ /lobby）、自分のアバター+名前（リンクなし）、ログアウト」。
 // アバター画像本体（B-06/F-09）は未実装なのでイニシャルの丸で代替。
 // 「未ログイン時は Header 全体を出さない」ではなく、「ユーザ情報部分だけ非表示」にする
 // （/privacy /terms は未ログインでも読めるので Header 自体は要る）
@@ -46,14 +46,9 @@ export function Header() {
 					 */
 					<div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
 						{/*
-						 * aria-label: sm 未満では表示名が visually hidden なので、
-						 * リンクの accessible name を明示する（見た目は変えない）。
+						 * 自分のアバター+名前。プロフィール画面（F-09）は不採用なのでリンクにしない（#240）。
 						 */}
-						<Link
-							to={`/profile/${user.id}`}
-							aria-label={`${user.displayName}のプロフィール`}
-							className="flex min-w-0 items-center gap-2 rounded-md px-2 py-1 text-body text-fg-secondary hover:bg-surface"
-						>
+						<div className="flex min-w-0 items-center gap-2 px-2 py-1 text-body text-fg-secondary">
 							<span
 								className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent-strong text-xs font-bold text-fg-strong"
 								aria-hidden
@@ -63,11 +58,11 @@ export function Header() {
 							{/*
 							 * 表示名は sm(640px) 未満では非表示。
 							 * 375px ではアバターだけにして Header の横幅を節約する。
+							 * 非表示の間もスクリーンリーダーには sr-only 側で名前を読ませる。
 							 */}
-							<span className="hidden max-w-[8rem] truncate sm:inline" aria-hidden>
-								{user.displayName}
-							</span>
-						</Link>
+							<span className="hidden max-w-[8rem] truncate sm:inline">{user.displayName}</span>
+							<span className="sr-only sm:hidden">{user.displayName}</span>
+						</div>
 						{/*
 						 * whitespace-nowrap: 「ログアウト」を1行のまま保つ（縦折り返し防止）。
 						 */}
