@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { Navigate, Outlet, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 
+import { AuthUnavailable } from './components/AuthUnavailable.js';
 import { Layout } from './components/Layout.js';
 import { RedirectIfAuth } from './components/RedirectIfAuth.js';
 import { RequireAuth } from './components/RequireAuth.js';
@@ -43,6 +44,10 @@ function RootRedirect() {
 				確認中…
 			</div>
 		);
+	}
+	// `unavailable` は未ログインではない（#264）。/login へ送らず再試行させる
+	if (status === 'unavailable') {
+		return <AuthUnavailable />;
 	}
 	return <Navigate to={status === 'authenticated' ? '/lobby' : '/login'} replace />;
 }
