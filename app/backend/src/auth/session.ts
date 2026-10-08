@@ -14,12 +14,23 @@ import { createHash, randomBytes } from 'node:crypto';
 import type { FastifyRequest } from 'fastify';
 
 import type { PrismaClient } from '../generated/prisma/client.js';
+import { ensureSqlitePragmas } from '../db/client.js';
 
 /** ③ D-5 の Cookie 名（Issue #11 で決定） */
 export const SESSION_COOKIE_NAME = 'ft_session';
 
 /** ③ D-5: TTL 7日（アクセスごとのスライド延長は authenticateRequest の本実装で行う） */
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * ③ D-5 のスライディング延長を実際に書き込む最小間隔。
+ * これ未満の間隔では `expiresAt` を更新しない（残り寿命は常に TTL から
+ * この値を引いた長さ以上が保たれるので、期限が早まることはない）。
+ */
+const SESSION_SLIDE_MIN_INTERVAL_MS = 60 * 60 * 1000;
+
+/** `User.lastSeenAt` を実際に書き込む最小間隔。オンライン表示に秒単位の精度は要らない */
+const LAST_SEEN_MIN_INTERVAL_MS = 60 * 1000;
 
 /** 生トークン（Cookie に載せる方）。SHA-256 ハッシュだけを DB に保存する（③§3） */
 export function generateSessionToken(): string {
@@ -89,19 +100,48 @@ export async function authenticateRequest(req: FastifyRequest): Promise<AuthedUs
 	const token = req.cookies[SESSION_COOKIE_NAME];
 	if (!token || !prismaClient) return null;
 
+	await ensureSqlitePragmas(prismaClient);
+
+	// `User.lastSeenAt` を同じクエリで取る。別途 findUnique すると読みが2回になる
 	const session = await prismaClient.session.findUnique({
 		where: { tokenHash: hashSessionToken(token) },
+		include: { user: { select: { lastSeenAt: true } } },
 	});
-	if (!session || session.expiresAt.getTime() <= Date.now()) return null;
+	const now = Date.now();
+	if (!session || session.expiresAt.getTime() <= now) return null;
 
-	await prismaClient.session.update({
-		where: { id: session.id },
-		data: { expiresAt: sessionExpiryFromNow() },
-	});
-	await prismaClient.user.update({
-		where: { id: session.userId },
-		data: { lastSeenAt: new Date() },
-	});
+	// **全リクエストで書かない。** better-sqlite3 は同期実行なので、コミットのたびに
+	// イベントループ（= 30Hz の試合ループ）が止まる。認証は REST も WS 接続も通るため、
+	// 毎回2本書くと誰かがログインやリロードするだけで進行中の試合がつっかえる。
+	// 下の2つは「意味が変わらない範囲で書く回数を減らす」ための間引き。
+	const writes = [];
+
+	// ③ D-5 のスライディング延長。残り寿命が TTL から SESSION_SLIDE_MIN_INTERVAL_MS 以上
+	// 削れて初めて書く＝1セッションにつき最大1時間に1回。延長は効いたままで、
+	// 期限が実際より早く切れることもない（常に残り6日以上が保たれる）
+	if (session.expiresAt.getTime() - now < SESSION_TTL_MS - SESSION_SLIDE_MIN_INTERVAL_MS) {
+		writes.push(
+			prismaClient.session.update({
+				where: { id: session.id },
+				data: { expiresAt: sessionExpiryFromNow() },
+			}),
+		);
+	}
+
+	// ③§3 の「認証付きリクエストで更新する」は満たしつつ、分解能を1分に落とす。
+	// オンライン表示の用途に秒単位の精度は要らない
+	const lastSeenAt = session.user.lastSeenAt?.getTime() ?? 0;
+	if (now - lastSeenAt >= LAST_SEEN_MIN_INTERVAL_MS) {
+		writes.push(
+			prismaClient.user.update({
+				where: { id: session.userId },
+				data: { lastSeenAt: new Date(now) },
+			}),
+		);
+	}
+
+	// 2本とも書く場合はまとめて1コミットにする（fsync を2回から1回へ）
+	if (writes.length > 0) await prismaClient.$transaction(writes);
 
 	return { userId: session.userId, sessionId: session.id };
 }
