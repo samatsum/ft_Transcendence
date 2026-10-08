@@ -36,6 +36,16 @@ export function toAuthUser(self: Self): AuthUser {
 }
 
 /**
+ * 起動時のセッション確認を諦めるまでの時間（#264）。
+ *
+ * **バックエンドが落ちていても応答は即座には返らない。** nginx が掴んだまま
+ * になり、実測で 3〜7 秒、`proxy_read_timeout` の明示設定が無いので最悪 60 秒。
+ * その間 status が `loading` のままだと画面は「確認中…」で固まったように見える。
+ * 正常時の応答は数十ミリ秒なので、ここで見切って `unavailable` へ倒す。
+ */
+const BOOTSTRAP_TIMEOUT_MS = 5000;
+
+/**
  * `unavailable` は「ログインしているか**判断できていない**」状態（#264）。
  * サーバに訊けなかっただけなので、未ログインとして扱って /login へ送ってはいけない。
  */
@@ -95,6 +105,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		const myGen = ++bootstrapGenRef.current;
 		const controller = new AbortController();
 		bootstrapControllerRef.current = controller;
+		// 時間切れの abort と、cleanup/setUser による abort を区別する。
+		// 後者は「この応答はもう要らない」なので status を触ってはいけない
+		let timedOut = false;
+		const timer = setTimeout(() => {
+			timedOut = true;
+			controller.abort();
+		}, BOOTSTRAP_TIMEOUT_MS);
 		fetchMe(controller.signal)
 			.then((result) => {
 				// setUser/logout が世代を進めていたら、この応答は無効(遅れて到着)
@@ -104,9 +121,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 				setStatus(result.status);
 			})
 			.catch(() => {
-				// AbortError（cleanup or 明示 abort）は無視
-			});
+				// 時間切れだけは「サーバに訊けなかった」として扱う。
+				// cleanup 由来の AbortError は無視する
+				if (!timedOut) return;
+				if (myGen !== bootstrapGenRef.current) return;
+				setUserState(null);
+				setStatus('unavailable');
+			})
+			.finally(() => clearTimeout(timer));
 		return () => {
+			clearTimeout(timer);
 			controller.abort();
 			if (bootstrapControllerRef.current === controller) {
 				bootstrapControllerRef.current = null;
