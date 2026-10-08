@@ -279,7 +279,10 @@ export function registerLobbyWs(
 	const profileResolver = options.profileResolver ?? devProfileResolver;
 	const connectionManager = options.connectionManager ?? defaultConnectionManager;
 
-	app.get('/ws/lobby', { websocket: true }, (socket: ManagedSocket, req: FastifyRequest) => {
+	// ゲーム WS と同じ理由で ③§1-C の GET 枠から外す。流量制限は接続単位で
+	// 別に持っている（`WS_RATE_LIMIT.lobbyPerSecond`）
+	const routeOptions = { websocket: true, config: { rateLimit: false } } as const;
+	app.get('/ws/lobby', routeOptions, (socket: ManagedSocket, req: FastifyRequest) => {
 		void handleConnection(
 			socket,
 			req,

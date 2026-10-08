@@ -109,7 +109,12 @@ export function registerGameWs(
 	connectionManager: ConnectionManager = defaultConnectionManager,
 	releaseMatch: (userId: number, roomId: string) => boolean = () => false,
 ): void {
-	app.get('/ws/game/:roomId', { websocket: true }, (socket: Socket, req: FastifyRequest) => {
+	// ③§1-C の GET 120/分 の枠から外す。アップグレードは REST の取得ではないのに
+	// 同じ枠を食うため、枠が尽きると**切断したプレイヤーの再接続が 429 で弾かれ**、
+	// grace が満了して forfeit になる。接続単位の流量制限は WS 側が別に持っている
+	// （`WS_RATE_LIMIT.gameInputPerSecond`）
+	const routeOptions = { websocket: true, config: { rateLimit: false } } as const;
+	app.get('/ws/game/:roomId', routeOptions, (socket: Socket, req: FastifyRequest) => {
 		void handleConnection(socket, req, app, connectionManager, releaseMatch);
 	});
 }
