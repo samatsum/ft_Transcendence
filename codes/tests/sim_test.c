@@ -12,9 +12,11 @@
 //   #244  死亡中の席は移動を阻まない（描かれない死体が見えない壁にならない）
 //   #187  席の射撃（命中・クールダウン・壁の遮蔽・RSP では撃てない）
 //   FPS敵速度を match_rules 経由で巡回・追跡へ反映する
+//   #268  行末に空白があるマップ行でもパーサが配列の外へ書かない
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "core/collision.h"
 #include "core/core.h"
@@ -1384,6 +1386,73 @@ test_fps_enemy_speed_motion(const char* map_text, int tracking)
 	expect_int("FPS敵速度が normal < fast になる", normal < fast, 1);
 }
 
+// マップ行（先頭が '1' か空白の行）の末尾に空白を足したテキストを作る。
+// 評価者が持ち込む自作マップの行末スペースを再現するため
+static char*
+	with_trailing_spaces(const char* map_text)
+{
+	char*	out;
+	size_t	len;
+	size_t	i;
+	size_t	o;
+	int		is_map_line;
+
+	len = strlen(map_text);
+	out = (char*)malloc(len * 4 + 4);
+	if (!out) {
+		return (NULL);
+	}
+	i = 0;
+	o = 0;
+	is_map_line = (map_text[0] == '1' || map_text[0] == ' ');
+	while (i <= len) {
+		if ((map_text[i] == '\n' || map_text[i] == '\0') && is_map_line) {
+			memcpy(out + o, "   ", 3);
+			o += 3;
+		}
+		out[o++] = map_text[i];
+		if (map_text[i] == '\n') {
+			is_map_line = (map_text[i + 1] == '1' || map_text[i + 1] == ' ');
+		}
+		i++;
+	}
+	return (out);
+}
+
+// #268: 行末に空白があっても、空白を除いた同じ盤面として読める。
+// 修正前は終端 NUL をマスとして書き、確保領域の外まで読み書きしていた
+// （通常ビルドでは成功して見えるため、はみ出し自体は ASan 付きビルドで検出する）
+static void
+	test_268_trailing_spaces_in_map(const char* map_text, int is_rsp, const char* name)
+{
+	char*	spaced;
+	t_game*	plain;
+	t_game*	game;
+	int		same;
+	int		i;
+
+	printf("  %s\n", name);
+	spaced = with_trailing_spaces(map_text);
+	plain = sim_create(map_text, is_rsp, 0, TEST_SEED, 0.0);
+	game = sim_create(spaced, is_rsp, 0, TEST_SEED, 0.0);
+	expect_int("行末空白付きマップを生成できる", game != NULL, 1);
+	if (plain && game) {
+		expect_int("行数が変わらない", game->config.map.rows, plain->config.map.rows);
+		expect_int("列数が変わらない", game->config.map.columns,
+			plain->config.map.columns);
+		same = 1;
+		i = 0;
+		while (same && i < plain->config.map.rows * plain->config.map.columns) {
+			same = (game->config.map.data[i] == plain->config.map.data[i]);
+			i++;
+		}
+		expect_int("全マスが空白無しの盤面と一致する", same, 1);
+	}
+	game_destroy(plain);
+	game_destroy(game);
+	free(spaced);
+}
+
 int
 	main(void)
 {
@@ -1443,6 +1512,9 @@ int
 	test_g09_rsp_map(rsp_map_2, "rsp_pillars");
 	test_g09_fps_map(fps_map, "21x21_arena");
 	test_g09_fps_map(fps_map_2, "fps_duel");
+	printf("#268 行末空白のあるマップ行\n");
+	test_268_trailing_spaces_in_map(fps_map, 0, "21x21_arena");
+	test_268_trailing_spaces_in_map(rsp_map, 1, "rsp");
 	free(rsp_map);
 	free(rsp_map_2);
 	free(fps_map);
