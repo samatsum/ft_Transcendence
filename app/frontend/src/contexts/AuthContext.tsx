@@ -12,11 +12,12 @@ import { authApi, type Self } from '@ft/shared';
 
 import { isAbortError } from '../api/apiFetch.js';
 import { plainRequester } from '../api/requester.js';
+import { bootstrapOutcomeFromError } from '../auth/bootstrapOutcome.js';
 
 // ④ D-12「fetch ラッパ + Context + zod」の Auth Context。
 // - 起動時に GET /api/auth/me を叩き、ログイン中なら user を保持（④ §1）
-// - B-04 未実装のため 401/404/network error はすべて「未ログイン」扱いにする
-//   （F-01 の推奨決定#3）
+// - **失敗の扱いは2つに分ける（#264）。** サーバが unauthenticated を返したときだけ
+//   未ログインにし、通信できなかった場合は 'unavailable' にしてセッション状態を変えない
 // - VITE_DEV_AUTOLOGIN=1 でネットワーク接続なしにダミー user を注入する
 // - API 呼び出しは #163 の shared ヘルパー（`authApi`）経由。URL とレスポンススキーマの
 //   対応は shared/src/api/auth.ts が持つ
@@ -34,7 +35,21 @@ export function toAuthUser(self: Self): AuthUser {
 	return { id: self.id, displayName: self.display_name };
 }
 
-export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
+/**
+ * 起動時のセッション確認を諦めるまでの時間（#264）。
+ *
+ * **バックエンドが落ちていても応答は即座には返らない。** nginx が掴んだまま
+ * になり、実測で 3〜7 秒、`proxy_read_timeout` の明示設定が無いので最悪 60 秒。
+ * その間 status が `loading` のままだと画面は「確認中…」で固まったように見える。
+ * 正常時の応答は数十ミリ秒なので、ここで見切って `unavailable` へ倒す。
+ */
+const BOOTSTRAP_TIMEOUT_MS = 5000;
+
+/**
+ * `unavailable` は「ログインしているか**判断できていない**」状態（#264）。
+ * サーバに訊けなかっただけなので、未ログインとして扱って /login へ送ってはいけない。
+ */
+export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated' | 'unavailable';
 
 interface AuthContextValue {
 	status: AuthStatus;
@@ -43,20 +58,27 @@ interface AuthContextValue {
 	setUser: (user: AuthUser | null) => void;
 	/** ログアウト API を呼び、成功時に user を null に戻す（③ §2-A の logout） */
 	logout: () => Promise<void>;
+	/** `unavailable` から起動時のセッション確認をやり直す（#264） */
+	retryBootstrap: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-async function fetchMe(signal: AbortSignal): Promise<AuthUser | null> {
+interface BootstrapResult {
+	status: Exclude<AuthStatus, 'loading'>;
+	user: AuthUser | null;
+}
+
+async function fetchMe(signal: AbortSignal): Promise<BootstrapResult> {
 	try {
-		return toAuthUser(await authApi.me(plainRequester, { signal }));
+		return { status: 'authenticated', user: toAuthUser(await authApi.me(plainRequester, { signal })) };
 	} catch (err) {
-		// F-02 の apiFetch は AbortError をそのまま再スロー、
-		// その他は ApiError（unauthenticated / network_error / invalid_response 等）に統一。
-		// AuthContext の初期 fetch では B-04 未実装時のフォールバックとして
-		// 「Abort 以外は全部未ログイン扱い」で丸める
+		// F-02 の apiFetch は AbortError をそのまま再スローし、その他は ApiError
+		// （unauthenticated / network_error / invalid_response 等）に統一する。
+		// Abort は呼び出し側の cleanup なのでそのまま投げ直す
 		if (isAbortError(err)) throw err;
-		return null;
+		// **通信できなかっただけならセッション状態を変えない（#264）**
+		return { status: bootstrapOutcomeFromError(err), user: null };
 	}
 }
 
@@ -68,6 +90,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	// bootstrap 応答の「現行性」を判定し、setUser/logout 時は世代を進めて無効化する
 	const bootstrapGenRef = useRef<number>(0);
 	const bootstrapControllerRef = useRef<AbortController | null>(null);
+	// retryBootstrap が進めると下の useEffect が走り直す（#264）
+	const [bootstrapAttempt, setBootstrapAttempt] = useState<number>(0);
 
 	useEffect(() => {
 		// 開発スタブ: VITE_DEV_AUTOLOGIN=1 で /me を叩かずログイン済みにする。
@@ -81,24 +105,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		const myGen = ++bootstrapGenRef.current;
 		const controller = new AbortController();
 		bootstrapControllerRef.current = controller;
+		// 時間切れの abort と、cleanup/setUser による abort を区別する。
+		// 後者は「この応答はもう要らない」なので status を触ってはいけない
+		let timedOut = false;
+		const timer = setTimeout(() => {
+			timedOut = true;
+			controller.abort();
+		}, BOOTSTRAP_TIMEOUT_MS);
 		fetchMe(controller.signal)
-			.then((u) => {
+			.then((result) => {
 				// setUser/logout が世代を進めていたら、この応答は無効(遅れて到着)
 				if (myGen !== bootstrapGenRef.current) return;
 				if (controller.signal.aborted) return;
-				setUserState(u);
-				setStatus(u ? 'authenticated' : 'unauthenticated');
+				setUserState(result.user);
+				setStatus(result.status);
 			})
 			.catch(() => {
-				// AbortError（cleanup or 明示 abort）は無視
-			});
+				// 時間切れだけは「サーバに訊けなかった」として扱う。
+				// cleanup 由来の AbortError は無視する
+				if (!timedOut) return;
+				if (myGen !== bootstrapGenRef.current) return;
+				setUserState(null);
+				setStatus('unavailable');
+			})
+			.finally(() => clearTimeout(timer));
 		return () => {
+			clearTimeout(timer);
 			controller.abort();
 			if (bootstrapControllerRef.current === controller) {
 				bootstrapControllerRef.current = null;
 			}
 		};
-	}, []);
+	}, [bootstrapAttempt]);
 
 	// setUser/logout は共通で bootstrap を無効化する必要があるため helper 化
 	const invalidateBootstrap = useCallback(() => {
@@ -130,9 +168,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		setStatus('unauthenticated');
 	}, [invalidateBootstrap]);
 
+	const retryBootstrap = useCallback(() => {
+		setStatus('loading');
+		setBootstrapAttempt((n) => n + 1);
+	}, []);
+
 	const value = useMemo<AuthContextValue>(
-		() => ({ status, user, setUser, logout }),
-		[status, user, setUser, logout],
+		() => ({ status, user, setUser, logout, retryBootstrap }),
+		[status, user, setUser, logout, retryBootstrap],
 	);
 
 	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
