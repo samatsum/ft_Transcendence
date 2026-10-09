@@ -111,13 +111,33 @@
 		<section id="web">
 			<p class="section-kicker">03 · Going web</p>
 			<h2>転機 — 「ブラウザで対戦する」決定</h2>
-			<p class="section-intro">（本文は後続コミットで書く）</p>
+			<p class="section-intro">
+				ネイティブの FPS 原型を、評価しやすい<strong>ブラウザ上のオンライン対戦</strong>へ広げる判断をしたのが転機です。
+				複数人が同時に触る以上、勝敗や位置の正しさはクライアントに置けません。
+			</p>
+			<p class="section-intro">
+				そこで採ったのが<strong>サーバ権威</strong>です。サーバ上の
+				<code>sim.wasm</code> が試合状態の正本を計算し、ブラウザは受け取った snapshot を描くだけにする。
+				「なぜそうするか」の説明は
+				<a href="../説明用/サーバ権威モデル.html">サーバ権威モデル</a>へ。
+				WASM の組み立て手順やプロトコル詳細はこのページでは書きません。
+			</p>
 		</section>
-
+		
 		<section id="solo">
 			<p class="section-kicker">04 · Solo period</p>
 			<h2>単独稼働期 — 骨格ができた時期</h2>
-			<p class="section-intro">（本文は後続コミットで書く）</p>
+			<p class="section-intro">
+				チームキックオフ（2026-08-08）より前の単独稼働期に、いまも残る骨格が置かれました。
+				C エンジン本体は <code>codes/</code>、ブラウザ／WASM 向けの橋渡しは <code>web/</code>。
+				同じソースから <strong>native</strong>・<strong>render.wasm</strong>・<strong>sim.wasm</strong>
+				の3ターゲットへ出す形です。
+			</p>
+			<p class="section-intro">
+				プロローグの関心（レイキャストで動く世界を壊さず伸ばす）が、この3ターゲット選択に現れています。
+				誰が何を持つかの現行表は
+				<a href="./チーム体制.html">チーム体制</a>へ。日次進捗や個人の感情談は書きません。
+			</p>
 		</section>
 
 		<section id="kickoff">
