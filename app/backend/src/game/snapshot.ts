@@ -44,11 +44,14 @@ function round(value: number): number {
  * @param flat SimGame.readSnapshot() の戻り値。**この呼び出し中しか有効でない**
  * @param tick サーバ側で採番している tick 番号
  * @param mode ルームのモード。welcome.mode と一致する（試合中は不変）
+ * @param timeLeftMs 試合の残り時間（#269）。sim は制限時間を持たないのでルームが渡す。
+ *   制限時間の無い呼び出し元（dev-run）は省略して null
  */
 export function decodeSnapshot(
 	flat: Float64Array,
 	tick: number,
 	mode: SnapshotMode,
+	timeLeftMs: number | null = null,
 ): SnapshotMessage {
 	if (flat.length < HEADER_DOUBLES) {
 		throw new Error(`snapshot が短すぎる (${flat.length})`);
@@ -93,6 +96,7 @@ export function decodeSnapshot(
 				mode,
 				winner: winner < 0 ? null : winner,
 				score: [scoreRed, scoreBlue],
+				time_left_ms: timeLeftMs,
 			},
 			combatants,
 		},
