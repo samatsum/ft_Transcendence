@@ -23,8 +23,8 @@
 				<a href="https://github.com/samatsum/ft_Transcendence/issues/259">#259</a>）。
 			</p>
 			<div class="hero-note">
-				<strong>スタブ</strong>
-				<span>見出しのみ。本文は後続コミットで埋める</span>
+				<strong>本文執筆中</strong>
+				<span>Issue <a href="https://github.com/samatsum/ft_Transcendence/issues/276">#276</a></span>
 			</div>
 		</div>
 	</header>
@@ -40,7 +40,6 @@
 			<a href="#kickoff">キックオフ</a>
 			<a href="#roles">役割</a>
 			<a href="#now">いまの形</a>
-			<a href="#eval-order">評価の話す順</a>
 			<a href="#refs">参照</a>
 			<button class="print-button" type="button" onclick="window.print()">印刷 / PDF</button>
 		</div>
@@ -50,21 +49,52 @@
 		<section id="usage">
 			<p class="section-kicker">00 · How to use</p>
 			<h2>このページの使い方</h2>
-			<p class="section-intro">（本文は後続コミットで書く）</p>
+			<p class="section-intro">
+				ここは評価者向けの<strong>口頭説明の骨格</strong>です。時系列で「なぜこの形になったか」を話し、
+				仕組みの細部や点数表は他ページに任せます。
+			</p>
+			<ul>
+				<li><a href="./プロジェクト概要.html">プロジェクト概要</a> — いま何か（現状・アーキテクチャ）</li>
+				<li><a href="../説明用/エンジン構成.html">説明用/</a> — 仕組みの「なぜ」（エンジン・権威モデルなど）</li>
+				<li><a href="../評価対応/42モジュール対応表.html">評価対応/</a> — モジュール点数と実装対応</li>
+				<li>本ページ — 出発から今までの<strong>物語</strong></li>
+			</ul>
+			<p class="section-intro">
+				起動手順・現行バグ一覧・評価時の画面操作フローは書きません。
+				デモ操作は <a href="https://github.com/samatsum/ft_Transcendence/issues/259">#259</a> 側です。
+			</p>
 		</section>
-
+		
 		<section id="prologue">
 			<p class="section-kicker">01 · Prologue</p>
 			<h2>プロローグ — なぜゲームを作るプロジェクトになったか</h2>
-			<p class="section-intro">（本文は後続コミットで書く）</p>
+			<p class="section-intro">
+				起点は課題書の「cub3D を延長する」一文だけではありません。
+				<strong>samatsum</strong> が、ゲーム制作そのものをやりたい意図を持ち、
+				すでに手元にあった cub3D エンジンを土台に据えた、というのがこのプロジェクトの出発点です。
+			</p>
+			<p class="section-intro">
+				本人が公開・合意できる範囲では、Unity などでのゲーム制作経験や、
+				ミニカーコンテスト向けシミュレーターといった「ゲームを動かす」側の関心が先にあり、
+				42 の課題形式はその関心をオンライン対戦へ伸ばす器になりました。
+				<strong>samatsum</strong> のBH入りなどの経緯はここでは扱いません。
+			</p>
 		</section>
-
+		
 		<section id="cub3d">
 			<p class="section-kicker">02 · cub3D</p>
 			<h2>出発点 — cub3D（技術的に何を引き継いだか）</h2>
-			<p class="section-intro">（本文は後続コミットで書く）</p>
+			<p class="section-intro">
+				技術的に引き継いだ核は次です。C のレイキャスティング、マップ資産（<code>maps/</code> と
+				<code>.cub</code>）、そして MiniLibX 上で動く<strong>ネイティブ実行</strong>という開発の足場。
+			</p>
+			<p class="section-intro">
+				ゲームを作りたい意図があったからこそ、cub3D を捨てて作り直すのではなく、
+				<strong>壊さず伸ばす</strong>選択になりました。ファイル単位の解説は
+				<a href="../説明用/エンジン構成.html">エンジン構成</a>・
+				<a href="../説明用/ビルドと実行.html">ビルドと実行</a>へ。
+			</p>
 		</section>
-
 		<section id="web">
 			<p class="section-kicker">03 · Going web</p>
 			<h2>転機 — 「ブラウザで対戦する」決定</h2>
@@ -92,12 +122,6 @@
 		<section id="now">
 			<p class="section-kicker">07 · Today</p>
 			<h2>いまの形 — オンライン対戦プラットフォームへ</h2>
-			<p class="section-intro">（本文は後続コミットで書く）</p>
-		</section>
-
-		<section id="eval-order">
-			<p class="section-kicker">08 · Eval talking order</p>
-			<h2>評価で話す順番（台本の目次だけ）</h2>
 			<p class="section-intro">（本文は後続コミットで書く）</p>
 		</section>
 
