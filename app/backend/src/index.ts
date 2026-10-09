@@ -51,7 +51,13 @@ export interface BuildServerOptions {
 
 /** Fastify serverと、そのserver専用のWebSocket接続管理を構築する */
 export async function buildServer(options: BuildServerOptions = {}) {
-	const app = Fastify({ logger: loggerOptions() });
+	// ③§1-C のレート制限は `request.ip` をキーにするので、nginx 越しだと
+	// 全員が nginx のアドレスになり**1つの枠を共有する**（誰か1人がログインを
+	// 5回失敗すると全員が 429 になる）。1 は「手前のプロキシ1段だけ信じる」の意味で、
+	// nginx が X-Forwarded-For を `$remote_addr` で上書きするのと対になっている
+	// （クライアント由来の値は nginx が捨てるので、偽装でキーを変えられない）。
+	// backend は compose 内で `expose` のみ＝nginx 以外から到達しない
+	const app = Fastify({ logger: loggerOptions(), trustProxy: 1 });
 	const connectionManager = options.connectionManager ?? new ConnectionManager();
 
 	// ③§1-A: 全ルート共通のエラーエンベロープ。ZodError の自動変換もここに載る

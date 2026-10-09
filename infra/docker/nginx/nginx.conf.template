@@ -63,6 +63,14 @@ http {
 		# ブラウザに Content-Type を勝手に解釈させない
 		add_header X-Content-Type-Options nosniff always;
 
+		# **`$proxy_add_x_forwarded_for` ではなく `$remote_addr` を入れる。**
+		# 前者は「クライアントが送ってきた X-Forwarded-For の後ろに追記する」ので、
+		# クライアントが偽の値を付けて送れば先頭に残ってしまう。Fastify 側は
+		# `trustProxy` で先頭を採用するため、レート制限のキーを自由に変えられる。
+		# ここで必ず上書きすれば、ヘッダには nginx が見た実アドレスしか載らない
+		proxy_set_header X-Forwarded-For $remote_addr;
+		proxy_set_header X-Forwarded-Proto $scheme;
+
 		# /api/ 以下はパスを変えずに Fastify へ転送する
 		location /api/ {
 			proxy_pass http://backend:3000;
