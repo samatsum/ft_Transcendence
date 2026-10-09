@@ -85,6 +85,8 @@ interface Connection {
 	userId: number;
 	slot: number | null;
 	joined: boolean;
+	/** join中にこの接続向けへ発生したroom配信。初期フレーム送信後に順序どおり流す */
+	joinQueue: { message: GameServerMessage; serialized: string }[] | null;
 	/** 同一ユーザーの新接続に置換された旧接続か。close 時に席を解放しない */
 	replaced: boolean;
 	/** ② §5-A: 最後に受理した seq。これ以下は黙って破棄 */
@@ -205,6 +207,7 @@ async function handleConnection(
 		userId: user.userId,
 		slot: null,
 		joined: false,
+		joinQueue: null,
 		replaced: false,
 		lastSeq: -1,
 		consecutiveViolations: 0,
@@ -251,28 +254,12 @@ function ensureRoomConnections(
 	const unsubscribe = room.subscribe((message, serialized) => {
 		for (const c of peers) {
 			if (!c.joined || c.socket.readyState !== OPEN) continue;
-
-			// ② §8 バックプレッシャ: 回線が詰まっている接続を切らずに守る。
-			// **snapshot は落としてよい**（次が全量なので自己回復する）が、
-			// event は落とすと二度と届かないので必ず送る
-			const delivery = gameMessageDelivery(
-				message,
-				c.socket.bufferedAmount,
-				c.terminalSnapshotPending,
-			);
-			if (delivery === 'close') {
-				c.socket.close(WS_CLOSE.rateLimited, 'send buffer overflow');
+			if (c.joinQueue) {
+				c.joinQueue.push({ message, serialized });
 				continue;
 			}
-			if (delivery === 'skip') continue;
 
-			c.socket.send(serialized);
-			if (message.t === 'snapshot' && message.d.match.state === 'finished') {
-				c.terminalSnapshotPending = true;
-			}
-			if (message.t === 'event' && message.d.kind === 'match_end') {
-				c.terminalSnapshotPending = false;
-			}
+			deliverRoomMessage(c, message, serialized);
 		}
 
 		// ② §6-A: finished は結果画面のため 60 秒だけ接続を維持し、満了で close 1000。
@@ -329,6 +316,32 @@ function releaseRoomConnections(roomId: string): void {
 	unsubscribeClosedByRoom.get(roomId)?.();
 	unsubscribeClosedByRoom.delete(roomId);
 	connectionsByRoom.delete(roomId);
+}
+
+/** room配信とjoin中に保留した配信へ同じバックプレッシャ処理を適用する */
+function deliverRoomMessage(
+	conn: Connection,
+	message: GameServerMessage,
+	serialized: string,
+): void {
+	const delivery = gameMessageDelivery(
+		message,
+		conn.socket.bufferedAmount,
+		conn.terminalSnapshotPending,
+	);
+	if (delivery === 'close') {
+		conn.socket.close(WS_CLOSE.rateLimited, 'send buffer overflow');
+		return;
+	}
+	if (delivery === 'skip') return;
+
+	conn.socket.send(serialized);
+	if (message.t === 'snapshot' && message.d.match.state === 'finished') {
+		conn.terminalSnapshotPending = true;
+	}
+	if (message.t === 'event' && message.d.kind === 'match_end') {
+		conn.terminalSnapshotPending = false;
+	}
 }
 
 /**
@@ -424,17 +437,22 @@ function handleJoin(conn: Connection, room: GameRoom, app: FastifyInstance): voi
 		return;
 	}
 
+	// room.join() は seat status や countdown を同期配信するため、先に
+	// 接続を配信対象にしてその間のメッセージだけ保留する
+	conn.slot = slot;
+	conn.joined = true;
+	conn.joinQueue = [];
 	let resume: boolean;
 	try {
 		({ resume } = room.join(slot));
 	} catch (err) {
 		// 定員外 slot / 受け付けない状態（finished 等）。ルーム層が弾いた
+		conn.joined = false;
+		conn.joinQueue = null;
 		app.log.warn({ room: room.roomId, slot, err }, 'B-11: join を拒否');
 		conn.socket.close(WS_CLOSE.notAllowed, 'join rejected');
 		return;
 	}
-	conn.slot = slot;
-	conn.joined = true;
 	app.log.info({ room: room.roomId, user: conn.userId, slot, resume }, 'B-11: join');
 
 	// ② §5-B: welcome は**接続ごとに内容が違う**ので一斉配信できない
@@ -465,6 +483,12 @@ function handleJoin(conn: Connection, room: GameRoom, app: FastifyInstance): voi
 	if (resume) {
 		const snapshot = room.getResumeSnapshot();
 		if (snapshot) conn.socket.send(snapshot.serialized);
+	}
+	const queued = conn.joinQueue ?? [];
+	conn.joinQueue = null;
+	for (const { message, serialized } of queued) {
+		if (conn.socket.readyState !== OPEN) break;
+		deliverRoomMessage(conn, message, serialized);
 	}
 }
 
