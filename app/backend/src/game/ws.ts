@@ -159,7 +159,7 @@ async function handleConnection(
 	socket.on('message', (raw: unknown) => {
 		if (socket.readyState !== OPEN) return;
 		if (ready) {
-			handleMessage(ready.conn, ready.room, ready.roomId, raw, app, releaseMatch);
+			handleMessage(ready.conn, ready.room, raw, app);
 			return;
 		}
 
@@ -233,7 +233,7 @@ async function handleConnection(
 
 	for (const raw of pendingMessages.drain()) {
 		if (socket.readyState !== OPEN) break;
-		handleMessage(conn, room, roomId, raw, app, releaseMatch);
+		handleMessage(conn, room, raw, app);
 	}
 }
 
@@ -342,10 +342,8 @@ function releaseRoomConnections(roomId: string): void {
 function handleMessage(
 	conn: Connection,
 	room: GameRoom,
-	roomId: string,
 	raw: unknown,
 	app: FastifyInstance,
-	releaseMatch: (userId: number, roomId: string) => boolean,
 ): void {
 	// ② §2-A: 1メッセージ 4KB 上限。超過は close 4001
 	const text = typeof raw === 'string' ? raw : String(raw);
@@ -391,10 +389,8 @@ function handleMessage(
 				// handleJoinがexplicitlyLeftを照会して処理する
 				const slot = conn.slot;
 				if (!conn.joined || slot === null || !room.leave(slot)) return;
-				// RSPは退出者だけを対象roomId一致時にidleへ戻す
-				// FPSのleave/forfeit経路ではロビー所属を変更しない
+				// abandonSeatで全modeのlobby contextを解放し、RSPだけACKを返す
 				if (room.mode === 'rsp') {
-					releaseMatch(conn.userId, roomId);
 					conn.socket.send(JSON.stringify({ t: 'leave_ack', d: {} }));
 				}
 			}

@@ -24,6 +24,7 @@ export interface PrepareMatchRoomOptions {
 	reservationToken: string;
 	signal: AbortSignal;
 	onLifecycle(state: RoomState, reason: RoomLifecycleReason): void;
+	onSeatAbandoned(slot: number): void;
 	onMatchResult(result: MatchResultPayload): void;
 }
 
@@ -62,6 +63,12 @@ export async function prepareMatch(
 			onLifecycle: (state) => {
 				if (!preparedRoomId || (state !== 'finished' && state !== 'closed')) return;
 				for (const participant of plan.participants) {
+					options.releaseMatch(participant.userId, preparedRoomId);
+				}
+			},
+			onSeatAbandoned: (slot) => {
+				const participant = plan.participants.find((entry) => entry.slot === slot);
+				if (participant && preparedRoomId) {
 					options.releaseMatch(participant.userId, preparedRoomId);
 				}
 			},

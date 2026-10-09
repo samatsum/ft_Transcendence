@@ -1042,6 +1042,8 @@ async function runReconnectAndForfeitChecks(
 
 	// 開始前10秒に未接続でAI化されたparticipantは、playing後に初回joinできない。
 	let lateInitialNow = 0;
+	const lateInitialAbandoned: number[] = [];
+	const lateInitialMessages: GameServerMessage[] = [];
 	const lateInitialRoom = await createRoomFromRules({
 		roomId: W12_ROOM_IDS.rspLateInitial,
 		mode: 'rsp',
@@ -1053,6 +1055,8 @@ async function runReconnectAndForfeitChecks(
 		],
 		humanSlots: [0, 1],
 		now: () => lateInitialNow,
+		onSeatAbandoned: (slot) => lateInitialAbandoned.push(slot),
+		onBroadcast: (message) => lateInitialMessages.push(message),
 		log: { info: () => {}, warn: () => {} },
 	});
 	const lateInitialA = makeClient(lateInitialRoom.roomId, 621);
@@ -1073,6 +1077,9 @@ async function runReconnectAndForfeitChecks(
 	) {
 		bad.push(`late-initial roomがplayingでない (${lateInitialRoom.getState()})`);
 	}
+	if (lateInitialAWelcomeReceived && !lateInitialAbandoned.includes(1)) {
+		bad.push('playing開始時に未接続participantのロビー所属を解放しない');
+	}
 	if (lateInitialAWelcomeReceived) {
 		const lateInitialB = makeClient(lateInitialRoom.roomId, 622);
 		await lateInitialB.open();
@@ -1086,8 +1093,58 @@ async function runReconnectAndForfeitChecks(
 			bad.push(`playing後の初回joinがclose 4003でない (${lateInitialB.closedWith})`);
 		}
 	}
+	// 未接続participantがabandoned確定済みなら、最後の人間離脱でRSPを終了する。
+	if (lateInitialAWelcomeReceived && lateInitialRoom.getState() === 'playing') {
+		lateInitialRoom.disconnect(0);
+		lateInitialNow += 30_000;
+		lateInitialRoom.pump();
+		await flushPromises();
+		const lateInitialEnd = lateInitialMessages.find(
+			(message) => message.t === 'event' && message.d.kind === 'match_end',
+		);
+		if (
+			!lateInitialEnd ||
+			lateInitialEnd.t !== 'event' ||
+			lateInitialEnd.d.kind !== 'match_end' ||
+			lateInitialEnd.d.reason !== 'abandon' ||
+			lateInitialEnd.d.winner !== null
+		) {
+			bad.push('初回未接続席を含むRSP全participant離脱がabandon終了にならない');
+		}
+	}
 	lateInitialA.close();
 	closeRoom(lateInitialRoom.roomId);
+
+	// FPSはcountdown前の明示退出もforfeitとして確定する。
+	const fpsCreatedMessages: GameServerMessage[] = [];
+	const fpsCreatedRoom = await createRoomFromRules({
+		roomId: 'ws-fps-created-forfeit',
+		mode: 'fps',
+		rules: { map: 'fps_duel' },
+		participants: [
+			{ userId: 631, slot: 0 },
+			{ userId: 632, slot: 1 },
+		],
+		humanSlots: [0, 1],
+		onBroadcast: (message) => fpsCreatedMessages.push(message),
+		log: { info: () => {}, warn: () => {} },
+	});
+	fpsCreatedRoom.join(0);
+	fpsCreatedRoom.leave(0);
+	await flushPromises();
+	const fpsCreatedEnd = fpsCreatedMessages.find(
+		(message) => message.t === 'event' && message.d.kind === 'match_end',
+	);
+	if (
+		!fpsCreatedEnd ||
+		fpsCreatedEnd.t !== 'event' ||
+		fpsCreatedEnd.d.kind !== 'match_end' ||
+		fpsCreatedEnd.d.reason !== 'forfeit' ||
+		fpsCreatedEnd.d.winner !== 1
+	) {
+		bad.push('FPS countdown前の離脱がopponent winner/reason=forfeitにならない');
+	}
+	closeRoom(fpsCreatedRoom.roomId);
 
 	for (const client of clients) {
 		if (client.connectionErrors.length > 0) {
@@ -1407,6 +1464,7 @@ async function checkFailureContainment(connectionManager: ConnectionManager): Pr
 	);
 	const failingSim = (failingRoom as unknown as { sim: SimGame | null }).sim;
 	if (!failingSim) throw new Error('tick failure check room has no sim');
+	healthyRoom.join(0);
 	healthyRoom.startNow();
 	if (failingWelcomed) roomNow += 3_000;
 	healthyNow += 3_000;
