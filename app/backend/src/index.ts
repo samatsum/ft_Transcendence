@@ -12,6 +12,7 @@ import { healthSchema, listMapsQuerySchema, makeError } from '@ft/shared';
 
 import { registerAuthRoutes } from './auth/routes.js';
 import { configureAuthPrisma } from './auth/session.js';
+import { authenticateRequest, type AuthedUser } from './auth/session.js';
 import { createPrismaClient } from './db/client.js';
 import { listMaps } from './game/maps.js';
 import { closeAllRooms } from './game/rooms.js';
@@ -47,6 +48,8 @@ const HOST = process.env.HOST ?? '0.0.0.0';
 
 export interface BuildServerOptions {
 	connectionManager?: ConnectionManager;
+	/** WS の接続認証を差し替える回帰検査用フック */
+	authenticateRequest?: (req: import('fastify').FastifyRequest) => Promise<AuthedUser | null>;
 }
 
 /** Fastify serverと、そのserver専用のWebSocket接続管理を構築する */
@@ -129,9 +132,11 @@ export async function buildServer(options: BuildServerOptions = {}) {
 		const lobbyRuntime = registerLobbyWs(scoped, {
 			connectionManager,
 			profileResolver,
+			authenticateRequest: options.authenticateRequest ?? authenticateRequest,
 		});
 		registerGameWs(scoped, connectionManager, (userId, roomId) =>
 			lobbyRuntime.registry.releaseMatch(userId, roomId),
+		options.authenticateRequest ?? authenticateRequest,
 		);
 	});
 	app.addHook('onClose', async () => {

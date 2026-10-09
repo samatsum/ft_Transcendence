@@ -56,6 +56,10 @@ export async function createRoom(options: CreateRoomOptions): Promise<GameRoom> 
 	}
 	releaseOwnReservation();
 	rooms.set(roomId, room);
+	room.subscribeClosed(() => {
+		if (rooms.get(roomId) === room) rooms.delete(roomId);
+		stopPumpIfIdle();
+	});
 	ensurePump();
 	return room;
 }

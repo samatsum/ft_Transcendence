@@ -13,13 +13,17 @@ import { WS_CLOSE, type GameServerMessage } from '@ft/shared';
 import { buildServer } from '../index.js';
 import { listMaps, loadMapText } from './maps.js';
 import { gameMessageDelivery } from './ws.js';
+import { FINISHED_HOLD_MS } from './room.js';
+import type { SimGame } from './sim.js';
 import {
 	closeAllRooms,
 	closeRoom,
 	createRoom,
 	createRoomFromRules,
+	getRoom,
 } from './rooms.js';
 import type { PersistedMatchContext } from './room.js';
+import { ConnectionManager } from '../ws/connection.js';
 
 const PORT = 3999;
 const MAP = 'rsp_map/rsp.cub';
@@ -34,6 +38,54 @@ const W12_ROOM_IDS = {
 	fpsWorld: 'ws-world-fps',
 	rspLateInitial: 'ws-late-initial-rsp',
 } as const;
+
+async function checkRejectingAuthenticator(): Promise<string[]> {
+	const bad: string[] = [];
+	const connectionManager = new ConnectionManager();
+	const app = await buildServer({
+		connectionManager,
+		authenticateRequest: async () => {
+			throw new Error('injected authenticator rejection');
+		},
+	});
+	app.log.level = 'silent';
+	await app.listen({ port: PORT + 1, host: '127.0.0.1' });
+	try {
+		const baseUrl = `http://127.0.0.1:${PORT + 1}`;
+		const health = await fetch(`${baseUrl}/api/health`);
+		if (health.status !== 200) bad.push(`auth rejection後のhealthが200でない (${health.status})`);
+		for (const path of ['/ws/game/auth-rejection', '/ws/lobby']) {
+			const code = await new Promise<number>((resolve, reject) => {
+				const ws = new WebSocket(`${baseUrl.replace('http', 'ws')}${path}`, {
+					headers: { 'x-dev-user': '999' },
+					origin: baseUrl,
+				});
+				const timeout = setTimeout(() => {
+					ws.terminate();
+					reject(new Error(`${path}: close timed out`));
+				}, WS_OPEN_TIMEOUT_MS);
+				ws.once('close', (closeCode) => {
+					clearTimeout(timeout);
+					resolve(closeCode);
+				});
+				ws.once('error', (err) => {
+					clearTimeout(timeout);
+					reject(err);
+				});
+			});
+			if (code !== WS_CLOSE.unauthenticated) bad.push(`${path}: auth rejection close=${code}, expected 4000`);
+		}
+		const healthAfter = await fetch(`${baseUrl}/api/health`);
+		if (healthAfter.status !== 200) bad.push(`両WS auth rejection後のhealthが200でない (${healthAfter.status})`);
+		if (connectionManager.stats().connections !== 0) {
+			bad.push(`auth rejection後にsession connectionが残る (${connectionManager.stats().connections})`);
+		}
+	} finally {
+		await app.close();
+		connectionManager.clear();
+	}
+	return bad;
+}
 
 function loadMap(): string {
 	return readFileSync(fileURLToPath(new URL(`../../../../maps/${MAP}`, import.meta.url)), 'utf8');
@@ -1095,12 +1147,223 @@ async function checkMaps(baseUrl: string): Promise<string[]> {
 	return bad;
 }
 
+/* ── 検査6: 接続拒否とルーム内障害の封じ込め ─────────────────────── */
+
+async function checkFailureContainment(connectionManager: ConnectionManager): Promise<string[]> {
+	const bad: string[] = [];
+	let pumpClockFails = false;
+	const pumpRoom = await createRoom({
+		roomId: 'contain-pump',
+		cubText: loadMap(),
+		mode: 'rsp',
+		targetScore: 21,
+		seed: 42,
+		now: () => {
+			if (pumpClockFails) throw new Error('injected pump failure');
+			return 0;
+		},
+		log: { info: () => {}, warn: () => {} },
+	});
+	let pumpClosedReason: string | null = null;
+	pumpRoom.subscribeClosed((reason) => { pumpClosedReason = reason; });
+	pumpClockFails = true;
+	pumpRoom.pump();
+	if (pumpRoom.getState() !== 'closed' || pumpClosedReason !== 'error') {
+		bad.push(`pump例外でルームがerror終了しない (${pumpRoom.getState()}, ${pumpClosedReason})`);
+	}
+
+	const destroyRoom = await createRoom({
+		roomId: 'contain-destroy',
+		cubText: loadMap(),
+		mode: 'rsp',
+		targetScore: 21,
+		seed: 42,
+		log: { info: () => {}, warn: () => {} },
+	});
+	const destroySim = (destroyRoom as unknown as { sim: SimGame | null }).sim;
+	if (!destroySim) throw new Error('destroy check room has no sim');
+	const realDestroy = destroySim.destroy.bind(destroySim);
+	destroySim.destroy = () => { throw new Error('injected destroy failure'); };
+	let destroyClosedReason: string | null = null;
+	destroyRoom.subscribeClosed((reason) => { destroyClosedReason = reason; });
+	destroyRoom.close();
+	if (destroyRoom.getState() !== 'closed' || destroyClosedReason !== 'error') {
+		bad.push(`destroy例外後も閉鎖通知が完了しない (${destroyRoom.getState()}, ${destroyClosedReason})`);
+	}
+	realDestroy();
+
+	let finishResolve!: (value: null) => void;
+	let matchEndCount = 0;
+	let finishNow = 0;
+	const finishRoom = await createRoom({
+		roomId: 'contain-finish',
+		cubText: loadMapText('fps_duel').text,
+		mode: 'fps',
+		targetScore: 0,
+		seed: 42,
+		participants: [{ userId: 901, slot: 0 }],
+		now: () => finishNow,
+		persistMatch: () => new Promise((resolve) => { finishResolve = resolve; }),
+		onBroadcast: (message) => {
+			if (message.t === 'event' && message.d.kind === 'match_end') matchEndCount += 1;
+		},
+		log: { info: () => {}, warn: () => {} },
+	});
+	finishRoom.startNow();
+	finishNow += 3_000;
+	finishRoom.pump();
+	finishRoom.leave(0);
+	finishRoom.close();
+	finishResolve(null);
+	await flushPromises();
+	if (finishRoom.getState() !== 'closed' || matchEndCount !== 0) {
+		bad.push(`close後の永続化完了がmatch_endを再開した (state=${finishRoom.getState()}, count=${matchEndCount})`);
+	}
+
+	let notificationNow = 0;
+	const notificationRoom = await createRoom({
+		roomId: 'contain-finish-notification',
+		cubText: loadMapText('fps_duel').text,
+		mode: 'fps',
+		targetScore: 0,
+		seed: 45,
+		participants: [{ userId: 905, slot: 0 }],
+		now: () => notificationNow,
+		onBroadcast: (message) => {
+			if (message.t === 'event' && message.d.kind === 'match_end') {
+				throw new Error('injected match_end notification failure');
+			}
+		},
+		log: { info: () => {}, warn: () => {} },
+	});
+	let notificationCloseReason: string | null = null;
+	notificationRoom.subscribeClosed((reason) => { notificationCloseReason = reason; });
+	notificationRoom.startNow();
+	notificationNow += 3_000;
+	notificationRoom.pump();
+	notificationRoom.leave(0);
+	await flushPromises();
+	if (notificationRoom.getState() !== 'closed' || notificationCloseReason !== 'error') {
+		bad.push(`async finish通知例外がerror closeされない (${notificationRoom.getState()}, ${notificationCloseReason})`);
+	}
+
+	let holdNow = 0;
+	const holdRoom = await createRoom({
+		roomId: 'contain-finished-hold',
+		cubText: loadMapText('fps_duel').text,
+		mode: 'fps',
+		targetScore: 0,
+		seed: 44,
+		participants: [{ userId: 904, slot: 0 }],
+		now: () => holdNow,
+		log: { info: () => {}, warn: () => {} },
+	});
+	const holdClient = new TestClient(holdRoom.roomId, 904);
+	await holdClient.open();
+	holdClient.send({ t: 'join' });
+	const holdWelcomed = await holdClient.waitFor(() => Boolean(holdClient.find('welcome')), 'finished-hold welcome', bad);
+	if (holdWelcomed) {
+		holdNow += 3_000;
+		holdRoom.pump();
+	}
+	holdClient.send({ t: 'leave' });
+	const gotMatchEnd = await holdClient.waitFor(
+		() => holdClient.received.some((message) => message.t === 'event' && message.d.kind === 'match_end'),
+		'finished-hold match_end',
+		bad,
+	);
+	if (gotMatchEnd) {
+		holdNow += FINISHED_HOLD_MS;
+		holdRoom.pump();
+		const gotNormalClose = await holdClient.waitFor(() => holdClient.closedWith !== null, 'finished-hold close', bad);
+		if (gotNormalClose && holdClient.closedWith !== WS_CLOSE.normal) {
+			bad.push(`finished_hold close codeが1000でない (${holdClient.closedWith})`);
+		}
+	}
+	holdClient.close();
+
+	let roomNow = 0;
+	const failingRoom = await createRoom({
+		roomId: 'contain-tick-fail',
+		cubText: loadMap(),
+		mode: 'rsp',
+		targetScore: 21,
+		seed: 42,
+		participants: [{ userId: 902, slot: 0 }],
+		now: () => roomNow,
+		log: { info: () => {}, warn: () => {} },
+	});
+	let healthyNow = 0;
+	const healthyRoom = await createRoom({
+		roomId: 'contain-tick-healthy',
+		cubText: loadMap(),
+		mode: 'rsp',
+		targetScore: 21,
+		seed: 43,
+		participants: [{ userId: 903, slot: 0 }],
+		now: () => healthyNow,
+		log: { info: () => {}, warn: () => {} },
+	});
+	failingRoom.subscribeClosed(() => { throw new Error('injected closed subscriber failure'); });
+	const sessionBaseline = connectionManager.stats().connections;
+	const failedClient = new TestClient(failingRoom.roomId, 902);
+	await failedClient.open();
+	failedClient.send({ t: 'join' });
+	const failingWelcomed = await failedClient.waitFor(
+		() => Boolean(failedClient.find('welcome')),
+		'failed room welcome',
+		bad,
+	);
+	const failingSim = (failingRoom as unknown as { sim: SimGame | null }).sim;
+	if (!failingSim) throw new Error('tick failure check room has no sim');
+	healthyRoom.startNow();
+	if (failingWelcomed) roomNow += 3_000;
+	healthyNow += 3_000;
+	if (failingWelcomed) failingRoom.pump();
+	healthyRoom.pump();
+	failingSim.step = () => { throw new Error('injected tick failure'); };
+	const closed1011 = await failedClient.waitFor(
+		() => failedClient.closedWith !== null,
+		'failed room close 1011',
+		bad,
+	);
+	const healthyTickAdvanced = await waitUntil(() => healthyRoom.getTick() >= 2, 'healthy room tick', bad);
+	if (closed1011 && failedClient.closedWith !== 1011) {
+		bad.push(`失敗ルームのWS close codeが1011でない (${failedClient.closedWith})`);
+	}
+	if (failingRoom.getState() !== 'closed') bad.push(`tick例外ルームがclosedでない (${failingRoom.getState()})`);
+	if (getRoom(failingRoom.roomId) !== undefined) {
+		bad.push('error close直後も失敗ルームがregistryに残る');
+	}
+	const sessionsReleased = await waitUntil(
+		() => connectionManager.stats().connections === sessionBaseline,
+		'failed room session cleanup',
+		bad,
+	);
+	if (!sessionsReleased) bad.push(`failed room後のsession数が戻らない (${connectionManager.stats().connections}/${sessionBaseline})`);
+	const failedTick = failingRoom.getTick();
+	await sleep(100);
+	if (failingRoom.getTick() !== failedTick) bad.push(`closed後もtickが進んだ (${failedTick} → ${failingRoom.getTick()})`);
+	if (!healthyTickAdvanced || healthyRoom.getState() !== 'playing') {
+		bad.push(`健全ルームが並行進行しない (tick=${healthyRoom.getTick()}, state=${healthyRoom.getState()})`);
+	}
+	failedClient.close();
+	closeRoom(failingRoom.roomId);
+	closeRoom(healthyRoom.roomId);
+	closeRoom(holdRoom.roomId);
+	return bad;
+}
+
 /* ── 実行 ─────────────────────────────────────────────────────── */
 
 async function main(): Promise<void> {
 	process.env.NODE_ENV = 'development';
 	process.env.ALLOW_DEV_AUTH = 'true';
-	const app = await buildServer();
+	console.log('検査0: 認証拒否時の接続エラー封じ込め');
+	const bad0 = await checkRejectingAuthenticator();
+	console.log(bad0.length ? `  NG:\n    ${bad0.join('\n    ')}` : '  OK: game/lobby close 4000後もhealth 200');
+	const connectionManager = new ConnectionManager();
+	const app = await buildServer({ connectionManager });
 	app.log.level = 'silent';
 	await app.listen({ port: PORT, host: '127.0.0.1' });
 
@@ -1124,10 +1387,15 @@ async function main(): Promise<void> {
 	const bad5 = await checkMaps(`http://127.0.0.1:${PORT}`);
 	console.log(bad5.length ? `  NG:\n    ${bad5.join('\n    ')}` : '  OK');
 
+	console.log('\n検査6: GameRoom障害の局所化とcleanup');
+	const bad6 = await checkFailureContainment(connectionManager);
+	console.log(bad6.length ? `  NG:\n    ${bad6.join('\n    ')}` : '  OK: pump/tick/async finish/destroy/finished_hold');
+
 	closeAllRooms();
 	await app.close();
+	connectionManager.clear();
 
-	if (bad1.length || bad2.length || bad3.length || bad4.length || bad5.length) {
+	if (bad0.length || bad1.length || bad2.length || bad3.length || bad4.length || bad5.length || bad6.length) {
 		console.error('\nW-11 / B-12 / B-14: 失敗');
 		process.exit(1);
 	}
