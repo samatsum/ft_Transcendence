@@ -24,7 +24,8 @@ t_mode_ops
 // RSPでは所属チームに対応するスポーン地点へ復帰し、手も更新する。復帰地点を
 // チームのプールから選び直すのが RSP のルールなので、自スポーン固定の FPS
 // （respawn_combatant）とは別扱いにする。RSP は死亡タイマーを使わず勝敗解決の
-// 場で即時復帰するため、ここへ来るのはローカル自席だけ（非自席は respawn_npc）
+// 場で即時復帰するため、ここへ来るのはローカル自席だけ（非自席は respawn_npc）。
+// respawn_npc と同じく、移した先の自陣判定を on_home へ反映する（#270）
 static void
 	rsp_respawn(t_game* game, t_enemy* combatant)
 {
@@ -34,6 +35,7 @@ static void
 		respawn_at(game, RSP_RED_DIRS);
 	}
 	combatant->rsp.hand = rsp_rehand(combatant->rsp.hand, &game->rsp.seed);
+	combatant->rsp.on_home = rsp_on_home_cell(game, combatant);
 }
 
 
