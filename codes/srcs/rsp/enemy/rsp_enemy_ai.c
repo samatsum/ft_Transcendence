@@ -89,28 +89,34 @@ static void
 // 「円の中で中心へ近づく移動」を禁じるので、向かい合った2体（追跡中の AI と、そこを
 // 通って自陣へ帰りたい味方など）は互いに一歩も進めず、そのまま試合が終わらなくなる。
 // 後ろまで試すのは、障害物に左右を挟まれた自陣マス（rsp_pillars の W/E）で、出口を
-// 味方にふさがれると直角にも動けないため
+// 味方にふさがれると直角にも動けないため。どの向きも試す前の位置から1歩だけ進める
+// （阻まれた向きの小さな移動を次の向きの1歩に足すと、1 tick に1歩より長く進んでしまう）。
+// どの向きでも半歩に届かなければ、元の向きの1歩（壁沿いの小さな移動）に戻す
 static void
 	step_toward(t_enemy* cur, t_game* game, double delta_time, double x, double y, double mult)
 {
 	const double	turns[] = {0.0, M_PI / 2.0, -M_PI / 2.0, M_PI};
-	t_pos			before;
+	t_pos			start;
 	double			angle;
 	double			min_step;
 	int				i;
 
 	angle = atan2(y - cur->sprite->pos.y, x - cur->sprite->pos.x);
 	min_step = 0.5 * game->config.enemy_speed * mult * calc_time_mult(delta_time);
+	copy_pos(&start, &cur->sprite->pos);
 	i = 0;
 	while (i < 4) {
-		copy_pos(&before, &cur->sprite->pos);
+		copy_pos(&cur->sprite->pos, &start);
 		cur->dir_angle = angle + turns[i];
 		step_enemy(cur, game, delta_time, mult);
-		if (dist_pos(&before, &cur->sprite->pos) >= min_step) {
+		if (dist_pos(&start, &cur->sprite->pos) >= min_step) {
 			return ;
 		}
 		i++;
 	}
+	copy_pos(&cur->sprite->pos, &start);
+	cur->dir_angle = angle;
+	step_enemy(cur, game, delta_time, mult);
 }
 
 /* ************************************************************************** */
