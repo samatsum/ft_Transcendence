@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-https_port=${HTTPS_PORT:-443}
+https_port=${HTTPS_PORT:-8443}
 base_url="https://localhost:$https_port"
 ca_cert=${TLS_CA_CERT:-infra/certs/ca.crt}
 server_cert=${TLS_SERVER_CERT:-infra/certs/localhost.crt}
