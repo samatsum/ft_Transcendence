@@ -131,6 +131,13 @@ export const snapshotPayloadSchema = z.object({
 		/** RSP=チーム番号 / FPS=combatant_id / 未決着=null。解釈は `mode` で確定する */
 		winner: z.number().nullable(),
 		score: z.tuple([z.number(), z.number()]),
+		/**
+		 * 試合の残り時間（ms。#269）。0 になった tick で `match_end(reason=timeout)` になる。
+		 * HUD の残り時間表示の正本。welcome ではなく snapshot に載せるのは `mode` と同じ理由で、
+		 * 観戦・再接続でも snapshot だけで表示を確定できるようにするため。
+		 * 制限時間を持たない生成元（dev-run 等の開発用ツール）は null。
+		 */
+		time_left_ms: z.number().int().min(0).nullable(),
 	}),
 	combatants: z.array(combatantViewSchema),
 	/** FPS のワールド進捗。毎snapshotで、座標は常に同時点の全量 */
@@ -157,8 +164,11 @@ export type SnapshotMessage = z.infer<typeof snapshotMessageSchema>;
 // **イベントは演出・通知のトリガであり、状態の正本は常に snapshot**。
 // 取りこぼしても snapshot で追いつく設計なので、再接続時に再送はしない。
 
-/** ② §5-D: match_end の理由 */
-export const matchEndReasonSchema = z.enum(['score', 'goal', 'forfeit', 'abandon']);
+/**
+ * ② §5-D: match_end の理由。`timeout` は制限時間切れ（#269）で、勝者は
+ * RSP=得点の多いチーム（同点は null＝引き分け）/ FPS=常に null（引き分け）
+ */
+export const matchEndReasonSchema = z.enum(['score', 'goal', 'forfeit', 'abandon', 'timeout']);
 export type MatchEndReason = z.infer<typeof matchEndReasonSchema>;
 
 export const gameEventSchema = z.object({

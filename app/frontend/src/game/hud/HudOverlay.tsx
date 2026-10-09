@@ -7,13 +7,14 @@ import type { GameSocketStatus, QueuedGameEvent, TimedSnapshot } from '../useGam
 import { ConnectionBanner } from './ConnectionBanner.js';
 import { Countdown } from './Countdown.js';
 import { MatchEndModal, type MatchDetailsView } from './MatchEndModal.js';
+import { MatchTimer } from './MatchTimer.js';
 import { PlayerStatusRow } from './PlayerStatusRow.js';
 import { ScoreBar } from './ScoreBar.js';
 import { ScreenEdgeFlash } from './ScreenEdgeFlash.js';
 
 // GV-07 HUD 統合。GameView から呼ばれ、useGameSocket が公開する
 // welcome / snapshot / pendingEvents / playerStatus / closeCode / status を
-// 8要素の HUD へ配線する。
+// 8要素の HUD（と #269 で足した残り時間）へ配線する。
 //
 // - スコア/フラッシュ/countdown/match_end は useHudState で派生
 // - 対戦者ステータス行は snapshot 初期 + playerStatus(WS メッセージ)のマージ
@@ -90,6 +91,7 @@ export function HudOverlay({
 				targetScore={welcome.rules.target_score}
 				highlightTeam={hud.pointFlash?.team ?? null}
 			/>
+			<MatchTimer timeLeftMs={hud.matchEnd ? null : hud.timeLeftMs} />
 			<PlayerStatusRow seats={mergedSeats} selfSlot={welcome.slot} />
 			<ScreenEdgeFlash
 				pointTeam={hud.pointFlash?.team ?? null}

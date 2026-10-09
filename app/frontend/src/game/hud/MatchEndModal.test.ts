@@ -28,4 +28,20 @@ describe('describeResultMessage', () => {
 			'参加者がいなくなったため試合を打ち切りました',
 		);
 	});
+
+	it('時間切れでは理由を説明し、勝者なしは引き分けと表示する', () => {
+		expect(describeResultMessage('timeout')).toBe('制限時間に達したため試合が終了しました');
+		expect(describeWinner({
+			winner: null,
+			reason: 'timeout',
+			matchId: null,
+			finalScore: [2, 2],
+		}, 'rsp')).toBe('引き分け');
+		expect(describeWinner({
+			winner: 0,
+			reason: 'timeout',
+			matchId: null,
+			finalScore: [3, 1],
+		}, 'rsp')).toBe('赤チームの勝利');
+	});
 });

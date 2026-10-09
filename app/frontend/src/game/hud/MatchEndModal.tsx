@@ -47,6 +47,8 @@ export function describeResultMessage(reason: MatchEndState['reason']): string |
 			return 'プレイヤーの退出または切断により試合が終了しました';
 		case 'abandon':
 			return '参加者がいなくなったため試合を打ち切りました';
+		case 'timeout':
+			return '制限時間に達したため試合が終了しました';
 	}
 }
 

@@ -6,7 +6,7 @@ import { applyWorldSnapshot, createWorldProgress } from './worldState.js';
 function snapshot(collected: [number, number][], doorsOpen = false): SnapshotPayload {
 	return {
 		tick: 2,
-		match: { state: 'playing', mode: 'fps', winner: null, score: [0, 0] },
+		match: { state: 'playing', mode: 'fps', winner: null, score: [0, 0], time_left_ms: null },
 		combatants: [],
 		world_delta: { collected, doors_open: doorsOpen },
 	};

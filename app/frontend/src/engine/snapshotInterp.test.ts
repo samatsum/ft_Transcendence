@@ -17,7 +17,7 @@ function makeSnap(
 ): SnapshotPayload {
 	return {
 		tick: 0,
-		match: { state, mode: 'rsp', winner, score: [scoreA, scoreB] },
+		match: { state, mode: 'rsp', winner, score: [scoreA, scoreB], time_left_ms: null },
 		combatants,
 	};
 }
