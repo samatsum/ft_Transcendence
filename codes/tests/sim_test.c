@@ -365,7 +365,8 @@ static t_game*
 }
 
 // G-06: 先にゴールセルへ入った戦闘員が勝者になること。どちらの席でも同じ規則で
-// 帰属し、snapshot にも combatant_id として載る（② §5-C）
+// 帰属し、snapshot にも combatant_id として載る（② §5-C）。ここで見るのは
+// 勝者の帰属だけなので、収集関門（#261）は通過済みの状態にしてから検証する
 static void
 	test_g06_goal_winner(const char* map_text, int winner_seat)
 {
@@ -383,6 +384,7 @@ static void
 		game_destroy(game);
 		return ;
 	}
+	game->world.collected = game->world.to_collect;
 	copy_pos(&combatant_by_id(game, winner_seat)->sprite->pos, &goal);
 	game_step(game, TICK_DT);
 	snprintf(label, sizeof(label), "席%d のゴールで finished", winner_seat);
@@ -419,6 +421,58 @@ static void
 		expect_int("ハザードのゴールでは決着しない", game->cleared, 0);
 		expect_int("勝者は未確定のまま", game->fps.winner, -1);
 	}
+	game_destroy(game);
+}
+
+// #261: 未収集のままゴールのセルに立っても試合は終わらない。収集関門を
+// reach_goal() 自身が見ていなかったのが実際の不具合だった
+static void
+	test_261_goal_requires_collection(const char* map_text)
+{
+	t_game*	game;
+	t_pos	goal;
+
+	game = create_fps_duel(map_text);
+	if (!game || !find_char_cell(game, GOAL_CHAR, &goal)) {
+		printf("  FAIL cannot stage FPS duel\n");
+		g_failures++;
+		g_checks++;
+		game_destroy(game);
+		return ;
+	}
+	expect_int("マップに未収集のアイテムが残っている",
+		game->world.collected < game->world.to_collect, 1);
+	copy_pos(&combatant_by_id(game, 0)->sprite->pos, &goal);
+	game_step(game, TICK_DT);
+	expect_int("#261: 未収集でゴールに乗っても終了しない", game->cleared, 0);
+	expect_int("#261: 勝者は未確定のまま", game->fps.winner, -1);
+	game_destroy(game);
+}
+
+// #261: 仕切り壁に穴があると、扉が閉じたままでも収集マスからゴールへ迂回
+// できてしまっていた。扉が閉じている間は BFS 経路が存在しないことを固定する
+static void
+	test_261_wall_has_no_gap(const char* map_text)
+{
+	t_game*	game;
+	t_pos	goal;
+	t_pos	item;
+	t_pos	path[PATH_MAX];
+	int		len;
+
+	game = create_fps_duel(map_text);
+	if (!game || !find_char_cell(game, GOAL_CHAR, &goal)
+		|| !find_collectible_cell(game, &item)) {
+		printf("  FAIL cannot stage FPS duel\n");
+		g_failures++;
+		g_checks++;
+		game_destroy(game);
+		return ;
+	}
+	len = bfs_fill_path(&game->config, (int)item.x, (int)item.y,
+			(int)goal.x, (int)goal.y, path);
+	expect_int("#261: 扉が閉じている間は収集マスからゴールへ迂回できない",
+		len <= 0, 1);
 	game_destroy(game);
 }
 
@@ -1318,6 +1372,7 @@ measure_fps_hazard_motion(const char* map_text, double speed_mult,
 	t_game*	game;
 	t_enemy*	hazard;
 	t_pos		before;
+	t_pos		target_pos;
 	double		moved;
 	int			i;
 
@@ -1336,6 +1391,12 @@ measure_fps_hazard_motion(const char* map_text, double speed_mult,
 		return (-1.0);
 	}
 	if (tracking) {
+		// ハザードは上側の迷路部屋に居て、下側の席スポーンは関門の扉で
+		// 隔てられている（#261）。追跡対象を上側の開けた通路（行1）に
+		// 置き、ハザード自身の到達可能域で移動量を測る
+		set_pos(&target_pos, 10.5, 1.5);
+		copy_pos(&combatant_by_id(game, 0)->sprite->pos, &target_pos);
+		copy_pos(&combatant_by_id(game, 1)->sprite->pos, &target_pos);
 		hazard->track_timer = 60.0;
 		hazard->patrol_active = 1;
 	}
@@ -1410,6 +1471,8 @@ int
 	test_g06_goal_winner(fps_map, 0);
 	test_g06_goal_winner(fps_map, 1);
 	test_g06_hazard_cannot_win(fps_map);
+	test_261_goal_requires_collection(fps_map);
+	test_261_wall_has_no_gap(fps_map);
 	test_g06_collect_keeps_combatant_sprite(fps_map);
 	test_ai_collect_updates_shared_progress(fps_map_2);
 	printf("G-07 FPS 複数スポーン（1vs1 同時開始）\n");
