@@ -26,3 +26,39 @@ const DEV_DEFAULT_URL = 'file:./data/dev.db';
 export function createPrismaClient(url = process.env.DATABASE_URL ?? DEV_DEFAULT_URL): PrismaClient {
 	return new PrismaClient({ adapter: new PrismaBetterSqlite3({ url }) });
 }
+
+/** `ensureSqlitePragmas` の実行済みフラグ。接続は1本なのでプロセスに1つで足りる */
+let sqlitePragmas: Promise<void> | null = null;
+
+async function applySqlitePragmas(prisma: PrismaClient): Promise<void> {
+	// 読み書きが互いを待たなくなる。DB ファイル側に記録されるので一度で永続
+	await prisma.$queryRawUnsafe('PRAGMA journal_mode=WAL');
+	// WAL と組むときの定番。既定の FULL はコミットごとに fsync する。**接続ごとの
+	// 設定なので毎プロセスで入れ直す必要がある**（journal_mode と違って永続しない）
+	await prisma.$queryRawUnsafe('PRAGMA synchronous=NORMAL');
+	// 競合時に即 SQLITE_BUSY で失敗せず待つ
+	await prisma.$queryRawUnsafe('PRAGMA busy_timeout=5000');
+}
+
+/**
+ * SQLite の接続設定を一度だけ適用する。
+ *
+ * **better-sqlite3 は同期実行なので、コミットのたびにイベントループが止まる。**
+ * 既定の DELETE ジャーナル + `synchronous=FULL` ではコミットごとに fsync が入り、
+ * 30Hz の試合ループもスナップショット配信もその間進まない。
+ *
+ * **`createPrismaClient` や起動時ではなく、初回クエリの直前に呼ぶこと。**
+ * `index.ts` は「DB が実際に開かれるのは最初のクエリが飛んだ時」という前提を
+ * 保っており（`/api/health` だけを叩く CI ジョブや DB を使わない `check:*` が
+ * SQLite ファイル無しで動くのはそのため）、起動時に流すとこれを壊す。
+ *
+ * プラグマは速度のための設定で、失敗しても認証の正しさには影響しない。ここで
+ * 例外を投げると呼び出し側（`authenticateRequest`）に伝わってしまうので、
+ * 握って次回に再試行させる。
+ */
+export function ensureSqlitePragmas(prisma: PrismaClient): Promise<void> {
+	sqlitePragmas ??= applySqlitePragmas(prisma).catch(() => {
+		sqlitePragmas = null;
+	});
+	return sqlitePragmas;
+}
