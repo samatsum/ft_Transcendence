@@ -40,7 +40,7 @@ services:
       HOST: 0.0.0.0
       BACKEND_PORT: 3000
       DATABASE_URL: file:/data/app.db
-      ALLOWED_ORIGIN: ${ALLOWED_ORIGIN:-https://localhost}
+      ALLOWED_ORIGIN: ${ALLOWED_ORIGIN:-https://localhost:8443}
     volumes:
       - app-data:/data
     expose:
