@@ -125,7 +125,7 @@ Opened once, persistently, by the SPA after successful login. Used for (1) prese
 
 `room_state.seats[]` is `{slot:int, user_id:int|null, display_name:string|null, is_ai:bool}`. An empty seat is `user_id=null, display_name=null, is_ai=false`; an AI seat is `user_id=null, display_name="AI", is_ai=true` — state is never left to be inferred from optional fields.
 
-`match_result.players[]` is `{user_id:int|null, display_name:string, is_ai:bool, team:int, slot:int, result:win|lose|draw|abandon}`; `end_reason` is `score|goal|forfeit|abandon`. For RSP only `winner_team` is non-null. For FPS, a human winner sets `winner_user_id`; for an AI winner both winner columns are null, and the AI seat's entry in `players[]` is marked `win`. An abandoned match is distinguished by both winner columns being null **and** `end_reason=abandon`. This mutual constraint is enforced both by the zod shape and by server-side semantic validation.
+`match_result.players[]` is `{user_id:int|null, display_name:string, is_ai:bool, team:int, slot:int, result:win|lose|draw|abandon}`; `end_reason` is `score|goal|forfeit|abandon|timeout`. For RSP only `winner_team` is non-null. For FPS, a human winner sets `winner_user_id`; for an AI winner both winner columns are null, and the AI seat's entry in `players[]` is marked `win`. An abandoned match is distinguished by both winner columns being null **and** `end_reason=abandon`. This mutual constraint is enforced both by the zod shape and by server-side semantic validation.
 
 ### 3-B. Client→server
 
@@ -405,7 +405,7 @@ The client passes `map_text` to the render side's `game_create` (for display) (t
 { "t":"snapshot", "d":{
   "tick": 12345,
   "match": { "state":"waiting|playing|finished", "mode":"rsp|fps",
-             "winner": null|0|1|combatant_id, "score":[7,4] },
+             "winner": null|0|1|combatant_id, "score":[7,4], "time_left_ms": 95400|null },
   "combatants":[
     { "id":0, "team":0, "hand":0|1|2, "pos":[12.5,4.25], "dir":1.57,
       "alive":true, "is_ai":false, "respawn_ms":0 } ],
@@ -420,6 +420,7 @@ The client passes `map_text` to the render side's `game_create` (for display) (t
 | `match.mode` | — (newly introduced here, §5-C) | `rsp` \| `fps`. Ensures **`match.winner`'s meaning (RSP=team number / FPS=combatant_id) can be resolved from the snapshot alone** (required for the acceptance-item #5 spectate/replay/recording use cases). Same as welcome's mode, unchanged during the match. A couple bytes, no impact on the 1KB size budget |
 | `match.winner` | winner | RSP=team number / FPS=combatant_id / undecided=null. **Interpretation is fixed by `match.mode`** |
 | `match.score` | score | RSP=per-team `[A,B]` / FPS=fixed `[0,0]` (win/loss determined only by reaching the goal) |
+| `match.time_left_ms` | — (room layer, [Issue #269](https://github.com/samatsum/ft_Transcendence/issues/269)) | Remaining match time in ms; the HUD timer's source of truth. The sim has no time limit, so GameRoom computes it from its tick counter (3 minutes = 5400 ticks) and it reaches `0` on the snapshot of the timeout tick. Carried on the snapshot rather than `welcome` for the same reason as `match.mode` (spectate/reconnect can resolve it from the snapshot alone). `null` only from producers without a limit (dev tooling such as `dev-run.ts`) |
 | `combatants[]` | id/team/hand/pos(x,y)/dir_angle/alive/is_ai/respawn_timer | FPS's enemy hazards use the same shape (the client draws them without distinguishing). `respawn_ms` is the remaining time in milliseconds |
 | `world_delta` | complete collected-item position set, door-open flag | Present in **every FPS snapshot**. `collected` is the complete current set, so the client replaces its display state and a skipped frame recovers on the next snapshot. The total is derived from the same `welcome.map_text` on the C display side |
 
@@ -462,7 +463,7 @@ A closed enumeration built around the 4 types from ARCHITECTURE §2.3, plus room
 | `point_scored` | `team`, `score:[a,b]`, `by_id` | on an RSP score (a presentation/SFX trigger; the source of truth for the value is the snapshot) |
 | `hand_changed` | `id`, `hand` | on a hand-sign change (same as above) |
 | `goal` | `id` | FPS goal reached |
-| `match_end` | `winner`, `reason: score\|goal\|forfeit\|abandon`, `match_id:int\|null` | decision reached. With B-13 not declared, the current runtime normally sends null and the result screen uses the final snapshot without showing an error. If persistence is restored, a positive id enables REST details and null means that the configured persistence attempt failed. Delivery follows the optional ordering in §6-C |
+| `match_end` | `winner`, `reason: score\|goal\|forfeit\|abandon\|timeout`, `match_id:int\|null` | decision reached. With B-13 not declared, the current runtime normally sends null and the result screen uses the final snapshot without showing an error. If persistence is restored, a positive id enables REST details and null means that the configured persistence attempt failed. Delivery follows the optional ordering in §6-C |
 | `player_disconnected` | `slot`, `grace_ms: 30000` | disconnect detected (→ player_status: grace) |
 | `player_reconnected` | `slot` | reconnected within the grace period (→ player_status: connected) |
 | `ai_takeover` | `slot` | grace expired, or AI-ized by `leave` (→ player_status: ai) |
@@ -494,15 +495,25 @@ Events are **presentation/notification triggers**; the source of truth for game 
 ```text
 created ──all humans join, or 10s──► countdown(3s) ──► playing ──decided──► finished ──60s──► closed
    │                                               │(all human seats grace-expired/abandoned)
-   └── 10s with zero humans ──► closed (no record)     └──► finished(abandon)
+   └── 10s with zero humans ──► closed (no record)     ├──► finished(abandon)
+                                                       │(3-minute time limit reached)
+                                                       └──► finished(timeout)
 ```
+
+**Time limit ([Issue #269](https://github.com/samatsum/ft_Transcendence/issues/269))**: every match ends
+within **3 minutes** of `match_start`, whatever the cause of a stall (e.g. AI seats that never score or
+never go for the goal). It is counted in ticks (5400 at 30Hz), not wall-clock time, so it tracks the time
+the sim actually advanced; 5400 is even, so the timeout tick is always a broadcast tick and the final
+score is always delivered. A sim decision on the same tick takes precedence. Winner on timeout:
+RSP = the team with more points (tie → `null`, a draw); FPS = always `null` (a draw), because the only
+way to win is reaching the goal.
 
 | state | tick-driven | accepts input | summary |
 |---|---|---|---|
 | created | no | no | `game_create` + `game_add_combatant` done for every seat. Waiting for connections. **Receives the "list of human seat slots" at creation time** (below) |
 | countdown | no | no | `event(countdown)` → 3 seconds later `event(match_start)` |
 | playing | a **30Hz `setInterval`** runs `game_step(game, 1/30)`; on even ticks, `game_snapshot` → JSON → broadcast to all | yes | the sole authoritative state |
-| finished | no | no | `decided` sends the final snapshot first; FPS `forfeit` and RSP `abandon` do not add one. Then optional persistence (§6-C) → `match_end` → connection held open 60s for the result screen → close 1000 |
+| finished | no | no | `decided` and `timeout` send the final snapshot first (unless that tick already broadcast it); FPS `forfeit` and RSP `abandon` do not add one. Then optional persistence (§6-C) → `match_end` → connection held open 60s for the result screen → close 1000 |
 | closed | — | — | `game_destroy`, removed from the Map |
 
 > **Addendum (2026-07-27) — per-seat state is a separate dimension, orthogonal to room state**
@@ -548,13 +559,14 @@ created ──all humans join, or 10s──► countdown(3s) ──► playing �
 > is normally null. The persistence ordering below remains the contract to use if B-13 is restored;
 > null indicates a failure only when a persistence callback was actually configured.
 
-1. For an ordinary decision (`score` / `goal`), send the final snapshot (`match.state=finished`) before persistence; the client uses it as the outcome and final-score source of truth. FPS `forfeit` and RSP `abandon` do not add a final snapshot because sim remains `playing`; their result is conveyed by `match_end` after the optional persistence step.
+1. For an ordinary decision (`score` / `goal`), send the final snapshot (`match.state=finished`) before persistence; the client uses it as the outcome and final-score source of truth. A `timeout` also has a final snapshot (the timeout tick is a broadcast tick), but its `match.state` stays `playing` because the sim itself did not decide; the winner comes from `match_end`. FPS `forfeit` and RSP `abandon` do not add a final snapshot because sim remains `playing`; their result is conveyed by `match_end` after the optional persistence step.
 2. Write `Match` + `MatchPlayer` via Prisma (**AI seats are recorded as rows too**, per §3.3). `result` attribution rules:
 
 | case | recorded as |
 |---|---|
 | ordinary decision (score/goal) | winning side win / losing side lose |
 | FPS forfeit | remaining side win(reason=forfeit) / departed side **abandon** |
+| time limit (reason=timeout) | RSP with a point lead: winning side win / losing side lose. RSP tie and every FPS timeout: all sides draw |
 | RSP: left mid-match and never returned before decision | that user is **abandon regardless of team outcome**. If they reconnected, the ordinary outcome applies |
 | all humans left, match cut short | `winnerTeam=null`; every departed user is abandon (AI seats are treated as draw and excluded from statistics) |
 
@@ -695,6 +707,7 @@ B-08's completion is not "the match runs" — it's the above, plus **exactly one
 | 2026-07-30 | **B-08 core implementation**: implemented `shared/ws/lobby.ts`, `backend/src/lobby/`, the shared `ws/connection.ts`, `/ws/lobby`, and the Vite `/ws` proxy. `npm run check:lobby` checks FIFO / the 3 forming paths / rollback / LobbyRoom / grace / presence / real WS / heartbeat / session index. Real Cookie authentication, DB profile lookup, and the logout hook call await integration with B-04/B-05 |
 | 2026-07-30 | **B-09 implementation complete**: `lobby/match.ts` connects the immutable MatchPlan to a real GameRoom. Implemented token commit/rollback, the 5-second abort, reservation tokens, discarding delayed successes, `match_found`, and context release via GameRoom lifecycle. `npm run check:lobby` automatically checks manual/60-second/full-capacity forming, the 10-second zero-human close, generation failure, timeout, and zero lingering reservations |
 | 2026-09-17 | §5-A: `act` bit0 is now fire (FPS only), replacing "fixed at 0" ([Issue #187](https://github.com/samatsum/ft_Transcendence/issues/187)). `sim_set_input` gained a trailing `fire` argument |
+| 2026-10-09 | §5-C/§5-D/§6-A/§6-C: added the 3-minute match time limit ([Issue #269](https://github.com/samatsum/ft_Transcendence/issues/269)) — `match_end.reason` gains `timeout`, the snapshot gains `match.time_left_ms` for the HUD timer, and the timeout winner rule (RSP by score, tie/FPS = draw) |
 | 2026-07-30 | **B-12 implementation complete**: implemented per-participant seat state in GameRoom, wiring up immediate AI substitution + 30-second grace on ordinary close, same-user restoration, refusing restoration after expiry, RSP abandon, FPS forfeit, explicit leave, and handing departed seats off to the persistence boundary. A real-WebSocket check automatically confirms §10-B #4 |
 
 ## Implementation notes: B-10 (GameRoom + sim.wasm integration)

@@ -4,11 +4,18 @@
 // 検査1: 対人戦の疎通 — 2クライアントが join → welcome → input → snapshot → match_end
 // 検査2: ② §10 受入条件 №6 — 不正メッセージ4種がそれぞれ仕様どおりに扱われる
 // 検査3: B-12 — 30秒grace内の復帰、満了AI確定、RSP abandon、FPS forfeit
+// 検査6: #269 — 制限時間で必ず決着する（残り時間の配信・timeout の勝者判定）
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 import WebSocket from 'ws';
-import { WS_CLOSE, type GameServerMessage } from '@ft/shared';
+import {
+	WS_CLOSE,
+	gameEventSchema,
+	snapshotMessageSchema,
+	type GameServerMessage,
+	type SnapshotPayload,
+} from '@ft/shared';
 
 import { buildServer } from '../index.js';
 import { listMaps, loadMapText } from './maps.js';
@@ -22,8 +29,8 @@ import {
 	createRoomFromRules,
 	getRoom,
 } from './rooms.js';
-import type { PersistedMatchContext } from './room.js';
 import { ConnectionManager } from '../ws/connection.js';
+import type { PersistedMatchContext, RoomMessage } from './room.js';
 
 const PORT = 3999;
 const MAP = 'rsp_map/rsp.cub';
@@ -100,9 +107,10 @@ async function waitUntil(
 	predicate: () => boolean,
 	label: string,
 	bad: string[],
+	budgetMs = POLL_BUDGET_MS,
 ): Promise<boolean> {
 	const started = Date.now();
-	while (Date.now() - started < POLL_BUDGET_MS) {
+	while (Date.now() - started < budgetMs) {
 		if (predicate()) return true;
 		await sleep(10);
 	}
@@ -1094,6 +1102,89 @@ async function flushPromises(): Promise<void> {
 	await Promise.resolve();
 }
 
+/* ── 検査6: #269 制限時間 ─────────────────────────────────────────── */
+
+/** 実時間で回すので短くする。60 tick（偶数）＝ 2 秒 */
+const TIMEOUT_CHECK_LIMIT_MS = 2_000;
+
+/**
+ * AI だけの試合を短い制限時間で回し、決着しないまま時間切れで match_end に至ることを確かめる。
+ * 先取点を上限の 21 にして、2 秒で RSP が得点決着しないようにする（FPS は AI がゴールを狙わない）
+ */
+async function checkTimeout(): Promise<string[]> {
+	const bad: string[] = [];
+	for (const mode of ['rsp', 'fps'] as const) {
+		const snapshots: SnapshotPayload[] = [];
+		const ends: Extract<RoomMessage, { t: 'event' }>['d'][] = [];
+		const persisted: PersistedMatchContext[] = [];
+		const room = await createRoomFromRules({
+			roomId: `ws-timeout-${mode}`,
+			mode,
+			rules: { target_score: 21 },
+			seed: 7,
+			timeLimitMs: TIMEOUT_CHECK_LIMIT_MS,
+			onBroadcast: (message, serialized) => {
+				// クライアントと同じく共有スキーマで検証する（time_left_ms / reason=timeout の受理）
+				const raw: unknown = JSON.parse(serialized);
+				if (message.t === 'snapshot') {
+					const parsed = snapshotMessageSchema.safeParse(raw);
+					if (!parsed.success) bad.push(`${mode}: snapshot がスキーマに合わない ${parsed.error.message}`);
+					else snapshots.push(parsed.data.d);
+				} else if (message.t === 'event' && message.d.kind === 'match_end') {
+					const parsed = gameEventSchema.safeParse(raw);
+					if (!parsed.success) bad.push(`${mode}: match_end がスキーマに合わない ${parsed.error.message}`);
+					else ends.push(parsed.data.d);
+				}
+			},
+			persistMatch: async (context) => {
+				persisted.push(context);
+				return null;
+			},
+			log: { info: () => {}, warn: () => {} },
+		});
+		room.startNow();
+		// countdown(3s) + 制限時間(2s) に余裕を持たせる
+		await waitUntil(() => room.getState() === 'finished', `${mode} の時間切れ`, bad, 10_000);
+		closeRoom(room.roomId);
+
+		const last = snapshots[snapshots.length - 1];
+		const end = ends[0];
+		console.log(
+			`  ${mode}: snapshots=${snapshots.length} first.time_left_ms=${snapshots[0]?.match.time_left_ms}` +
+				` last.tick=${last?.tick} last.time_left_ms=${last?.match.time_left_ms}` +
+				` score=${last?.match.score.join('-')} end=${JSON.stringify(end)}`,
+		);
+		if (!last || !end || end.kind !== 'match_end') {
+			bad.push(`${mode}: 最終 snapshot か match_end が届いていない`);
+			continue;
+		}
+		if (ends.length !== 1) bad.push(`${mode}: match_end が ${ends.length} 回届いた`);
+		if (end.reason !== 'timeout') bad.push(`${mode}: reason が timeout ではない (${end.reason})`);
+		if (last.tick !== (TIMEOUT_CHECK_LIMIT_MS / 1000) * TICK_HZ) {
+			bad.push(`${mode}: 最終 snapshot が時間切れの tick ではない (tick=${last.tick})`);
+		}
+		if (last.match.time_left_ms !== 0) bad.push(`${mode}: 最終 snapshot の残り時間が 0 ではない`);
+		if (last.match.state !== 'playing') bad.push(`${mode}: 時間切れなのに sim が決着している (${last.match.state})`);
+		for (let i = 1; i < snapshots.length; i++) {
+			const prev = snapshots[i - 1]!.match.time_left_ms;
+			const cur = snapshots[i]!.match.time_left_ms;
+			if (prev === null || cur === null || cur >= prev) {
+				bad.push(`${mode}: time_left_ms が単調に減っていない (${prev} → ${cur})`);
+				break;
+			}
+		}
+		const [red, blue] = last.match.score;
+		const expectedWinner = mode === 'fps' || red === blue ? null : red > blue ? 0 : 1;
+		if (end.winner !== expectedWinner) {
+			bad.push(`${mode}: 時間切れの勝者が違う (got=${end.winner}, want=${expectedWinner}, score=${red}-${blue})`);
+		}
+		if (persisted.length !== 1 || persisted[0]!.reason !== 'timeout' || persisted[0]!.winner !== expectedWinner) {
+			bad.push(`${mode}: 永続化フックへ timeout の結果が渡っていない (${JSON.stringify(persisted)})`);
+		}
+	}
+	return bad;
+}
+
 /* ── 検査4: B-14 マップ API とテキスト配布の一致 ─────────────────── */
 
 async function checkMaps(baseUrl: string): Promise<string[]> {
@@ -1390,18 +1481,23 @@ async function main(): Promise<void> {
 	console.log('\n検査6: GameRoom障害の局所化とcleanup');
 	const bad6 = await checkFailureContainment(connectionManager);
 	console.log(bad6.length ? `  NG:\n    ${bad6.join('\n    ')}` : '  OK: pump/tick/async finish/destroy/finished_hold');
+	
+  console.log('\n検査7: #269 制限時間で決着する');
+	const bad7 = await checkTimeout();
+	console.log(bad7.length ? `  NG:\n    ${bad7.join('\n    ')}` : '  OK: 残り時間の配信・timeout の勝者判定');
 
 	closeAllRooms();
 	await app.close();
 	connectionManager.clear();
 
-	if (bad0.length || bad1.length || bad2.length || bad3.length || bad4.length || bad5.length || bad6.length) {
-		console.error('\nW-11 / B-12 / B-14: 失敗');
+	if (bad0.length || bad1.length || bad2.length || bad3.length || bad4.length || bad5.length || bad6.length || bad7.length) {
+		console.error('\nW-11 / B-12 / B-14 / #269: 失敗');
 		process.exit(1);
 	}
 	console.log('\nW-11: 受入条件 №5 / №6 を満たしています');
 	console.log('B-12: 受入条件 №4 を満たしています');
 	console.log('B-14: マップ一覧とテキスト配布の一致を確認しました');
+	console.log('#269: 制限時間で試合が決着することを確認しました');
 }
 
 main().catch((err: unknown) => {
