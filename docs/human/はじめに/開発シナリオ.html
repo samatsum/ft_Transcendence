@@ -186,13 +186,33 @@
 		<section id="now">
 			<p class="section-kicker">07 · Today</p>
 			<h2>いまの形 — オンライン対戦プラットフォームへ</h2>
-			<p class="section-intro">（本文は後続コミットで書く）</p>
+			<p class="section-intro">
+				現在の形は、ブラウザ上のオンライン対戦プラットフォームです。
+				モードは <strong>RSP</strong>（じゃんけん鬼ごっこ）と <strong>FPS</strong>（収集レース）。
+				サーバ上の <code>sim.wasm</code> が試合の正本を持ち、ブラウザの
+				<code>render.wasm</code> は snapshot を描く側に回ります。
+			</p>
+			<p class="section-intro">
+				画面側は、認証・ロビーなどの一般 Web（Frontend）と、
+				Canvas／HUD の試合画面（GameView）に分かれています。
+				工程一覧やモジュール点数表はここでは複製せず、
+				<a href="../開発状況/サーバー開発工程.html">サーバー開発工程</a>・
+				<a href="../開発状況/フロントエンド開発工程.html">フロントエンド開発工程</a>・
+				<a href="../評価対応/42モジュール対応表.html">42モジュール対応表</a>へ。
+			</p>
 		</section>
-
+		
 		<section id="refs">
-			<p class="section-kicker">09 · References</p>
+			<p class="section-kicker">08 · References</p>
 			<h2>参照</h2>
-			<p class="section-intro">（リンク一覧は後続コミットで書く）</p>
+			<ul>
+				<li><a href="./プロジェクト概要.html">プロジェクト概要</a> — いま何か</li>
+				<li><a href="./チーム体制.html">チーム体制</a> — 役割とメンバー</li>
+				<li><a href="../説明用/エンジン構成.html">エンジン構成</a> — C／WASM の境界</li>
+				<li><a href="../説明用/サーバ権威モデル.html">サーバ権威モデル</a> — なぜサーバが正本か</li>
+				<li><a href="../評価対応/42モジュール対応表.html">42モジュール対応表</a> — 評価の点数対応</li>
+				<li><a href="../運用/Git運用フロー.html">Git運用フロー</a> — レーンと統合手順</li>
+			</ul>
 		</section>
 	</main>
 </body>
