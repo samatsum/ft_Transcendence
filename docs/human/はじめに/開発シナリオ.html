@@ -67,20 +67,33 @@
 		
 		<section id="prologue">
 			<p class="section-kicker">01 · Prologue</p>
-			<h2>プロローグ — なぜゲームを作るプロジェクトになったか</h2>
+			<h2>プロローグ — なぜ3Dレイキャスティングゲームを作るプロジェクトになったか</h2>
 			<p class="section-intro">
-				起点は課題書の「cub3D を延長する」一文だけではありません。
-				<strong>samatsum</strong> が、ゲーム制作そのものをやりたい意図を持ち、
-				すでに手元にあった cub3D エンジンを土台に据えた、というのがこのプロジェクトの出発点です。
+				「cub3D をゲーム化する」ことがきっかけですが、そもそも
+				<strong>samatsum</strong> には、Unity などでのゲーム制作や、
+				シミュレーターを動かす側への関心が先にありました。
 			</p>
 			<p class="section-intro">
-				本人が公開・合意できる範囲では、Unity などでのゲーム制作経験や、
-				ミニカーコンテスト向けシミュレーターといった「ゲームを動かす」側の関心が先にあり、
-				42 の課題形式はその関心をオンライン対戦へ伸ばす器になりました。
-				<strong>samatsum</strong> のBH入りなどの経緯はここでは扱いません。
+				具体的な接点として、
+				<strong>2025年11月29日〜2026年2月15日</strong>の
+				<a href="https://42tokyo.jp/landing/autonomous-minicar-battle/">自動運転ミニカーバトル</a>では、
+				<strong>samatsum</strong>・<strong>torinoue</strong>・<strong>tvaroux</strong>
+				の3人が同じチームで参加しました。
+				自動運転の学習をおこなうためのシミュレーターの作成は<strong>samatsum</strong>が担当しました。
+			</p>
+			<p class="section-intro">
+				レイキャスティングに関する技術的な導線は別にあります。当時 <strong>samatsum</strong> は選択課題として
+				<strong>miniRT</strong> を2025年6月8日にクリアしており、
+				<strong>torinoue</strong> が2025年10月10日に着手した cub3D について、
+				レイキャスティングの高速化を助言していました。
+				助言を続けるうちに cub3D 自体へ関心が移り、
+				<strong>samatsum</strong> 自身もエンジンを伸ばし始め、
+				2026年6月上旬には（のちの本課題にあたる）FPS の原型を完成させていました。
+				このエンジンを壊さず土台にしてプロジェクトへ伸ばした、というのが出発点です。
+				<strong>samatsum</strong> の BH 入りなどの経緯はここでは扱いません。
 			</p>
 		</section>
-		
+
 		<section id="cub3d">
 			<p class="section-kicker">02 · cub3D</p>
 			<h2>出発点 — cub3D（技術的に何を引き継いだか）</h2>
@@ -89,8 +102,8 @@
 				<code>.cub</code>）、そして MiniLibX 上で動く<strong>ネイティブ実行</strong>という開発の足場。
 			</p>
 			<p class="section-intro">
-				ゲームを作りたい意図があったからこそ、cub3D を捨てて作り直すのではなく、
-				<strong>壊さず伸ばす</strong>選択になりました。ファイル単位の解説は
+				cub3D への関心から始めたからこそ、捨てて作り直すのではなく、				<strong>壊さず拡張する</strong>という選択になりました。
+				ファイル単位の解説は
 				<a href="../説明用/エンジン構成.html">エンジン構成</a>・
 				<a href="../説明用/ビルドと実行.html">ビルドと実行</a>へ。
 			</p>
