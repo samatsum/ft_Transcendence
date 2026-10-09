@@ -143,13 +143,54 @@
 		<section id="kickoff">
 			<p class="section-kicker">05 · Kickoff</p>
 			<h2>キックオフ — チームが動き始めた</h2>
-			<p class="section-intro">（本文は後続コミットで書く）</p>
+			<p class="section-intro">
+				<strong>2026-08-08</strong> にチーム運用が始まりました。単独稼働で置いた骨格を、
+				複数人で並行して伸ばす段階です。
+			</p>
+			<figure style="margin: 20px 0;">
+				<img
+					src="./kickoff-2026-08-08.jpg"
+					alt="2026-08-08 キックオフの会場（店舗のブース席）"
+					style="display: block; width: 100%; max-width: 720px; height: auto; border-radius: 4px;"
+				>
+				<figcaption style="margin-top: 8px; font-size: 0.9rem; opacity: 0.85;">
+					2026-08-08 キックオフ（会場の様子）
+				</figcaption>
+			</figure>
+			<p class="section-intro">
+				ここで入れたのが<strong>レーン分割</strong>です。実行場所ではなく、
+				「どのコードを誰が保守するか」で境界を切る
+				（Engine / Backend / Infra / Frontend / GameView）。
+				同じ C ソースが native と wasm の両方に載る以上、実行場所で分けると担当が割れない、
+				というのが意図でした。当時はレーン付き Issue やレーン別の Project で進めていました。
+				現行メンバー表の複製はせず、
+				<a href="./チーム体制.html">チーム体制</a>へリンクします。
+			</p>
 		</section>
 
 		<section id="roles">
 			<p class="section-kicker">06 · Roles</p>
 			<h2>役割の定着 — PO / PM / TL / Dev</h2>
-			<p class="section-intro">（本文は後続コミットで書く）</p>
+			<p class="section-intro">
+				<strong>2026-08-23</strong> 前後に、課題書が求める管理役割（PO / PM /
+				テクニカルリード / 開発者）の割当が発効しました。
+				誰がどの役割か、提出メンバーとサポーターの区別は
+				<a href="./チーム体制.html">チーム体制</a>が正本です。
+			</p>
+			<p class="section-intro">
+				キックオフ直後はsamatsumが設定したレーンを軸に進めていましたが、課題書で求められる役割配置を決めたのちに
+				<strong>PO / PM / TL</strong> を中心に体制を組み直し、現行の進め方へ移りました。
+				<strong>2026-08-30</strong>（Issue
+				<a href="https://github.com/samatsum/ft_Transcendence/issues/141">#141</a>）では、
+				レーン別の人員表をやめ、GitHub Projects も単一の "all" へ統合しています。
+				レーン（<code>lane:*</code>）は Issue の領域ラベルとしてだけ残し、
+				日常の優先度や統合は役割と PR（<code>origin/main</code> への CI ゲート）が担います。
+				詳細は <a href="./チーム体制.html#lanes">チーム体制 §03</a>・
+				<a href="../運用/Git運用フロー.html#lanes">Git運用フロー §05</a>へ。
+				離脱・合流の経緯はここでは書きません。
+				<strong>samatsum</strong> はエンジン起源としてプロローグと単独稼働期で触れ済みとし、
+				この節では役割定着が進め方をどう変えたかだけに留めます。
+			</p>
 		</section>
 
 		<section id="now">
