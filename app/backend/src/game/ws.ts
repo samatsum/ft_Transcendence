@@ -24,7 +24,7 @@ import {
 	type WsErrorCode,
 } from '@ft/shared';
 
-import { authenticateRequest, isAllowedOrigin } from '../auth/session.js';
+import { authenticateRequest as defaultAuthenticateRequest, isAllowedOrigin, type AuthedUser } from '../auth/session.js';
 import {
 	defaultConnectionManager,
 	PreAuthMessageBuffer,
@@ -102,12 +102,17 @@ interface Connection {
 const connectionsByRoom = new Map<string, Set<Connection>>();
 /** roomId → 購読解除関数。ルームにつき1回だけ購読する */
 const unsubscribeByRoom = new Map<string, () => void>();
+/** roomId → closed lifecycle購読解除関数 */
+const unsubscribeClosedByRoom = new Map<string, () => void>();
+/** roomId → 試合終了後close用timer */
+const finishedCloseTimersByRoom = new Map<string, Set<NodeJS.Timeout>>();
 
 /** Fastifyへgame gatewayを登録し、共有connection managerを注入する */
 export function registerGameWs(
 	app: FastifyInstance,
 	connectionManager: ConnectionManager = defaultConnectionManager,
 	releaseMatch: (userId: number, roomId: string) => boolean = () => false,
+	authenticator: (req: FastifyRequest) => Promise<AuthedUser | null> = defaultAuthenticateRequest,
 ): void {
 	// ③§1-C の GET 120/分 の枠から外す。アップグレードは REST の取得ではないのに
 	// 同じ枠を食うため、枠が尽きると**切断したプレイヤーの再接続が 429 で弾かれ**、
@@ -115,7 +120,14 @@ export function registerGameWs(
 	// （`WS_RATE_LIMIT.gameInputPerSecond`）
 	const routeOptions = { websocket: true, config: { rateLimit: false } } as const;
 	app.get('/ws/game/:roomId', routeOptions, (socket: Socket, req: FastifyRequest) => {
-		void handleConnection(socket, req, app, connectionManager, releaseMatch);
+		void handleConnection(socket, req, app, connectionManager, releaseMatch, authenticator).catch((err: unknown) => {
+			app.log.error({ err }, 'B-11: WS 接続処理に失敗');
+			try {
+				if (socket.readyState === OPEN) socket.close(WS_CLOSE.unauthenticated, 'connection failed');
+			} catch (closeErr) {
+				app.log.error({ err: closeErr }, 'B-11: WS 接続失敗後の切断に失敗');
+			}
+		});
 	});
 }
 
@@ -126,6 +138,7 @@ async function handleConnection(
 	app: FastifyInstance,
 	connectionManager: ConnectionManager,
 	releaseMatch: (userId: number, roomId: string) => boolean,
+	authenticator: (req: FastifyRequest) => Promise<AuthedUser | null>,
 ): Promise<void> {
 	// ② §1: Origin 検査（CSRF-over-WS 対策）。アップグレード時に見る。
 	// ※ ② はこの拒否に close コードを割り当てていないため 4003 を使う（判断）
@@ -172,7 +185,7 @@ async function handleConnection(
 	});
 
 	// ② §1: Cookie を検証。未認証は close 4000。実装は B-04/B-05（いまはスタブ）
-	const user = await authenticateRequest(req);
+	const user = await authenticator(req);
 	if (closed || socket.readyState !== OPEN) return;
 	if (!user) {
 		socket.close(WS_CLOSE.unauthenticated, 'unauthenticated');
@@ -205,7 +218,7 @@ async function handleConnection(
 	);
 
 	// ② §1: 同一ユーザーの多重接続は旧接続を close 4004 で置換
-	const peers = ensureRoomConnections(roomId, room);
+	const peers = ensureRoomConnections(roomId, room, app, releaseMatch);
 	for (const other of peers) {
 		if (other.userId === conn.userId) {
 			other.replaced = true;
@@ -225,7 +238,12 @@ async function handleConnection(
 }
 
 /** ルームの購読はルームにつき1回。接続ごとに購読すると stringify が接続数ぶん走る */
-function ensureRoomConnections(roomId: string, room: GameRoom): Set<Connection> {
+function ensureRoomConnections(
+	roomId: string,
+	room: GameRoom,
+	app: FastifyInstance,
+	releaseMatch: (userId: number, roomId: string) => boolean,
+): Set<Connection> {
 	let peers = connectionsByRoom.get(roomId);
 	if (peers) return peers;
 	peers = new Set<Connection>();
@@ -260,22 +278,56 @@ function ensureRoomConnections(roomId: string, room: GameRoom): Set<Connection> 
 		// ② §6-A: finished は結果画面のため 60 秒だけ接続を維持し、満了で close 1000。
 		// ルーム側の pump も同じタイミングで closed へ遷移する
 		if (message.t === 'event' && message.d.kind === 'match_end') {
+			const timers = finishedCloseTimersByRoom.get(roomId) ?? new Set<NodeJS.Timeout>();
+			finishedCloseTimersByRoom.set(roomId, timers);
 			const timer = setTimeout(() => {
+				timers.delete(timer);
+				if (timers.size === 0) finishedCloseTimersByRoom.delete(roomId);
 				for (const c of peers) {
 					if (c.socket.readyState === OPEN) c.socket.close(WS_CLOSE.normal, 'match finished');
 				}
 			}, FINISHED_HOLD_MS);
+			timers.add(timer);
 			timer.unref();
 		}
 	});
 	unsubscribeByRoom.set(roomId, unsubscribe);
+	const unsubscribeClosed = room.subscribeClosed((reason) => {
+		try {
+			if (reason === 'error' || reason === 'finished_hold') {
+				const code = reason === 'error' ? 1011 : WS_CLOSE.normal;
+				const closeReason = reason === 'error' ? 'room failed' : 'match finished';
+				for (const conn of peers) {
+					try {
+						if (conn.socket.readyState === OPEN) conn.socket.close(code, closeReason);
+					} catch (err) {
+						app.log.error({ room: roomId, user: conn.userId, err }, 'B-11: 失敗ルームのWS切断に失敗');
+					}
+					if (reason === 'error') {
+						try {
+							releaseMatch(conn.userId, roomId);
+						} catch (err) {
+							app.log.error({ room: roomId, user: conn.userId, err }, 'B-11: lobby context解放に失敗');
+						}
+					}
+				}
+			}
+		} finally {
+			releaseRoomConnections(roomId);
+		}
+	});
+	unsubscribeClosedByRoom.set(roomId, unsubscribeClosed);
 	return peers;
 }
 
 /** 接続が空になったroomの購読と接続索引を解放する */
 function releaseRoomConnections(roomId: string): void {
+	for (const timer of finishedCloseTimersByRoom.get(roomId) ?? []) clearTimeout(timer);
+	finishedCloseTimersByRoom.delete(roomId);
 	unsubscribeByRoom.get(roomId)?.();
 	unsubscribeByRoom.delete(roomId);
+	unsubscribeClosedByRoom.get(roomId)?.();
+	unsubscribeClosedByRoom.delete(roomId);
 	connectionsByRoom.delete(roomId);
 }
 

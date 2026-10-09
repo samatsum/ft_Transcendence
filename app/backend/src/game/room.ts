@@ -28,7 +28,8 @@ export type RoomLifecycleReason =
 	| 'match_end'
 	| 'no_humans'
 	| 'finished_hold'
-	| 'discarded';
+	| 'discarded'
+	| 'error';
 
 // ② §5-D のイベントと match_end.reason は `@ft/shared` の ws/game.ts が正本
 // （Issue #10 で配置を合意）。GV-06/GV-07 が同じ定義を import するので、
@@ -213,6 +214,7 @@ interface PlayerSeat {
 export interface RoomLogger {
 	info(obj: Record<string, unknown>, msg: string): void;
 	warn(obj: Record<string, unknown>, msg: string): void;
+	error?(obj: Record<string, unknown>, msg: string): void;
 }
 
 const consoleLogger: RoomLogger = {
@@ -247,6 +249,8 @@ export class GameRoom {
 	private readonly playerSeats = new Map<number, PlayerSeat>();
 	/** 配信の購読者。B-11 の WS 層がここに1つ登録して接続へファンアウトする */
 	private readonly listeners = new Set<BroadcastListener>();
+	private readonly closedListeners = new Set<(reason: RoomLifecycleReason) => void>();
+	private closedReason: RoomLifecycleReason | null = null;
 
 	private lastOverrunLogAt = 0;
 	/** 直前に配信した snapshot。差分から point_scored / hand_changed / goal を起こす */
@@ -331,6 +335,16 @@ export class GameRoom {
 	subscribe(listener: BroadcastListener): () => void {
 		this.listeners.add(listener);
 		return () => this.listeners.delete(listener);
+	}
+
+	/** ルーム終了時の後始末を購読する */
+	subscribeClosed(listener: (reason: RoomLifecycleReason) => void): () => void {
+		if (this.state === 'closed') {
+			listener(this.closedReason ?? 'discarded');
+			return () => undefined;
+		}
+		this.closedListeners.add(listener);
+		return () => this.closedListeners.delete(listener);
 	}
 
 	/** B-11 が welcome（② §5-B）を組み立てるための情報 */
@@ -512,6 +526,14 @@ export class GameRoom {
 
 	/** created から時間切れ・カウントダウン満了を進める。tick ループ外の時間経過を処理する */
 	pump(): void {
+		try {
+			this.runPump();
+		} catch (err) {
+			this.failRoom(err);
+		}
+	}
+
+	private runPump(): void {
 		this.expireGraceSeats();
 		const elapsed = this.opts.now() - this.stateEnteredAt;
 		if (this.state === 'created' && elapsed >= JOIN_GRACE_MS) {
@@ -536,12 +558,34 @@ export class GameRoom {
 
 	/** simとtick timerを冪等に破棄し、closed lifecycleを通知する */
 	close(reason: RoomLifecycleReason = 'discarded'): void {
-		if (this.state === 'closed') return;
-		this.stopTimer();
-		this.sim?.destroy();
+		if (this.isClosed()) return;
+		let closeReason = reason;
+		try {
+			this.stopTimer();
+		} catch (err) {
+			this.logRoomError(err, 'GameRoom: timer 停止に失敗');
+			closeReason = 'error';
+		}
+		const sim = this.sim;
 		this.sim = null;
-		for (const seat of this.playerSeats.values()) seat.graceUntil = null;
-		this.setState('closed', reason);
+		try {
+			sim?.destroy();
+		} catch (err) {
+			this.logRoomError(err, 'GameRoom: sim 破棄に失敗');
+			closeReason = 'error';
+		} finally {
+			for (const seat of this.playerSeats.values()) seat.graceUntil = null;
+			this.closedReason = closeReason;
+			this.setState('closed', closeReason);
+			for (const listener of [...this.closedListeners]) {
+				try {
+					listener(closeReason);
+				} catch (err) {
+					this.logRoomError(err, 'GameRoom: closed 購読者の通知に失敗');
+				}
+			}
+			this.closedListeners.clear();
+		}
 	}
 
 	private enterCountdown(reason: 'countdown_ready' | 'countdown_timeout' = 'countdown_ready'): void {
@@ -551,13 +595,23 @@ export class GameRoom {
 
 	private enterPlaying(): void {
 		this.setState('playing', 'match_started');
+		if (this.isClosed()) return;
 		this.broadcast({ t: 'event', d: { kind: 'match_start' } });
+		if (this.isClosed()) return;
 		// 30Hz の唯一の正（② §6-A）。unref しないのは、走っている試合が
 		// プロセスを延命すべきだから（サーバとしては正しい挙動）
 		this.timer = setInterval(() => this.onTick(), TICK_MS);
 	}
 
 	private onTick(): void {
+		try {
+			this.runTick();
+		} catch (err) {
+			this.failRoom(err);
+		}
+	}
+
+	private runTick(): void {
 		const startedAt = this.opts.now();
 		const sim = this.sim;
 		if (!sim || this.state !== 'playing') return;
@@ -677,7 +731,7 @@ export class GameRoom {
 			reason,
 			[last.d.match.score[0], last.d.match.score[1]],
 			persistResult,
-		);
+		).catch((err: unknown) => this.failRoom(err));
 	}
 
 	/**
@@ -736,10 +790,13 @@ export class GameRoom {
 				);
 			}
 		}
+		// 手動破棄や他のルーム障害後に遅れて完了したDB処理で状態を戻さない
+		if (this.isClosed()) return;
 		this.broadcast({
 			t: 'event',
 			d: { kind: 'match_end', winner, reason, match_id: matchId },
 		});
+		if (this.isClosed()) return;
 		if (matchResult && this.opts.onMatchResult) {
 			try {
 				this.opts.onMatchResult(matchResult);
@@ -750,6 +807,7 @@ export class GameRoom {
 				);
 			}
 		}
+		if (this.isClosed()) return;
 		// ② §6-C 5. の 60 秒保持は match_end 発火時点から数える（永続化に時間が
 		// かかった場合の切れ端を避ける）。setState が stateEnteredAt を更新する
 		this.setState('finished', 'match_end');
@@ -762,22 +820,44 @@ export class GameRoom {
 
 	private setState(next: RoomState, reason: RoomLifecycleReason): void {
 		this.state = next;
-		this.stateEnteredAt = this.opts.now();
+		try {
+			this.stateEnteredAt = this.opts.now();
+		} catch (err) {
+			this.logRoomError(err, 'GameRoom: 状態遷移時刻の取得に失敗');
+		}
 		try {
 			this.opts.onLifecycle?.(next, reason);
 		} catch (err) {
-			this.opts.log.warn(
-				{ room: this.roomId, state: next, reason, err },
-				'GameRoom: onLifecycle の通知に失敗',
-			);
+			this.logRoomError(err, 'GameRoom: onLifecycle の通知に失敗');
 		}
 	}
 
 	private stopTimer(): void {
 		if (this.timer) {
-			clearInterval(this.timer);
+			const timer = this.timer;
 			this.timer = null;
+			clearInterval(timer);
 		}
+	}
+
+	/** 試合内の例外を当該ルームの終了に閉じ込める */
+	private failRoom(err: unknown): void {
+		if (this.state === 'closed') return;
+		this.logRoomError(err, 'GameRoom: ルーム処理に失敗');
+		this.close('error');
+	}
+
+	private logRoomError(err: unknown, message: string): void {
+		try {
+			if (this.opts.log.error) this.opts.log.error({ room: this.roomId, err }, message);
+			else this.opts.log.warn({ room: this.roomId, err }, message);
+		} catch {
+			// ロガー障害で後続のルーム後始末を止めない
+		}
+	}
+
+	private isClosed(): boolean {
+		return this.state === 'closed';
 	}
 
 	/** grace期限へ到達した席をAI確定し、mode別の終了条件を評価する */

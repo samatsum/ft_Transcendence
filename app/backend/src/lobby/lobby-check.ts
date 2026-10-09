@@ -664,9 +664,15 @@ async function checkW09Integration(): Promise<void> {
 		),
 		true,
 	);
+	const fullSim = (fullRoom as unknown as { sim: { destroy(): void } | null }).sim;
+	assert.ok(fullSim);
+	const destroySim = fullSim.destroy.bind(fullSim);
+	fullSim.destroy = () => { throw new Error('injected room destroy failure'); };
 	closeRoom(fullRoomId);
 	assert.equal(full.runtime.registry.getContext(80).kind, 'idle');
 	assert.equal(full.runtime.registry.getContext(81).kind, 'idle');
+	assert.equal(getRoom(fullRoomId), undefined);
+	destroySim();
 	assert.equal(full.errors.length, 0);
 	full.runtime.destroy();
 	assert.equal(full.clock.pending(), 0);
