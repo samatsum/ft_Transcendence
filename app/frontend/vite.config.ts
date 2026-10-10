@@ -58,7 +58,6 @@ export default defineConfig(({ mode }) => {
 		// **静かに undefined になる**（AuthContext の開発スタブが有効にならず、
 		// 保護ルートが常に /login へリダイレクトする形で現れる）。
 		// 露出するのは `VITE_` 接頭辞のものだけなので、同じファイルにある
-		// SESSION_SECRET などがクライアントへ漏れることはない
 		envDir: repoRoot,
 		server: {
 			host: '0.0.0.0',
