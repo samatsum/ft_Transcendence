@@ -44,7 +44,10 @@ int
 /* ************************************************************************** */
 // マップ行リストを1次元 int 配列 map にコピーし、見つかったカメラ（スポーン文字
 // N/S/E/W）の数を返す。各行で空白を読み飛ばしつつ1マスずつ格納し、line が列インデックス。
-// 戻り値のカメラ数を呼び出し側が 1 未満＝スポーン無しとして弾くために使う
+// 戻り値のカメラ数を呼び出し側が 1 未満＝スポーン無しとして弾くために使う。
+// 行末が空白だと空白の読み飛ばしが終端に達するので、そこで行を打ち切る（終端 NUL を
+// マスとして書き、終端の先まで読み進めるのを防ぐ）。line < columns は check_valid が
+// 保証済みだが、書き込み先が確保領域の外に出ないことをここでも守る
 static int
 	copy_map(t_config* config, t_str* map_buffer, int* map)
 {
@@ -58,9 +61,12 @@ static int
 	while (map_buffer) {
 		j = 0;
 		line = 0;
-		while (map_buffer->content[j]) {
+		while (map_buffer->content[j] && line < config->map.columns) {
 			while (map_buffer->content[j] == ' ') {
 				j++;
+			}
+			if (!map_buffer->content[j]) {
+				break;
 			}
 			map[(i * config->map.columns) + line++] = map_buffer->content[j];
 			if (ft_in_set(map_buffer->content[j], DIRECTIONS)) {
