@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="ja">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="color-scheme" content="dark">
+
+	<title>開発シナリオ — ft_transcendence</title>
+	<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+	<header class="hero">
+		<div class="shell">
+			<p class="eyebrow">Development Scenario · 物語</p>
+			<h1>cub3Dから、<br>この対戦プラットフォームへ。</h1>
+			<p class="hero-lead">
+				チームがなぜこの形のプロジェクトになったかを、時系列で説明するページです。
+				構成は Issue
+				<a href="https://github.com/samatsum/ft_Transcendence/issues/258">#258</a>
+				で確定し、本文は Issue
+				<a href="https://github.com/samatsum/ft_Transcendence/issues/276">#276</a>
+				で書いています。評価時の画面操作手順はここには書きません（→
+				<a href="https://github.com/samatsum/ft_Transcendence/issues/259">#259</a>）。
+			</p>
+			<div class="hero-note">
+				<strong>本文</strong>
+				<span>Issue <a href="https://github.com/samatsum/ft_Transcendence/issues/276">#276</a></span>
+			</div>
+		</div>
+	</header>
+
+	<nav class="topnav" aria-label="ページ内目次">
+		<div class="shell nav-inner">
+			<a href="../index.html">← ドキュメント地図</a>
+			<a href="#usage">使い方</a>
+			<a href="#prologue">プロローグ</a>
+			<a href="#cub3d">cub3D</a>
+			<a href="#web">Web化</a>
+			<a href="#solo">単独稼働</a>
+			<a href="#kickoff">キックオフ</a>
+			<a href="#roles">役割</a>
+			<a href="#now">いまの形</a>
+			<a href="#refs">参照</a>
+			<button class="print-button" type="button" onclick="window.print()">印刷 / PDF</button>
+		</div>
+	</nav>
+
+	<main class="shell">
+		<section id="usage">
+			<p class="section-kicker">00 · How to use</p>
+			<h2>このページの使い方</h2>
+			<p class="section-intro">
+				ここは評価者向けの<strong>口頭説明の骨格</strong>です。時系列で「なぜこの形になったか」を話し、
+				仕組みの細部や点数表は他ページに任せます。
+			</p>
+			<ul>
+				<li><a href="./プロジェクト概要.html">プロジェクト概要</a> — いま何か（現状・アーキテクチャ）</li>
+				<li><a href="../説明用/エンジン構成.html">説明用/</a> — 仕組みの「なぜ」（エンジン・権威モデルなど）</li>
+				<li><a href="../評価対応/42モジュール対応表.html">評価対応/</a> — モジュール点数と実装対応</li>
+				<li>本ページ — 出発から今までの<strong>物語</strong></li>
+			</ul>
+			<p class="section-intro">
+				起動手順・現行バグ一覧・評価時の画面操作フローは書きません。
+				デモ操作は <a href="https://github.com/samatsum/ft_Transcendence/issues/259">#259</a> 側です。
+			</p>
+		</section>
+		
+		<section id="prologue">
+			<p class="section-kicker">01 · Prologue</p>
+			<h2>プロローグ — なぜ3Dレイキャスティングゲームを作るプロジェクトになったか</h2>
+			<p class="section-intro">
+				「cub3D をゲーム化する」ことがきっかけですが、そもそも
+				<strong>samatsum</strong> には、Unity などでのゲーム制作や、
+				シミュレーターを動かす側への関心が先にありました。
+			</p>
+			<p class="section-intro">
+				具体的な接点として、
+				<strong>2025年11月29日〜2026年2月15日</strong>の
+				<a href="https://42tokyo.jp/landing/autonomous-minicar-battle/">自動運転ミニカーバトル</a>では、
+				<strong>samatsum</strong>・<strong>torinoue</strong>・<strong>tvaroux</strong>
+				の3人が同じチームで参加しました。
+				自動運転の学習をおこなうためのシミュレーターの作成は<strong>samatsum</strong>が担当しました。
+			</p>
+			<p class="section-intro">
+				レイキャスティングに関する技術的な導線は別にあります。当時 <strong>samatsum</strong> は選択課題として
+				<strong>miniRT</strong> を2025年6月8日にクリアしており、
+				<strong>torinoue</strong> が2025年10月10日に着手した cub3D について、
+				レイキャスティングの高速化を助言していました。
+				助言を続けるうちに cub3D 自体へ関心が移り、
+				<strong>samatsum</strong> 自身もエンジンを伸ばし始め、
+				2026年6月上旬には（のちの本課題にあたる）FPS の原型を完成させていました。
+				このエンジンを壊さず土台にしてプロジェクトへ伸ばした、というのが出発点です。
+				<strong>samatsum</strong> の BH 入りなどの経緯はここでは扱いません。
+			</p>
+		</section>
+
+		<section id="cub3d">
+			<p class="section-kicker">02 · cub3D</p>
+			<h2>出発点 — cub3D（技術的に何を引き継いだか）</h2>
+			<p class="section-intro">
+				技術的に引き継いだ核は次です。C のレイキャスティング、マップ資産（<code>maps/</code> と
+				<code>.cub</code>）、そして MiniLibX 上で動く<strong>ネイティブ実行</strong>という開発の足場。
+			</p>
+			<p class="section-intro">
+				cub3D への関心から始めたからこそ、捨てて作り直すのではなく、				<strong>壊さず拡張する</strong>という選択になりました。
+				ファイル単位の解説は
+				<a href="../説明用/エンジン構成.html">エンジン構成</a>・
+				<a href="../説明用/ビルドと実行.html">ビルドと実行</a>へ。
+			</p>
+		</section>
+		<section id="web">
+			<p class="section-kicker">03 · Going web</p>
+			<h2>転機 — 「ブラウザで対戦する」決定</h2>
+			<p class="section-intro">
+				ネイティブの FPS 原型を、評価しやすい<strong>ブラウザ上のオンライン対戦</strong>へ広げる判断をしたのが転機です。
+				複数人が同時に触る以上、勝敗や位置の正しさはクライアントに置けません。
+			</p>
+			<p class="section-intro">
+				そこで採ったのが<strong>サーバ権威</strong>です。サーバ上の
+				<code>sim.wasm</code> が試合状態の正本を計算し、ブラウザは受け取った snapshot を描くだけにする。
+				「なぜそうするか」の説明は
+				<a href="../説明用/サーバ権威モデル.html">サーバ権威モデル</a>へ。
+				WASM の組み立て手順やプロトコル詳細はこのページでは書きません。
+			</p>
+		</section>
+		
+		<section id="solo">
+			<p class="section-kicker">04 · Solo period</p>
+			<h2>単独稼働期 — 骨格ができた時期</h2>
+			<p class="section-intro">
+				チームキックオフ（2026-08-08）より前の単独稼働期に、いまも残る骨格が置かれました。
+				C エンジン本体は <code>codes/</code>、ブラウザ／WASM 向けの橋渡しは <code>web/</code>。
+				同じソースから <strong>native</strong>・<strong>render.wasm</strong>・<strong>sim.wasm</strong>
+				の3ターゲットへ出す形です。
+			</p>
+			<p class="section-intro">
+				プロローグの関心（レイキャストで動く世界を壊さず伸ばす）が、この3ターゲット選択に現れています。
+				誰が何を持つかの現行表は
+				<a href="./チーム体制.html">チーム体制</a>へ。日次進捗や個人の感情談は書きません。
+			</p>
+		</section>
+
+		<section id="kickoff">
+			<p class="section-kicker">05 · Kickoff</p>
+			<h2>キックオフ — チームが動き始めた</h2>
+			<p class="section-intro">
+				<strong>2026-08-08</strong> にチーム運用が始まりました。単独稼働で置いた骨格を、
+				複数人で並行して伸ばす段階です。
+			</p>
+			<p class="section-intro">
+				ここで入れたのが<strong>レーン分割</strong>です。実行場所ではなく、
+				「どのコードを誰が保守するか」で境界を切る
+				（Engine / Backend / Infra / Frontend / GameView）。
+				同じ C ソースが native と wasm の両方に載る以上、実行場所で分けると担当が割れない、
+				というのが意図でした。当時はレーン付き Issue やレーン別の Project で進めていました。
+				現行メンバー表の複製はせず、
+				<a href="./チーム体制.html">チーム体制</a>へリンクします。
+			</p>
+		</section>
+
+		<section id="roles">
+			<p class="section-kicker">06 · Roles</p>
+			<h2>役割の定着 — PO / PM / TL / Dev</h2>
+			<p class="section-intro">
+				<strong>2026-08-23</strong> 前後に、課題書が求める管理役割（PO / PM /
+				テクニカルリード / 開発者）の割当が発効しました。
+				誰がどの役割か、提出メンバーとサポーターの区別は
+				<a href="./チーム体制.html">チーム体制</a>が正本です。
+			</p>
+			<p class="section-intro">
+				キックオフ直後はsamatsumが設定したレーンを軸に進めていましたが、課題書で求められる役割配置を決めたのちに
+				<strong>PO / PM / TL</strong> を中心に体制を組み直し、現行の進め方へ移りました。
+				<strong>2026-08-30</strong>（Issue
+				<a href="https://github.com/samatsum/ft_Transcendence/issues/141">#141</a>）では、
+				レーン別の人員表をやめ、GitHub Projects も単一の "all" へ統合しています。
+				レーン（<code>lane:*</code>）は Issue の領域ラベルとしてだけ残し、
+				日常の優先度や統合は役割と PR（<code>origin/main</code> への CI ゲート）が担います。
+				詳細は <a href="./チーム体制.html#lanes">チーム体制 §03</a>・
+				<a href="../運用/Git運用フロー.html#lanes">Git運用フロー §05</a>へ。
+				離脱・合流の経緯はここでは書きません。
+				<strong>samatsum</strong> はエンジン起源としてプロローグと単独稼働期で触れ済みとし、
+				この節では役割定着が進め方をどう変えたかだけに留めます。
+			</p>
+		</section>
+
+		<section id="now">
+			<p class="section-kicker">07 · Today</p>
+			<h2>いまの形 — オンライン対戦プラットフォームへ</h2>
+			<p class="section-intro">
+				現在の形は、ブラウザ上のオンライン対戦プラットフォームです。
+				モードは <strong>RSP</strong>（じゃんけん鬼ごっこ）と <strong>FPS</strong>（収集レース）。
+				サーバ上の <code>sim.wasm</code> が試合の正本を持ち、ブラウザの
+				<code>render.wasm</code> は snapshot を描く側に回ります。
+			</p>
+			<p class="section-intro">
+				画面側は、認証・ロビーなどの一般 Web（Frontend）と、
+				Canvas／HUD の試合画面（GameView）に分かれています。
+				工程一覧やモジュール点数表はここでは複製せず、
+				<a href="../開発状況/サーバー開発工程.html">サーバー開発工程</a>・
+				<a href="../開発状況/フロントエンド開発工程.html">フロントエンド開発工程</a>・
+				<a href="../評価対応/42モジュール対応表.html">42モジュール対応表</a>へ。
+			</p>
+		</section>
+		
+		<section id="refs">
+			<p class="section-kicker">08 · References</p>
+			<h2>参照</h2>
+			<ul>
+				<li><a href="./プロジェクト概要.html">プロジェクト概要</a> — いま何か</li>
+				<li><a href="./チーム体制.html">チーム体制</a> — 役割とメンバー</li>
+				<li><a href="../説明用/エンジン構成.html">エンジン構成</a> — C／WASM の境界</li>
+				<li><a href="../説明用/サーバ権威モデル.html">サーバ権威モデル</a> — なぜサーバが正本か</li>
+				<li><a href="../評価対応/42モジュール対応表.html">42モジュール対応表</a> — 評価の点数対応</li>
+				<li><a href="../運用/Git運用フロー.html">Git運用フロー</a> — レーンと統合手順</li>
+			</ul>
+		</section>
+	</main>
+</body>
+</html>
