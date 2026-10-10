@@ -4,22 +4,33 @@
 // 検査1: 対人戦の疎通 — 2クライアントが join → welcome → input → snapshot → match_end
 // 検査2: ② §10 受入条件 №6 — 不正メッセージ4種がそれぞれ仕様どおりに扱われる
 // 検査3: B-12 — 30秒grace内の復帰、満了AI確定、RSP abandon、FPS forfeit
+// 検査6: #269 — 制限時間で必ず決着する（残り時間の配信・timeout の勝者判定）
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 import WebSocket from 'ws';
-import { WS_CLOSE, type GameServerMessage } from '@ft/shared';
+import {
+	WS_CLOSE,
+	gameEventSchema,
+	snapshotMessageSchema,
+	type GameServerMessage,
+	type SnapshotPayload,
+} from '@ft/shared';
 
 import { buildServer } from '../index.js';
 import { listMaps, loadMapText } from './maps.js';
 import { gameMessageDelivery } from './ws.js';
+import { FINISHED_HOLD_MS } from './room.js';
+import type { SimGame } from './sim.js';
 import {
 	closeAllRooms,
 	closeRoom,
 	createRoom,
 	createRoomFromRules,
+	getRoom,
 } from './rooms.js';
-import type { PersistedMatchContext } from './room.js';
+import { ConnectionManager } from '../ws/connection.js';
+import type { PersistedMatchContext, RoomMessage } from './room.js';
 
 const PORT = 3999;
 const MAP = 'rsp_map/rsp.cub';
@@ -35,6 +46,54 @@ const W12_ROOM_IDS = {
 	rspLateInitial: 'ws-late-initial-rsp',
 } as const;
 
+async function checkRejectingAuthenticator(): Promise<string[]> {
+	const bad: string[] = [];
+	const connectionManager = new ConnectionManager();
+	const app = await buildServer({
+		connectionManager,
+		authenticateRequest: async () => {
+			throw new Error('injected authenticator rejection');
+		},
+	});
+	app.log.level = 'silent';
+	await app.listen({ port: PORT + 1, host: '127.0.0.1' });
+	try {
+		const baseUrl = `http://127.0.0.1:${PORT + 1}`;
+		const health = await fetch(`${baseUrl}/api/health`);
+		if (health.status !== 200) bad.push(`auth rejection後のhealthが200でない (${health.status})`);
+		for (const path of ['/ws/game/auth-rejection', '/ws/lobby']) {
+			const code = await new Promise<number>((resolve, reject) => {
+				const ws = new WebSocket(`${baseUrl.replace('http', 'ws')}${path}`, {
+					headers: { 'x-dev-user': '999' },
+					origin: baseUrl,
+				});
+				const timeout = setTimeout(() => {
+					ws.terminate();
+					reject(new Error(`${path}: close timed out`));
+				}, WS_OPEN_TIMEOUT_MS);
+				ws.once('close', (closeCode) => {
+					clearTimeout(timeout);
+					resolve(closeCode);
+				});
+				ws.once('error', (err) => {
+					clearTimeout(timeout);
+					reject(err);
+				});
+			});
+			if (code !== WS_CLOSE.unauthenticated) bad.push(`${path}: auth rejection close=${code}, expected 4000`);
+		}
+		const healthAfter = await fetch(`${baseUrl}/api/health`);
+		if (healthAfter.status !== 200) bad.push(`両WS auth rejection後のhealthが200でない (${healthAfter.status})`);
+		if (connectionManager.stats().connections !== 0) {
+			bad.push(`auth rejection後にsession connectionが残る (${connectionManager.stats().connections})`);
+		}
+	} finally {
+		await app.close();
+		connectionManager.clear();
+	}
+	return bad;
+}
+
 function loadMap(): string {
 	return readFileSync(fileURLToPath(new URL(`../../../../maps/${MAP}`, import.meta.url)), 'utf8');
 }
@@ -48,9 +107,10 @@ async function waitUntil(
 	predicate: () => boolean,
 	label: string,
 	bad: string[],
+	budgetMs = POLL_BUDGET_MS,
 ): Promise<boolean> {
 	const started = Date.now();
-	while (Date.now() - started < POLL_BUDGET_MS) {
+	while (Date.now() - started < budgetMs) {
 		if (predicate()) return true;
 		await sleep(10);
 	}
@@ -210,6 +270,8 @@ async function checkTwoClientsPlay(): Promise<string[]> {
 		bad.push('welcome が届いていない');
 		return bad;
 	}
+	if (a.received[0]?.t !== 'welcome') bad.push(`Aの最初のフレームがwelcomeでない (${a.received[0]?.t})`);
+	if (b.received[0]?.t !== 'welcome') bad.push(`Bの最初のフレームがwelcomeでない (${b.received[0]?.t})`);
 	console.log(`  welcome: A slot=${wa.d.slot} / B slot=${wb.d.slot} / map_text=${wa.d.map_text.length}B / snap_rate=${wa.d.snap_rate}`);
 	if (wa.d.slot !== 0 || wb.d.slot !== 1) bad.push(`slot の割当が participants と違う (${wa.d.slot}, ${wb.d.slot})`);
 	if (wa.d.combatant_id !== wa.d.slot) bad.push('combatant_id が slot と一致しない');
@@ -220,6 +282,14 @@ async function checkTwoClientsPlay(): Promise<string[]> {
 
 	// 2人とも join したので、10 秒を待たず countdown → playing へ進むはず
 	if (room.getState() !== 'countdown') bad.push(`join 後に countdown へ進んでいない (${room.getState()})`);
+	for (const [name, client] of [['A', a], ['B', b]] as const) {
+		const countdownSeconds = client.received.flatMap((message) =>
+			message.t === 'event' && message.d.kind === 'countdown' ? [message.d.seconds] : [],
+		);
+		if (countdownSeconds.length !== 1 || countdownSeconds[0] !== 3) {
+			bad.push(`${name}のcountdownが3秒ちょうど1回でない (${countdownSeconds.length}件)`);
+		}
+	}
 
 	// 30Hz で入力を流す（両クライアントとも前進しながら旋回）
 	let seq = 0;
@@ -335,10 +405,23 @@ async function checkFpsWorldDelta(): Promise<string[]> {
 			a.waitFor(() => Boolean(a.find('welcome')), 'FPS A welcome', bad),
 			b.waitFor(() => Boolean(b.find('welcome')), 'FPS B welcome', bad),
 		]);
+		if (joined[0] && a.received[0]?.t !== 'welcome') bad.push('FPS Aの最初のフレームがwelcomeでない');
+		if (joined[1] && b.received[0]?.t !== 'welcome') bad.push('FPS Bの最初のフレームがwelcomeでない');
 		if (joined.every(Boolean)) {
 			// 実時間ルームは3秒countdown後にplayingとなり、そこで初めてsnapshotを配信する。
 			await sleep(3_200);
 			await a.waitFor(() => a.countOf('snapshot') >= 3, 'FPS snapshots', bad);
+			for (const [name, client] of [['A', a], ['B', b]] as const) {
+				const countdownSeconds = client.received.flatMap((message) =>
+					message.t === 'event' && message.d.kind === 'countdown' ? [message.d.seconds] : [],
+				);
+				if (countdownSeconds.length !== 1 || countdownSeconds[0] !== 3) {
+					bad.push(`FPS ${name}のcountdownが3秒ちょうど1回でない (${countdownSeconds.length}件)`);
+				}
+				if (!client.received.some((message) => message.t === 'event' && message.d.kind === 'match_start')) {
+					bad.push(`FPS ${name}にmatch_startが届かない`);
+				}
+			}
 		}
 
 		const snapshots = a.received.filter(
@@ -408,11 +491,22 @@ async function checkFpsWorldDelta(): Promise<string[]> {
 			await resumed.waitFor(() => Boolean(resumed?.find('welcome')), 'FPS resume welcome', bad);
 			await resumed.waitFor(() => resumed?.received.some((message) => message.t === 'snapshot') ?? false, 'FPS resume snapshot', bad);
 			const welcome = resumed.find('welcome');
+			if (resumed.received[0]?.t !== 'welcome') {
+				bad.push(`FPS再接続の最初のフレームがwelcomeでない (${resumed.received[0]?.t})`);
+			}
 			const resumedSnapshot = resumed.received.find(
 				(message): message is Extract<GameServerMessage, { t: 'snapshot' }> => message.t === 'snapshot',
 			);
 			if (welcome?.d.resume !== true) bad.push('FPS再接続のwelcome.resumeがtrueでない');
 			if (!resumedSnapshot?.d.world_delta) bad.push('FPS再接続snapshotにworld_deltaがない');
+			const reconnectedIndex = resumed.received.findIndex(
+				(message) => message.t === 'event' && message.d.kind === 'player_reconnected',
+			);
+			const snapshotIndex = resumed.received.findIndex((message) => message.t === 'snapshot');
+			if (reconnectedIndex < 0) bad.push('FPS再接続clientにplayer_reconnectedが届かない');
+			if (snapshotIndex < 0 || snapshotIndex >= reconnectedIndex) {
+				bad.push('FPS再接続snapshotが保留中のplayer_reconnectedより先に届かない');
+			}
 		}
 	} finally {
 		a.close();
@@ -547,6 +641,18 @@ async function checkInvalidMessages(): Promise<string[]> {
 	await c6.open();
 	c6.send({ t: 'join' }); // 予定していた人間席が埋まるので countdown(3s) → playing
 	await sleep(3600);
+	if (c6.received[0]?.t !== 'welcome') {
+		bad.push(`単独human+AIの最初のフレームがwelcomeでない (${c6.received[0]?.t})`);
+	}
+	const soloCountdownSeconds = c6.received.flatMap((message) =>
+		message.t === 'event' && message.d.kind === 'countdown' ? [message.d.seconds] : [],
+	);
+	if (soloCountdownSeconds.length !== 1 || soloCountdownSeconds[0] !== 3) {
+		bad.push(`単独human+AIのcountdownが3秒ちょうど1回でない (${soloCountdownSeconds.length}件)`);
+	}
+	if (!c6.received.some((message) => message.t === 'event' && message.d.kind === 'match_start')) {
+		bad.push('単独human+AIにmatch_startが届かない');
+	}
 	c6.send({ t: 'input', d: { seq: 1, yaw: 1e30, mv: 0b0001 } });
 	await sleep(500);
 	const dirs = c6.received
@@ -629,6 +735,26 @@ async function runReconnectAndForfeitChecks(
 		rspRoom.getState() !== 'playing'
 	) {
 		bad.push(`RSP がplayingにならない (${rspRoom.getState()})`);
+	}
+	if (rspAWelcomeReceived && rspBWelcomeReceived) {
+		await Promise.all([
+			rspA.waitFor(
+				() => rspA.received.some((message) => message.t === 'event' && message.d.kind === 'match_start'),
+				'RSP A match_start',
+				bad,
+			),
+			rspB.waitFor(
+				() => rspB.received.some((message) => message.t === 'event' && message.d.kind === 'match_start'),
+				'RSP B match_start',
+				bad,
+			),
+		]);
+	}
+	for (const [name, client] of [['A', rspA], ['B', rspB]] as const) {
+		if (client.received[0]?.t !== 'welcome') bad.push(`RSP ${name}の最初のフレームがwelcomeでない`);
+		if (!client.received.some((message) => message.t === 'event' && message.d.kind === 'match_start')) {
+			bad.push(`RSP ${name}にmatch_startが届かない`);
+		}
 	}
 
 	// 通常closeは即AI代替+grace。30秒以内なら同一userがplayer復帰できる。
@@ -1025,9 +1151,53 @@ async function runReconnectAndForfeitChecks(
 		if (lateInitialBClosed && lateInitialB.closedWith !== WS_CLOSE.notAllowed) {
 			bad.push(`playing後の初回joinがclose 4003でない (${lateInitialB.closedWith})`);
 		}
+		if (lateInitialB.received.length !== 0) {
+			bad.push(`拒否されたlate joinへwelcomeまたは保留配信が届いた (${lateInitialB.received.map((message) => message.t).join(',')})`);
+		}
 	}
 	lateInitialA.close();
 	closeRoom(lateInitialRoom.roomId);
+
+	// joinが同期broadcastした後で失敗した場合、welcome前の配信を破棄し、
+	// 接続close時には設定済みslotを使ってroom席をcleanupする
+	const rejectedJoinRoom = await createRoomFromRules({
+		roomId: 'ws-rejected-after-broadcast',
+		mode: 'rsp',
+		rules: { map: 'rsp', target_score: 21 },
+		seed: 42,
+		participants: [{ userId: 623, slot: 0 }],
+		log: { info: () => {}, warn: () => {} },
+	});
+	const originalJoin = rejectedJoinRoom.join.bind(rejectedJoinRoom);
+	rejectedJoinRoom.join = (slot: number) => {
+		originalJoin(slot);
+		throw new Error('injected rejection after room broadcasts');
+	};
+	const rejectedJoinClient = makeClient(rejectedJoinRoom.roomId, 623);
+	await rejectedJoinClient.open();
+	rejectedJoinClient.send({ t: 'join' });
+	const rejectedJoinClosed = await rejectedJoinClient.waitFor(
+		() => rejectedJoinClient.closedWith !== null,
+		'rejected join after broadcast close',
+		bad,
+	);
+	if (rejectedJoinClient.received.length !== 0) {
+		bad.push(`broadcast後に拒否されたjoinへwelcomeまたは保留配信が届いた (${rejectedJoinClient.received.map((message) => message.t).join(',')})`);
+	}
+	if (rejectedJoinClosed && rejectedJoinClient.closedWith !== WS_CLOSE.notAllowed) {
+		bad.push(`broadcast後のjoin拒否がclose 4003でない (${rejectedJoinClient.closedWith})`);
+	}
+	if (
+		rejectedJoinClosed &&
+		!(await waitUntil(
+			() => rejectedJoinRoom.getPlayerSeatState(0) === 'grace',
+			'rejected join slot cleanup',
+			bad,
+		))
+	) {
+		bad.push('拒否されたjoinのslotがclose時にcleanupされない');
+	}
+	closeRoom(rejectedJoinRoom.roomId);
 
 	for (const client of clients) {
 		if (client.connectionErrors.length > 0) {
@@ -1040,6 +1210,89 @@ async function runReconnectAndForfeitChecks(
 async function flushPromises(): Promise<void> {
 	await Promise.resolve();
 	await Promise.resolve();
+}
+
+/* ── 検査6: #269 制限時間 ─────────────────────────────────────────── */
+
+/** 実時間で回すので短くする。60 tick（偶数）＝ 2 秒 */
+const TIMEOUT_CHECK_LIMIT_MS = 2_000;
+
+/**
+ * AI だけの試合を短い制限時間で回し、決着しないまま時間切れで match_end に至ることを確かめる。
+ * 先取点を上限の 21 にして、2 秒で RSP が得点決着しないようにする（FPS は AI がゴールを狙わない）
+ */
+async function checkTimeout(): Promise<string[]> {
+	const bad: string[] = [];
+	for (const mode of ['rsp', 'fps'] as const) {
+		const snapshots: SnapshotPayload[] = [];
+		const ends: Extract<RoomMessage, { t: 'event' }>['d'][] = [];
+		const persisted: PersistedMatchContext[] = [];
+		const room = await createRoomFromRules({
+			roomId: `ws-timeout-${mode}`,
+			mode,
+			rules: { target_score: 21 },
+			seed: 7,
+			timeLimitMs: TIMEOUT_CHECK_LIMIT_MS,
+			onBroadcast: (message, serialized) => {
+				// クライアントと同じく共有スキーマで検証する（time_left_ms / reason=timeout の受理）
+				const raw: unknown = JSON.parse(serialized);
+				if (message.t === 'snapshot') {
+					const parsed = snapshotMessageSchema.safeParse(raw);
+					if (!parsed.success) bad.push(`${mode}: snapshot がスキーマに合わない ${parsed.error.message}`);
+					else snapshots.push(parsed.data.d);
+				} else if (message.t === 'event' && message.d.kind === 'match_end') {
+					const parsed = gameEventSchema.safeParse(raw);
+					if (!parsed.success) bad.push(`${mode}: match_end がスキーマに合わない ${parsed.error.message}`);
+					else ends.push(parsed.data.d);
+				}
+			},
+			persistMatch: async (context) => {
+				persisted.push(context);
+				return null;
+			},
+			log: { info: () => {}, warn: () => {} },
+		});
+		room.startNow();
+		// countdown(3s) + 制限時間(2s) に余裕を持たせる
+		await waitUntil(() => room.getState() === 'finished', `${mode} の時間切れ`, bad, 10_000);
+		closeRoom(room.roomId);
+
+		const last = snapshots[snapshots.length - 1];
+		const end = ends[0];
+		console.log(
+			`  ${mode}: snapshots=${snapshots.length} first.time_left_ms=${snapshots[0]?.match.time_left_ms}` +
+				` last.tick=${last?.tick} last.time_left_ms=${last?.match.time_left_ms}` +
+				` score=${last?.match.score.join('-')} end=${JSON.stringify(end)}`,
+		);
+		if (!last || !end || end.kind !== 'match_end') {
+			bad.push(`${mode}: 最終 snapshot か match_end が届いていない`);
+			continue;
+		}
+		if (ends.length !== 1) bad.push(`${mode}: match_end が ${ends.length} 回届いた`);
+		if (end.reason !== 'timeout') bad.push(`${mode}: reason が timeout ではない (${end.reason})`);
+		if (last.tick !== (TIMEOUT_CHECK_LIMIT_MS / 1000) * TICK_HZ) {
+			bad.push(`${mode}: 最終 snapshot が時間切れの tick ではない (tick=${last.tick})`);
+		}
+		if (last.match.time_left_ms !== 0) bad.push(`${mode}: 最終 snapshot の残り時間が 0 ではない`);
+		if (last.match.state !== 'playing') bad.push(`${mode}: 時間切れなのに sim が決着している (${last.match.state})`);
+		for (let i = 1; i < snapshots.length; i++) {
+			const prev = snapshots[i - 1]!.match.time_left_ms;
+			const cur = snapshots[i]!.match.time_left_ms;
+			if (prev === null || cur === null || cur >= prev) {
+				bad.push(`${mode}: time_left_ms が単調に減っていない (${prev} → ${cur})`);
+				break;
+			}
+		}
+		const [red, blue] = last.match.score;
+		const expectedWinner = mode === 'fps' || red === blue ? null : red > blue ? 0 : 1;
+		if (end.winner !== expectedWinner) {
+			bad.push(`${mode}: 時間切れの勝者が違う (got=${end.winner}, want=${expectedWinner}, score=${red}-${blue})`);
+		}
+		if (persisted.length !== 1 || persisted[0]!.reason !== 'timeout' || persisted[0]!.winner !== expectedWinner) {
+			bad.push(`${mode}: 永続化フックへ timeout の結果が渡っていない (${JSON.stringify(persisted)})`);
+		}
+	}
+	return bad;
 }
 
 /* ── 検査4: B-14 マップ API とテキスト配布の一致 ─────────────────── */
@@ -1095,12 +1348,223 @@ async function checkMaps(baseUrl: string): Promise<string[]> {
 	return bad;
 }
 
+/* ── 検査6: 接続拒否とルーム内障害の封じ込め ─────────────────────── */
+
+async function checkFailureContainment(connectionManager: ConnectionManager): Promise<string[]> {
+	const bad: string[] = [];
+	let pumpClockFails = false;
+	const pumpRoom = await createRoom({
+		roomId: 'contain-pump',
+		cubText: loadMap(),
+		mode: 'rsp',
+		targetScore: 21,
+		seed: 42,
+		now: () => {
+			if (pumpClockFails) throw new Error('injected pump failure');
+			return 0;
+		},
+		log: { info: () => {}, warn: () => {} },
+	});
+	let pumpClosedReason: string | null = null;
+	pumpRoom.subscribeClosed((reason) => { pumpClosedReason = reason; });
+	pumpClockFails = true;
+	pumpRoom.pump();
+	if (pumpRoom.getState() !== 'closed' || pumpClosedReason !== 'error') {
+		bad.push(`pump例外でルームがerror終了しない (${pumpRoom.getState()}, ${pumpClosedReason})`);
+	}
+
+	const destroyRoom = await createRoom({
+		roomId: 'contain-destroy',
+		cubText: loadMap(),
+		mode: 'rsp',
+		targetScore: 21,
+		seed: 42,
+		log: { info: () => {}, warn: () => {} },
+	});
+	const destroySim = (destroyRoom as unknown as { sim: SimGame | null }).sim;
+	if (!destroySim) throw new Error('destroy check room has no sim');
+	const realDestroy = destroySim.destroy.bind(destroySim);
+	destroySim.destroy = () => { throw new Error('injected destroy failure'); };
+	let destroyClosedReason: string | null = null;
+	destroyRoom.subscribeClosed((reason) => { destroyClosedReason = reason; });
+	destroyRoom.close();
+	if (destroyRoom.getState() !== 'closed' || destroyClosedReason !== 'error') {
+		bad.push(`destroy例外後も閉鎖通知が完了しない (${destroyRoom.getState()}, ${destroyClosedReason})`);
+	}
+	realDestroy();
+
+	let finishResolve!: (value: null) => void;
+	let matchEndCount = 0;
+	let finishNow = 0;
+	const finishRoom = await createRoom({
+		roomId: 'contain-finish',
+		cubText: loadMapText('fps_duel').text,
+		mode: 'fps',
+		targetScore: 0,
+		seed: 42,
+		participants: [{ userId: 901, slot: 0 }],
+		now: () => finishNow,
+		persistMatch: () => new Promise((resolve) => { finishResolve = resolve; }),
+		onBroadcast: (message) => {
+			if (message.t === 'event' && message.d.kind === 'match_end') matchEndCount += 1;
+		},
+		log: { info: () => {}, warn: () => {} },
+	});
+	finishRoom.startNow();
+	finishNow += 3_000;
+	finishRoom.pump();
+	finishRoom.leave(0);
+	finishRoom.close();
+	finishResolve(null);
+	await flushPromises();
+	if (finishRoom.getState() !== 'closed' || matchEndCount !== 0) {
+		bad.push(`close後の永続化完了がmatch_endを再開した (state=${finishRoom.getState()}, count=${matchEndCount})`);
+	}
+
+	let notificationNow = 0;
+	const notificationRoom = await createRoom({
+		roomId: 'contain-finish-notification',
+		cubText: loadMapText('fps_duel').text,
+		mode: 'fps',
+		targetScore: 0,
+		seed: 45,
+		participants: [{ userId: 905, slot: 0 }],
+		now: () => notificationNow,
+		onBroadcast: (message) => {
+			if (message.t === 'event' && message.d.kind === 'match_end') {
+				throw new Error('injected match_end notification failure');
+			}
+		},
+		log: { info: () => {}, warn: () => {} },
+	});
+	let notificationCloseReason: string | null = null;
+	notificationRoom.subscribeClosed((reason) => { notificationCloseReason = reason; });
+	notificationRoom.startNow();
+	notificationNow += 3_000;
+	notificationRoom.pump();
+	notificationRoom.leave(0);
+	await flushPromises();
+	if (notificationRoom.getState() !== 'closed' || notificationCloseReason !== 'error') {
+		bad.push(`async finish通知例外がerror closeされない (${notificationRoom.getState()}, ${notificationCloseReason})`);
+	}
+
+	let holdNow = 0;
+	const holdRoom = await createRoom({
+		roomId: 'contain-finished-hold',
+		cubText: loadMapText('fps_duel').text,
+		mode: 'fps',
+		targetScore: 0,
+		seed: 44,
+		participants: [{ userId: 904, slot: 0 }],
+		now: () => holdNow,
+		log: { info: () => {}, warn: () => {} },
+	});
+	const holdClient = new TestClient(holdRoom.roomId, 904);
+	await holdClient.open();
+	holdClient.send({ t: 'join' });
+	const holdWelcomed = await holdClient.waitFor(() => Boolean(holdClient.find('welcome')), 'finished-hold welcome', bad);
+	if (holdWelcomed) {
+		holdNow += 3_000;
+		holdRoom.pump();
+	}
+	holdClient.send({ t: 'leave' });
+	const gotMatchEnd = await holdClient.waitFor(
+		() => holdClient.received.some((message) => message.t === 'event' && message.d.kind === 'match_end'),
+		'finished-hold match_end',
+		bad,
+	);
+	if (gotMatchEnd) {
+		holdNow += FINISHED_HOLD_MS;
+		holdRoom.pump();
+		const gotNormalClose = await holdClient.waitFor(() => holdClient.closedWith !== null, 'finished-hold close', bad);
+		if (gotNormalClose && holdClient.closedWith !== WS_CLOSE.normal) {
+			bad.push(`finished_hold close codeが1000でない (${holdClient.closedWith})`);
+		}
+	}
+	holdClient.close();
+
+	let roomNow = 0;
+	const failingRoom = await createRoom({
+		roomId: 'contain-tick-fail',
+		cubText: loadMap(),
+		mode: 'rsp',
+		targetScore: 21,
+		seed: 42,
+		participants: [{ userId: 902, slot: 0 }],
+		now: () => roomNow,
+		log: { info: () => {}, warn: () => {} },
+	});
+	let healthyNow = 0;
+	const healthyRoom = await createRoom({
+		roomId: 'contain-tick-healthy',
+		cubText: loadMap(),
+		mode: 'rsp',
+		targetScore: 21,
+		seed: 43,
+		participants: [{ userId: 903, slot: 0 }],
+		now: () => healthyNow,
+		log: { info: () => {}, warn: () => {} },
+	});
+	failingRoom.subscribeClosed(() => { throw new Error('injected closed subscriber failure'); });
+	const sessionBaseline = connectionManager.stats().connections;
+	const failedClient = new TestClient(failingRoom.roomId, 902);
+	await failedClient.open();
+	failedClient.send({ t: 'join' });
+	const failingWelcomed = await failedClient.waitFor(
+		() => Boolean(failedClient.find('welcome')),
+		'failed room welcome',
+		bad,
+	);
+	const failingSim = (failingRoom as unknown as { sim: SimGame | null }).sim;
+	if (!failingSim) throw new Error('tick failure check room has no sim');
+	healthyRoom.startNow();
+	if (failingWelcomed) roomNow += 3_000;
+	healthyNow += 3_000;
+	if (failingWelcomed) failingRoom.pump();
+	healthyRoom.pump();
+	failingSim.step = () => { throw new Error('injected tick failure'); };
+	const closed1011 = await failedClient.waitFor(
+		() => failedClient.closedWith !== null,
+		'failed room close 1011',
+		bad,
+	);
+	const healthyTickAdvanced = await waitUntil(() => healthyRoom.getTick() >= 2, 'healthy room tick', bad);
+	if (closed1011 && failedClient.closedWith !== 1011) {
+		bad.push(`失敗ルームのWS close codeが1011でない (${failedClient.closedWith})`);
+	}
+	if (failingRoom.getState() !== 'closed') bad.push(`tick例外ルームがclosedでない (${failingRoom.getState()})`);
+	if (getRoom(failingRoom.roomId) !== undefined) {
+		bad.push('error close直後も失敗ルームがregistryに残る');
+	}
+	const sessionsReleased = await waitUntil(
+		() => connectionManager.stats().connections === sessionBaseline,
+		'failed room session cleanup',
+		bad,
+	);
+	if (!sessionsReleased) bad.push(`failed room後のsession数が戻らない (${connectionManager.stats().connections}/${sessionBaseline})`);
+	const failedTick = failingRoom.getTick();
+	await sleep(100);
+	if (failingRoom.getTick() !== failedTick) bad.push(`closed後もtickが進んだ (${failedTick} → ${failingRoom.getTick()})`);
+	if (!healthyTickAdvanced || healthyRoom.getState() !== 'playing') {
+		bad.push(`健全ルームが並行進行しない (tick=${healthyRoom.getTick()}, state=${healthyRoom.getState()})`);
+	}
+	failedClient.close();
+	closeRoom(failingRoom.roomId);
+	closeRoom(healthyRoom.roomId);
+	closeRoom(holdRoom.roomId);
+	return bad;
+}
+
 /* ── 実行 ─────────────────────────────────────────────────────── */
 
 async function main(): Promise<void> {
 	process.env.NODE_ENV = 'development';
 	process.env.ALLOW_DEV_AUTH = 'true';
-	const app = await buildServer();
+	console.log('検査0: 認証拒否時の接続エラー封じ込め');
+	const bad0 = await checkRejectingAuthenticator();
+	console.log(bad0.length ? `  NG:\n    ${bad0.join('\n    ')}` : '  OK: game/lobby close 4000後もhealth 200');
+	const connectionManager = new ConnectionManager();
+	const app = await buildServer({ connectionManager });
 	app.log.level = 'silent';
 	await app.listen({ port: PORT, host: '127.0.0.1' });
 
@@ -1124,16 +1588,26 @@ async function main(): Promise<void> {
 	const bad5 = await checkMaps(`http://127.0.0.1:${PORT}`);
 	console.log(bad5.length ? `  NG:\n    ${bad5.join('\n    ')}` : '  OK');
 
+	console.log('\n検査6: GameRoom障害の局所化とcleanup');
+	const bad6 = await checkFailureContainment(connectionManager);
+	console.log(bad6.length ? `  NG:\n    ${bad6.join('\n    ')}` : '  OK: pump/tick/async finish/destroy/finished_hold');
+	
+  console.log('\n検査7: #269 制限時間で決着する');
+	const bad7 = await checkTimeout();
+	console.log(bad7.length ? `  NG:\n    ${bad7.join('\n    ')}` : '  OK: 残り時間の配信・timeout の勝者判定');
+
 	closeAllRooms();
 	await app.close();
+	connectionManager.clear();
 
-	if (bad1.length || bad2.length || bad3.length || bad4.length || bad5.length) {
-		console.error('\nW-11 / B-12 / B-14: 失敗');
+	if (bad0.length || bad1.length || bad2.length || bad3.length || bad4.length || bad5.length || bad6.length || bad7.length) {
+		console.error('\nW-11 / B-12 / B-14 / #269: 失敗');
 		process.exit(1);
 	}
 	console.log('\nW-11: 受入条件 №5 / №6 を満たしています');
 	console.log('B-12: 受入条件 №4 を満たしています');
 	console.log('B-14: マップ一覧とテキスト配布の一致を確認しました');
+	console.log('#269: 制限時間で試合が決着することを確認しました');
 }
 
 main().catch((err: unknown) => {

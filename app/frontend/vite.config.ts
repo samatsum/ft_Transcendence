@@ -57,8 +57,7 @@ export default defineConfig(({ mode }) => {
 		// そこに `.env` は無いので `.env.example` が宣言している VITE_DEV_AUTOLOGIN が
 		// **静かに undefined になる**（AuthContext の開発スタブが有効にならず、
 		// 保護ルートが常に /login へリダイレクトする形で現れる）。
-		// 露出するのは `VITE_` 接頭辞のものだけなので、同じファイルにある
-		// SESSION_SECRET などがクライアントへ漏れることはない
+		// この .env からクライアントに公開されるのは VITE_ 接頭辞の変数だけ。
 		envDir: repoRoot,
 		server: {
 			host: '0.0.0.0',

@@ -1,8 +1,9 @@
 // B-10: GameRoom 本体。1試合 = 1ルーム = 1つの t_game（② §6）。
 //
 // 状態機械の正本は 2-WSプロトコル設計「6-A. 状態機械」:
-//   created ──全人間join or 10s──► countdown(3s) ──► playing ──決着──► finished ──60s──► closed
+//   created ──全人間join or 10s──► countdown(3s) ──► playing ──決着 or 3分──► finished ──60s──► closed
 //      └── 人間0人のまま10s ──► closed（記録なし）
+// 「3分」は制限時間切れ（match_end.reason=timeout。#269）
 //
 // 本ファイルは **WS を知らない**。配信は onBroadcast コールバック経由で、
 // B-11 がそこへ WebSocket.send を差し込む。
@@ -27,7 +28,8 @@ export type RoomLifecycleReason =
 	| 'match_end'
 	| 'no_humans'
 	| 'finished_hold'
-	| 'discarded';
+	| 'discarded'
+	| 'error';
 
 // ② §5-D のイベントと match_end.reason は `@ft/shared` の ws/game.ts が正本
 // （Issue #10 で配置を合意）。GV-06/GV-07 が同じ定義を import するので、
@@ -101,6 +103,25 @@ export const FINISHED_HOLD_MS = 60_000;
 const TICK_OVERRUN_MS = TICK_MS * 0.5;
 /** 同じ警告でログを溢れさせないための間引き */
 const OVERRUN_LOG_INTERVAL_MS = 1_000;
+/**
+ * 試合の制限時間（#269）。AI の挙動不良などで決着しない試合が部屋を占有し続けないための上限。
+ * 原因が何であれ「永久に終わらない」を物理的に潰す保険で、根本原因の修正とは独立。
+ */
+export const MATCH_TIME_LIMIT_MS = 180_000;
+
+/**
+ * 制限時間を tick 数へ換算する。壁時計ではなく tick で数えるのは、setInterval が遅れても
+ * sim が進めた時間（＝プレイヤーが実際に遊べた時間）と残り時間の表示がずれないため。
+ * 偶数 tick に限るのは、時間切れの tick を必ず snapshot 配信 tick にして、最終スコアが
+ * 配信されないまま match_end になるのを防ぐため（3分 = 5400 tick）
+ */
+function timeLimitTicks(timeLimitMs: number): number {
+	const ticks = (timeLimitMs / 1000) * TICK_HZ;
+	if (!Number.isInteger(ticks) || ticks <= 0 || ticks % 2 !== 0) {
+		throw new Error(`timeLimitMs ${timeLimitMs} は正の偶数 tick（${2000 / TICK_HZ}ms 単位）にする`);
+	}
+	return ticks;
+}
 
 export interface RoomOptions {
 	roomId: string;
@@ -162,6 +183,11 @@ export interface RoomOptions {
 	 * GameRoom の内部状態をポーリングせずに済むよう、状態遷移の直後に同期通知する。
 	 */
 	onLifecycle?: (state: RoomState, reason: RoomLifecycleReason) => void;
+	/**
+	 * 試合の制限時間（#269）。省略時は {@link MATCH_TIME_LIMIT_MS}。
+	 * 実時間で tick を回す検査（ws-check）が3分待たずに時間切れを確かめるためのもの
+	 */
+	timeLimitMs?: number;
 	/** 差し替え可能にしておくとテストで時間を進められる */
 	now?: () => number;
 	log?: RoomLogger;
@@ -188,6 +214,7 @@ interface PlayerSeat {
 export interface RoomLogger {
 	info(obj: Record<string, unknown>, msg: string): void;
 	warn(obj: Record<string, unknown>, msg: string): void;
+	error?(obj: Record<string, unknown>, msg: string): void;
 }
 
 const consoleLogger: RoomLogger = {
@@ -222,6 +249,8 @@ export class GameRoom {
 	private readonly playerSeats = new Map<number, PlayerSeat>();
 	/** 配信の購読者。B-11 の WS 層がここに1つ登録して接続へファンアウトする */
 	private readonly listeners = new Set<BroadcastListener>();
+	private readonly closedListeners = new Set<(reason: RoomLifecycleReason) => void>();
+	private closedReason: RoomLifecycleReason | null = null;
 
 	private lastOverrunLogAt = 0;
 	/** 直前に配信した snapshot。差分から point_scored / hand_changed / goal を起こす */
@@ -232,6 +261,8 @@ export class GameRoom {
 	 * state はまだ 'playing'（match_end 発火時に 'finished' へ落とす）。
 	 */
 	private finishStarted = false;
+	/** この tick に達したら時間切れ（#269） */
+	private readonly timeLimitTicks: number;
 	private readonly opts: Required<Pick<RoomOptions, 'now' | 'log'>> & RoomOptions;
 
 	private constructor(options: RoomOptions) {
@@ -239,6 +270,7 @@ export class GameRoom {
 		this.mode = options.mode;
 		this.opts = { ...options, now: options.now ?? Date.now, log: options.log ?? consoleLogger };
 		this.stateEnteredAt = this.opts.now();
+		this.timeLimitTicks = timeLimitTicks(options.timeLimitMs ?? MATCH_TIME_LIMIT_MS);
 		const seats = seatCount(options.mode);
 		const assertValidSlot = (slot: number, source: string): void => {
 			if (!Number.isInteger(slot) || slot < 0 || slot >= seats) {
@@ -303,6 +335,16 @@ export class GameRoom {
 	subscribe(listener: BroadcastListener): () => void {
 		this.listeners.add(listener);
 		return () => this.listeners.delete(listener);
+	}
+
+	/** ルーム終了時の後始末を購読する */
+	subscribeClosed(listener: (reason: RoomLifecycleReason) => void): () => void {
+		if (this.state === 'closed') {
+			listener(this.closedReason ?? 'discarded');
+			return () => undefined;
+		}
+		this.closedListeners.add(listener);
+		return () => this.closedListeners.delete(listener);
 	}
 
 	/** B-11 が welcome（② §5-B）を組み立てるための情報 */
@@ -471,7 +513,7 @@ export class GameRoom {
 	/** 再接続welcome直後へ送る、その時点の全量snapshotを1回だけserializeする */
 	getResumeSnapshot(): { message: SnapshotMessage; serialized: string } | null {
 		if (!this.sim || this.state !== 'playing') return null;
-		const message = decodeSnapshot(this.sim.readSnapshot(), this.tick, this.mode);
+		const message = decodeSnapshot(this.sim.readSnapshot(), this.tick, this.mode, this.timeLeftMs());
 		return { message, serialized: JSON.stringify(message) };
 	}
 
@@ -484,6 +526,14 @@ export class GameRoom {
 
 	/** created から時間切れ・カウントダウン満了を進める。tick ループ外の時間経過を処理する */
 	pump(): void {
+		try {
+			this.runPump();
+		} catch (err) {
+			this.failRoom(err);
+		}
+	}
+
+	private runPump(): void {
 		this.expireGraceSeats();
 		const elapsed = this.opts.now() - this.stateEnteredAt;
 		if (this.state === 'created' && elapsed >= JOIN_GRACE_MS) {
@@ -508,12 +558,34 @@ export class GameRoom {
 
 	/** simとtick timerを冪等に破棄し、closed lifecycleを通知する */
 	close(reason: RoomLifecycleReason = 'discarded'): void {
-		if (this.state === 'closed') return;
-		this.stopTimer();
-		this.sim?.destroy();
+		if (this.isClosed()) return;
+		let closeReason = reason;
+		try {
+			this.stopTimer();
+		} catch (err) {
+			this.logRoomError(err, 'GameRoom: timer 停止に失敗');
+			closeReason = 'error';
+		}
+		const sim = this.sim;
 		this.sim = null;
-		for (const seat of this.playerSeats.values()) seat.graceUntil = null;
-		this.setState('closed', reason);
+		try {
+			sim?.destroy();
+		} catch (err) {
+			this.logRoomError(err, 'GameRoom: sim 破棄に失敗');
+			closeReason = 'error';
+		} finally {
+			for (const seat of this.playerSeats.values()) seat.graceUntil = null;
+			this.closedReason = closeReason;
+			this.setState('closed', closeReason);
+			for (const listener of [...this.closedListeners]) {
+				try {
+					listener(closeReason);
+				} catch (err) {
+					this.logRoomError(err, 'GameRoom: closed 購読者の通知に失敗');
+				}
+			}
+			this.closedListeners.clear();
+		}
 	}
 
 	private enterCountdown(reason: 'countdown_ready' | 'countdown_timeout' = 'countdown_ready'): void {
@@ -523,13 +595,23 @@ export class GameRoom {
 
 	private enterPlaying(): void {
 		this.setState('playing', 'match_started');
+		if (this.isClosed()) return;
 		this.broadcast({ t: 'event', d: { kind: 'match_start' } });
+		if (this.isClosed()) return;
 		// 30Hz の唯一の正（② §6-A）。unref しないのは、走っている試合が
 		// プロセスを延命すべきだから（サーバとしては正しい挙動）
 		this.timer = setInterval(() => this.onTick(), TICK_MS);
 	}
 
 	private onTick(): void {
+		try {
+			this.runTick();
+		} catch (err) {
+			this.failRoom(err);
+		}
+	}
+
+	private runTick(): void {
 		const startedAt = this.opts.now();
 		const sim = this.sim;
 		if (!sim || this.state !== 'playing') return;
@@ -544,7 +626,7 @@ export class GameRoom {
 		// ② §6-A: 偶数 tick のみ配信（実効 15Hz）
 		const broadcastedThisTick = this.tick % 2 === 0;
 		if (broadcastedThisTick) {
-			const message = decodeSnapshot(sim.readSnapshot(), this.tick, this.mode);
+			const message = decodeSnapshot(sim.readSnapshot(), this.tick, this.mode, this.timeLeftMs());
 			this.broadcast(message);
 			// snapshot を配ってからイベントを出す（値の正本が先に届く。② §5-D）
 			for (const event of diffEvents(this.previous, message.d, this.mode)) {
@@ -558,7 +640,18 @@ export class GameRoom {
 			this.finish('decided', broadcastedThisTick);
 			return;
 		}
+		if (this.tick >= this.timeLimitTicks) {
+			// 同じ tick で sim が決着していれば、そちらを優先する（直上で return 済み）
+			this.finish('timeout', broadcastedThisTick);
+			return;
+		}
 		this.warnIfOverrun(startedAt);
+	}
+
+	/** snapshot に載せる残り時間（#269）。tick から求めるので配信間で単調に減る */
+	private timeLeftMs(): number {
+		const ticksLeft = Math.max(0, this.timeLimitTicks - this.tick);
+		return Math.round((ticksLeft * 1000) / TICK_HZ);
 	}
 
 	/**
@@ -578,7 +671,8 @@ export class GameRoom {
 	}
 
 	/**
-	 * @param outcome decided = sim決着 / abandon = 全員離脱 / forfeit = FPS離脱負け
+	 * @param outcome decided = sim決着 / abandon = 全員離脱 / forfeit = FPS離脱負け /
+	 *   timeout = 制限時間切れ（#269）
 	 * @param alreadyBroadcasted 同じ tick で最終 snapshot を配信済みか
 	 * @param winnerOverride forfeitで使う勝者slot
 	 * @param persistResult 正式な試合結果として永続化するか
@@ -587,12 +681,15 @@ export class GameRoom {
 	 * 永続化（2.）と `event(match_end)` 発火（3.）は
 	 * {@link persistAndAnnounceEnd} が async で実施する。
 	 *
+	 * timeout も decided と同じく、未配信なら最終 snapshot を配る（sim は決着していないので
+	 * match.state は playing のまま。② §5-C の「sim の enum そのまま」どおり）。
+	 *
 	 * abandon では **snapshot を追加配信しない**。sim はまだ playing なので、
 	 * ここで state=finished の snapshot を作ると ② §5-C の「match.state は sim の
 	 * enum そのまま」に反する。クライアントは match_end イベントで終了を知る。
 	 */
 	private finish(
-		outcome: 'decided' | 'abandon' | 'forfeit',
+		outcome: 'decided' | 'abandon' | 'forfeit' | 'timeout',
 		alreadyBroadcasted = false,
 		winnerOverride?: number,
 		persistResult = true,
@@ -603,8 +700,8 @@ export class GameRoom {
 		const sim = this.requireSim();
 		// 決着後の game_step は状態を進めず 1 を返し続ける（申し送り 6）。
 		// 最終 snapshot を1回だけ配信してから永続化フェーズへ入る（② §6-C 1.）
-		const last = decodeSnapshot(sim.readSnapshot(), this.tick, this.mode);
-		if (outcome === 'decided' && !alreadyBroadcasted) {
+		const last = decodeSnapshot(sim.readSnapshot(), this.tick, this.mode, this.timeLeftMs());
+		if ((outcome === 'decided' || outcome === 'timeout') && !alreadyBroadcasted) {
 			this.broadcast(last);
 			for (const event of diffEvents(this.previous, last.d, this.mode)) {
 				this.broadcast(event);
@@ -613,16 +710,20 @@ export class GameRoom {
 		}
 		const winner = outcome === 'abandon'
 			? null
-			: (winnerOverride ?? last.d.match.winner);
-		// ② §5-D: reason は score|goal|forfeit|abandon。forfeit は B-12（leave / 猶予満了）で使う
+			: outcome === 'timeout'
+				? this.timeoutWinner(last.d.match.score)
+				: (winnerOverride ?? last.d.match.winner);
+		// ② §5-D: reason は score|goal|forfeit|abandon|timeout。forfeit は B-12（leave / 猶予満了）で使う
 		const reason: MatchEndReason =
 			outcome === 'abandon'
 				? 'abandon'
 				: outcome === 'forfeit'
 					? 'forfeit'
-					: this.mode === 'fps'
-						? 'goal'
-						: 'score';
+					: outcome === 'timeout'
+						? 'timeout'
+						: this.mode === 'fps'
+							? 'goal'
+							: 'score';
 		// state は 'playing' のまま持ち越し（タイマー停止済み・入力反映も stopTimer で
 		// 次 tick が来ないので実質固まる）。await 完了後に 'finished' へ落とす。
 		void this.persistAndAnnounceEnd(
@@ -630,7 +731,16 @@ export class GameRoom {
 			reason,
 			[last.d.match.score[0], last.d.match.score[1]],
 			persistResult,
-		);
+		).catch((err: unknown) => this.failRoom(err));
+	}
+
+	/**
+	 * 時間切れの勝者（#269）。RSP は得点の多いチーム、同点は引き分け（null）。
+	 * FPS は勝ち筋がゴール到達だけなので、到達していなければ両者引き分け（null）
+	 */
+	private timeoutWinner(score: readonly [number, number]): number | null {
+		if (this.mode === 'fps' || score[0] === score[1]) return null;
+		return score[0] > score[1] ? 0 : 1;
 	}
 
 	/**
@@ -680,10 +790,13 @@ export class GameRoom {
 				);
 			}
 		}
+		// 手動破棄や他のルーム障害後に遅れて完了したDB処理で状態を戻さない
+		if (this.isClosed()) return;
 		this.broadcast({
 			t: 'event',
 			d: { kind: 'match_end', winner, reason, match_id: matchId },
 		});
+		if (this.isClosed()) return;
 		if (matchResult && this.opts.onMatchResult) {
 			try {
 				this.opts.onMatchResult(matchResult);
@@ -694,6 +807,7 @@ export class GameRoom {
 				);
 			}
 		}
+		if (this.isClosed()) return;
 		// ② §6-C 5. の 60 秒保持は match_end 発火時点から数える（永続化に時間が
 		// かかった場合の切れ端を避ける）。setState が stateEnteredAt を更新する
 		this.setState('finished', 'match_end');
@@ -706,22 +820,44 @@ export class GameRoom {
 
 	private setState(next: RoomState, reason: RoomLifecycleReason): void {
 		this.state = next;
-		this.stateEnteredAt = this.opts.now();
+		try {
+			this.stateEnteredAt = this.opts.now();
+		} catch (err) {
+			this.logRoomError(err, 'GameRoom: 状態遷移時刻の取得に失敗');
+		}
 		try {
 			this.opts.onLifecycle?.(next, reason);
 		} catch (err) {
-			this.opts.log.warn(
-				{ room: this.roomId, state: next, reason, err },
-				'GameRoom: onLifecycle の通知に失敗',
-			);
+			this.logRoomError(err, 'GameRoom: onLifecycle の通知に失敗');
 		}
 	}
 
 	private stopTimer(): void {
 		if (this.timer) {
-			clearInterval(this.timer);
+			const timer = this.timer;
 			this.timer = null;
+			clearInterval(timer);
 		}
+	}
+
+	/** 試合内の例外を当該ルームの終了に閉じ込める */
+	private failRoom(err: unknown): void {
+		if (this.state === 'closed') return;
+		this.logRoomError(err, 'GameRoom: ルーム処理に失敗');
+		this.close('error');
+	}
+
+	private logRoomError(err: unknown, message: string): void {
+		try {
+			if (this.opts.log.error) this.opts.log.error({ room: this.roomId, err }, message);
+			else this.opts.log.warn({ room: this.roomId, err }, message);
+		} catch {
+			// ロガー障害で後続のルーム後始末を止めない
+		}
+	}
+
+	private isClosed(): boolean {
+		return this.state === 'closed';
 	}
 
 	/** grace期限へ到達した席をAI確定し、mode別の終了条件を評価する */

@@ -10,7 +10,7 @@ services:
       frontend:
         condition: service_completed_successfully
     ports:
-      - "${HTTPS_PORT:-443}:443"
+      - "${HTTPS_PORT:-8443}:443"
     volumes:
       # frontend サービスが生成する Vite の成果物を静的配信する
       - ./app/frontend/dist:/usr/share/nginx/html:ro
@@ -44,7 +44,7 @@ services:
       HOST: 0.0.0.0
       BACKEND_PORT: 3000
       DATABASE_URL: file:/data/app.db
-      ALLOWED_ORIGIN: ${ALLOWED_ORIGIN:-https://localhost}
+      ALLOWED_ORIGIN: ${ALLOWED_ORIGIN:-https://localhost:8443}
     volumes:
       - app-data:/data
       # engine-build が生成した sim.wasm を渡す（app/backend/src/game/sim.ts が

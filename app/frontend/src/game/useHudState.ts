@@ -80,6 +80,11 @@ export function useHudState({
 				if (next.score[0] !== a || next.score[1] !== b) {
 					next = { ...next, score: [a, b] };
 				}
+				// 残り時間も snapshot が正本(#269)
+				const timeLeftMs = tail.payload.match.time_left_ms;
+				if (next.timeLeftMs !== timeLeftMs) {
+					next = { ...next, timeLeftMs };
+				}
 				return next;
 			});
 		}, HUD_POLL_MS);

@@ -114,7 +114,7 @@ model Match {
   winnerTeam    Int?
   /// FPS の勝者。RSP では null。
   winnerUserId  Int?
-  /// `score` / `goal` / `forfeit` / `abandon`（②§5-D と同じ値空間）。
+  /// `score` / `goal` / `forfeit` / `abandon` / `timeout`（②§5-D と同じ値空間）。
   endReason     String?
 
   winner  User?         @relation("MatchWinner", fields: [winnerUserId], references: [id], onDelete: SetNull)

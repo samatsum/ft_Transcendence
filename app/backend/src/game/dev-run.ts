@@ -33,8 +33,11 @@ const TAIL_SECONDS = 2;
 // record.mjs の実測値。移植がずれたらここで気づける
 // #226 で RSP の AI があいこのとき自陣（手を変えるゾーン）へ向かうようになり、
 // 試合の進み方が変わったため基準値を取り直した（旧: 809 / 1558 / [0,3]）。
-// seed 固定の再現性そのものは保たれていて、record.mjs と同じ値になる
-const EXPECT = { snapshots: 1030, finishedAtTick: 1999, winner: 1, score: [1, 3] as const };
+// seed 固定の再現性そのものは保たれていて、record.mjs と同じ値になる。
+// #270 でリスポーン時の自陣判定と AI の手替え（負け・あいこで自陣へ戻る、詰まったら
+// 避ける）を直し、AI が固まらなくなって決着が早まったため再度取り直した
+// （旧: 1030 / 1999 / [1,3]）
+const EXPECT = { snapshots: 528, finishedAtTick: 995, winner: 1, score: [1, 3] as const };
 
 /** record.mjs の driveExternalSeat と同一。ゆっくり旋回しながら前進し続ける */
 function pseudoInput(tick: number, yaw: number): { input: SeatInput; yaw: number } {

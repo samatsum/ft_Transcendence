@@ -252,7 +252,7 @@ Schema chapter and ER diagram are generated from this table.
 | startedAt / endedAt | DateTime / DateTime? | |
 | winnerTeam | Int? | RSP: 0/1. Null for FPS and forced terminations |
 | winnerUserId | Int? | FPS: the winner. Null for RSP |
-| endReason | String? | `score` / `goal` / `forfeit` / `abandon` (same namespace as ② §5-D) |
+| endReason | String? | `score` / `goal` / `forfeit` / `abandon` / `timeout` (same namespace as ② §5-D) |
 
 ### `MatchPlayer`
 

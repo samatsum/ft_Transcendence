@@ -17,7 +17,7 @@ import {
 	type WsErrorCode,
 } from '@ft/shared';
 
-import { authenticateRequest, isAllowedOrigin } from '../auth/session.js';
+import { authenticateRequest as defaultAuthenticateRequest, isAllowedOrigin, type AuthedUser } from '../auth/session.js';
 import {
 	defaultConnectionManager,
 	PreAuthMessageBuffer,
@@ -75,6 +75,7 @@ export interface LobbyRuntimeOptions {
 	clock?: LobbyClock;
 	randomInt?: (maxExclusive: number) => number;
 	connectionManager?: ConnectionManager;
+	authenticateRequest?: (req: FastifyRequest) => Promise<AuthedUser | null>;
 }
 
 interface ConnectionState {
@@ -290,7 +291,11 @@ export function registerLobbyWs(
 			runtime,
 			profileResolver,
 			connectionManager,
-		);
+			options.authenticateRequest ?? defaultAuthenticateRequest,
+		).catch((err: unknown) => {
+			app.log.error({ err }, 'B-08: WS 接続処理に失敗');
+			if (socket.readyState === OPEN) socket.close(WS_CLOSE.unauthenticated, 'connection failed');
+		});
 	});
 	app.addHook('onClose', async () => {
 		runtime.destroy();
@@ -306,6 +311,7 @@ async function handleConnection(
 	runtime: LobbyRuntime,
 	profileResolver: UserProfileResolver,
 	connectionManager: ConnectionManager,
+	authenticator: (req: FastifyRequest) => Promise<AuthedUser | null>,
 ): Promise<void> {
 	if (!isAllowedOrigin(req)) {
 		socket.close(WS_CLOSE.notAllowed, 'origin not allowed');
@@ -354,7 +360,7 @@ async function handleConnection(
 		);
 	});
 
-	const user = await authenticateRequest(req);
+	const user = await authenticator(req);
 	if (closed || socket.readyState !== OPEN) return;
 	if (!user) {
 		socket.close(WS_CLOSE.unauthenticated, 'unauthenticated');

@@ -56,6 +56,10 @@ export async function createRoom(options: CreateRoomOptions): Promise<GameRoom> 
 	}
 	releaseOwnReservation();
 	rooms.set(roomId, room);
+	room.subscribeClosed(() => {
+		if (rooms.get(roomId) === room) rooms.delete(roomId);
+		stopPumpIfIdle();
+	});
 	ensurePump();
 	return room;
 }
@@ -77,6 +81,7 @@ export async function createRoomFromRules(options: {
 	persistMatch?: RoomOptions['persistMatch'];
 	onMatchResult?: RoomOptions['onMatchResult'];
 	onLifecycle?: RoomOptions['onLifecycle'];
+	timeLimitMs?: RoomOptions['timeLimitMs'];
 	now?: RoomOptions['now'];
 	log?: RoomOptions['log'];
 	reservationToken?: string;
@@ -102,6 +107,7 @@ export async function createRoomFromRules(options: {
 		persistMatch: options.persistMatch,
 		onMatchResult: options.onMatchResult,
 		onLifecycle: options.onLifecycle,
+		timeLimitMs: options.timeLimitMs,
 		now: options.now,
 		log: options.log,
 		reservationToken: options.reservationToken,

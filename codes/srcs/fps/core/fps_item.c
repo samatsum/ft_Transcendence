@@ -57,11 +57,16 @@ static void
 
 /* ************************************************************************** */
 // ゴール到達で試合を終了し、勝者をその戦闘員に確定する
-// （② §5-C: FPS の match.winner は combatant_id）。クリア時間は従来どおり記録する
+// （② §5-C: FPS の match.winner は combatant_id）。クリア時間は従来どおり記録する。
+// 収集が関門のマップでは未収集のままゴールに立っても終了しない（#261）
 static void
 	reach_goal(t_game* game, t_enemy* combatant)
 {
 	if (game->cleared) {
+		return ;
+	}
+	if (game->world.to_collect > 0
+		&& game->world.collected < game->world.to_collect) {
 		return ;
 	}
 	game->fps.clear_time_ms = get_current_time_ms() - game->start_time_ms;

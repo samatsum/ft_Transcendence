@@ -24,7 +24,7 @@ import {
 	type WsErrorCode,
 } from '@ft/shared';
 
-import { authenticateRequest, isAllowedOrigin } from '../auth/session.js';
+import { authenticateRequest as defaultAuthenticateRequest, isAllowedOrigin, type AuthedUser } from '../auth/session.js';
 import {
 	defaultConnectionManager,
 	PreAuthMessageBuffer,
@@ -85,6 +85,8 @@ interface Connection {
 	userId: number;
 	slot: number | null;
 	joined: boolean;
+	/** join中にこの接続向けへ発生したroom配信。初期フレーム送信後に順序どおり流す */
+	joinQueue: { message: GameServerMessage; serialized: string }[] | null;
 	/** 同一ユーザーの新接続に置換された旧接続か。close 時に席を解放しない */
 	replaced: boolean;
 	/** ② §5-A: 最後に受理した seq。これ以下は黙って破棄 */
@@ -102,12 +104,17 @@ interface Connection {
 const connectionsByRoom = new Map<string, Set<Connection>>();
 /** roomId → 購読解除関数。ルームにつき1回だけ購読する */
 const unsubscribeByRoom = new Map<string, () => void>();
+/** roomId → closed lifecycle購読解除関数 */
+const unsubscribeClosedByRoom = new Map<string, () => void>();
+/** roomId → 試合終了後close用timer */
+const finishedCloseTimersByRoom = new Map<string, Set<NodeJS.Timeout>>();
 
 /** Fastifyへgame gatewayを登録し、共有connection managerを注入する */
 export function registerGameWs(
 	app: FastifyInstance,
 	connectionManager: ConnectionManager = defaultConnectionManager,
 	releaseMatch: (userId: number, roomId: string) => boolean = () => false,
+	authenticator: (req: FastifyRequest) => Promise<AuthedUser | null> = defaultAuthenticateRequest,
 ): void {
 	// ③§1-C の GET 120/分 の枠から外す。アップグレードは REST の取得ではないのに
 	// 同じ枠を食うため、枠が尽きると**切断したプレイヤーの再接続が 429 で弾かれ**、
@@ -115,7 +122,14 @@ export function registerGameWs(
 	// （`WS_RATE_LIMIT.gameInputPerSecond`）
 	const routeOptions = { websocket: true, config: { rateLimit: false } } as const;
 	app.get('/ws/game/:roomId', routeOptions, (socket: Socket, req: FastifyRequest) => {
-		void handleConnection(socket, req, app, connectionManager, releaseMatch);
+		void handleConnection(socket, req, app, connectionManager, releaseMatch, authenticator).catch((err: unknown) => {
+			app.log.error({ err }, 'B-11: WS 接続処理に失敗');
+			try {
+				if (socket.readyState === OPEN) socket.close(WS_CLOSE.unauthenticated, 'connection failed');
+			} catch (closeErr) {
+				app.log.error({ err: closeErr }, 'B-11: WS 接続失敗後の切断に失敗');
+			}
+		});
 	});
 }
 
@@ -126,6 +140,7 @@ async function handleConnection(
 	app: FastifyInstance,
 	connectionManager: ConnectionManager,
 	releaseMatch: (userId: number, roomId: string) => boolean,
+	authenticator: (req: FastifyRequest) => Promise<AuthedUser | null>,
 ): Promise<void> {
 	// ② §1: Origin 検査（CSRF-over-WS 対策）。アップグレード時に見る。
 	// ※ ② はこの拒否に close コードを割り当てていないため 4003 を使う（判断）
@@ -172,7 +187,7 @@ async function handleConnection(
 	});
 
 	// ② §1: Cookie を検証。未認証は close 4000。実装は B-04/B-05（いまはスタブ）
-	const user = await authenticateRequest(req);
+	const user = await authenticator(req);
 	if (closed || socket.readyState !== OPEN) return;
 	if (!user) {
 		socket.close(WS_CLOSE.unauthenticated, 'unauthenticated');
@@ -192,6 +207,7 @@ async function handleConnection(
 		userId: user.userId,
 		slot: null,
 		joined: false,
+		joinQueue: null,
 		replaced: false,
 		lastSeq: -1,
 		consecutiveViolations: 0,
@@ -205,7 +221,7 @@ async function handleConnection(
 	);
 
 	// ② §1: 同一ユーザーの多重接続は旧接続を close 4004 で置換
-	const peers = ensureRoomConnections(roomId, room);
+	const peers = ensureRoomConnections(roomId, room, app, releaseMatch);
 	for (const other of peers) {
 		if (other.userId === conn.userId) {
 			other.replaced = true;
@@ -225,7 +241,12 @@ async function handleConnection(
 }
 
 /** ルームの購読はルームにつき1回。接続ごとに購読すると stringify が接続数ぶん走る */
-function ensureRoomConnections(roomId: string, room: GameRoom): Set<Connection> {
+function ensureRoomConnections(
+	roomId: string,
+	room: GameRoom,
+	app: FastifyInstance,
+	releaseMatch: (userId: number, roomId: string) => boolean,
+): Set<Connection> {
 	let peers = connectionsByRoom.get(roomId);
 	if (peers) return peers;
 	peers = new Set<Connection>();
@@ -233,50 +254,94 @@ function ensureRoomConnections(roomId: string, room: GameRoom): Set<Connection> 
 	const unsubscribe = room.subscribe((message, serialized) => {
 		for (const c of peers) {
 			if (!c.joined || c.socket.readyState !== OPEN) continue;
-
-			// ② §8 バックプレッシャ: 回線が詰まっている接続を切らずに守る。
-			// **snapshot は落としてよい**（次が全量なので自己回復する）が、
-			// event は落とすと二度と届かないので必ず送る
-			const delivery = gameMessageDelivery(
-				message,
-				c.socket.bufferedAmount,
-				c.terminalSnapshotPending,
-			);
-			if (delivery === 'close') {
-				c.socket.close(WS_CLOSE.rateLimited, 'send buffer overflow');
+			if (c.joinQueue) {
+				c.joinQueue.push({ message, serialized });
 				continue;
 			}
-			if (delivery === 'skip') continue;
 
-			c.socket.send(serialized);
-			if (message.t === 'snapshot' && message.d.match.state === 'finished') {
-				c.terminalSnapshotPending = true;
-			}
-			if (message.t === 'event' && message.d.kind === 'match_end') {
-				c.terminalSnapshotPending = false;
-			}
+			deliverRoomMessage(c, message, serialized);
 		}
 
 		// ② §6-A: finished は結果画面のため 60 秒だけ接続を維持し、満了で close 1000。
 		// ルーム側の pump も同じタイミングで closed へ遷移する
 		if (message.t === 'event' && message.d.kind === 'match_end') {
+			const timers = finishedCloseTimersByRoom.get(roomId) ?? new Set<NodeJS.Timeout>();
+			finishedCloseTimersByRoom.set(roomId, timers);
 			const timer = setTimeout(() => {
+				timers.delete(timer);
+				if (timers.size === 0) finishedCloseTimersByRoom.delete(roomId);
 				for (const c of peers) {
 					if (c.socket.readyState === OPEN) c.socket.close(WS_CLOSE.normal, 'match finished');
 				}
 			}, FINISHED_HOLD_MS);
+			timers.add(timer);
 			timer.unref();
 		}
 	});
 	unsubscribeByRoom.set(roomId, unsubscribe);
+	const unsubscribeClosed = room.subscribeClosed((reason) => {
+		try {
+			if (reason === 'error' || reason === 'finished_hold') {
+				const code = reason === 'error' ? 1011 : WS_CLOSE.normal;
+				const closeReason = reason === 'error' ? 'room failed' : 'match finished';
+				for (const conn of peers) {
+					try {
+						if (conn.socket.readyState === OPEN) conn.socket.close(code, closeReason);
+					} catch (err) {
+						app.log.error({ room: roomId, user: conn.userId, err }, 'B-11: 失敗ルームのWS切断に失敗');
+					}
+					if (reason === 'error') {
+						try {
+							releaseMatch(conn.userId, roomId);
+						} catch (err) {
+							app.log.error({ room: roomId, user: conn.userId, err }, 'B-11: lobby context解放に失敗');
+						}
+					}
+				}
+			}
+		} finally {
+			releaseRoomConnections(roomId);
+		}
+	});
+	unsubscribeClosedByRoom.set(roomId, unsubscribeClosed);
 	return peers;
 }
 
 /** 接続が空になったroomの購読と接続索引を解放する */
 function releaseRoomConnections(roomId: string): void {
+	for (const timer of finishedCloseTimersByRoom.get(roomId) ?? []) clearTimeout(timer);
+	finishedCloseTimersByRoom.delete(roomId);
 	unsubscribeByRoom.get(roomId)?.();
 	unsubscribeByRoom.delete(roomId);
+	unsubscribeClosedByRoom.get(roomId)?.();
+	unsubscribeClosedByRoom.delete(roomId);
 	connectionsByRoom.delete(roomId);
+}
+
+/** room配信とjoin中に保留した配信へ同じバックプレッシャ処理を適用する */
+function deliverRoomMessage(
+	conn: Connection,
+	message: GameServerMessage,
+	serialized: string,
+): void {
+	const delivery = gameMessageDelivery(
+		message,
+		conn.socket.bufferedAmount,
+		conn.terminalSnapshotPending,
+	);
+	if (delivery === 'close') {
+		conn.socket.close(WS_CLOSE.rateLimited, 'send buffer overflow');
+		return;
+	}
+	if (delivery === 'skip') return;
+
+	conn.socket.send(serialized);
+	if (message.t === 'snapshot' && message.d.match.state === 'finished') {
+		conn.terminalSnapshotPending = true;
+	}
+	if (message.t === 'event' && message.d.kind === 'match_end') {
+		conn.terminalSnapshotPending = false;
+	}
 }
 
 /**
@@ -372,17 +437,22 @@ function handleJoin(conn: Connection, room: GameRoom, app: FastifyInstance): voi
 		return;
 	}
 
+	// room.join() は seat status や countdown を同期配信するため、先に
+	// 接続を配信対象にしてその間のメッセージだけ保留する
+	conn.slot = slot;
+	conn.joined = true;
+	conn.joinQueue = [];
 	let resume: boolean;
 	try {
 		({ resume } = room.join(slot));
 	} catch (err) {
 		// 定員外 slot / 受け付けない状態（finished 等）。ルーム層が弾いた
+		conn.joined = false;
+		conn.joinQueue = null;
 		app.log.warn({ room: room.roomId, slot, err }, 'B-11: join を拒否');
 		conn.socket.close(WS_CLOSE.notAllowed, 'join rejected');
 		return;
 	}
-	conn.slot = slot;
-	conn.joined = true;
 	app.log.info({ room: room.roomId, user: conn.userId, slot, resume }, 'B-11: join');
 
 	// ② §5-B: welcome は**接続ごとに内容が違う**ので一斉配信できない
@@ -413,6 +483,12 @@ function handleJoin(conn: Connection, room: GameRoom, app: FastifyInstance): voi
 	if (resume) {
 		const snapshot = room.getResumeSnapshot();
 		if (snapshot) conn.socket.send(snapshot.serialized);
+	}
+	const queued = conn.joinQueue ?? [];
+	conn.joinQueue = null;
+	for (const { message, serialized } of queued) {
+		if (conn.socket.readyState !== OPEN) break;
+		deliverRoomMessage(conn, message, serialized);
 	}
 }
 

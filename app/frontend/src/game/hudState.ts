@@ -1,4 +1,4 @@
-import type { GameEvent, PlayerStatusMessage, SnapshotPayload } from '@ft/shared';
+import type { GameEvent, MatchEndReason, PlayerStatusMessage, SnapshotPayload } from '@ft/shared';
 
 // HUD 派生 state のリデューサ(pure)。vitest から直接検査するため React 非依存。
 // useHudState.ts が Event/setInterval で駆動して React state に反映する
@@ -17,7 +17,7 @@ export interface SeatInfo {
 
 export interface MatchEndState {
 	winner: number | null;
-	reason: 'score' | 'goal' | 'forfeit' | 'abandon';
+	reason: MatchEndReason;
 	matchId: number | null;
 	/** snapshot 最終値(名前解決や勝敗表示に使う) */
 	finalScore: [number, number];
@@ -50,6 +50,8 @@ export interface HudState {
 	handFlash: HandFlashState | null;
 	/** 直近のスコア(スコアバー表示用。snapshot からもらう) */
 	score: [number, number];
+	/** 試合の残り時間(ms。#269)。snapshot 未着・制限時間なしは null */
+	timeLeftMs: number | null;
 }
 
 export function createInitialHudState(): HudState {
@@ -61,6 +63,7 @@ export function createInitialHudState(): HudState {
 		pointFlash: null,
 		handFlash: null,
 		score: [0, 0],
+		timeLeftMs: null,
 	};
 }
 

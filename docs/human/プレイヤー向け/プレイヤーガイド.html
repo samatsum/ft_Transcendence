@@ -183,6 +183,10 @@
 						（<code>maps/fps_map/fps_duel.cub</code> が例）。
 						<code>G</code> を置かないマップは、収集して扉を開けるところまでが目的になります。
 					</p>
+					<p>
+						オンライン対戦には <strong>3 分の制限時間</strong>があり、残り時間は画面上部に表示されます。
+						時間内に誰もゴールしなければ<strong>引き分け</strong>です（1 人プレイには制限時間はありません）。
+					</p>
 				</article>
 				<article class="card">
 					<p class="card-label">Patrol</p>
@@ -398,6 +402,11 @@ PH 3                                        # 席(プレイヤー)のHP (任意,
 						画面上部には常に <code>Red x/10  VS  Blue y/10</code> が表示されます。
 						※この先取点はオンライン対戦では試合設定で変更できます（1 人プレイは常に 10）。
 					</p>
+					<p>
+						オンライン対戦には <strong>3 分の制限時間</strong>があり、残り時間はスコアの下に表示されます。
+						時間切れの時点で<strong>得点の多いチームの勝ち</strong>、同点なら<strong>引き分け</strong>です
+						（1 人プレイには制限時間はありません）。
+					</p>
 				</article>
 				<article class="card">
 					<p class="card-label">Hand Change</p>
@@ -411,7 +420,7 @@ PH 3                                        # 席(プレイヤー)のHP (任意,
 					<p class="card-label">NPC AI</p>
 					<h3>NPC の AI</h3>
 					<p>
-						最寄りの異チーム戦闘員を見て、<strong>勝てる手なら追跡・負ける手なら逃走・あいこや相手不在なら徘徊</strong>します。
+						最寄りの異チーム戦闘員を見て、<strong>勝てる手なら追跡・負ける手やあいこなら自陣へ戻って手を変え・相手不在なら徘徊</strong>します（すでに自陣にいれば一度外へ出て入り直します）。
 						NPC の移動速度はプレイヤーが追える／逃げられるよう抑えられています。
 					</p>
 				</article>
