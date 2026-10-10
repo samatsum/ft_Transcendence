@@ -6,271 +6,540 @@ tvaroux.*
 <img align="center" src="docs/screenshot.png" alt="Screenshot of the game" />
 
 A browser-based online multiplayer game platform, built by evolving a 42 `cub3D` engine (C,
-raycasting, MiniLibX) directly into a real-time web application: the same C game logic runs
-natively, compiled to WASM in the browser for rendering, and compiled to WASM on the server as the
-sole authority over the match. Two game modes ship on top of it — an RSP ("rock-paper-scissors
-tag") team battle and an FPS collect-and-race mode.
+raycasting, MiniLibX) directly into a real-time web application. **The same C source is compiled
+three ways** — natively, to `render.wasm` for drawing in the browser, and to `sim.wasm` which runs
+on the server as the sole authority over the match. There is no duplicated game logic and no
+win/loss determination on the client.
 
-## Current status
+Two game modes ship on top of it: **RSP**, a 4-player rock-paper-scissors team battle, and **FPS**,
+a 1v1 collect-and-race mode.
 
-Tracked live on GitHub, not here — this section used to be a manually-maintained status table, which
-is exactly the kind of fact that goes stale (see [`docs/drafts/141-docs-restructure.md`](./docs/drafts/141-docs-restructure.md)
-for why). Check:
+---
 
-- [Issues](https://github.com/samatsum/ft_Transcendence/issues) and the
-  [Project board](https://github.com/users/samatsum/projects/1/views/4) for what's open/closed and in progress
-- [`docs/ai/backlog.md`](./docs/ai/backlog.md) for acceptance criteria, dependencies, and the
-  decision log (this file doesn't restate current % done, only *why* something was built the way it was)
+## At a glance
 
-Current team roster and roles: [`docs/human/はじめに/チーム体制.html`](./docs/human/はじめに/チーム体制.html)
-(Japanese).
+| Topic | Section |
+|---|---|
+| Team members and roles | [2. Team and roles](#2-team-and-roles) |
+| Project management approach | [3. How we worked](#3-how-we-worked) |
+| Technologies used, with justifications | [5. Technologies and why](#5-technologies-and-why) |
+| Database schema | [6. Database schema](#6-database-schema) |
+| Modules and point calculation | [7. Modules and point calculation](#7-modules-and-point-calculation) |
+| Features and who implemented them | [8. Features and who implemented them](#8-features-and-who-implemented-them) |
+| Individual contributions | [9. Individual contributions](#9-individual-contributions) |
+| Single-command deployment | [10. Running it](#10-running-it) |
+| Password hashing / auth security | [5. Technologies and why](#5-technologies-and-why) → Auth row |
+| Form validation (frontend + backend) | [5. Technologies and why](#5-technologies-and-why) → Shared contracts row |
 
-## Team
+**Declared module total: 14 points (mandatory) + 3 points (bonus).** See
+[section 7](#7-modules-and-point-calculation) for the breakdown and the justification of each.
 
-ft_transcendence is a 4–5-person group project per the subject (Chapter II). **As of 2026-08-23 the
-5 submitted members** (up from a single active contributor through 2026-08-09) meet the subject's
-person-count requirement (see
-[`docs/human/はじめに/チーム体制.html`](./docs/human/はじめに/チーム体制.html) for the full writeup,
-including 1 additional supporter not counted here — see below).
+---
 
-| Required role (subject II.1.1) | Current holder | Notes |
+## 1. What this project is
+
+### RSP mode — rock-paper-scissors tag (4 players, 2v2)
+
+Four players are split into a red team and a blue team in a maze. Everyone holds rock, paper or
+scissors, visible on screen. **Touching an opponent resolves the hand match automatically** — there
+is no attack button. Winning scores a point and sends the loser back to their spawn; **you can only
+change your hand by newly stepping onto your own team's spawn tile.** First team to the target
+score wins.
+
+### FPS mode — collect and race (1v1)
+
+Ten collectibles are scattered through the maze. **The counter is shared between both players**, so
+the pair must collect all ten before the gate door opens — then it becomes a race to the goal.
+Pistols stun the opponent briefly, and map-placed hazards roam independently.
+
+---
+
+## 2. Team and roles
+
+ft_transcendence is a 4–5-person group project per the subject (Chapter II). As of 2026-08-23 the
+**5 submitted members** below meet the person-count requirement.
+
+| Role (subject II.1.1) | Member | GitHub |
 |---|---|---|
-| Technical Lead / Architect | **ttsubo** (GitHub: `cacapon`) | Designed and built the engine (`codes/`, `web/`); handed the TL role here 2026-08-23 |
-| Project Manager / Scrum Master | **torinoue** (GitHub: `tototec1234`) | Rejoined 2026-08-28 under a new GitHub account after the earlier team dissolution |
-| Product Owner | **kmitsuki** (GitHub: `mitsukio-o`) | |
-| Developer | **kkurose** (GitHub: `kkur0z`), **tvaroux** (GitHub: `tomtomvx`) | |
+| Project Manager / Scrum Master | **torinoue** | `tototec1234` |
+| Technical Lead / Architect | **ttsubo** | `cacapon` |
+| Product Owner | **kmitsuki** | `mitsukio-o` |
+| Developer | **kkurose** | `kkur0z` |
+| Developer | **tvaroux** | `tomtomvx` |
 
-The 5 people above are the submitted team members (the subject caps submission at 5). One more person
-supports the project without being part of that submitted group: **samatsum** (GitHub: `samatsum`,
-stepped back from core membership 2026-08-23; previously sole TL/PM/PO/Developer through 2026-08-09).
-They are not counted toward the person-count requirement above, and do not appear in the project's
-opening declaration for that reason.
+### About the commit distribution
 
-Historical contributors (per git history, no longer active): **hminemur** (frontend game-screen
-planning) and **mamiyaza** (PO / frontend foundation under the original 4-person team; confirmed by
-DM on 2026-08-23 that they had left). Their planned ownership is recorded in
-[`docs/ai/architecture.md`](./docs/ai/architecture.md) §6 as a historical record, not a current
-assignment.
+**`samatsum` is not one of the five submitted members.** They were the sole contributor from the
+project's start through 2026-08-09, holding every role at once, and stepped back from core
+membership on 2026-08-23. Their commits from that single-contributor period are why one non-member
+account holds the largest share of the history. The five members above have worked on the project
+since the team formed.
 
-## Architecture
+| Author | Commits (excluding merges) |
+|---|---|
+| samatsum *(not a submitted member)* | 198 |
+| ttsubo / `cacapon` | 68 |
+| kmitsuki / `mitsukio-o` | 18 |
+| torinoue / `tototec1234` | 16 |
+| kkurose / `kkur0z` | 15 |
+| tvaroux / `tomtomvx` | 2 |
+
+317 non-merge commits across 82 merged pull requests.
+
+Historical contributors no longer active: **hminemur** (frontend game-screen planning) and
+**mamiyaza** (PO / frontend foundation under the original 4-person team, left 2026-08-23).
+
+---
+
+## 3. How we worked
+
+### Branch and review flow
+
+`origin/main` is the single source of truth. Nobody commits to it directly.
+
+```
+branch from origin/main  →  push  →  open PR  →  CI green  →  review  →  squash-merge on GitHub
+```
+
+- **Branch names**: `<type>/<issue-no>-<slug>` (`feat/`, `fix/`, `docs/`, `chore/`, `ci/`).
+- **Commits**: Conventional Commits with the GitHub issue number as scope —
+  `fix(263): 逆プロキシ越しでレート制限の枠が全員で共有される問題を直す`. The body explains
+  *why*, and ends with a `検証:` section listing the commands actually run and their results.
+- **PRs are never stacked.** Every branch comes off `origin/main`, because squash-merging a lower
+  PR would drop the upper PR's work.
+- **Review**: at least one human reviewer, plus `@coderabbitai review` as an automated pass.
+
+### Issue tracking
+
+Work is tracked as GitHub Issues on a single Project board. Each issue carries a lane label that
+says which part of the system it belongs to and who maintains it:
+
+| Label | Scope |
+|---|---|
+| `lane:engine` | The C engine (`codes/`, `web/`) — compiled to all three targets |
+| `lane:backend` | Fastify, auth, REST, WebSocket, GameRoom, DB |
+| `lane:infra` | Docker, nginx, TLS, CI |
+| `lane:frontend` | Auth / layout / lobby screens |
+| `lane:gameview` | The game screen (Canvas + `render.wasm`), HUD, transitions |
+
+Lanes are split by **what the code is and who maintains it**, not by where it runs — `render.wasm`
+runs in the browser but is `lane:engine`, because the same `raycast.c` compiles to both native and
+wasm.
+
+### Documentation discipline
+
+Design decisions live in `docs/` and are written *before* the code where the contract matters
+(WebSocket protocol, REST API, DB schema). A change to a contract requires updating its document in
+the same PR. Documentation is kept in two parallel sets: `docs/ai/` (English Markdown, detailed
+design) and `docs/human/` (Japanese HTML, onboarding and conceptual explanations).
+
+---
+
+## 4. Architecture
+
+### Runtime shape
+
+```mermaid
+flowchart TB
+    subgraph browser["Player's browser"]
+        SPA["React 19 SPA<br/>(app/frontend)"]
+        RW["render.wasm<br/>draws pixels only"]
+        SPA -->|"interpolated snapshot<br/>written into wasm heap"| RW
+        RW -->|"framebuffer"| CV["HTML canvas"]
+    end
+
+    NG["nginx 1.30<br/>TLS termination · static files · reverse proxy"]
+
+    subgraph server["Node.js 24 server (app/backend)"]
+        BE["Fastify 5<br/>REST · auth · lobby"]
+        GR["GameRoom<br/>30 Hz tick loop"]
+        SIM["sim.wasm<br/>sole authority over the match"]
+        BE --> GR
+        GR -->|"game_step(1/30)"| SIM
+        SIM -->|"game_snapshot()<br/>flat f64 array"| GR
+    end
+
+    DB[("SQLite<br/>via Prisma 7")]
+
+    browser -->|"HTTPS"| NG
+    NG -->|"/api/*"| BE
+    NG -->|"/ws/game · /ws/lobby"| GR
+    GR -->|"snapshot @ 15 Hz"| browser
+    BE --> DB
+```
+
+### The core idea: one C source, three targets
 
 ```mermaid
 flowchart LR
-    subgraph client["Player's browser"]
-        FE["React SPA<br/>(app/frontend)"]
-        RW["render.wasm<br/>(C engine → WASM)"]
-        FE -->|"loads snapshots into"| RW
-    end
-    subgraph server["Node.js server (app/backend)"]
-        BE["Fastify<br/>REST + WS gateway"]
-        GR["GameRoom<br/>drives sim.wasm @ 30Hz"]
-        BE --> GR
-    end
-    DB[("SQLite<br/>via Prisma")]
-
-    client -- "REST: auth, profile, maps" --> BE
-    client -- "WebSocket: input →<br/>← snapshot (15Hz)" --> GR
-    BE -.->|"schema only, not yet connected (B-03 done, B-04 connects)"| DB
+    SRC["codes/srcs/<br/>73 .c files · 9,234 lines<br/>movement · collision · RSP rules · items · AI"]
+    SRC -->|"gcc + MiniLibX"| N["./cub3D<br/>the original single-player game"]
+    SRC -->|"emcc -DWEB_BUILD"| W["render.wasm<br/>drawing only"]
+    SRC -->|"emcc -DSIM_BUILD"| S["sim.wasm<br/>match simulation only"]
 ```
 
-The server is the sole authority: `sim.wasm` computes the real match state at 30Hz, and the
-browser only renders whatever snapshot it last received — there is no win/loss-determination code
-on the client. See [`docs/human/説明用/サーバ権威モデル.html`](./docs/human/説明用/サーバ権威モデル.html)
-(Japanese, with diagrams) or [`docs/ai/ws-protocol.md`](./docs/ai/ws-protocol.md) (English,
-protocol-level) for the full explanation.
+The three targets share the same `common/` sources. What differs is the platform implementation,
+which source files are linked, and which functions are exported:
 
-## Quickstart — what you can actually run today
+| | `./cub3D` | `render.wasm` | `sim.wasm` |
+|---|---|---|---|
+| Platform layer | `platform/native` (MiniLibX/X11) | `platform/web` | `platform/headless` |
+| Rendering sources | linked | linked | **16 files excluded** |
+| Exported API | — | `_web_render_frame`, `_web_apply_snapshot`, … | `_game_step`, `_game_snapshot`, … |
 
-### A. Engine, single player, in the browser
+**`sim.wasm` physically cannot draw, and `render.wasm` physically cannot advance the match.** This
+is enforced by the build (`SIM_RENDER_EXCLUDES` in the `Makefile` and the two `EXPORTED_FUNCTIONS`
+lists), not by convention.
 
-No local Emscripten install needed — it's built inside Docker.
+### Why the server is the sole authority
+
+If each client decided outcomes, two players would disagree about the same contact — and a client
+that decides its own outcomes can be modified to always win. Instead:
+
+1. The client sends **only input** (`{seq, yaw, mv, act}`) at 30 Hz.
+2. The server feeds all seats into `sim.wasm` and advances the world 1/30 s per tick.
+3. The server emits a **flat array of numbers** — positions, facing, hands, alive flags — and
+   broadcasts it at 15 Hz. No pixels, ~0.5 KB per snapshot.
+4. The browser interpolates between the two snapshots bracketing `now - 100 ms` and hands the
+   result to `render.wasm`, which produces the frame.
+
+The single exception is the player's own view angle, which the client integrates locally so that
+looking around is not delayed by the round trip.
+
+Two internal seams keep the C side portable: `includes/platform/platform.h` (10 functions, three
+implementations) and `includes/core/mode_ops.h` (8 function pointers, one per game mode). Common
+code calls through these tables and never branches on "which platform" or "which mode".
+
+Full rationale: [`docs/ai/architecture.md`](./docs/ai/architecture.md).
+Protocol: [`docs/ai/ws-protocol.md`](./docs/ai/ws-protocol.md).
+
+---
+
+## 5. Technologies and why
+
+| Layer | Choice | Why this one |
+|---|---|---|
+| Game engine | C + MiniLibX, Emscripten → WebAssembly | Reuses the finished cub3D raycaster for both rendering and server simulation. Zero duplicated game logic — the reason the whole architecture works |
+| Frontend | React 19 + Vite + TypeScript | No SSR needed, so an SPA is sufficient. Satisfies the framework requirement on the frontend side |
+| Styling | Tailwind CSS v4 | Satisfies the CSS-framework requirement. Design tokens are declared in `app/frontend/src/index.css`, and **raw colour literals are forbidden by an ESLint rule** so the token system cannot silently rot |
+| Backend | Fastify 5 + TypeScript | Runs `sim.wasm` directly under Node. Official WebSocket plugin. Lighter than Nest for this scope |
+| Realtime | Raw WebSocket (`@fastify/websocket`) | Socket.IO's reconnection and room abstractions do not match our requirements. One JSON text frame = one message, with a two-stage envelope so an unknown message type is distinguishable from a malformed one |
+| Shared contracts | zod schemas in `app/shared/` | **One schema validates both sides.** The frontend and backend import the same `emailSchema` / `passwordSchema` / `displayNameSchema`, so client-side and server-side validation cannot drift. The backend calls `.parse()` on every request body |
+| Database | SQLite + Prisma 7 (`@prisma/adapter-better-sqlite3`) | Everything runs on one host, so a file-based database is enough. Satisfies the ORM requirement. Prisma's parameterised queries remove the SQL-injection surface |
+| Auth | argon2id + opaque httpOnly session cookie | Passwords are hashed with argon2id (19 MiB memory, 2 iterations, parallelism 1 — the OWASP line); argon2 generates and embeds a per-password salt. **The raw session token is never stored** — only its SHA-256. A stateless JWT would give up server-side revocation for no benefit here. Because it is a cookie, the WebSocket upgrade authenticates with no extra work |
+| Infrastructure | Docker Compose + nginx 1.30 | TLS termination and same-origin routing for `/api` and `/ws`. Pre-compressed `.tex.gz` assets served via `gzip_static` |
+
+Two auth details worth calling out:
+
+- **Timing-attack mitigation.** When the email does not exist, the login path still runs one
+  `argon2.verify` against a fixed dummy hash, so response time cannot reveal whether an address is
+  registered (`DUMMY_PASSWORD_HASH` in `app/backend/src/auth/password.ts`).
+- **Origin checking.** Both REST and the WebSocket upgrade go through the same `isAllowedOrigin`,
+  which is an exact string match against `ALLOWED_ORIGIN`.
+
+---
+
+## 6. Database schema
+
+```mermaid
+erDiagram
+    User ||--o{ Session : "has"
+    User ||--o{ MatchPlayer : "plays as"
+    User ||--o{ Friendship : "requests"
+    User ||--o{ Friendship : "receives"
+    User ||--o{ Match : "wins"
+    Match ||--o{ MatchPlayer : "has seats"
+
+    User {
+        Int id PK
+        String email UK "lowercased on write"
+        String passwordHash "argon2id"
+        String displayName UK "3-20 chars, [A-Za-z0-9_-]"
+        String displayNameLower UK "case-insensitive uniqueness"
+        String avatarPath "nullable"
+        DateTime createdAt
+        DateTime lastSeenAt "nullable"
+    }
+    Session {
+        Int id PK
+        Int userId FK
+        String tokenHash UK "SHA-256 of the cookie value"
+        DateTime createdAt
+        DateTime expiresAt "sliding, 7 days"
+    }
+    Friendship {
+        Int id PK
+        Int requesterId FK
+        Int addresseeId FK
+        String status "pending / accepted"
+        DateTime createdAt
+    }
+    Match {
+        Int id PK
+        String mode "rsp / fps"
+        String mapId
+        String settingsJson
+        DateTime startedAt
+        DateTime endedAt "nullable"
+        Int winnerTeam "nullable, RSP only"
+        Int winnerUserId FK "nullable, FPS only"
+        String endReason "score/goal/forfeit/abandon/timeout"
+    }
+    MatchPlayer {
+        Int id PK
+        Int matchId FK
+        Int userId FK "null for AI seats"
+        Boolean isAi
+        Int team
+        Int slot
+        Int pointsScored
+        String result "win/lose/draw/abandon"
+    }
+```
+
+Source of truth: [`app/backend/prisma/schema.prisma`](./app/backend/prisma/schema.prisma).
+
+### Notes on the design
+
+- **`Session` stores a hash, not the token.** The cookie carries 32 random bytes; the database
+  holds only its SHA-256. A database leak does not yield usable sessions.
+- **`displayNameLower` is an extra column on purpose.** The requirement is case-insensitive
+  uniqueness of display names, but SQLite via Prisma cannot declare an expression index or
+  `COLLATE NOCASE` from the schema. Storing the lowercased value in its own `@unique` column
+  enforces it at the database level instead of in application code.
+- **`Friendship`, `Match` and `MatchPlayer` are intentionally unused.** The modules that would
+  have consumed them (friends list, match persistence, stats) were dropped in the 2026-08-08
+  revision. They were still created because adding them later would mean a second migration, match
+  persistence is the first candidate to restore, and a complete schema is clearer to explain. The
+  reasoning is recorded in a comment at the top of `schema.prisma`. **They are not leftovers.**
+- **`MatchPlayer.userId` being null does not mean "AI seat".** Deleting a user sets it null via
+  `onDelete: SetNull`. Use `isAi`.
+
+---
+
+## 7. Modules and point calculation
+
+### Mandatory — 14 points
+
+| # | Module | Type | Pts | Where it lives | Why we chose it |
+|---|---|---|---|---|---|
+| 1 | Fully web-based game implementation (RSP) | Gaming Major | 2 | [`codes/`](./codes), [`GameView.tsx`](./app/frontend/src/pages/GameView.tsx) | The core deliverable. The cub3D engine compiled to WebAssembly and driven from the browser |
+| 2 | Remote players | Gaming Major | 2 | [`game/room.ts`](./app/backend/src/game/room.ts), [`useGameSocket.ts`](./app/frontend/src/game/useGameSocket.ts) | The point of the architecture: server-authoritative play, interpolation, and a 30-second disconnect grace with AI takeover |
+| 3 | Multiple players (more than 2) | Gaming Major | 2 | [`lobby/rooms.ts`](./app/backend/src/lobby/rooms.ts) | RSP is 2v2 = 4 seats, which required a real seat and team model rather than a 1v1 special case |
+| 4 | Use a framework on both frontend and backend | Web Major | 2 | [`app/frontend/`](./app/frontend) (React), [`app/backend/`](./app/backend) (Fastify) | Running `sim.wasm` under Node needs a server we control, and the game screen needs real state management |
+| 5 | Real-time features with WebSockets | Web Major | 2 | [`game/ws.ts`](./app/backend/src/game/ws.ts), [`lobby/ws.ts`](./app/backend/src/lobby/ws.ts) | The subject's three requirements (cross-client updates, connect/disconnect handling, broadcast) are all satisfied by the game socket alone; the lobby socket is on top of that |
+| 6 | AI opponent | AI Major | 2 | [`rsp/enemy/`](./codes/srcs/rsp/enemy), [`fps/enemy/`](./codes/srcs/fps/enemy) | Both modes have AI seats, and `game_set_input_source` swaps a seat between human and AI at runtime — the same mechanism that covers a disconnect |
+| 7 | Use an ORM | Web Minor | 1 | [`prisma/schema.prisma`](./app/backend/prisma/schema.prisma) | A database is required by Chapter III regardless, so the ORM requirement costs almost nothing extra |
+| 8 | Game customization options | Gaming Minor | 1 | [`lobby/GameCustomizationFields.tsx`](./app/frontend/src/lobby/GameCustomizationFields.tsx), `target_score` / map selection in [`codes/`](./codes) | Map choice and target score are room settings, passed through to the engine as match rules |
+
+**Mandatory total: 6 Major × 2 + 2 Minor × 1 = 14 points.**
+
+Full declaration with the current implementation status of each:
+[`docs/human/評価対応/42モジュール対応表.html`](./docs/human/評価対応/42モジュール対応表.html).
+
+### Bonus — 3 points
+
+| Module | Type | Pts | Why |
+|---|---|---|---|
+| Advanced 3D graphics | Gaming Major | 2 | A raycasting engine written from scratch in C, compiled to WebAssembly. Measured at 112 fps @ 960×540. **Deliberately placed in the bonus**, because the subject's wording ("using Three.js or similar") may be read as requiring a library — if it is rejected, the 14-point line is unaffected |
+| Custom design system | Web Minor | 1 | 18 reusable components, a typography scale, an icon set and a colour-token system, with a live catalogue at `/dev/design-system`. Raw colour literals are blocked by ESLint |
+
+### Not claimed
+
+Friends list, match history and statistics, standard user management beyond auth, spectator mode
+and a status page were all considered and **dropped** in the 2026-08-08 revision — not because they
+lack value, but because the same points were reachable with less remaining work. The full
+comparison is in the module document linked above.
+
+---
+
+## 8. Features and who implemented them
+
+| Feature | Implemented by | Entry point |
+|---|---|---|
+| C raycasting engine, RSP/FPS modes, AI, three-target build | ttsubo | [`codes/`](./codes) |
+| Server-authoritative GameRoom, 30 Hz tick, snapshot encoding | ttsubo | [`game/room.ts`](./app/backend/src/game/room.ts) |
+| Match time limit (3 minutes, `timeout` end reason) | ttsubo | [`game/room.ts`](./app/backend/src/game/room.ts) |
+| FPS collection gate and goal rules | ttsubo | [`fps/core/fps_item.c`](./codes/srcs/fps/core/fps_item.c) |
+| Lobby game-settings UI (map select, target score) | kkurose | [`lobby/GameCustomizationFields.tsx`](./app/frontend/src/lobby/GameCustomizationFields.tsx) |
+| Result screen and match-end transition | kkurose | [`hud/MatchEndModal.tsx`](./app/frontend/src/game/hud/MatchEndModal.tsx) |
+| FPS collection counter in the HUD | kkurose | [`hud/`](./app/frontend/src/game/hud) |
+| Room re-entry after leaving an RSP match | kkurose | [`game/room.ts`](./app/backend/src/game/room.ts) |
+| Backend crash-resistance (WS auth + tick exception handling) | kkurose | [`game/ws.ts`](./app/backend/src/game/ws.ts) |
+| Matching screen and room flow | kmitsuki | [`pages/MatchingPage.tsx`](./app/frontend/src/pages/MatchingPage.tsx) |
+| Weapon switching (1/2/3) across the input → sim → render path | kmitsuki | [`game/useGameInput.ts`](./app/frontend/src/game/useGameInput.ts) |
+| Mode-aware texture loading (−75 MB on RSP) | kmitsuki | [`engine/loadTextures.ts`](./app/frontend/src/engine/loadTextures.ts) |
+| Auth error policy, post-login redirect, session resilience | kmitsuki | [`api/errorPolicy.ts`](./app/frontend/src/api/errorPolicy.ts), [`contexts/AuthContext.tsx`](./app/frontend/src/contexts/AuthContext.tsx) |
+| Reverse-proxy client-IP handling and rate-limit scoping | kmitsuki | [`index.ts`](./app/backend/src/index.ts), [`nginx.conf.template`](./infra/docker/nginx/nginx.conf.template) |
+| Login screen | tvaroux | [`pages/LoginPage.tsx`](./app/frontend/src/pages/LoginPage.tsx) |
+| Sign-up screen | tvaroux | [`pages/SignupPage.tsx`](./app/frontend/src/pages/SignupPage.tsx) |
+| Controls / how-to-play screen | torinoue | [`pages/HowToPlayPage.tsx`](./app/frontend/src/pages/HowToPlayPage.tsx) |
+| 375 px responsive layout pass | torinoue | [`app/frontend/src/`](./app/frontend/src) |
+
+Work before the team formed (engine foundation, WebSocket protocol design, REST/DB design, Docker
+and nginx setup) was done by `samatsum` during the single-contributor period — see
+[section 2](#2-team-and-roles).
+
+---
+
+## 9. Individual contributions
+
+**torinoue — Project Manager / Scrum Master**
+Ran the issue board and the milestone schedule, and coordinated the hand-off when the team
+re-formed. Implemented the controls/how-to-play screen and the 375 px responsive pass over the
+first set of screens.
+
+**ttsubo — Technical Lead / Architect**
+Owns the C engine and the three-target build. Designed and implemented the RSP and FPS rule
+systems, both AI implementations, the snapshot encoding that crosses the C↔TypeScript boundary, and
+the match time limit. Largest contributor among the submitted members (68 commits).
+
+**kmitsuki — Product Owner**
+Decided module scope and the submission plan, and triaged the defect backlog into assigned issues.
+On the implementation side: the matching screen, weapon switching end to end, mode-aware texture
+loading, the authentication error policy, and the reverse-proxy client-IP fix.
+
+**kkurose — Developer**
+Owns the lobby and match-lifecycle surface: game-settings UI, result screen and match-end
+transition, room re-entry after leaving, the FPS collection HUD, and the backend crash-resistance
+work on WebSocket auth and the tick loop.
+
+**tvaroux — Developer**
+Implemented the login and sign-up screens, including the form-validation wiring against the shared
+zod schemas.
+
+---
+
+## 10. Running it
+
+### One command
 
 ```bash
-HOST_UID=$(id -u) HOST_GID=$(id -g) docker compose up --build
+git clone <this repository>   # into an empty folder
+cd ft_transcendence
+docker compose up --build
 ```
 
-First run takes ~10 minutes (image pull + build). Once `web/build/` has `render.js` / `sim.js`, open:
+Then open **<https://localhost:8443>**.
 
-```text
-http://localhost:8000/web/engine_demo.html                      # FPS mode (default)
-http://localhost:8000/web/engine_demo.html?map=rsp_map/rsp.cub  # RSP mode
-```
+The first run takes roughly ten minutes: it pulls the images, builds the WebAssembly targets with
+Emscripten, generates a local CA and a `localhost` certificate, runs the Prisma migration, and
+builds the frontend. Nothing else is needed — there are no manual steps between `docker compose up`
+and a working application.
 
-Click the canvas to capture the mouse/keyboard; `Esc` releases it. Controls: see
-[Controls](#controls) below. Stop with `Ctrl-C`; `docker compose down` to clean up.
+> **The certificate is self-signed**, so the browser will warn on first visit. Choose "Advanced" →
+> "Proceed to localhost". This is expected for a local setup.
 
-> `HOST_UID`/`HOST_GID` avoid root-owned generated files; the build works without them too.
+> **`engine-build` and `frontend` exit after they finish.** They are one-shot build steps that
+> produce `web/build/*.wasm` and `app/frontend/dist/` respectively. Only `nginx` and `backend` stay
+> running. Seeing them as `Exited (0)` is correct.
 
-### B. Server-authoritative match, replayed (the core design, without a live server)
+The default port is **8443**. To change it, set **both** `HTTPS_PORT` and `ALLOWED_ORIGIN` in `.env` — the origin
+check is an exact string match, so changing one without the other breaks login and both WebSockets.
 
-This is the same `sim.wasm` → JSON → interpolate → `render.wasm` pipeline the real WebSocket path
-uses — only the transport (file vs. socket) differs. Requires step A to have built once.
+### Environment variables
+
+No `.env` is required: the defaults work as-is. `.env` is git-ignored; [`.env.example`](./.env.example) documents every variable. No credentials are
+committed to this repository.
+
+### Development without Docker
 
 ```bash
-node web/sim_demo/record.mjs
+npm install
+echo 'ALLOWED_ORIGIN=http://localhost:5173' >> .env   # required on this path
+npm run dev
 ```
 
-This runs a full RSP 2v2 match through `sim.wasm` at 30Hz on Node and writes every state to
-`web/sim_demo/snapshots.json`. Then open:
+The WebAssembly artifacts still have to be built once, which needs Emscripten — use the container
+for that step: `docker compose run --rm engine-build`.
 
-```text
-http://localhost:8000/web/sim_demo/replay.html
-```
+---
 
-**This is not a video.** The file holds only numbers (position, facing, hand, score); the browser
-re-renders the 3D scene from those numbers every frame, interpolating between snapshots. **There is
-no win/loss-determination code in the browser** — see [Architecture](#architecture).
-
-`node web/sim_demo/record.mjs fps` records an FPS 1vs1 the same way (writes
-`web/sim_demo/snapshots_fps.json`; open `replay.html?feed=snapshots_fps.json`). Since FPS doesn't
-finish deterministically from scripted wandering input, this recording runs a fixed 20s rather than
-waiting for a decision — its purpose is watching the other seat render (G-12: on purpose
-indistinguishable from a hazard, see the Engine row above), not seeing a full match.
-
-### C. Engine, native (Linux/X11)
-
-```bash
-sudo apt-get install gcc make xorg libxext-dev libbsd-dev
-make
-./cub3D maps/fps_map/1.cub      # FPS mode
-./cub3D maps/rsp_map/rsp.cub    # RSP mode
-```
-
-WSL needs WSLg or an X server.
-
-### D. Engine acceptance tests
-
-```bash
-make test     # 96 sim acceptance checks (no X11 needed)
-make check    # 13 C coding-rule lint checks
-```
-
-`make test` builds a headless native `sim` and checks scoring, FPS goal detection, enemy hazards,
-and all 4 online-match maps. CI runs this on every PR.
-
-### E. Web app dev servers (backend + frontend, without Docker)
-
-> **`ALLOWED_ORIGIN` is required on this path, and its value is *not* the one Docker uses.**
->
-> Without it, every auth request fails with `403 forbidden` ("この Origin からのリクエストは
-> 許可されていません"), which looks like a bug in the auth screens.
-> [`isAllowedOrigin`](app/backend/src/auth/session.ts) falls back to allowing loopback origins only
-> when `NODE_ENV=development` *and* `ALLOW_DEV_AUTH=true`, and `.env.example` ships both commented
-> out.
->
-> | How you start it | What the browser's `Origin` is | What to set |
-> |---|---|---|
-> | `npm run dev` | `http://localhost:5173` | `ALLOWED_ORIGIN=http://localhost:5173` |
-> | `docker compose` | `https://localhost` (via nginx) | nothing — the Compose default already matches |
-> | `docker compose -f docker-compose.yml -f docker-compose.vps.yml` (a public server) | `https://<your host>` | `SERVER_NAME` and `ALLOWED_ORIGIN`, both in `.env` — see [`infra/README.md`](infra/README.md) |
->
-> **Comment it out again before going back to `docker compose`.** Compose reads this same `.env`
-> for `${ALLOWED_ORIGIN:-https://localhost}`, so a leftover dev value breaks the Docker path
-> instead. See #207.
-
-```bash
-npm install                                            # once, installs all 3 workspaces
-echo 'ALLOWED_ORIGIN=http://localhost:5173' >> .env    # required — see the note above
-npm run dev:backend                                    # Fastify on :3000
-npm run dev:frontend                                   # Vite on :5173, proxies /api to :3000
-```
-
-Open `http://localhost:5173` and sign up from `/signup` to get a session.
-
-> **The `/game/dev-room` link on `/lobby` does not currently work from a browser**, despite what its
-> label says. Two independent blockers, and they are waiting on *different* issues:
->
-> 1. **The dev-auth stub cannot be satisfied from a browser** (blocked on **B-04**).
->    `authenticateRequest()` accepts an `x-dev-user` *header*, but the browser `WebSocket`
->    constructor cannot set request headers and the Vite proxy does not inject any — so the socket
->    closes with **4000 unauthenticated**. This one is hit first. Real cookie auth (B-04) removes it,
->    because a cookie *is* sent on the WS upgrade.
-> 2. **No room is ever created** (blocked on **F-05 + B-09**, not B-04). `createRoom()` is called only
->    from `app/backend/src/game/dev-run.ts` and `app/backend/src/game/ws-check.ts`; the normally
->    started server (`app/backend/src/index.ts`) registers the WS route but creates nothing, so
->    `/ws/game/dev-room` closes with **4002 room-not-found**. Rooms are meant to come from lobby
->    matchmaking (F-05 drives B-08, B-09 turns a MatchPlan into a GameRoom) — fixing auth alone does
->    not make this route reachable.
->
-> **What this means for GV-06 / GV-07's "done" status.** The code is written and merged, but be
-> precise about what has actually been verified on the current `main`:
->
-> | Layer | Verified by | Covers |
-> |---|---|---|
-> | Backend WS path | `app/backend/src/game/ws-check.ts` | B-11 / B-12 / B-14 only. Node `ws` clients — **it never loads the frontend, Canvas, or `render.wasm`** |
-> | Interpolation + HUD logic | `snapshotInterp.test.ts`, `hudState.test.ts` | Pure functions, not rendering |
-> | **GameView / HUD rendering in a browser** | **nothing** | — |
->
-> **GV-06's acceptance criterion ("a match works between 2 browsers") is therefore not currently
-> reproducible.** It was met manually while the dev route still worked; it cannot be re-run today.
-> Re-establishing it needs real cookie auth (B-04) plus lobby-driven room creation (F-05 + B-09).
-> Treat "GV-06 done" as "the integration code is merged", not as "the browser demo is passing".
-
-### Generated files
-
-`web/build/` (wasm), `web/assets/` (converted textures), and `web/sim_demo/snapshots.json` /
-`snapshots_fps.json` are all `.gitignore`d — generate them locally with the steps above, they
-aren't in `git pull`.
-
-## Controls
+## 11. Controls
 
 | Input | Action |
 |---|---|
 | `W` / `S` | Move forward / backward |
 | `A` / `D` | Strafe left / right |
 | `←` / `→` | Turn left / right |
-| `1` / `2` / `3` | Switch weapon (pistol / flashlight / bare hands, **FPS only**) |
-| `Space` | Fire (pistol only, has cooldown, **FPS only**) |
-| `I` | Toggle UI (minimap, collection progress) |
-| `O` | Toggle crosshair |
+| `1` / `2` / `3` | Switch weapon (pistol / flashlight / bare hands) — **FPS only** |
+| `Space` | Fire (pistol only, has a cooldown) — **FPS only** |
+| `I` | Toggle the minimap and collection progress |
+| `O` | Toggle the crosshair |
 | `L` | Toggle distance shading |
-| `Esc` / window close | Quit |
+| `Esc` | Release pointer capture / open the exit prompt |
 
-RSP mode disables `1`/`2`/`3`/`Space` — hand-to-hand contact is resolved automatically.
+RSP mode disables `1`/`2`/`3`/`Space` — hand matches resolve on contact.
 
-## Tech stack
+---
 
-| Layer | Choice | Why |
-|---|---|---|
-| Engine | C, MiniLibX (native only), Emscripten → WASM (`render.wasm` client / `sim.wasm` server) | Reuses the complete cub3D engine for both rendering and server-authoritative simulation — zero duplicated game logic |
-| Frontend | React + Vite + TypeScript + Tailwind CSS | SPA is sufficient (no SSR module); React code-gen quality is strong; Tailwind satisfies the CSS-framework requirement |
-| Backend | Fastify + TypeScript | Runs `sim.wasm` directly under Node; official WS plugin; lighter than Nest for this scope |
-| Realtime | Raw WebSocket (`@fastify/websocket`) | Socket.IO's abstraction isn't needed |
-| DB | SQLite + Prisma (schema v1 created in B-03; the server does not connect yet — B-04 is the first consumer) | Single-host evaluation target; satisfies the ORM requirement |
-| Auth | argon2id password hashing + opaque httpOnly session cookie (not JWT) (not yet wired, B-04) | Stateless JWT gives up server-side revocation for no benefit here |
-| Delivery | nginx (TLS termination, static + WS proxy) + Docker Compose (not yet wired, I-15) | Single-command startup requirement |
-| Shared contracts | zod schemas in `app/shared/` | One schema, validated on both frontend and backend |
+## 12. Testing
 
-Full rationale and trade-off comparisons: [`docs/ai/architecture.md`](./docs/ai/architecture.md).
+```bash
+npm run typecheck     # shared / backend / frontend
+npm test              # vitest — 23 files, 205 tests
+npm run lint          # eslint, --max-warnings=0
+npm run build
+
+make test             # C acceptance tests — 168 checks, headless, no X11 needed
+make check            # 13 C coding-rule lint checks
+npm run check:lobby   # lobby WebSocket acceptance checks against a live server
+npm run check:http    # REST acceptance checks against a live server
+```
+
+`make test` builds a headless native `sim` binary and verifies scoring, FPS goal and collection
+gating, hazard behaviour, and all four online match maps. It runs in CI on every pull request. The
+suite can also be built with AddressSanitizer to catch memory errors in the C parser:
+
+```bash
+docker compose run --rm engine-build make test CC="cc -fsanitize=address -g"
+```
+
+---
 
 ## Documentation
 
-This repo keeps two parallel documentation sets under `docs/`:
+Two parallel sets under `docs/`:
 
-- **`docs/ai/`** — English Markdown, written for an AI coding assistant to consult. Detailed
-  design docs, the full issue backlog, coding rules, and the git workflow this repo follows.
-  Start at [`docs/ai/README.md`](./docs/ai/README.md).
-- **`docs/human/`** — Japanese HTML, written for samatsum. Onboarding, a lane-by-lane terminology
-  glossary (`docs/human/専門用語/`), and conceptual explanations of the engine/server design with
-  diagrams. Start at [`docs/human/index.html`](./docs/human/index.html).
+- **[`docs/ai/`](./docs/ai)** — English Markdown. Detailed design documents, the issue backlog,
+  coding rules, and the git workflow. Start at [`docs/ai/README.md`](./docs/ai/README.md).
+- **[`docs/human/`](./docs/human)** — Japanese HTML. Onboarding, a terminology glossary, and
+  conceptual explanations of the engine and server design with diagrams. Start at
+  [`docs/human/index.html`](./docs/human/index.html).
 
-Specific pointers:
+Useful entry points:
 
-- 👉 [`docs/human/プレイヤー向け/プレイヤーガイド.html`](./docs/human/プレイヤー向け/プレイヤーガイド.html) — for players/evaluators:
-  launch instructions, controls, RSP mode rules, `.cub` map format.
-- 👉 [`docs/ai/dev-doc.md`](./docs/ai/dev-doc.md) — for developers: module structure, enemy/RSP
-  AI internals, data flow, tuning values, lint tooling.
-- 👉 [`docs/ai/coding-rules.md`](./docs/ai/coding-rules.md) — canonical C coding rules; every
-  `CRxxx` code `make check` prints maps 1:1 to a rule here.
+- 👉 [`docs/human/プレイヤー向け/プレイヤーガイド.html`](./docs/human/プレイヤー向け/プレイヤーガイド.html) — for players:
+  launch instructions, controls, RSP rules, `.cub` map format.
+- 👉 [`docs/ai/ws-protocol.md`](./docs/ai/ws-protocol.md) — the WebSocket contract.
+- 👉 [`docs/ai/rest-api.md`](./docs/ai/rest-api.md) — REST endpoints and the DB schema source.
+- 👉 [`docs/ai/dev-doc.md`](./docs/ai/dev-doc.md) — engine internals, AI behaviour, data flow.
+- 👉 [`docs/ai/coding-rules.md`](./docs/ai/coding-rules.md) — C coding rules; every `CRxxx` code
+  printed by `make check` maps 1:1 to a rule here.
 
 ## Resources
+
+**Raycasting and the original engine**
 
 - [Lode's Computer Graphics Tutorial — Raycasting](https://lodev.org/cgtutor/raycasting.html)
 - [A first-person engine in 265 lines (PlayfulJS)](http://www.playfuljs.com/a-first-person-engine-in-265-lines/)
 - [42Paris / minilibx-linux](https://github.com/42Paris/minilibx-linux)
 - [BMP format reference](https://stackoverflow.com/questions/2654480/writing-bmp-image-in-pure-c-c-without-other-libraries)
 
-**AI usage**: AI pair-programming (Claude Code) was used throughout — boilerplate (CRUD, UI
-scaffolding, zod schemas, Emscripten build config, documentation) defaults to AI generation, while
-design decisions for the sim/protocol/schema layers get human review. AI-authored commits and PRs
-are visible directly in `git log` / the GitHub PR history.
+**WebAssembly and Emscripten**
+
+- [WebAssembly — official site](https://webassembly.org/)
+- [WebAssembly — MDN Web Docs](https://developer.mozilla.org/en-US/docs/WebAssembly)
+- [Emscripten documentation](https://emscripten.org/docs/)
+- [Emscripten — Building projects](https://emscripten.org/docs/compiling/Building-Projects.html)
+- [Emscripten — Interacting with code](https://emscripten.org/docs/porting/connecting_cpp_and_javascript/Interacting-with-code.html)
+  (exported functions and reading the wasm heap from JavaScript — how `render.wasm` and
+  `sim.wasm` exchange data with TypeScript)
+- [Emscripten — Settings reference](https://emscripten.org/docs/tools_reference/settings_reference.html)
+  (`MODULARIZE`, `ALLOW_MEMORY_GROWTH`, `EXPORTED_FUNCTIONS` used in the `Makefile`)
+
+**AI usage**: The architecture, game rules, protocol and database design, and module scope were
+decided by the developers. AI coding assistants (Claude Code) were used as an implementation aid —
+scaffolding, boilerplate, build configuration, tests and documentation drafts — working from those
+decisions. Every change goes through a pull request and human review, and we only merge code we
+understand and can explain.
