@@ -8,6 +8,8 @@ void
 	resolve_rsp_combat(t_game* game);
 int
 	rsp_target_score(t_game* game);
+int
+	rsp_on_home_cell(t_game* game, t_enemy* combatant);
 static void
 	rsp_home_rehand(t_game* game);
 static void
@@ -69,6 +71,22 @@ int
 
 /* ************************************************************************** */
 
+// 戦闘員が今いるマスが自陣スポーンマス（赤=N/W、青=S/E）かを返す。rsp.on_home の
+// 正本はこの判定で、移動・リスポーン・席の生成のどれで位置が変わっても同じ式で
+// 求める（#270: リスポーンで更新し忘れると、次の tick に「新しく入った」と誤判定
+// されて手が引き直され、自陣に立ったままの AI は二度と手を変えられなくなる）
+int
+	rsp_on_home_cell(t_game* game, t_enemy* combatant)
+{
+	int	c;
+
+	c = MAP(combatant->sprite->pos, game->config);
+	return ((combatant->rsp.team == TEAM_RED && IS_RED_SPAWN(c))
+		|| (combatant->rsp.team == TEAM_BLUE && IS_BLUE_SPAWN(c)));
+}
+
+/* ************************************************************************** */
+
 // 外部入力の全戦闘員について自陣踏み込みの手変えを判定する。E-10 でサーバ席
 // （人間が複数）が増えたため、カメラ基準からリスト走査へ一般化した。native では
 // 外部入力席はプレイヤー1人で、ノード位置はカメラと毎フレーム同期済みのため
@@ -95,12 +113,9 @@ static void
 static void
 	rehand_on_home_entry(t_game* game, t_enemy* combatant)
 {
-	int	c;
 	int	on_home;
 
-	c = MAP(combatant->sprite->pos, game->config);
-	on_home = ((combatant->rsp.team == TEAM_RED && IS_RED_SPAWN(c))
-			|| (combatant->rsp.team == TEAM_BLUE && IS_BLUE_SPAWN(c)));
+	on_home = rsp_on_home_cell(game, combatant);
 	if (on_home && !combatant->rsp.on_home) {
 		combatant->rsp.hand = rsp_rehand(combatant->rsp.hand, &game->rsp.seed);
 	}
@@ -157,7 +172,8 @@ static void
 /* ************************************************************************** */
 
 // NPC を自チームのスポーンプール（赤=N/W、青=S/E）へ即時に移し、手を rsp_rehand
-// で必ず変える。追跡経路は無効化し IDLE に戻す。チームは不変
+// で必ず変える。追跡経路は無効化し IDLE に戻す。チームは不変。移した先は自陣なので
+// on_home も立てる（#270: 立てないと次の tick にもう一度手が引き直される）
 static void
 	respawn_npc(t_game* game, t_enemy* npc)
 {
@@ -174,6 +190,7 @@ static void
 		copy_pos(&npc->rsp.spawn, &game->config.spawns[idx].pos);
 	}
 	npc->rsp.hand = rsp_rehand(npc->rsp.hand, &game->rsp.seed);
+	npc->rsp.on_home = rsp_on_home_cell(game, npc);
 	npc->path_valid = 0;
 	npc->state = ENEMY_STATE_IDLE;
 }

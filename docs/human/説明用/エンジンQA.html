@@ -183,10 +183,10 @@
 				<article class="card">
 					<h3>Q. RSPのNPC AIは何を基準に動く？</h3>
 					<p>
-						A. 最寄りの異チーム戦闘員を見て「勝てる手なら追跡・負ける手なら逃走・あいこは徘徊」。
+						A. 最寄りの異チーム戦闘員を見て「勝てる手なら追跡・負ける手やあいこなら自陣へ戻って手を変える」（相手不在なら徘徊）。
 					</p>
 					<p style="margin-top: 10px; font-size: 0.86rem;">
-						確認: <a href="../../../codes/srcs/rsp/enemy/rsp_enemy_ai.c"><code>rsp/enemy/rsp_enemy_ai.c:21</code></a>（<code>update_rsp_enemy</code>）
+						確認: <a href="../../../codes/srcs/rsp/enemy/rsp_enemy_ai.c"><code>rsp/enemy/rsp_enemy_ai.c:30</code></a>（<code>update_rsp_enemy</code>）
 					</p>
 				</article>
 			</div>

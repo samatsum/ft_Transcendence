@@ -270,6 +270,8 @@ async function checkTwoClientsPlay(): Promise<string[]> {
 		bad.push('welcome が届いていない');
 		return bad;
 	}
+	if (a.received[0]?.t !== 'welcome') bad.push(`Aの最初のフレームがwelcomeでない (${a.received[0]?.t})`);
+	if (b.received[0]?.t !== 'welcome') bad.push(`Bの最初のフレームがwelcomeでない (${b.received[0]?.t})`);
 	console.log(`  welcome: A slot=${wa.d.slot} / B slot=${wb.d.slot} / map_text=${wa.d.map_text.length}B / snap_rate=${wa.d.snap_rate}`);
 	if (wa.d.slot !== 0 || wb.d.slot !== 1) bad.push(`slot の割当が participants と違う (${wa.d.slot}, ${wb.d.slot})`);
 	if (wa.d.combatant_id !== wa.d.slot) bad.push('combatant_id が slot と一致しない');
@@ -280,6 +282,14 @@ async function checkTwoClientsPlay(): Promise<string[]> {
 
 	// 2人とも join したので、10 秒を待たず countdown → playing へ進むはず
 	if (room.getState() !== 'countdown') bad.push(`join 後に countdown へ進んでいない (${room.getState()})`);
+	for (const [name, client] of [['A', a], ['B', b]] as const) {
+		const countdownSeconds = client.received.flatMap((message) =>
+			message.t === 'event' && message.d.kind === 'countdown' ? [message.d.seconds] : [],
+		);
+		if (countdownSeconds.length !== 1 || countdownSeconds[0] !== 3) {
+			bad.push(`${name}のcountdownが3秒ちょうど1回でない (${countdownSeconds.length}件)`);
+		}
+	}
 
 	// 30Hz で入力を流す（両クライアントとも前進しながら旋回）
 	let seq = 0;
@@ -395,10 +405,23 @@ async function checkFpsWorldDelta(): Promise<string[]> {
 			a.waitFor(() => Boolean(a.find('welcome')), 'FPS A welcome', bad),
 			b.waitFor(() => Boolean(b.find('welcome')), 'FPS B welcome', bad),
 		]);
+		if (joined[0] && a.received[0]?.t !== 'welcome') bad.push('FPS Aの最初のフレームがwelcomeでない');
+		if (joined[1] && b.received[0]?.t !== 'welcome') bad.push('FPS Bの最初のフレームがwelcomeでない');
 		if (joined.every(Boolean)) {
 			// 実時間ルームは3秒countdown後にplayingとなり、そこで初めてsnapshotを配信する。
 			await sleep(3_200);
 			await a.waitFor(() => a.countOf('snapshot') >= 3, 'FPS snapshots', bad);
+			for (const [name, client] of [['A', a], ['B', b]] as const) {
+				const countdownSeconds = client.received.flatMap((message) =>
+					message.t === 'event' && message.d.kind === 'countdown' ? [message.d.seconds] : [],
+				);
+				if (countdownSeconds.length !== 1 || countdownSeconds[0] !== 3) {
+					bad.push(`FPS ${name}のcountdownが3秒ちょうど1回でない (${countdownSeconds.length}件)`);
+				}
+				if (!client.received.some((message) => message.t === 'event' && message.d.kind === 'match_start')) {
+					bad.push(`FPS ${name}にmatch_startが届かない`);
+				}
+			}
 		}
 
 		const snapshots = a.received.filter(
@@ -468,11 +491,22 @@ async function checkFpsWorldDelta(): Promise<string[]> {
 			await resumed.waitFor(() => Boolean(resumed?.find('welcome')), 'FPS resume welcome', bad);
 			await resumed.waitFor(() => resumed?.received.some((message) => message.t === 'snapshot') ?? false, 'FPS resume snapshot', bad);
 			const welcome = resumed.find('welcome');
+			if (resumed.received[0]?.t !== 'welcome') {
+				bad.push(`FPS再接続の最初のフレームがwelcomeでない (${resumed.received[0]?.t})`);
+			}
 			const resumedSnapshot = resumed.received.find(
 				(message): message is Extract<GameServerMessage, { t: 'snapshot' }> => message.t === 'snapshot',
 			);
 			if (welcome?.d.resume !== true) bad.push('FPS再接続のwelcome.resumeがtrueでない');
 			if (!resumedSnapshot?.d.world_delta) bad.push('FPS再接続snapshotにworld_deltaがない');
+			const reconnectedIndex = resumed.received.findIndex(
+				(message) => message.t === 'event' && message.d.kind === 'player_reconnected',
+			);
+			const snapshotIndex = resumed.received.findIndex((message) => message.t === 'snapshot');
+			if (reconnectedIndex < 0) bad.push('FPS再接続clientにplayer_reconnectedが届かない');
+			if (snapshotIndex < 0 || snapshotIndex >= reconnectedIndex) {
+				bad.push('FPS再接続snapshotが保留中のplayer_reconnectedより先に届かない');
+			}
 		}
 	} finally {
 		a.close();
@@ -607,6 +641,18 @@ async function checkInvalidMessages(): Promise<string[]> {
 	await c6.open();
 	c6.send({ t: 'join' }); // 予定していた人間席が埋まるので countdown(3s) → playing
 	await sleep(3600);
+	if (c6.received[0]?.t !== 'welcome') {
+		bad.push(`単独human+AIの最初のフレームがwelcomeでない (${c6.received[0]?.t})`);
+	}
+	const soloCountdownSeconds = c6.received.flatMap((message) =>
+		message.t === 'event' && message.d.kind === 'countdown' ? [message.d.seconds] : [],
+	);
+	if (soloCountdownSeconds.length !== 1 || soloCountdownSeconds[0] !== 3) {
+		bad.push(`単独human+AIのcountdownが3秒ちょうど1回でない (${soloCountdownSeconds.length}件)`);
+	}
+	if (!c6.received.some((message) => message.t === 'event' && message.d.kind === 'match_start')) {
+		bad.push('単独human+AIにmatch_startが届かない');
+	}
 	c6.send({ t: 'input', d: { seq: 1, yaw: 1e30, mv: 0b0001 } });
 	await sleep(500);
 	const dirs = c6.received
@@ -689,6 +735,26 @@ async function runReconnectAndForfeitChecks(
 		rspRoom.getState() !== 'playing'
 	) {
 		bad.push(`RSP がplayingにならない (${rspRoom.getState()})`);
+	}
+	if (rspAWelcomeReceived && rspBWelcomeReceived) {
+		await Promise.all([
+			rspA.waitFor(
+				() => rspA.received.some((message) => message.t === 'event' && message.d.kind === 'match_start'),
+				'RSP A match_start',
+				bad,
+			),
+			rspB.waitFor(
+				() => rspB.received.some((message) => message.t === 'event' && message.d.kind === 'match_start'),
+				'RSP B match_start',
+				bad,
+			),
+		]);
+	}
+	for (const [name, client] of [['A', rspA], ['B', rspB]] as const) {
+		if (client.received[0]?.t !== 'welcome') bad.push(`RSP ${name}の最初のフレームがwelcomeでない`);
+		if (!client.received.some((message) => message.t === 'event' && message.d.kind === 'match_start')) {
+			bad.push(`RSP ${name}にmatch_startが届かない`);
+		}
 	}
 
 	// 通常closeは即AI代替+grace。30秒以内なら同一userがplayer復帰できる。
@@ -1092,6 +1158,9 @@ async function runReconnectAndForfeitChecks(
 		if (lateInitialBClosed && lateInitialB.closedWith !== WS_CLOSE.notAllowed) {
 			bad.push(`playing後の初回joinがclose 4003でない (${lateInitialB.closedWith})`);
 		}
+		if (lateInitialB.received.length !== 0) {
+			bad.push(`拒否されたlate joinへwelcomeまたは保留配信が届いた (${lateInitialB.received.map((message) => message.t).join(',')})`);
+		}
 	}
 	// 未接続participantがabandoned確定済みなら、最後の人間離脱でRSPを終了する。
 	if (lateInitialAWelcomeReceived && lateInitialRoom.getState() === 'playing') {
@@ -1145,6 +1214,46 @@ async function runReconnectAndForfeitChecks(
 		bad.push('FPS countdown前の離脱がopponent winner/reason=forfeitにならない');
 	}
 	closeRoom(fpsCreatedRoom.roomId);
+	// joinが同期broadcastした後で失敗した場合、welcome前の配信を破棄し、
+	// 接続close時には設定済みslotを使ってroom席をcleanupする
+	const rejectedJoinRoom = await createRoomFromRules({
+		roomId: 'ws-rejected-after-broadcast',
+		mode: 'rsp',
+		rules: { map: 'rsp', target_score: 21 },
+		seed: 42,
+		participants: [{ userId: 623, slot: 0 }],
+		log: { info: () => {}, warn: () => {} },
+	});
+	const originalJoin = rejectedJoinRoom.join.bind(rejectedJoinRoom);
+	rejectedJoinRoom.join = (slot: number) => {
+		originalJoin(slot);
+		throw new Error('injected rejection after room broadcasts');
+	};
+	const rejectedJoinClient = makeClient(rejectedJoinRoom.roomId, 623);
+	await rejectedJoinClient.open();
+	rejectedJoinClient.send({ t: 'join' });
+	const rejectedJoinClosed = await rejectedJoinClient.waitFor(
+		() => rejectedJoinClient.closedWith !== null,
+		'rejected join after broadcast close',
+		bad,
+	);
+	if (rejectedJoinClient.received.length !== 0) {
+		bad.push(`broadcast後に拒否されたjoinへwelcomeまたは保留配信が届いた (${rejectedJoinClient.received.map((message) => message.t).join(',')})`);
+	}
+	if (rejectedJoinClosed && rejectedJoinClient.closedWith !== WS_CLOSE.notAllowed) {
+		bad.push(`broadcast後のjoin拒否がclose 4003でない (${rejectedJoinClient.closedWith})`);
+	}
+	if (
+		rejectedJoinClosed &&
+		!(await waitUntil(
+			() => rejectedJoinRoom.getPlayerSeatState(0) === 'grace',
+			'rejected join slot cleanup',
+			bad,
+		))
+	) {
+		bad.push('拒否されたjoinのslotがclose時にcleanupされない');
+	}
+	closeRoom(rejectedJoinRoom.roomId);
 
 	for (const client of clients) {
 		if (client.connectionErrors.length > 0) {

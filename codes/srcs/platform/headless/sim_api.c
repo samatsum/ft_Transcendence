@@ -211,6 +211,9 @@ int
 	node->rsp.alive = 1;
 	if (game->mode == MODE_RSP) {
 		sprite->tex = &game->assets.hand_tex[HAND_SLOT(node->rsp.team, node->rsp.hand)];
+		// 開始 tick に「新しく自陣へ入った」と判定されて手が引き直されないよう、
+		// 生成位置（＝自陣スポーン）から自陣判定を入れておく（#270）
+		node->rsp.on_home = rsp_on_home_cell(game, node);
 	}
 	apply_spawn(&game->config, &cam, sp);
 	node->spawn = cam;

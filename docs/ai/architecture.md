@@ -262,7 +262,7 @@ Statistics (win rate, match history, leaderboard) are derived via aggregate quer
 | 3 | Multiplayer (3+ players) | Gaming Major | 2 | RSP 2v2 = 4 players in the same match |
 | 4 | Frameworks on both FE and BE | Web Major | 2 | React (FE) + Fastify (BE) |
 | 5 | Real-time functionality via WebSockets | Web Major | 2 | Game sync (input/snapshot at 30Hz/15Hz), connect/disconnect handling (B-12's 30s grace + AI takeover), and broadcasting — the subject's three sub-requirements are met by the game WS alone; lobby presence is additional, not load-bearing |
-| 6 | AI opponent | AI Major | 2 | **Already complete.** RSP rock-paper-scissors AI ("chase a winning hand, flee a losing hand") and the FPS chase AI. Fills empty/disconnected seats and serves as a single-player opponent |
+| 6 | AI opponent | AI Major | 2 | **Already complete.** RSP rock-paper-scissors AI ("chase with a winning hand, head home to change a losing or tied hand") and the FPS chase AI. Fills empty/disconnected seats and serves as a single-player opponent |
 | 7 | Use of an ORM | Web Minor | 1 | Prisma + SQLite. A DB is mandatory under Chapter III regardless, so this module costs nothing beyond B-03 |
 | 8 | Game customization options | Gaming Minor | 1 | Map selection (.cub assets) + points-to-win. **Engine-side parameters already exist**; only the selection UI remains |
 | | **Subtotal** | | **14** | |

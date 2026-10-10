@@ -25,7 +25,7 @@
 >   RSP (rock-paper-scissors tag) and FPS (collect → door → goal race). **FPS's two post-backlog
 >   engine defects, G-11 and G-12, were both fixed 2026-08-09** — see backlog.md §3.1. (Online 1v1
 >   overall still needs B-04/F-05/B-09, unrelated to these two.)
-> - **The AI opponent is also complete.** The RSP AI "chases when it holds a winning move, flees when it holds a losing move"; the FPS AI has search, patrol, and pathfinding-based pursuit.
+> - **The AI opponent is also complete.** The RSP AI "chases when it holds a winning move, and heads home to change hands when it holds a losing or tied one"; the FPS AI has search, patrol, and pathfinding-based pursuit.
 > - **The server-authoritative simulation (`sim.wasm`) and the snapshot-delivery entry point are complete.** The engine-side components needed for online play are in place.
 > - 4 battle maps, acceptance tests (`make test`, 96 checks), and CI (all jobs green) are also complete.
 > - On the web-app side, the skeleton (I-01) is complete.

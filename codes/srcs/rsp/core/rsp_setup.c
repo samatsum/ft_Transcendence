@@ -64,7 +64,9 @@ static int
 
 /* ************************************************************************** */
 // プレイヤーを指定スポーンへ配置し、戦闘員ノードへチーム・手・初期リスポーン
-// 地点・生存を記録する。カメラを動かしたのでノードの位置・向きも同期する
+// 地点・生存を記録する。カメラを動かしたのでノードの位置・向きも同期する。
+// on_home は同期後の位置から求める（#270: 開始 tick に全員が「新しく自陣へ入った」
+// と判定されて一斉に手が引き直されるのを防ぐ）
 static void
 	set_rsp_player(t_game* game, t_spawn_point* sp, t_team team, int hand)
 {
@@ -75,11 +77,12 @@ static void
 	game->player->rsp.alive = 1;
 	game->player->spawn = game->camera;
 	sync_player_from_camera(game);
+	game->player->rsp.on_home = rsp_on_home_cell(game, game->player);
 }
 
 /* ************************************************************************** */
 // NPC1体を生成する。team×hand のハンドテクスチャでスプライトを作り、敵リストへ
-// 追加して rsp 状態（チーム・手・初期リスポーン地点・生存）を埋める
+// 追加して rsp 状態（チーム・手・初期リスポーン地点・生存・自陣判定）を埋める
 static int
 	spawn_rsp_npc(t_game* game, t_spawn_point* sp, t_team team, int hand)
 {
@@ -101,5 +104,6 @@ static int
 	enemy->rsp.hand = (t_hand)hand;
 	copy_pos(&enemy->rsp.spawn, &sp->pos);
 	enemy->rsp.alive = 1;
+	enemy->rsp.on_home = rsp_on_home_cell(game, enemy);
 	return (1);
 }
