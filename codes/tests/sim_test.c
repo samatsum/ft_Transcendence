@@ -1517,6 +1517,8 @@ static void
 	game_destroy(plain);
 	game_destroy(game);
 	free(spaced);
+}
+
 // #270: 負けてリスポーンした席は、移った先（自陣）で on_home が立ち、次の tick に
 // 手がもう一度引き直されない。修正前は respawn_npc が on_home を更新せず、次の tick に
 // 「新しく自陣へ入った」と判定されて、リスポーンで決めた手が上書きされていた
