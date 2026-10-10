@@ -389,7 +389,7 @@ first set of screens.
 **ttsubo — Technical Lead / Architect**
 Owns the C engine and the three-target build. Designed and implemented the RSP and FPS rule
 systems, both AI implementations, the snapshot encoding that crosses the C↔TypeScript boundary, and
-the match time limit. Largest contributor among the submitted members (68 commits).
+the match time limit. Largest contributor among the submitted members (70 commits).
 
 **kmitsuki — Product Owner**
 Decided module scope and the submission plan, and triaged the defect backlog into assigned issues.
