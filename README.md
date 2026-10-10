@@ -86,9 +86,6 @@ since the team formed.
 
 332 non-merge commits across 149 merged pull requests.
 
-Historical contributors no longer active: **hminemur** (frontend game-screen planning) and
-**mamiyaza** (PO / frontend foundation under the original 4-person team, left 2026-08-23).
-
 ---
 
 ## 3. How we worked
