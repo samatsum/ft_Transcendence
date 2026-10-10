@@ -78,16 +78,13 @@ since the team formed.
 | Author | Commits (excluding merges) |
 |---|---|
 | samatsum *(not a submitted member)* | 198 |
-| ttsubo / `cacapon` | 68 |
-| kmitsuki / `mitsukio-o` | 18 |
-| torinoue / `tototec1234` | 16 |
-| kkurose / `kkur0z` | 15 |
-| tvaroux / `tomtomvx` | 2 |
+| ttsubo / `cacapon` | 70 |
+| kmitsuki / `mitsukio-o` | 19 |
+| torinoue / `tototec1234` | 17 |
+| kkurose / `kkur0z` | 17 |
+| tvaroux / `tomtomvx` | 11 |
 
-317 non-merge commits across 82 merged pull requests.
-
-Historical contributors no longer active: **hminemur** (frontend game-screen planning) and
-**mamiyaza** (PO / frontend foundation under the original 4-person team, left 2026-08-23).
+332 non-merge commits across 149 merged pull requests.
 
 ---
 
@@ -392,7 +389,7 @@ first set of screens.
 **ttsubo — Technical Lead / Architect**
 Owns the C engine and the three-target build. Designed and implemented the RSP and FPS rule
 systems, both AI implementations, the snapshot encoding that crosses the C↔TypeScript boundary, and
-the match time limit. Largest contributor among the submitted members (68 commits).
+the match time limit. Largest contributor among the submitted members (70 commits).
 
 **kmitsuki — Product Owner**
 Decided module scope and the submission plan, and triaged the defect backlog into assigned issues.
