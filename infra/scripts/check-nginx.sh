@@ -62,7 +62,7 @@ curl --silent --http1.1 --max-time 2 --cacert "$ca_cert" \
 	--header 'Upgrade: websocket' \
 	--header 'Sec-WebSocket-Version: 13' \
 	--header 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==' \
-	--header 'Origin: https://localhost' \
+	--header 'Origin: $base_url' \
 	"$base_url/ws/lobby" || true
 
 # HTTP 101の確認
