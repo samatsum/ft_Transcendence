@@ -1,7 +1,7 @@
-# ft_transcendence
-
 *This project has been created as part of the 42 curriculum by torinoue, ttsubo, kmitsuki, kkurose,
 tvaroux.*
+
+# ft_transcendence
 
 <img align="center" src="docs/screenshot.png" alt="Screenshot of the game" />
 
@@ -80,7 +80,7 @@ since the team formed.
 | samatsum *(not a submitted member)* | 198 |
 | ttsubo / `cacapon` | 70 |
 | kmitsuki / `mitsukio-o` | 19 |
-| torinoue / `tototec1234` | 17 |
+| torinoue / `tototec1234` | 21 |
 | kkurose / `kkur0z` | 17 |
 | tvaroux / `tomtomvx` | 11 |
 
