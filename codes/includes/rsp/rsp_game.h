@@ -18,6 +18,7 @@
 // RSPモード固有でゲーム全体（t_game）に作用する関数の窓口。common が依存する
 // rsp.h（型・純粋ルール）とは分け、ここは fps/rsp 側からのみ include する
 struct s_game;
+struct s_enemy;
 
 /* ************************************************************************** */
 int
@@ -28,5 +29,7 @@ int
 	setup_rsp_combatants(struct s_game* game);
 int
 	rsp_target_score(struct s_game* game);
+int
+	rsp_on_home_cell(struct s_game* game, struct s_enemy* combatant);
 
 #endif

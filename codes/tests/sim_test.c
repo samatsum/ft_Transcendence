@@ -12,9 +12,11 @@
 //   #244  死亡中の席は移動を阻まない（描かれない死体が見えない壁にならない）
 //   #187  席の射撃（命中・クールダウン・壁の遮蔽・RSP では撃てない）
 //   FPS敵速度を match_rules 経由で巡回・追跡へ反映する
+//   #270  RSP の AI が手を変えられずに固まらない（自陣判定の更新漏れ）
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "core/collision.h"
 #include "core/core.h"
@@ -33,6 +35,10 @@
 #define TEST_SEED	4242u
 #define MAX_TICKS	200000
 #define TICK_DT		(1.0 / 30.0)
+// #270: AI だけの RSP を回す seed 数・上限（#269 の制限時間 3 分）・固まりを見る窓の長さ
+#define AI_RSP_SEEDS				20
+#define AI_RSP_MAX_TICKS			(180 * 30)
+#define AI_RSP_WINDOW_TICKS		(10 * 30)
 #define SNAP_CAP	512
 
 static int	g_checks;
@@ -1445,6 +1451,182 @@ test_fps_enemy_speed_motion(const char* map_text, int tracking)
 	expect_int("FPS敵速度が normal < fast になる", normal < fast, 1);
 }
 
+// #270: 負けてリスポーンした席は、移った先（自陣）で on_home が立ち、次の tick に
+// 手がもう一度引き直されない。修正前は respawn_npc が on_home を更新せず、次の tick に
+// 「新しく自陣へ入った」と判定されて、リスポーンで決めた手が上書きされていた
+// （hand_changed が1回の負けで2回飛ぶ）
+static void
+	test_270_respawn_keeps_hand(const char* map_text)
+{
+	t_game*		game;
+	t_enemy*	blue;
+	t_pos		cell;
+	t_hand		before;
+	t_hand		respawned;
+
+	game = create_duel(map_text, 21);
+	if (!game || !find_open_cell(game, &cell)) {
+		printf("  FAIL cannot stage duel\n");
+		g_failures++;
+		g_checks++;
+		game_destroy(game);
+		return ;
+	}
+	blue = combatant_by_id(game, 2);
+	stage_red_win(game, &cell);
+	before = blue->rsp.hand;
+	game_step(game, TICK_DT);
+	respawned = blue->rsp.hand;
+	expect_int("負けた席の手がリスポーンで変わる", respawned != before, 1);
+	expect_int("リスポーン先は自陣として記録される", blue->rsp.on_home, 1);
+	game_step(game, TICK_DT);
+	expect_int("リスポーン直後の次 tick で手が引き直されない", blue->rsp.hand, respawned);
+	game_destroy(game);
+}
+
+// #270: 試合開始時（tick 1）に全席が「新しく自陣へ入った」と判定されて、一斉に
+// 手が引き直されない。席は自陣スポーンに生成されるので、生成時点で on_home が立つ
+static void
+	test_270_no_rehand_on_first_tick(const char* map_text)
+{
+	t_game*		game;
+	t_hand		hands[4];
+	int			same;
+	int			i;
+
+	game = sim_create(map_text, 1, 21, TEST_SEED, 0.0);
+	if (!game || game_add_combatant(game, 0, 1) != 0 || game_add_combatant(game, 1, 1) != 1
+		|| game_add_combatant(game, 2, 1) != 2 || game_add_combatant(game, 3, 1) != 3) {
+		printf("  FAIL cannot create 4 seats\n");
+		g_failures++;
+		g_checks++;
+		game_destroy(game);
+		return ;
+	}
+	i = 0;
+	while (i < 4) {
+		hands[i] = combatant_by_id(game, i)->rsp.hand;
+		expect_int("生成時点で自陣として記録される", combatant_by_id(game, i)->rsp.on_home, 1);
+		i++;
+	}
+	game_step(game, TICK_DT);
+	same = 1;
+	i = 0;
+	while (i < 4) {
+		same = same && combatant_by_id(game, i)->rsp.hand == hands[i];
+		i++;
+	}
+	expect_int("開始 tick に全席の手が引き直されない", same, 1);
+	game_destroy(game);
+}
+
+// #270: AI 4席の RSP を seed 違いで回したときの集計
+typedef struct s_ai_rsp_run
+{
+	int	decided;
+	int	ticks;
+	int	frozen_windows;
+}	t_ai_rsp_run;
+
+// AI だけの RSP を最大 max_ticks まで回す。席ごとに AI_RSP_WINDOW_TICKS の窓を取り、
+// 窓の間の移動距離（道のり）が 0.5 マスに満たず手も変わっていなければ「固まった」と
+// 数える（#262 / #270 の症状。当たり円で押し合って微動し続ける詰まりも含む）。
+// 正味の変位ではなく道のりで見るのは、相手の手に応じて追跡と帰陣を行き来する正常な
+// 往復を誤検出しないため。手が変わった席は動けているので、その時点から窓を取り直す
+static t_ai_rsp_run
+	run_ai_only_rsp(const char* map_text, unsigned int seed, int target, int max_ticks)
+{
+	t_ai_rsp_run	run;
+	t_game*			game;
+	t_enemy*		seat;
+	t_pos			prev[4];
+	double			path[4];
+	t_hand			hand[4];
+	int				since[4];
+	int				i;
+
+	memset(&run, 0, sizeof(run));
+	game = sim_create(map_text, 1, target, seed, 0.0);
+	if (!game || game_add_combatant(game, 0, 1) != 0 || game_add_combatant(game, 1, 1) != 1
+		|| game_add_combatant(game, 2, 1) != 2 || game_add_combatant(game, 3, 1) != 3) {
+		game_destroy(game);
+		run.ticks = -1;
+		return (run);
+	}
+	i = 0;
+	while (i < 4) {
+		seat = combatant_by_id(game, i);
+		copy_pos(&prev[i], &seat->sprite->pos);
+		path[i] = 0.0;
+		hand[i] = seat->rsp.hand;
+		since[i] = 0;
+		i++;
+	}
+	while (run.ticks < max_ticks && !run.decided) {
+		run.decided = game_step(game, TICK_DT);
+		run.ticks++;
+		i = 0;
+		while (i < 4) {
+			seat = combatant_by_id(game, i);
+			path[i] += dist_pos(&prev[i], &seat->sprite->pos);
+			copy_pos(&prev[i], &seat->sprite->pos);
+			if (seat->rsp.hand != hand[i] || run.ticks - since[i] >= AI_RSP_WINDOW_TICKS) {
+				if (seat->rsp.hand == hand[i] && path[i] < 0.5) {
+					run.frozen_windows++;
+				}
+				path[i] = 0.0;
+				hand[i] = seat->rsp.hand;
+				since[i] = run.ticks;
+			}
+			i++;
+		}
+	}
+	game_destroy(game);
+	return (run);
+}
+
+// #270: AI だけの RSP が固まらず、制限時間（#269 の 3 分）内に決着する。
+// 修正前は respawn 後に on_home が更新されず、自陣に立ったままのあいこで AI が永久に
+// 停止していた（20 seed 中、先取 3 点で rsp 16 / rsp_pillars 11、先取 10 点で 7 / 6
+// しか決着しなかった）。先取 10 点は AI の足でも 3 分近くかかる試合があるので、
+// 全 seed ではなく min_decided 以上の決着を求める
+static void
+	test_270_ai_only_rsp_decides(const char* map_text, const char* name, int target,
+		int min_decided)
+{
+	t_ai_rsp_run	run;
+	unsigned int	seed;
+	int				decided;
+	int				frozen;
+	int				total;
+	char			label[96];
+
+	decided = 0;
+	frozen = 0;
+	total = 0;
+	seed = 1;
+	while (seed <= AI_RSP_SEEDS) {
+		run = run_ai_only_rsp(map_text, seed, target, AI_RSP_MAX_TICKS);
+		if (run.ticks < 0) {
+			printf("  FAIL %s seed=%u: 生成できない\n", name, seed);
+			g_failures++;
+			g_checks++;
+			return ;
+		}
+		decided += run.decided;
+		total += run.ticks;
+		frozen += run.frozen_windows;
+		seed++;
+	}
+	printf("  %s target=%d: 決着 %d/%d、平均 %.1f 秒、固まった 10 秒窓 %d\n", name, target,
+		decided, AI_RSP_SEEDS, total / (double)AI_RSP_SEEDS / 30.0, frozen);
+	snprintf(label, sizeof(label), "%s target=%d: 3 分以内に %d/%d 以上決着", name, target,
+		min_decided, AI_RSP_SEEDS);
+	expect_int(label, decided >= min_decided, 1);
+	snprintf(label, sizeof(label), "%s target=%d: 手も位置も変わらず固まる AI がいない", name, target);
+	expect_int(label, frozen, 0);
+}
+
 int
 	main(void)
 {
@@ -1506,6 +1688,14 @@ int
 	test_g09_rsp_map(rsp_map_2, "rsp_pillars");
 	test_g09_fps_map(fps_map, "21x21_arena");
 	test_g09_fps_map(fps_map_2, "fps_duel");
+	printf("#270 RSP の自陣判定（on_home）と AI の手替え\n");
+	test_270_respawn_keeps_hand(rsp_map);
+	test_270_no_rehand_on_first_tick(rsp_map);
+	test_270_no_rehand_on_first_tick(rsp_map_2);
+	test_270_ai_only_rsp_decides(rsp_map, "rsp", 3, AI_RSP_SEEDS);
+	test_270_ai_only_rsp_decides(rsp_map, "rsp", RSP_SCORE_LIMIT, 18);
+	test_270_ai_only_rsp_decides(rsp_map_2, "rsp_pillars", 3, AI_RSP_SEEDS);
+	test_270_ai_only_rsp_decides(rsp_map_2, "rsp_pillars", RSP_SCORE_LIMIT, 18);
 	free(rsp_map);
 	free(rsp_map_2);
 	free(fps_map);
