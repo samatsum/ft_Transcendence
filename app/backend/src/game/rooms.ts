@@ -80,6 +80,7 @@ export async function createRoomFromRules(options: {
 	onBroadcast?: RoomOptions['onBroadcast'];
 	persistMatch?: RoomOptions['persistMatch'];
 	onMatchResult?: RoomOptions['onMatchResult'];
+	onSeatAbandoned?: RoomOptions['onSeatAbandoned'];
 	onLifecycle?: RoomOptions['onLifecycle'];
 	timeLimitMs?: RoomOptions['timeLimitMs'];
 	now?: RoomOptions['now'];
@@ -106,6 +107,7 @@ export async function createRoomFromRules(options: {
 		onBroadcast: options.onBroadcast,
 		persistMatch: options.persistMatch,
 		onMatchResult: options.onMatchResult,
+		onSeatAbandoned: options.onSeatAbandoned,
 		onLifecycle: options.onLifecycle,
 		timeLimitMs: options.timeLimitMs,
 		now: options.now,

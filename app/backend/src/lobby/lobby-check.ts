@@ -677,6 +677,51 @@ async function checkW09Integration(): Promise<void> {
 	full.runtime.destroy();
 	assert.equal(full.clock.pending(), 0);
 
+	// RSPのgrace満了で、試合継続中でも本人をlobbyから再利用できる。
+	const abandoned = createW09Harness();
+	const abandonedA = connect(abandoned.runtime.registry, 90);
+	const abandonedB = connect(abandoned.runtime.registry, 91);
+	connect(abandoned.runtime.registry, 92);
+	const abandonedD = connect(abandoned.runtime.registry, 93);
+	abandoned.runtime.queue.join(90, 'ninety', 'rsp');
+	abandoned.runtime.queue.join(91, 'ninety-one', 'rsp');
+	abandoned.runtime.queue.join(92, 'ninety-two', 'rsp');
+	abandoned.runtime.queue.join(93, 'ninety-three', 'rsp');
+	await waitForW09(abandoned);
+	const abandonedContext = abandoned.runtime.registry.getContext(90);
+	assert.equal(abandonedContext.kind, 'in_match');
+	const abandonedRoomId = abandonedContext.kind === 'in_match' ? abandonedContext.roomId : '';
+	const abandonedRoom = getRoom(abandonedRoomId);
+	assert.ok(abandonedRoom);
+	abandonedRoom.join(0);
+	abandonedRoom.join(1);
+	abandonedRoom.join(2);
+	abandoned.clock.advance(10_000);
+	abandonedRoom.pump();
+	abandoned.clock.advance(3_000);
+	abandonedRoom.pump();
+	assert.equal(abandonedRoom.getState(), 'playing');
+	assert.deepEqual(abandoned.runtime.registry.getContext(93), { kind: 'idle' });
+	assert.equal(abandonedD.messages.filter((message) => message.t === 'match_found').length, 1);
+	abandonedRoom.disconnect(0);
+	abandoned.clock.advance(30_000);
+	abandonedRoom.pump();
+	assert.deepEqual(abandoned.runtime.registry.getContext(90), { kind: 'idle' });
+	assert.equal(abandoned.runtime.registry.sendMatchFound(90), false);
+	assert.equal(abandonedA.messages.filter((message) => message.t === 'match_found').length, 1);
+	// 旧試合終了後のlifecycle解放も、新しいqueue所属をroomId一致のCASで壊さない。
+	abandoned.runtime.queue.join(90, 'ninety', 'fps');
+	assert.equal(abandoned.runtime.registry.getContext(90).kind, 'queued');
+	abandonedRoom.disconnect(1);
+	abandonedRoom.disconnect(2);
+	abandoned.clock.advance(30_000);
+	abandonedRoom.pump();
+	assert.equal(abandoned.runtime.registry.getContext(90).kind, 'queued');
+	assert.equal(abandonedB.messages.some((message) => message.t === 'match_found'), true);
+	closeRoom(abandonedRoomId);
+	abandoned.runtime.destroy();
+	assert.equal(abandoned.clock.pending(), 0);
+
 	// 手動: RSP 1人 + AI 3席。予定人間1席のjoinだけで10秒を待たずcountdown。
 	const manual = createW09Harness();
 	connect(manual.runtime.registry, 82);

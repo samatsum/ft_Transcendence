@@ -177,6 +177,8 @@ export interface RoomOptions {
 	persistMatch?: (context: PersistedMatchContext) => Promise<PersistedMatchResult | null>;
 	/** match_end 配信後、永続化成功時だけロビーの match_result へ渡す */
 	onMatchResult?: (result: MatchResultPayload) => void;
+	/** grace満了・明示退出・開始時の未接続確定でparticipant席のロビー所属を解放する */
+	onSeatAbandoned?: (slot: number) => void;
 	/**
 	 * ② §4-E: B-09 が試合終了・開始前破棄を購読し、ロビーの in_match context を解放する。
 	 *
@@ -596,6 +598,11 @@ export class GameRoom {
 	private enterPlaying(): void {
 		this.setState('playing', 'match_started');
 		if (this.isClosed()) return;
+		for (const slot of this.participantSlots.values()) {
+			const seat = this.playerSeats.get(slot);
+			if (seat?.state === 'ai' && !seat.abandoned) this.abandonSeat(slot);
+			if (this.finishStarted) return;
+		}
 		this.broadcast({ t: 'event', d: { kind: 'match_start' } });
 		if (this.isClosed()) return;
 		// 30Hz の唯一の正（② §6-A）。unref しないのは、走っている試合が
@@ -895,11 +902,15 @@ export class GameRoom {
 		seat.explicitlyLeft = explicit;
 		this.broadcastPlayerStatus(slot, 'ai');
 		this.broadcast({ t: 'event', d: { kind: 'ai_takeover', slot } });
-		if (this.state !== 'playing' && this.state !== 'countdown') return;
+		try {
+			this.opts.onSeatAbandoned?.(slot);
+		} catch (err) {
+			this.logRoomError(err, 'GameRoom: lobby context解放の通知に失敗');
+		}
 		if (this.mode === 'fps') {
 			const winner = slot === 0 ? 1 : 0;
 			this.finish('forfeit', false, winner);
-		} else if ([...this.playerSeats.values()].every((playerSeat) => playerSeat.abandoned)) {
+		} else if ([...this.playerSeats.values()].every((playerSeat) => playerSeat.state === 'ai')) {
 			this.finish('abandon');
 		}
 	}
